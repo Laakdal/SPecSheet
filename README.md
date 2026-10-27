@@ -1,5 +1,8 @@
 # SpecSheet
 
+[![CI](https://github.com/Laakdal/SPecSheet/actions/workflows/ci.yml/badge.svg)](https://github.com/Laakdal/SPecSheet/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **SpecSheet: ETS2 Save Edit**
 
 A standalone truck-tuning studio for **Euro Truck Simulator 2**. It reads the original trucks, accessories, models and textures from your own game installation, assembles a truck the way the game's definitions describe it, and lets you browse and swap parts in a 3D view. You don't need to run the game.
@@ -18,12 +21,12 @@ A standalone truck-tuning studio for **Euro Truck Simulator 2**. It reads the or
 
 - Windows 10/11 with a DirectX 12 or Vulkan GPU.
 - Euro Truck Simulator 2 1.60+ installed (DLCs are picked up automatically).
-- For development: Rust 1.95+ and a C/C++ toolchain (MSVC Build Tools).
+- For development: [rustup](https://rustup.rs) and a C/C++ toolchain (MSVC Build Tools). The Rust version is pinned in `rust-toolchain.toml`, and rustup installs it on the first build.
 
 ## Getting started
 
 ```sh
-git clone <this repo> && cd "ETS2 Tuning GUI"
+git clone https://github.com/Laakdal/SPecSheet.git && cd SPecSheet
 # Optional: point at the game if it is not in a default Steam library
 set ETS2_DIR=D:\Steam Library\steamapps\common\Euro Truck Simulator 2
 cargo run --release -p specsheet
@@ -65,6 +68,6 @@ If the game is not found automatically, the app asks for its directory.
 
 ## License
 
-[MIT](LICENSE), for the project's original work only. Dependencies keep their own licenses.
+[MIT](LICENSE), for the project's original work only. Dependencies keep their own licenses; see [Third-party notices](THIRD_PARTY_NOTICES.md).
 
 Euro Truck Simulator 2 is a trademark of SCS Software, and its game files (models, textures, definitions and shaders) belong to SCS Software. This project is not affiliated with or endorsed by SCS Software. It contains no game assets: everything shown is loaded at runtime from the user's own licensed installation and is never redistributed.
