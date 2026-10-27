@@ -11,6 +11,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] Slot→locator rule measured: 626/626 preset addons resolve (`locator_check`).
 - [x] Wheel tyre offset (F9): tyres shifted by the rim's `tire_shift` and wheel locator yaw ignored. All 104 preset wheels fit their tyre within 6 mm (`real_install` test `every_preset_wheel_sits_in_its_tyre`).
 - [x] Assembly with wheels, hotspot anchors and the interior/exterior split.
+- [x] Multi-axle chassis (F13): all 164 chassis have one wheel-locator pair per declared axle (132 with 3 or 4 axles), and the locator letter picks single or twin tyres. Guarded by the `real_install` test `every_chassis_has_one_wheel_pair_per_declared_axle`; survey `axle_survey`.
 - [x] Tauri app, verified in the running WebView2 over CDP with screenshots:
   - Scania S renders from game files.
   - A hotspot click lists options.
@@ -72,7 +73,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 1. **Materials:** chrome and metal render nearly black. Use `env_factor`/`shininess`/reflection hints from `.mat`.
 2. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
 3. **Interior:** interior models and an interior camera; `hide_in`.
-4. **Wheels:** rear-axle and lift-axle variants (6x2/8x4), inner twin-tyre bead, `wheel_shift`.
+4. **Wheels:** whether the tuning screen shows lift axles raised or lowered (reference screenshot or REA), the inner twin-tyre bead, `wheel_shift`. Axle variants are done (F13).
 5. **UI fidelity:** game accessory icons; the game's 8 tabs (F5) as categories; layout per `ui/truck_configuration_center.sii`.
 6. **REA decompilation:** `FUN_140fbf860` (pin creation and placement, the caller of `FUN_140fe0fc0`) and the caller of `0x1421c2f90` (locator lookup), batched into one run; then `hide_in` and defaults/repair. Each CLI call re-runs the roughly 28 min analysis; can be delegated to the `ets2-researcher` subagent.
 7. **Markers:** anchor empty slots on their first compatible option, put a wheel group on the camera-side wheel, and add a depth test (see docs/app/hotspots.md "Known gaps").
