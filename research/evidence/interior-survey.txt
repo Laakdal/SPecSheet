@@ -1,0 +1,107 @@
+# Interior survey: how to show each cabin's interior from outside
+# ETS2 1.60.1.7. Tools: research examples built from this repo (release).
+# Environment: ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2", MSYS_NO_PATHCONV=1
+#
+# Commands:
+#   scs cat def/vehicle/truck/scania.s_2016/interior/cab_s_high_black_dark.sii
+#   scs cat def/vehicle/truck/scania.s_2016/interior/uk_cab_s_high_black_dark.sii
+#   scs cat def/vehicle/truck/scania.s_2016/cabin/highline.sii
+#   scs cat def/vehicle/truck_desktop/{scania_s_2016,volvo_fh_2024}.sii
+#   model_info /vehicle/truck/scania_2016/cabin/cab_s_high.pmd
+#   model_info /vehicle/truck/scania_2016/interior/external/stock.pmd
+#   model_info /vehicle/truck/scania_2016/interior/model.pmd
+#   model_info /vehicle/truck/scania_2016/interior/uk/model_uk.pmd
+#   model_info /vehicle/truck/volvo_fh_2024/{cabin/globe_xl_aero_2024,interior/external/gt_xl_fh16_2024,interior/model/gt_xl}.pmd
+#   def_grep accessory_interior_data ext_model 100000      (and '!ext_model')
+#   interior_fit.py: for each of the 26 /def/vehicle/truck_desktop presets, it takes the preset's cabin and
+#     interior, offsets the ext_model AABB by the cabin's ext_interior locator, and tests containment in the cabin AABB (5 cm tolerance).
+
+## E1 (Confirmed): every interior unit has a separate exterior-view model
+accessory_interior_data carries two models:
+  model / animated_model / collision : the full cockpit, used for the interior camera
+  ext_model, ext_variant, ext_look    : a low-detail interior shown through the windows from outside
+def_grep: 438 accessory_interior_data units across all 26 trucks; 438 have ext_model, 0 lack it.
+Per truck: daf.2021:32 daf.xd:32 daf.xf:12 daf.xf_electric:2 daf.xf_euro6:16 iveco.hiway:2 iveco.stralis:8
+  iveco.sway:6 man.tgx:12 man.tgx_2020:18 man.tgx_euro6:24 mercedes.actros:12 mercedes.actros2014:12
+  renault.etech_t:2 renault.magnum:4 renault.premium:8 renault.t:40 scania.r:12 scania.r_2016:48
+  scania.s_2016:48 scania.s_2024e:2 scania.streamline:16 volvo.fh16:8 volvo.fh16_2012:12 volvo.fh_2021:18 volvo.fh_2024:32
+ext_variant is absent on some units (e.g. Volvo FH 2024 EU), so the model's default variant applies.
+
+Scania S, cab_s_high_black_dark.sii:
+  model: /vehicle/truck/scania_2016/interior/model.pmd   look std_dark  variant cab_s_a_std
+  ext_model: /vehicle/truck/scania_2016/interior/external/stock.pmd  ext_variant s_h_std_eu  ext_look std_dark
+  suitable_for[]: highline.scania.s_2016.cabin, highline_8x4.scania.s_2016.cabin
+uk_cab_s_high_black_dark.sii: model interior/uk/model_uk.pmd, ext_variant s_h_std_uk, left_hand_traffic: true
+Volvo FH 2024, gt_xl_fh16.sii (the preset's interior):
+  model /vehicle/truck/volvo_fh_2024/interior/model/gt_xl.pmd  variant fh16_24
+  ext_model /vehicle/truck/volvo_fh_2024/interior/external/gt_xl_fh16_2024.pmd  ext_look default  (no ext_variant)
+gt_xl_fh16_uk.sii: model interior/uk/gt_xl.pmd, ext_variant cabin_uk, left_hand_traffic: true
+
+## E2 (Confirmed): how the default interior is selected
+- The cabin's defaults[] lists one interior. Example: highline.sii -> interior/cab_s_high_black_dark.sii;
+  each Volvo FH 2024 cabin -> slp_dyn / gt_dyn / gt_xl_dyn / gt_xxl_dyn.
+- The desktop presets select their own interior via `vehicle_accessory : .interior { data_path: ... }`:
+  scania_s_2016 -> interior/cab_s_high_smartdash_advanced_v8.sii; volvo_fh_2024 -> interior/gt_xl_fh16.sii.
+
+## E3 (Hypothesis, strong): place ext_model at the cabin's `ext_interior` locator
+Scania cab_s_high.pmd: locator ext_interior (part defaultpart, visible in both variants) at (-0.683, 2.705, -1.862).
+  ext stock.pmd AABB x[-0.483,1.849] y[-1.048,1.143] z[-1.109,0.964] -> placed x[-1.17,1.17] y[1.66,3.85] z[-2.97,-0.90],
+  inside cabin AABB x[-1.259,1.259] y[0.902,4.018] z[-3.049,-0.365].
+Volvo FH 2024: ext_interior at (0,0,0) (part1); the ext model is authored in cabin space.
+interior_fit.py over all 26 desktop presets:
+preset | cabin model | ext_model | ext_variant | ext_interior locators (part:pos) | placed ext AABB inside cabin AABB (+-5cm)?
+daf.sii | truck.pmd | stock.pmd | cab_a | [('cab_base', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+daf_2021.sii | cab_hi.pmd | xg_plus_25.pmd | Default | [('defaultpart', [0.0, 0.029, 0.0])] | at-locator:True at-origin:True
+daf_xd.sii | cab_slh.pmd | slh_int_25.pmd | Default | [('defaultpart', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+daf_xf_electric.sii | cab_slh.pmd | xf_25.pmd | Default | [('defaultpart', [0.0, 0.029, 0.0])] | at-locator:True at-origin:True
+daf_xf_euro6.sii | truck.pmd | stock.pmd | eu_fl | [('cab_base', [0.0, -0.014, 0.0])] | at-locator:True at-origin:True
+iveco.sii | truck.pmd | stock.pmd | exc | [('cab_base', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+iveco_h.sii | truck.pmd | stock.pmd | default | [('cab_base', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+iveco_sway.sii | cab_as.pmd | as.pmd | std | [('defaultpart', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+man.sii | cab_a.pmd | stock.pmd | cab_hi_eu | [('part1', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+man_tgx_2020.sii | cab_gx.pmd | gx.pmd | Default | [('defaultpart', [-0.722, 2.72, -1.896])] | at-locator:True at-origin:False
+man_tgx_euro6.sii | cab_xxl.pmd | cab_xxl_alu_2019.pmd | eu | [('defaultpart2', [0.0, 2.198, -1.604])] | at-locator:True at-origin:False
+mercedes.sii | cabin_a.pmd | stock.pmd | cab_hi_eu | [('defaultpart', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+mercedes_actros_2014.sii | cabin_a.pmd | stock.pmd | cab_hi_eu | [('shared1', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+renault_etech_t.sii | cabin_b.pmd | stock.pmd | default | [('defaultpart', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+renault_m.sii | truck.pmd | stock.pmd | eu | [('base_cabin', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+renault_p.sii | truck.pmd | stock.pmd | cab_hi_eu_e | [('cabin_base', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+renault_t.sii | cabin_a.pmd | carbon_slh_24.pmd | Default | [('shared1', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+scania_r.sii | truck.pmd | stock.pmd | eu | [('cab_base', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+scania_r_2016.sii | cab_r_high.pmd | stock.pmd | r_a_v8_di | [('defaultpart', [-0.683, 2.549, -1.863])] | at-locator:True at-origin:False
+scania_s_2016.sii | cab_s_high.pmd | stock.pmd | s_a_v8_di | [('defaultpart', [-0.683, 2.705, -1.862])] | at-locator:True at-origin:False
+scania_s_2024e.sii | cab_s_high.pmd | stock.pmd | s_h_wood_eu | [('defaultpart', [-0.683, 2.705, -1.862])] | at-locator:True at-origin:False
+scania_streamline.sii | truck.pmd | stock.pmd | eu | [('cab_base', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+volvo_fh16.sii | cab_ab.pmd | interior_cab_ab.pmd | eu_lux | [('defaultpart', [0.0, 2.441, -2.232])] | at-locator:True at-origin:False
+volvo_fh16_2012.sii | globe_xl.pmd | gt_xl_fh16_2012.pmd | None | [('part1', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+volvo_fh_2021.sii | globe_xl_2021.pmd | gt_xl_fh16_2021.pmd | None | [('part1', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+volvo_fh_2024.sii | globe_xl_aero_2024.pmd | gt_xl_fh16_2024.pmd | None | [('part1', [0.0, 0.0, 0.0])] | at-locator:True at-origin:True
+=> 26/26 fit at the ext_interior locator; 6/26 do NOT fit at the origin (man_tgx_2020, man_tgx_euro6,
+   scania_r_2016, scania_s_2016, scania_s_2024e, volvo_fh16). Every preset cabin has exactly one ext_interior locator.
+The locator's rotation is identity in every case seen; apply it anyway (Transform::from_locator).
+
+## E4 (Confirmed): the full interior model is a separate frame, not needed for the exterior view
+- Scania interior/model.pmd AABB x[-0.487,1.870] matches the ext model's frame. Its origin is the cabin locator
+  interior_s (eu_part, -0.683,2.705,-1.862); the UK model_uk.pmd AABB x[-1.870,0.487] matches interior_s1 (uk_part, +0.683,...).
+- Size: Scania full interior model.pmg is 4.28 MB vs ext stock.pmg 0.50 MB (cabin 1.64 MB); Volvo gt_xl.pmg is
+  5.59 MB vs ext 0.36 MB. The ext model is 8-15x smaller. Scania ext uses 2 materials (dif.spec.rfx and
+  shadowonly); the full model uses 39 materials and 31 locators.
+
+## E5 (Confirmed geometry): interior addon locators are duplicated on the cabin in cabin space
+Cabin cab_s_high.pmd carries toyhang, toyseat, toystand, toyac, toybed, toybig_*, set_dashbrd, set_lglass*,
+curtain_f, intlight_*, l_pillow, drv_plate, codrv_plate, swheel(_uk).
+Check: interior model toyhang (0.683,0.318,-0.681) + interior_s (-0.683,2.705,-1.862) = (0.000,3.023,-2.543),
+vs cabin toyhang (-0.007,3.023,-2.567). Within 3 cm. The current addon placement at cabin locators stays valid.
+
+## E6 (Hypothesis): right-hand-drive interiors are separate units flagged left_hand_traffic: true
+219 of 438 units have left_hand_traffic: true. 203 pair with an EU unit by filename (uk_ prefix or _uk suffix);
+16 do not (MAN tgx_euro6 uses a _uk_ infix, e.g. alu_uk_xl_2019.sii). Pair by data instead: same suitable_for[],
+same ext_model and ext_look, and left_hand_traffic matching the drive. Cabin defaults[] list only the EU unit.
+The ext_interior locator is in a part visible in both variants, so the placement is the same for both drives.
+
+## E7 (Confirmed): hide_in does not appear on interior units (0 occurrences); it is an addon attribute only.
+
+## Unknown
+- Whether the game draws ext_model or the full model in its exterior tuning camera (REA / visual check).
+- Exactly how the game pairs EU and UK interior units when switching drive.
+- The glass_panes[] (.pane units) role in the exterior view.

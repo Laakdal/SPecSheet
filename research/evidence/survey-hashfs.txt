@@ -1,0 +1,33 @@
+D:/Steam Library/steamapps/common/Euro Truck Simulator 2/dlc_actros_tuning.scs: 2321 entries, 2321 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 396}
+  .pmc: {"stored/zlib": 64}
+  .pmd: {"stored/zlib": 324}
+  .pmg: {"stored/zlib": 324}
+  .sii: {"stored/zlib": 407}
+  .sui: {"stored/zlib": 3}
+  .tobj: {"texture": 339}
+  dxgi formats (count, sampled): {72: (1, 1), 78: (116, 3), 80: (2, 2), 83: (18, 3), 91: (202, 3)}
+D:/Steam Library/steamapps/common/Euro Truck Simulator 2/base_vehicle.scs: 53455 entries, 53455 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 6}
+  .mat: {"stored/raw": 5, "stored/zlib": 11441}
+  .pma: {"stored/zlib": 1632}
+  .pmc: {"stored/zlib": 1198}
+  .pmd: {"stored/zlib": 8863}
+  .pmg: {"stored/zlib": 8864}
+  .sii: {"stored/zlib": 128}
+  .soundref: {"stored/zlib": 1}
+  .sui: {"stored/zlib": 21}
+  .tobj: {"texture": 17862}
+  dxgi formats (count, sampled): {35: (11, 3), 61: (32, 3), 71: (125, 3), 72: (6357, 3), 77: (601, 3), 78: (6345, 3), 80: (856, 3), 83: (893, 3), 87: (2, 2), 88: (1, 1), 91: (2595, 3), 93: (44, 3)}
+  TEXTURE ERROR vehicle/truck/daf_xf_euro6/carpaint_n.tobj: unsupported DXGI format 35
+  TEXTURE ERROR vehicle/truck/iveco_hiway/carpaint_normal_16.tobj: unsupported DXGI format 35
+  TEXTURE ERROR vehicle/truck/iveco_hiway/chrom_normal_16.tobj: unsupported DXGI format 35
+D:/Steam Library/steamapps/common/Euro Truck Simulator 2/def.scs: 66928 entries, 66928 reachable, 0 listed-but-missing, 0 skipped
+  .btf: {"stored/raw": 41, "stored/zlib": 52}
+  .sii: {"stored/raw": 258, "stored/zlib": 61318}
+  .soundref: {"stored/raw": 145, "stored/zlib": 210}
+  .sui: {"stored/raw": 6, "stored/zlib": 2499}
+  .txt: {"stored/raw": 3, "stored/zlib": 104}
+  dxgi formats (count, sampled): {}
+D:/Steam Library/steamapps/common/Euro Truck Simulator 2/core.scs: 22 entries, 1 reachable, 0 listed-but-missing, 0 skipped
+  dxgi formats (count, sampled): {}

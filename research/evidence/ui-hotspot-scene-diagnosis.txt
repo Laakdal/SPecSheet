@@ -1,0 +1,114 @@
+Diagnosis of the screenshot issues in research/screenshots/01, 05, 06 (Scania S preset)
+ETS2 1.60.1.7. Produced 2026-10-27 by session ets2-tuning-gui-d3 (diagnosis only, no code changed).
+
+Commands (Git Bash; E = release examples built from this repo, D = scratch diag tool)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  D scania.s_2016                       # scratch tool: assemble(preset, Drive::Left), print every Anchor sorted by y
+                                        #   (out-of-repo crate depending on game-data; just calls game_data::assembly::assemble)
+  E/model_info /vehicle/truck/scania_2016/chassis/chs_4x2.pmd
+  E/scs cat def/vehicle/truck/scania.s_2016/accessory/b_grill/hss_matte1.sii
+  E/model_info /vehicle/truck/scania_2016/accessory/b_grill/hss_bottomgrill_01.pmd
+  E/scs cat def/vehicle/truck/scania.s_2016/accessory/f_mudflap/mg_kotr.sii
+  E/model_info /vehicle/truck/scania_2016/accessory/f_mudflap/kotr_p.pmd
+  E/scs cat ui/truck_configuration_{center,left,right}.sii ui/truck_config_filters.sii ui/template/{button,text}.sii
+  E/scs ls material/ui/truck_config
+  E/scs cat locale/en_us/{localization,accessories}.sui
+  E/scs cat def/desktop/config.sii def/desktop/config.under_bridge.sii def/camera/ui/camera_desktop_under_bridge.sii
+  E/model_info /model/ui/garage/desktop_garage.pmd
+  E/scs cat automat/cc/cc9de879db5d57dd.mat automat/66/66b6b917f1c899a6.mat
+
+==========================================================================
+(a) Two dots on the floor in front of the bumper
+==========================================================================
+Anchors with the lowest y (truck space: x right, y up, -z forward):
+     x       y       z     slot        selection
+   0.000   0.084  -2.830   f_mudflap   (empty)
+   0.000   0.214   2.814   r_mudflap   scania_v8...r_mudflap
+   1.240   0.231   0.541   exhaust_r   (empty)            <- right side, hidden by the far-side rule
+   0.000   0.243  -3.179   b_grill     (empty, "Bull Bar: None" in the sidebar)
+
+Confirmed: f_mudflap and b_grill are EMPTY in the Scania S preset. For empty slots assembly::anchors()
+uses the mean of the slot's locators. Chassis chs_4x2.pmd locators:
+   b_grill    pos (0.000, 0.243, -3.179)
+   f_mudflap  pos (0.000, 0.084, -2.830)
+These are attachment pivots, not where the part appears:
+   hss_bottomgrill_01.pmd (b_grill)  local AABB y 0.000..0.115, z +0.066..+0.844
+      -> world part spans z -3.11..-2.34, i.e. it sits BEHIND the locator; the locator is the part's front-bottom corner.
+   kotr_p.pmd (f_mudflap)            local AABB x -1.094..+1.094, y 0.089..0.258
+      -> one centred locator carries a LEFT+RIGHT pair; x = 0 is under the truck between the wheels.
+Hypothesis (strong): the two floating dots in 01/05 are b_grill and f_mudflap: both x = 0, the only two front anchors below
+y = 0.25, matching the dots' position below the front bumper on the centreline.
+Contributing (Confirmed from RENDERING.md, D7): occlusion is approximate; DOM markers have no depth test, so an anchor under
+or inside the truck still draws.
+
+Fix: an empty slot's anchor should be where a part WOULD appear: place the slot's first compatible option (fallback / default
+/ first) at its locators, take that model's world AABB, then apply the existing rules (centre; move to the -x face when
+inside the cabin; interior test). Fall back to the raw locator only when no option has a model. In Bevy, depth-test markers
+against the scene (raycast against mesh AABBs, or read back depth) instead of the far-side half-space heuristic.
+
+==========================================================================
+(b) Far more dots than the game shows
+==========================================================================
+Confirmed counts (Scania S preset, Drive::Left): 83 anchors = 28 interior (hidden by default) + 55 exterior.
+ - 14 of the 55 exterior anchors are wheel sub-slots stacked on one point per axle:
+   f_{cover,disc,hub,nuts,rim,tire,wheel} at (-1.045,0.5,-1.640) and r_* at (-0.930,0.5,2.094) -> the "7" clusters.
+ - 14 exterior anchors are empty slots (anchored at raw locators, see (a)).
+ - The rest are filled addon slots, one each, plus chassis and cabin.
+Confirmed: the game's tuning UI does not list pins in data. ui/truck_configuration_center.sii has
+`ui::group : _nameless._.accpins` (id 9000) with my_children: 0, and the left-panel accessory list (`_nameless._.acclist`)
+and the filter dialog's checkbox group (`_nameless._.checkbox.group`, id 105) are also empty. Code fills all of them at
+runtime.
+Confirmed: top-level configurator categories exist as icons in /material/ui/truck_config/: cabin, chassis, engine,
+transmission, e_accessories, i_accessories, lights, color (+ camera, default_view, walk_mode, fullscreen, show_vehicles).
+Locale: "accessory" = "Accessories", "in_accessory" = "Interior Accessories", "lights" = "Adjust Lights".
+Confirmed: "part_type" in ui/template/text.sii (@@part_type_%2@@, accessory_%2.mat) is the accessory ORIGIN badge
+(part_type_factory / _aftermarket / _licensed), not a slot grouping.
+Unknown (needs REA on the accpins creation code; TASKS lists 0x14223d860): which slots get a pin, whether wheel sub-slots
+share one pin, and whether empty slots get one.
+
+Fix now (Design, reversible): one "Wheels" pin per axle instead of 7 stacked sub-slot anchors (sub-slots go in the sidebar);
+keep empty-slot pins but anchor them per (a); group the sidebar by the game's categories above. Replace with REA results.
+
+==========================================================================
+(c) Under the Bridge camera crops the truck
+==========================================================================
+Confirmed (def/desktop/config.under_bridge.sii):
+   camera_position (0.0, 3.1, -15)   camera_aim (0.0, 2.5, -0.7)   camera_fov 20   truck_rot (0, 15, 0)
+Confirmed (crates/game-data/src/scene.rs, test camera_must_stand_outside_and_look_through_the_truck): the app picks this static
+pose for the bridge, keeps FOV 20 and only moves the orbit target onto the same view ray. The app reproduces the data as
+written, using FOV as the vertical angle (three.js PerspectiveCamera).
+Geometry: 15 m away with a vertical FOV of 20 deg gives ~4.0 m visible height at the cab front (z ~ -3.7). With the aim at
+y ~ 2.5 the frame covers y ~ 0.5..4.5, so the bumper/wheels are cut: the crop in 06.
+Hypothesis: the /def/desktop scenes are the game's hub ("desktop") BACKGROUNDS, not dedicated tuning-screen scenes.
+Evidence: directory name; steam_inventory_id per scene; icon_path; locale keys "desktop" ("Back to desktop") and
+"select_background". The static pose is framed for the full-screen 16:9 hub with its own UI, and the cinematic cameras are
+`orbit_camera` units with FOV 30/45/60. Whether the configurator reuses these poses is Unknown.
+Unknown: whether SCS camera_fov is vertical or horizontal (if horizontal, the game frame is even tighter).
+
+Fix: keep the scene's view DIRECTION (position -> aim) and FOV, but set the distance so the assembled truck's world AABB fits
+the actual viewport (the viewport is narrower than the hub because of the sidebar), with a margin. Re-check against an
+in-game screenshot of the same scene. Relabel F7 in docs from "tuning scene" to "desktop background scene (also used as the
+configurator backdrop: Hypothesis)".
+
+==========================================================================
+(d) Garage looks white and flat
+==========================================================================
+Confirmed (def/desktop/config.sii, "Home at Last"): light_direction (0,-8,0) straight down; light_diffuse (3,3,3) white;
+light_ambient (0.3,0.3,0.3); fog_color (0.9,0.9,0.9) density 0.0018; light_environment 1.2. The scene is meant to be
+bright, neutral and white, so "white" is faithful.
+Confirmed (desktop_garage.pmd, 31 materials): the parts in part_order (a, b, reflection) are almost all
+`eut2.dif.spec.mult.dif.spec[.add.env][.tsnmap|.tsnmapuv].rfx`. Example automat/cc/cc9de879db5d57dd.mat:
+   texture_base       /material/tiled/metal_plates_gs_01.tobj            (tiled, greyscale)
+   texture_mult       /model/ui/garage/ao_textures/metal_plates_v3.tobj  (baked ambient occlusion, clamp)
+   texture_nmap       /material/tiled/metal_plates_gs_01_nrm.tobj
+   texture_reflection /material/environment/showroom_cube/reflection.tobj (the game's own cube map)
+Confirmed (docs/RENDERING.md): the app uses only texture_base and ignores normal and reflection maps, and replaces
+reflections with RoomEnvironment.
+Root cause: the baked AO (texture_mult) carries the garage's shading: corners, shadows under objects, depth. Without it the
+tiled greyscale base renders uniformly lit, which looks flat. Missing normal maps and the showroom cube reflection add to it.
+Hypothesis: texture_mult uses the second UV set (separate, non-tiled UVs typical of baked AO); check the PMG UV channel count
+per piece before relying on it.
+
+Fix, in order: (1) multiply texture_mult (AO) onto base: biggest gain, cheap; (2) load the material's texture_reflection cube
+(showroom_cube) as the environment map instead of a generic one; (3) normal maps (tsnmap / tsnmapuv); (4) honour
+`lvcol` (vertex colour) and `lum` where present. The same `mult` layer matters for truck materials too.

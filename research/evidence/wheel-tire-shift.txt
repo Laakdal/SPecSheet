@@ -1,0 +1,642 @@
+# Wheel tyre offset (tire_shift) and wheel locator rotations -- finding F9
+# ETS2 1.60.1.7. Commands (Git Bash, repo root, ETS2_DIR set, MSYS_NO_PATHCONV=1):
+#   1. for g in f_tire f_disc f_rim f_hub f_nuts f_cover f_wheel r_tire r_disc r_rim r_hub r_nuts r_cover r_wheel; do echo "### $g"; cargo run --release -q -p game-data --example def_stats -- /def/vehicle/$g; done
+#   2. cargo run --release -q -p game-data --example wheel_fit -- fit
+#   3. for d in front_disc_01 front_disc_05 front_disc_06; do cargo run --release -q -p game-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/disc/$d.pmd left; done; cargo run --release -q -p game-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/nuts/front_nuts_01_steel.pmd left
+#   4. cargo run --release -q -p game-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left   (and tire/f_385-55_michelin.pmd, tire/rear_1.pmd)
+#   5. cargo run --release -q -p game-data --example wheel_fit -- locators
+#   6. cargo run --release -q -p game-data --example wheel_fit   (all wheel-part defs with x extents per variant, then preset wheel selections)
+#   7. LC_ALL=C grep -a -o -b -E '[a-z_]{0,30}(tire_shift|wheel_shift)[a-z_]{0,30}' "$ETS2_DIR/bin/win_x64/eurotrucks2.exe"
+#   8. ETS2_DIR=... cargo test -p game-data --release --test real_install every_preset_wheel_sits_in_its_tyre
+
+## 1. def_stats per wheel group (attribute -> number of units carrying it)
+### f_tire
+accessory_wheel_data: 16
+    icon: 16
+    look: 16
+    model: 16
+    name: 16
+    noise_volume: 16
+    paintable: 14
+    part_type: 16
+    price: 16
+    roll_resistance: 16
+    unlock: 16
+    wet_grip: 16
+    wheel_shift: 3
+### f_disc
+accessory_rim_data: 32
+    icon: 32
+    model: 32
+    name: 32
+    paintable: 12
+    part_type: 32
+    price: 32
+    suitable_for: 2
+    tire_shift: 30
+    unlock: 32
+### f_rim
+accessory_rim_data: 10
+    icon: 10
+    model: 10
+    name: 10
+    part_type: 10
+    price: 10
+    tire_shift: 10
+    unlock: 10
+### f_hub
+accessory_rim_data: 21
+    conflict_with: 4
+    icon: 21
+    model: 21
+    name: 21
+    paintable: 8
+    part_type: 21
+    price: 21
+    unlock: 21
+### f_nuts
+accessory_rim_data: 11
+    conflict_with: 10
+    icon: 11
+    model: 11
+    name: 11
+    paintable: 4
+    part_type: 11
+    price: 11
+    suitable_for: 1
+    unlock: 11
+### f_cover
+accessory_rim_data: 25
+    icon: 25
+    look: 6
+    model: 25
+    name: 25
+    paintable: 7
+    part_type: 23
+    price: 25
+    suitable_for: 1
+    unlock: 25
+### f_wheel
+accessory_wheel_data: 11
+    icon: 11
+    look: 2
+    model: 11
+    name: 11
+    part_type: 11
+    price: 11
+    unlock: 11
+### r_tire
+accessory_wheel_data: 15
+    icon: 15
+    look: 15
+    model: 15
+    name: 15
+    noise_volume: 15
+    paintable: 13
+    part_type: 15
+    price: 15
+    roll_resistance: 15
+    unlock: 15
+    wet_grip: 15
+### r_disc
+accessory_rim_data: 16
+    icon: 16
+    model: 16
+    name: 16
+    paintable: 7
+    part_type: 14
+    price: 16
+    suitable_for: 2
+    tire_shift: 16
+    unlock: 16
+### r_rim
+accessory_rim_data: 5
+    icon: 5
+    model: 5
+    name: 5
+    part_type: 5
+    price: 5
+    tire_shift: 5
+    unlock: 5
+### r_hub
+accessory_rim_data: 13
+    conflict_with: 6
+    icon: 13
+    model: 13
+    name: 13
+    paintable: 6
+    part_type: 13
+    price: 13
+    suitable_for: 1
+    unlock: 13
+### r_nuts
+accessory_rim_data: 11
+    conflict_with: 9
+    icon: 11
+    model: 11
+    name: 11
+    paintable: 4
+    part_type: 11
+    price: 11
+    suitable_for: 1
+    unlock: 11
+### r_cover
+accessory_rim_data: 19
+    icon: 19
+    model: 19
+    name: 19
+    paintable: 8
+    part_type: 17
+    price: 19
+    unlock: 19
+### r_wheel
+accessory_wheel_data: 6
+    icon: 6
+    model: 6
+    name: 6
+    part_type: 6
+    price: 6
+    unlock: 6
+
+## 2. wheel_fit fit
+# group file | tire_shift (absent = 0) | side | tyre bead x | lip x | lip-bead | residual = (lip-bead) - side*ts
+# side = +1 for left, -1 for right. bead: outboard-most tyre vertex within 2 cm of the tyre's min radius;
+# lip: outboard-most rim vertex within 2 cm of the rim's max radius.
+f_disc fdisc_claws_alu_paintable.sii | +0.0250 | left  | -0.1430 | -0.1303 | +0.0126 | -0.0124
+f_disc fdisc_claws_alu_paintable.sii | +0.0250 | right | +0.1430 | +0.1303 | -0.0126 | +0.0124
+f_disc fdisc_tuna_alu_paintable.sii | -0.0230 | left  | -0.1430 | -0.1660 | -0.0230 | -0.0000
+f_disc fdisc_tuna_alu_paintable.sii | -0.0230 | right | +0.1430 | +0.1662 | +0.0233 | +0.0003
+f_disc front_disc_01.sii | +0.0220 | left  | -0.1430 | -0.1235 | +0.0195 | -0.0025
+f_disc front_disc_01.sii | +0.0220 | right | +0.1430 | +0.1235 | -0.0195 | +0.0025
+f_disc front_disc_01_chrome.sii | +0.0220 | left  | -0.1430 | -0.1235 | +0.0195 | -0.0025
+f_disc front_disc_01_chrome.sii | +0.0220 | right | +0.1430 | +0.1235 | -0.0195 | +0.0025
+f_disc front_disc_01_matt_gray.sii | +0.0220 | left  | -0.1430 | -0.1235 | +0.0195 | -0.0025
+f_disc front_disc_01_matt_gray.sii | +0.0220 | right | +0.1430 | +0.1235 | -0.0195 | +0.0025
+f_disc front_disc_01_paintable.sii | +0.0220 | left  | -0.1430 | -0.1235 | +0.0195 | -0.0025
+f_disc front_disc_01_paintable.sii | +0.0220 | right | +0.1430 | +0.1235 | -0.0195 | +0.0025
+f_disc front_disc_02.sii | -0.0270 | left  | -0.1430 | -0.1716 | -0.0287 | -0.0017
+f_disc front_disc_02.sii | -0.0270 | right | +0.1430 | +0.1716 | +0.0287 | +0.0017
+f_disc front_disc_02_chrome.sii | -0.0270 | left  | -0.1430 | -0.1716 | -0.0287 | -0.0017
+f_disc front_disc_02_chrome.sii | -0.0270 | right | +0.1430 | +0.1716 | +0.0287 | +0.0017
+f_disc front_disc_02_half_paintable.sii | -0.0270 | left  | -0.1430 | -0.1716 | -0.0287 | -0.0017
+f_disc front_disc_02_half_paintable.sii | -0.0270 | right | +0.1430 | +0.1716 | +0.0287 | +0.0017
+f_disc front_disc_02_matt_gray.sii | -0.0270 | left  | -0.1430 | -0.1716 | -0.0287 | -0.0017
+f_disc front_disc_02_matt_gray.sii | -0.0270 | right | +0.1430 | +0.1716 | +0.0287 | +0.0017
+f_disc front_disc_02_paintable.sii | -0.0270 | left  | -0.1430 | -0.1716 | -0.0287 | -0.0017
+f_disc front_disc_02_paintable.sii | -0.0270 | right | +0.1430 | +0.1716 | +0.0287 | +0.0017
+f_disc front_disc_03.sii | +0.0150 | left  | -0.1430 | -0.1305 | +0.0125 | -0.0025
+f_disc front_disc_03.sii | +0.0150 | right | +0.1430 | +0.1305 | -0.0125 | +0.0025
+f_disc front_disc_03_chrome.sii | +0.0150 | left  | -0.1430 | -0.1305 | +0.0125 | -0.0025
+f_disc front_disc_03_chrome.sii | +0.0150 | right | +0.1430 | +0.1305 | -0.0125 | +0.0025
+f_disc front_disc_03_paintable.sii | +0.0150 | left  | -0.1430 | -0.1305 | +0.0125 | -0.0025
+f_disc front_disc_03_paintable.sii | +0.0150 | right | +0.1430 | +0.1305 | -0.0125 | +0.0025
+f_disc front_disc_04.sii | +0.0150 | left  | -0.1430 | -0.1302 | +0.0128 | -0.0022
+f_disc front_disc_04.sii | +0.0150 | right | +0.1430 | +0.1302 | -0.0128 | +0.0022
+f_disc front_disc_04_chrome.sii | +0.0150 | left  | -0.1430 | -0.1302 | +0.0128 | -0.0022
+f_disc front_disc_04_chrome.sii | +0.0150 | right | +0.1430 | +0.1302 | -0.0128 | +0.0022
+f_disc front_disc_04_paintable.sii | +0.0150 | left  | -0.1430 | -0.1302 | +0.0128 | -0.0022
+f_disc front_disc_04_paintable.sii | +0.0150 | right | +0.1430 | +0.1302 | -0.0128 | +0.0022
+f_disc front_disc_05.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_05.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+f_disc front_disc_05_black_chrome.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_05_black_chrome.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+f_disc front_disc_05_black_paint.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_05_black_paint.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+f_disc front_disc_05_chrome.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_05_chrome.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+f_disc front_disc_05_paintable.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_05_paintable.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+f_disc front_disc_05_scania.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_05_scania.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+f_disc front_disc_06.sii | -0.0540 | left  | -0.1430 | -0.1997 | -0.0567 | -0.0027
+f_disc front_disc_06.sii | -0.0540 | right | +0.1430 | +0.2001 | +0.0572 | +0.0032
+f_disc front_disc_06_chrome.sii | -0.0540 | left  | -0.1430 | -0.1997 | -0.0567 | -0.0027
+f_disc front_disc_06_chrome.sii | -0.0540 | right | +0.1430 | +0.2001 | +0.0572 | +0.0032
+f_disc front_disc_06_paintable.sii | -0.0540 | left  | -0.1430 | -0.1997 | -0.0567 | -0.0027
+f_disc front_disc_06_paintable.sii | -0.0540 | right | +0.1430 | +0.2001 | +0.0572 | +0.0032
+f_disc front_disc_07.sii | -0.0240 | left  | -0.1430 | -0.1687 | -0.0257 | -0.0017
+f_disc front_disc_07.sii | -0.0240 | right | +0.1430 | +0.1687 | +0.0257 | +0.0017
+f_disc front_disc_07_chrome.sii | -0.0240 | left  | -0.1430 | -0.1687 | -0.0257 | -0.0017
+f_disc front_disc_07_chrome.sii | -0.0240 | right | +0.1430 | +0.1687 | +0.0257 | +0.0017
+f_disc front_disc_07_paintable.sii | -0.0240 | left  | -0.1430 | -0.1687 | -0.0257 | -0.0017
+f_disc front_disc_07_paintable.sii | -0.0240 | right | +0.1430 | +0.1687 | +0.0257 | +0.0017
+f_disc front_disc_08.sii | +0.0000 | left  | -0.1430 | -0.1460 | -0.0030 | -0.0030
+f_disc front_disc_08.sii | +0.0000 | right | +0.1430 | +0.1460 | +0.0030 | +0.0030
+f_disc front_disc_08_paintable.sii | +0.0000 | left  | -0.1430 | -0.1460 | -0.0030 | -0.0030
+f_disc front_disc_08_paintable.sii | +0.0000 | right | +0.1430 | +0.1460 | +0.0030 | +0.0030
+f_disc front_disc_renault.sii | -0.0380 | left  | -0.1430 | -0.1846 | -0.0416 | -0.0036
+f_disc front_disc_renault.sii | -0.0380 | right | +0.1430 | +0.1846 | +0.0416 | +0.0036
+r_disc rdisc_claws_alu_paintable.sii | -0.0100 | left  | -0.3026 | -0.3154 | -0.0128 | -0.0028
+r_disc rdisc_claws_alu_paintable.sii | -0.0100 | right | +0.3029 | +0.3154 | +0.0125 | +0.0025
+r_disc rdisc_tuna_alu_paintable.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rdisc_tuna_alu_paintable.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_black.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_black.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_black_chrome.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_black_chrome.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_black_paint.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_black_paint.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_chrome.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_chrome.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_half_paintable.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_half_paintable.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_matt_gray.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_matt_gray.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_paintable.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_paintable.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_01_scania.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_01_scania.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_02.sii | -0.0100 | left  | -0.3026 | -0.3155 | -0.0129 | -0.0029
+r_disc rear_disc_02.sii | -0.0100 | right | +0.3029 | +0.3155 | +0.0125 | +0.0025
+r_disc rear_disc_02_chrome.sii | -0.0100 | left  | -0.3026 | -0.3155 | -0.0129 | -0.0029
+r_disc rear_disc_02_chrome.sii | -0.0100 | right | +0.3029 | +0.3155 | +0.0125 | +0.0025
+r_disc rear_disc_02_paintable.sii | -0.0100 | left  | -0.3026 | -0.3155 | -0.0129 | -0.0029
+r_disc rear_disc_02_paintable.sii | -0.0100 | right | +0.3029 | +0.3155 | +0.0125 | +0.0025
+r_disc rear_disc_08_half_paintable.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_08_half_paintable.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+r_disc rear_disc_renault.sii | -0.0100 | left  | -0.3026 | -0.3174 | -0.0148 | -0.0048
+r_disc rear_disc_renault.sii | -0.0100 | right | +0.3029 | +0.3174 | +0.0145 | +0.0045
+f_rim 1.sii | +0.0250 | left  | -0.1430 | -0.1242 | +0.0188 | -0.0062
+f_rim 1.sii | +0.0250 | right | +0.1430 | +0.1242 | -0.0188 | +0.0062
+f_rim 2.sii | +0.0250 | left  | -0.1430 | -0.1228 | +0.0202 | -0.0048
+f_rim 2.sii | +0.0250 | right | +0.1430 | +0.1228 | -0.0202 | +0.0048
+f_rim 3.sii | +0.0250 | left  | -0.1430 | -0.0540 | +0.0889 | +0.0639
+f_rim 3.sii | +0.0250 | right | +0.1430 | +0.0540 | -0.0889 | -0.0639
+f_rim 4.sii | +0.0250 | left  | -0.1430 | -0.1209 | +0.0221 | -0.0029
+f_rim 4.sii | +0.0250 | right | +0.1430 | +0.1209 | -0.0221 | +0.0029
+f_rim 5.sii | +0.0250 | left  | -0.1430 | -0.0621 | +0.0808 | +0.0558
+f_rim 5.sii | +0.0250 | right | +0.1430 | +0.0621 | -0.0808 | -0.0558
+f_rim 6.sii | +0.0250 | left  | -0.1430 | -0.1231 | +0.0199 | -0.0051
+f_rim 6.sii | +0.0250 | right | +0.1430 | +0.1231 | -0.0199 | +0.0051
+f_rim 7.sii | +0.0250 | left  | -0.1430 | -0.1248 | +0.0182 | -0.0068
+f_rim 7.sii | +0.0250 | right | +0.1430 | +0.1221 | -0.0209 | +0.0041
+f_rim 8.sii | +0.0250 | left  | -0.1430 | -0.1231 | +0.0199 | -0.0051
+f_rim 8.sii | +0.0250 | right | +0.1430 | +0.1231 | -0.0199 | +0.0051
+f_rim raven.dlc_raven.sii | +0.0250 | left  | -0.1430 | -0.0384 | +0.1046 | +0.0796
+f_rim raven.dlc_raven.sii | +0.0250 | right | +0.1430 | +0.0384 | -0.1046 | -0.0796
+f_rim steel.sii | +0.0250 | left  | -0.1430 | -0.1267 | +0.0163 | -0.0087
+f_rim steel.sii | +0.0250 | right | +0.1430 | +0.1267 | -0.0163 | +0.0087
+r_rim 1.sii | -0.0100 | left  | -0.3026 | -0.1208 | +0.1817 | +0.1917
+r_rim 1.sii | -0.0100 | right | +0.3029 | +0.1208 | -0.1821 | -0.1921
+r_rim 2.sii | -0.0100 | left  | -0.3026 | -0.1208 | +0.1817 | +0.1917
+r_rim 2.sii | -0.0100 | right | +0.3029 | +0.1208 | -0.1821 | -0.1921
+r_rim 3.sii | -0.0100 | left  | -0.3026 | -0.1208 | +0.1817 | +0.1917
+r_rim 3.sii | -0.0100 | right | +0.3029 | +0.1208 | -0.1821 | -0.1921
+r_rim raven.dlc_raven.sii | -0.0100 | left  | -0.3026 | -0.1208 | +0.1817 | +0.1917
+r_rim raven.dlc_raven.sii | -0.0100 | right | +0.3029 | +0.1208 | -0.1821 | -0.1921
+r_rim steel.sii | -0.0100 | left  | -0.3026 | -0.1208 | +0.1817 | +0.1917
+r_rim steel.sii | -0.0100 | right | +0.3029 | +0.1208 | -0.1821 | -0.1921
+# f_disc: 62 of 64 part x side cases have |residual| <= 5 mm
+# f_rim: 5 of 20 part x side cases have |residual| <= 5 mm
+# r_disc: 32 of 32 part x side cases have |residual| <= 5 mm
+# r_rim: 0 of 10 part x side cases have |residual| <= 5 mm
+
+## 3. Mounting face: radius band (cm) | x min | x max | vertices (left variant)
+# /vehicle/truck/upgrade/wheel/disc/front_disc_01.pmd left: radius band (cm) | x min | x max | vertices
+ 13 | -0.1700 | -0.1513 | 90
+ 19 | -0.1700 | -0.1700 | 42
+ 20 | -0.1655 | -0.1242 | 188
+ 21 | -0.1277 | -0.1174 | 162
+ 22 | -0.1043 | -0.1003 | 100
+ 23 | -0.1040 | -0.0779 | 62
+ 24 | -0.0819 | -0.0512 | 202
+ 25 | -0.0547 | -0.0237 | 166
+ 26 | -0.1061 | -0.0978 | 84
+ 27 | -0.1235 | -0.1127 | 126
+ 28 | -0.1233 | -0.1183 | 84
+# /vehicle/truck/upgrade/wheel/disc/front_disc_05.pmd left: radius band (cm) | x min | x max | vertices
+ 13 | -0.1687 | -0.1553 | 90
+ 20 | -0.1695 | -0.1695 | 84
+ 21 | -0.1618 | -0.1150 | 120
+ 22 | -0.1440 | -0.1439 | 22
+ 23 | -0.1438 | -0.1157 | 60
+ 24 | -0.1335 | -0.1164 | 120
+ 26 | -0.1635 | -0.1229 | 168
+ 27 | -0.1744 | -0.1744 | 42
+ 28 | -0.1846 | -0.1845 | 168
+ 29 | -0.1683 | -0.1683 | 42
+# /vehicle/truck/upgrade/wheel/disc/front_disc_06.pmd left: radius band (cm) | x min | x max | vertices
+ 13 | -0.1705 | -0.1572 | 90
+ 20 | -0.1700 | -0.1699 | 92
+ 22 | -0.1504 | -0.1503 | 45
+ 23 | -0.1486 | -0.1456 | 240
+ 24 | -0.1516 | -0.1473 | 69
+ 25 | -0.1901 | -0.1475 | 237
+ 27 | -0.1997 | -0.1997 | 51
+ 28 | -0.1957 | -0.1833 | 135
+# /vehicle/truck/upgrade/wheel/nuts/front_nuts_01_steel.pmd left: radius band (cm) | x min | x max | vertices
+ 13 | -0.1928 | -0.1706 | 70
+ 14 | -0.1928 | -0.1706 | 70
+ 15 | -0.1928 | -0.1706 | 80
+ 16 | -0.1928 | -0.1737 | 100
+ 17 | -0.1928 | -0.1706 | 70
+ 18 | -0.1706 | -0.1706 | 30
+
+## 4. Tyre bead bands (left variant)
+# /vehicle/truck/upgrade/wheel/tire/front_1.pmd left: radius band (cm) | x min | x max | vertices
+ 28 | -0.1430 | +0.1403 | 60
+ 32 | +0.1392 | +0.1392 | 3
+ 33 | +0.1392 | +0.1392 | 1
+ 34 | -0.1575 | +0.1575 | 32
+ 35 | -0.1392 | -0.1392 | 4
+ 36 | -0.1392 | -0.1392 | 2
+ 43 | -0.1529 | +0.1529 | 40
+ 46 | -0.1216 | +0.1216 | 120
+ 49 | -0.1216 | +0.1216 | 216
+ 50 | -0.1374 | +0.1374 | 176
+ 51 | -0.1679 | +0.1679 | 60
+# /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd left: radius band (cm) | x min | x max | vertices
+ 28 | -0.1444 | +0.2065 | 104
+ 32 | +0.1350 | +0.1350 | 3
+ 33 | -0.1603 | +0.2255 | 35
+ 34 | -0.1595 | -0.1433 | 22
+ 35 | -0.1433 | -0.1433 | 4
+ 36 | -0.1433 | -0.1433 | 2
+ 42 | -0.1536 | +0.2184 | 64
+ 45 | -0.1236 | +0.1895 | 120
+ 48 | -0.1236 | +0.1895 | 214
+ 49 | -0.1373 | +0.2020 | 220
+ 50 | -0.1727 | +0.2386 | 60
+# /vehicle/truck/upgrade/wheel/tire/rear_1.pmd left: radius band (cm) | x min | x max | vertices
+ 28 | +0.2969 | +0.2969 | 20
+ 29 | -0.3026 | -0.3026 | 40
+ 32 | +0.1701 | +0.1701 | 3
+ 33 | +0.1701 | +0.1701 | 1
+ 34 | -0.3159 | +0.3141 | 72
+ 35 | -0.2987 | -0.2987 | 4
+ 36 | -0.2987 | -0.2987 | 2
+ 43 | -0.3113 | +0.3095 | 80
+ 46 | -0.3293 | +0.3293 | 120
+ 49 | -0.3293 | +0.3293 | 214
+ 50 | -0.2958 | +0.2940 | 352
+ 51 | -0.3394 | +0.3394 | 60
+
+## 5. wheel_fit locators
+/vehicle/truck/iveco_stralis/truck.pmd wheel_f_2_0 pos [-1.08, 0.506, 1.2947351] rot_wxyz [0.7071, 0.0000, 0.7071, 0.0000]
+/vehicle/truck/iveco_stralis/truck.pmd wheel_r_3_0 pos [0.9496367, 0.506, 1.2947351] rot_wxyz [0.7071, 0.0000, -0.7071, 0.0000]
+/vehicle/truck/iveco_stralis/truck.pmd wheel_r_2_0 pos [-0.9583824, 0.506, 1.2947351] rot_wxyz [0.7071, 0.0000, 0.7071, 0.0000]
+/vehicle/truck/man_tgx/chassis/chs_4x2.pmd wheel_r_1_0 pos [1.0, 0.50183, 2.2443259] rot_wxyz [0.7071, 0.0000, -0.7071, 0.0000]
+/vehicle/truck/man_tgx/chassis/chs_6x4.pmd wheel_r_0_2 pos [-1.0, 0.50183, 3.059859] rot_wxyz [0.7071, 0.0000, 0.7071, 0.0000]
+/vehicle/truck/man_tgx/chassis/chs_6x4.pmd wheel_r_1_3 pos [1.0, 0.50183, 3.059859] rot_wxyz [0.7071, 0.0000, -0.7071, 0.0000]
+/vehicle/truck/man_tgx/chassis/chs_6x4.pmd wheel_r_3_0 pos [1.0, 0.50183, 1.6598593] rot_wxyz [0.7071, 0.0000, -0.7071, 0.0000]
+/vehicle/truck/man_tgx/chassis/chs_6x2_4.pmd wheel_r_1_2 pos [1.0, 0.50183, 2.434621] rot_wxyz [0.7071, 0.0000, -0.7071, 0.0000]
+/vehicle/truck/renault_magnum_2009/truck.pmd wheel_r_1 pos [0.93337077, 0.50183, 2.0111022] rot_wxyz [0.0000, 0.0000, 1.0000, 0.0000]
+/vehicle/truck/renault_magnum_2009/truck.pmd wheel_r_1_0 pos [0.93337077, 0.50183, 2.6012912] rot_wxyz [0.0000, 0.0000, 1.0000, 0.0000]
+/vehicle/truck/renault_magnum_2009/truck.pmd wheel_r_3_0 pos [0.93337077, 0.50183, 1.2924021] rot_wxyz [0.0000, 0.0000, 1.0000, 0.0000]
+# 11 of 562 wheel locators (91 chassis models) have a non-identity rotation
+
+## 6. wheel_fit (part survey and preset selections)
+# part definitions: group file unit | tire_shift wheel_shift | model | left | right
+f_tire 1.sii 1.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/front_1.pmd | L x[-0.1679 +0.1679] cx +0.0000 r 0.5119 | R x[-0.1679 +0.1679] cx +0.0000 r 0.5119
+f_tire 2.sii 2.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/front_1.pmd | L x[-0.1679 +0.1679] cx +0.0000 r 0.5119 | R x[-0.1679 +0.1679] cx +0.0000 r 0.5119
+f_tire 3.sii 3.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/front_2.pmd | L x[-0.1655 +0.1704] cx +0.0024 r 0.5119 | R x[-0.1623 +0.1736] cx +0.0056 r 0.5119
+f_tire 315_70_michelin_xline_energy_z2.sii 31570mxlez2.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire 315_70_michelin_xmulti_energy_z.sii 31570mxmez.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin_arrow.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire 385_55_michelin_xline_energy_f2.sii 38555mxlef2.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire 385_55_michelin_xmulti_f.sii 38555mxmf.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin_arrow.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire f315-70_goodyear_fmax.sii 70_gy_fmax.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_goodyear.pmd | L x[-0.1677 +0.1682] cx +0.0002 r 0.5119 | R x[-0.1689 +0.1670] cx -0.0009 r 0.5119
+f_tire f315-70_goodyear_kmax.sii 70_gy_kmax.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_goodyear.pmd | L x[-0.1677 +0.1682] cx +0.0002 r 0.5119 | R x[-0.1689 +0.1670] cx -0.0009 r 0.5119
+f_tire f315-70_michelin_xlinez.dlc_michelin.sii 70_mich_xlz.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire f315-70_michelin_xze.dlc_michelin.sii 70_mich_xze.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire f315-80_goodyear_kmax.sii 80_gy_kmax.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-80_goodyear.pmd | L x[-0.1608 +0.1733] cx +0.0063 r 0.5449 | R x[-0.1733 +0.1608] cx -0.0063 r 0.5449
+f_tire f315-80_michelin_xze.dlc_michelin.sii 80_mich_xze.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-80_michelin.pmd | L x[-0.1608 +0.1733] cx +0.0063 r 0.5449 | R x[-0.1733 +0.1608] cx -0.0063 r 0.5449
+f_tire f385-55_michelin_xfa2.dlc_michelin.sii 55_mich_xfa2.ftire | ts None ws Some(0.0325) | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire f385-55_michelin_xlinef.dlc_michelin.sii 55_mich_xlf.ftire | ts None ws Some(0.0325) | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire f385-65_michelin_xlinef.dlc_michelin.sii 65_mich_xlf.ftire | ts None ws Some(0.0325) | /vehicle/truck/upgrade/wheel/tire/f_385-65_michelin.pmd | L x[-0.1714 +0.2366] cx +0.0326 r 0.5416 | R x[-0.2258 +0.2369] cx +0.0056 r 0.5416
+f_disc fdisc_claws_alu_paintable.sii claws_alu.fdisc | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/disc/fdisc_claws_alu_paintable.pmd | L x[-0.1700 -0.1071] cx -0.1386 r 0.2870 | R x[+0.1071 +0.1700] cx +0.1386 r 0.2870
+f_disc fdisc_tuna_alu_paintable.sii tuna_paint.fdisc | ts Some(-0.023) ws None | /vehicle/truck/upgrade/wheel/disc/fdisc_tuna_alu_paintable.pmd | L x[-0.1693 -0.0919] cx -0.1306 r 0.2870 | R x[+0.0921 +0.1695] cx +0.1308 r 0.2870
+f_disc front_disc_01.sii 1.fdisc | ts Some(0.022) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_01.pmd | L x[-0.1700 -0.0237] cx -0.0969 r 0.2870 | R x[+0.0237 +0.1700] cx +0.0969 r 0.2870
+f_disc front_disc_01_chrome.sii 1_chrome.fdisc | ts Some(0.022) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_01_chrome.pmd | L x[-0.1700 -0.0237] cx -0.0969 r 0.2870 | R x[+0.0237 +0.1700] cx +0.0969 r 0.2870
+f_disc front_disc_01_matt_gray.sii 1_matt_gray.fdisc | ts Some(0.022) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_01_matt_gray.pmd | L x[-0.1700 -0.0237] cx -0.0969 r 0.2870 | R x[+0.0237 +0.1700] cx +0.0969 r 0.2870
+f_disc front_disc_01_paintable.sii 1_paint.fdisc | ts Some(0.022) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_01_paintable.pmd | L x[-0.1700 -0.0237] cx -0.0969 r 0.2870 | R x[+0.0237 +0.1700] cx +0.0969 r 0.2870
+f_disc front_disc_02.sii 2.fdisc | ts Some(-0.027) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_02.pmd | L x[-0.1716 -0.0709] cx -0.1212 r 0.2870 | R x[+0.0709 +0.1716] cx +0.1212 r 0.2870
+f_disc front_disc_02_chrome.sii 2_chrome.fdisc | ts Some(-0.027) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_02_chrome.pmd | L x[-0.1716 -0.0709] cx -0.1212 r 0.2870 | R x[+0.0709 +0.1716] cx +0.1212 r 0.2870
+f_disc front_disc_02_half_paintable.sii 2_h_paint.fdisc | ts Some(-0.027) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_02_half_paintable.pmd | L x[-0.1716 -0.0709] cx -0.1212 r 0.2870 | R x[+0.0709 +0.1716] cx +0.1212 r 0.2870
+f_disc front_disc_02_matt_gray.sii 2_matt_gray.fdisc | ts Some(-0.027) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_02_matt_gray.pmd | L x[-0.1716 -0.0709] cx -0.1212 r 0.2870 | R x[+0.0709 +0.1716] cx +0.1212 r 0.2870
+f_disc front_disc_02_paintable.sii 2_paint.fdisc | ts Some(-0.027) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_02_paintable.pmd | L x[-0.1716 -0.0709] cx -0.1212 r 0.2870 | R x[+0.0709 +0.1716] cx +0.1212 r 0.2870
+f_disc front_disc_03.sii 3.fdisc | ts Some(0.015) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_03.pmd | L x[-0.1700 -0.1162] cx -0.1431 r 0.2870 | R x[+0.1162 +0.1700] cx +0.1431 r 0.2870
+f_disc front_disc_03_chrome.sii 3_chrome.fdisc | ts Some(0.015) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_03_chrome.pmd | L x[-0.1700 -0.1162] cx -0.1431 r 0.2870 | R x[+0.1162 +0.1700] cx +0.1431 r 0.2870
+f_disc front_disc_03_paintable.sii 3_paint.fdisc | ts Some(0.015) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_03_paintable.pmd | L x[-0.1700 -0.1162] cx -0.1431 r 0.2870 | R x[+0.1162 +0.1700] cx +0.1431 r 0.2870
+f_disc front_disc_04.sii 4.fdisc | ts Some(0.015) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_04.pmd | L x[-0.1701 -0.1151] cx -0.1426 r 0.2870 | R x[+0.1151 +0.1701] cx +0.1426 r 0.2870
+f_disc front_disc_04_chrome.sii 4_chrome.fdisc | ts Some(0.015) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_04_chrome.pmd | L x[-0.1701 -0.1151] cx -0.1426 r 0.2870 | R x[+0.1151 +0.1701] cx +0.1426 r 0.2870
+f_disc front_disc_04_paintable.sii 4_paint.fdisc | ts Some(0.015) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_04_paintable.pmd | L x[-0.1701 -0.1151] cx -0.1426 r 0.2870 | R x[+0.1151 +0.1701] cx +0.1426 r 0.2870
+f_disc front_disc_05.sii 5.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_05.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2937 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2937
+f_disc front_disc_05_black_chrome.sii 5_blk_chrome.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_05_black_chrome.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2949 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2949
+f_disc front_disc_05_black_paint.sii 5_blk_pnt.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_05_black_paint.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2949 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2949
+f_disc front_disc_05_chrome.sii 5_chrome.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_05_chrome.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2930 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2930
+f_disc front_disc_05_paintable.sii 5_paint.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_05_paintable.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2949 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2949
+f_disc front_disc_05_scania.sii 5_scania.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_05_scania.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2930 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2930
+f_disc front_disc_06.sii 6.fdisc | ts Some(-0.054) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_06.pmd | L x[-0.1997 -0.1456] cx -0.1726 r 0.2871 | R x[+0.1455 +0.2001] cx +0.1728 r 0.2871
+f_disc front_disc_06_chrome.sii 6_chrome.fdisc | ts Some(-0.054) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_06_chrome.pmd | L x[-0.1997 -0.1456] cx -0.1726 r 0.2871 | R x[+0.1455 +0.2001] cx +0.1728 r 0.2871
+f_disc front_disc_06_paintable.sii 6_paint.fdisc | ts Some(-0.054) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_06_paintable.pmd | L x[-0.1997 -0.1456] cx -0.1726 r 0.2871 | R x[+0.1455 +0.2001] cx +0.1728 r 0.2871
+f_disc front_disc_07.sii 7.fdisc | ts Some(-0.024) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_07.pmd | L x[-0.1688 -0.0673] cx -0.1181 r 0.2890 | R x[+0.0673 +0.1688] cx +0.1181 r 0.2890
+f_disc front_disc_07_chrome.sii 7_chrome.fdisc | ts Some(-0.024) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_07_chrome.pmd | L x[-0.1688 -0.0673] cx -0.1181 r 0.2890 | R x[+0.0673 +0.1688] cx +0.1181 r 0.2890
+f_disc front_disc_07_paintable.sii 7_paint.fdisc | ts Some(-0.024) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_07_paintable.pmd | L x[-0.1688 -0.0673] cx -0.1181 r 0.2890 | R x[+0.0673 +0.1688] cx +0.1181 r 0.2890
+f_disc front_disc_08.sii 8.fdisc | ts None ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_08.pmd | L x[-0.1706 -0.1143] cx -0.1424 r 0.2871 | R x[+0.1143 +0.1706] cx +0.1424 r 0.2871
+f_disc front_disc_08_paintable.sii 8_paint.fdisc | ts None ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_08_paintable.pmd | L x[-0.1706 -0.1143] cx -0.1424 r 0.2871 | R x[+0.1143 +0.1706] cx +0.1424 r 0.2871
+f_disc front_disc_renault.sii renault.fdisc | ts Some(-0.038) ws None | /vehicle/truck/upgrade/wheel/disc/front_disc_renault.pmd | L x[-0.1846 -0.1150] cx -0.1498 r 0.2930 | R x[+0.1150 +0.1846] cx +0.1498 r 0.2930
+f_rim 1.sii 1.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_1.pmd | L x[-0.1540 -0.0287] cx -0.0914 r 0.3093 | R x[+0.0287 +0.1540] cx +0.0914 r 0.3093
+f_rim 2.sii 2.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_2.pmd | L x[-0.1584 -0.0313] cx -0.0948 r 0.3015 | R x[+0.0313 +0.1584] cx +0.0948 r 0.3015
+f_rim 3.sii 3.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_3.pmd | L x[-0.1698 -0.0540] cx -0.1119 r 0.4110 | R x[+0.0540 +0.1698] cx +0.1119 r 0.4110
+f_rim 4.sii 4.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_4.pmd | L x[-0.2022 -0.0632] cx -0.1327 r 0.3057 | R x[+0.0632 +0.2022] cx +0.1327 r 0.3057
+f_rim 5.sii 5.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_5.pmd | L x[-0.1803 -0.0621] cx -0.1212 r 0.4524 | R x[+0.0621 +0.1803] cx +0.1212 r 0.4524
+f_rim 6.sii 6.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_6.pmd | L x[-0.1543 -0.0313] cx -0.0928 r 0.3018 | R x[+0.0313 +0.1543] cx +0.0928 r 0.3018
+f_rim 7.sii 7.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_7.pmd | L x[-0.1248 +0.0903] cx -0.0173 r 0.3017 | R x[-0.0930 +0.1221] cx +0.0145 r 0.3017
+f_rim 8.sii 8.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_8.pmd | L x[-0.1543 -0.0314] cx -0.0928 r 0.3017 | R x[+0.0314 +0.1543] cx +0.0928 r 0.3017
+f_rim raven.dlc_raven.sii raven.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/raven_frim.dlc_raven.pmd | L x[-0.1823 -0.0384] cx -0.1103 r 0.3370 | R x[+0.0384 +0.1823] cx +0.1103 r 0.3370
+f_rim steel.sii steel.frim | ts Some(0.025) ws None | /vehicle/truck/upgrade/wheel/rim/front_steel.pmd | L x[-0.1871 +0.0055] cx -0.0908 r 0.3093 | R x[-0.0055 +0.1871] cx +0.0908 r 0.3093
+f_hub front_hub_01.sii 1.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_01.pmd | L x[-0.1587 -0.1352] cx -0.1469 r 0.1405 | R x[+0.1352 +0.1587] cx +0.1469 r 0.1405
+f_hub front_hub_01_paintable.sii 1_paint.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_01_paintable.pmd | L x[-0.1587 -0.1352] cx -0.1469 r 0.1405 | R x[+0.1352 +0.1587] cx +0.1469 r 0.1405
+f_hub front_hub_02.sii 2.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_02.pmd | L x[-0.1559 -0.1174] cx -0.1367 r 0.1604 | R x[+0.1174 +0.1559] cx +0.1367 r 0.1604
+f_hub front_hub_02_paintable.sii 2_paint.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_02_paintable.pmd | L x[-0.1559 -0.1174] cx -0.1367 r 0.1604 | R x[+0.1174 +0.1559] cx +0.1367 r 0.1604
+f_hub front_hub_02_red.sii 2_red.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_02_red.pmd | L x[-0.1559 -0.1174] cx -0.1367 r 0.1604 | R x[+0.1174 +0.1559] cx +0.1367 r 0.1604
+f_hub front_hub_03.sii 3.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_03.pmd | L x[-0.1648 -0.1114] cx -0.1381 r 0.1369 | R x[+0.1114 +0.1648] cx +0.1381 r 0.1369
+f_hub front_hub_03_paintable.sii 3_paint.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_03_paintable.pmd | L x[-0.1648 -0.1114] cx -0.1381 r 0.1369 | R x[+0.1114 +0.1648] cx +0.1381 r 0.1369
+f_hub front_hub_04.sii 4.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_04.pmd | L x[-0.1656 -0.1437] cx -0.1547 r 0.1503 | R x[+0.1437 +0.1656] cx +0.1547 r 0.1503
+f_hub front_hub_04_paintable.sii 4_paint.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_04_paintable.pmd | L x[-0.1656 -0.1437] cx -0.1547 r 0.1503 | R x[+0.1437 +0.1656] cx +0.1547 r 0.1503
+f_hub front_hub_05.sii 5.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_05.pmd | L x[-0.1571 -0.1127] cx -0.1349 r 0.1382 | R x[+0.1127 +0.1571] cx +0.1349 r 0.1382
+f_hub front_hub_05_paintable.sii 5_paint.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_05_paintable.pmd | L x[-0.1571 -0.1127] cx -0.1349 r 0.1382 | R x[+0.1127 +0.1571] cx +0.1349 r 0.1382
+f_hub front_hub_06.sii 6.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_06.pmd | L x[-0.1536 -0.0846] cx -0.1191 r 0.1354 | R x[+0.0846 +0.1536] cx +0.1191 r 0.1354
+f_hub front_hub_06_gray.sii 6_gray.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_06_gray.pmd | L x[-0.1536 -0.0846] cx -0.1191 r 0.1354 | R x[+0.0846 +0.1536] cx +0.1191 r 0.1354
+f_hub front_hub_06_paintable.sii 6_paint.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_06_paintable.pmd | L x[-0.1536 -0.0846] cx -0.1191 r 0.1354 | R x[+0.0846 +0.1536] cx +0.1191 r 0.1354
+f_hub front_hub_07.sii 7.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_07.pmd | L x[-0.1805 +0.1805] cx +0.0000 r 0.1342 | R x[+0.1513 +0.1805] cx +0.1659 r 0.1342
+f_hub front_hub_08.sii 8.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_08.pmd | L x[-0.1565 -0.1297] cx -0.1431 r 0.1368 | R x[+0.1297 +0.1565] cx +0.1431 r 0.1368
+f_hub front_hub_mercedes.sii mercedes.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_mercedes.pmd | L x[-0.2000 -0.1686] cx -0.1843 r 0.1343 | R x[+0.1686 +0.2000] cx +0.1843 r 0.1343
+f_hub front_hub_mercedes_paintable.sii mercedes_p.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_mercedes_paintable.pmd | L x[-0.2000 -0.1686] cx -0.1843 r 0.1343 | R x[+0.1686 +0.2000] cx +0.1843 r 0.1343
+f_hub front_hub_mg.sii fhub_mg.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_mg.pmd | L x[-0.1536 -0.0839] cx -0.1187 r 0.1354 | R x[+0.0839 +0.1536] cx +0.1187 r 0.1354
+f_hub front_hub_scania.sii scania.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_scania.pmd | L x[-0.1948 -0.1624] cx -0.1786 r 0.1345 | R x[+0.1624 +0.1948] cx +0.1786 r 0.1345
+f_hub front_hub_scania_paintable.sii scania_p.fhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/front_hub_scania_paintable.pmd | L x[-0.1948 -0.1624] cx -0.1786 r 0.1345 | R x[+0.1624 +0.1948] cx +0.1786 r 0.1345
+f_nuts front_nuts_01_steel.sii 1_steel.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_01_steel.pmd | L x[-0.1928 -0.1706] cx -0.1817 r 0.1747 | R x[+0.1705 +0.1926] cx +0.1815 r 0.1747
+f_nuts front_nuts_02_chrome.sii 2_chrome.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_02_chrome.pmd | L x[-0.2091 -0.1688] cx -0.1890 r 0.1746 | R x[+0.1688 +0.2091] cx +0.1890 r 0.1746
+f_nuts front_nuts_02_legacy.sii 2_legacy.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_02_legacy.pmd | L x[-0.2091 -0.1688] cx -0.1890 r 0.1746 | R x[+0.1688 +0.2091] cx +0.1890 r 0.1746
+f_nuts front_nuts_02_paintable.sii 2_paint.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_02_paintable.pmd | L x[-0.2091 -0.1688] cx -0.1890 r 0.1746 | R x[+0.1688 +0.2091] cx +0.1890 r 0.1746
+f_nuts front_nuts_02_steel.sii 2_steel.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_02_steel.pmd | L x[-0.2091 -0.1688] cx -0.1890 r 0.1746 | R x[+0.1688 +0.2091] cx +0.1890 r 0.1746
+f_nuts front_nuts_03_chrome.sii 3_chrome.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_03_chrome.pmd | L x[-0.2511 -0.1683] cx -0.2097 r 0.1715 | R x[+0.1683 +0.2511] cx +0.2097 r 0.1715
+f_nuts front_nuts_03_paintable.sii 3_paint.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_03_paintable.pmd | L x[-0.2511 -0.1683] cx -0.2097 r 0.1715 | R x[+0.1683 +0.2511] cx +0.2097 r 0.1715
+f_nuts front_nuts_04_chrome.sii 4_chrome.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_04_chrome.pmd | L x[-0.2185 -0.1683] cx -0.1934 r 0.1715 | R x[+0.1683 +0.2185] cx +0.1934 r 0.1715
+f_nuts front_nuts_04_paintable.sii 4_paint.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_04_paintable.pmd | L x[-0.2185 -0.1683] cx -0.1934 r 0.1715 | R x[+0.1683 +0.2185] cx +0.1934 r 0.1715
+f_nuts front_nuts_05_paintable.sii 5_paint.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_05_paintable.pmd | L x[-0.2128 -0.1691] cx -0.1909 r 0.1731 | R x[+0.1691 +0.2128] cx +0.1909 r 0.1731
+f_nuts front_nuts_renault.sii renault.fnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/front_nuts_renault.pmd | L x[-0.2041 -0.1688] cx -0.1865 r 0.1743 | R x[+0.1682 +0.2047] cx +0.1864 r 0.1743
+f_cover daf_new.sii daf_new.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/f_new_logo.pmd | L x[-0.1726 -0.1707] cx -0.1717 r 0.1737 | R x[+0.1707 +0.1726] cx +0.1717 r 0.1737
+f_cover daf_old.sii daf_old.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/f_old_logo.pmd | L x[-0.1753 -0.1715] cx -0.1734 r 0.1737 | R x[+0.1715 +0.1753] cx +0.1734 r 0.1737
+f_cover front_cover_etech.sii etech.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_etech.pmd | L x[-0.1989 -0.1549] cx -0.1769 r 0.2004 | R x[+0.1549 +0.1989] cx +0.1769 r 0.2004
+f_cover front_cover_iveco_blk.sii iveco_blk.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_iveco_blk.pmd | L x[-0.1989 -0.1549] cx -0.1769 r 0.2004 | R x[+0.1549 +0.1989] cx +0.1769 r 0.2004
+f_cover front_hub_cover_01.sii 1.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_01.pmd | L x[-0.1989 -0.1549] cx -0.1769 r 0.2004 | R x[+0.1549 +0.1989] cx +0.1769 r 0.2004
+f_cover front_hub_cover_01_paintable.sii 1_paint.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_01_paintable.pmd | L x[-0.1989 -0.1549] cx -0.1769 r 0.2004 | R x[+0.1549 +0.1989] cx +0.1769 r 0.2004
+f_cover front_hub_cover_02.sii 2.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_02.pmd | L x[-0.2260 -0.1691] cx -0.1975 r 0.1932 | R x[+0.1691 +0.2260] cx +0.1975 r 0.1932
+f_cover front_hub_cover_02_paintable.sii 2_paint.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_02_paintable.pmd | L x[-0.2260 -0.1691] cx -0.1975 r 0.1932 | R x[+0.1691 +0.2260] cx +0.1975 r 0.1932
+f_cover front_hub_cover_03.sii 3.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_daf.sii 3_daf.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_iveco.sii 3_iveco.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_man.sii 3_man.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_mercedes.sii 3_mercedes.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03_mercedes.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_paintable.sii 3_paint.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03_paintable.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_renault.sii 3_renault.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03_renault.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_scania.sii 3_scania.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_03_volvo.sii 3_volvo.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_03.pmd | L x[-0.2013 -0.1691] cx -0.1852 r 0.2004 | R x[+0.1691 +0.2013] cx +0.1852 r 0.2004
+f_cover front_hub_cover_04.sii 4.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_04.pmd | L x[-0.2510 -0.1673] cx -0.2092 r 0.1981 | R x[+0.1673 +0.2510] cx +0.2092 r 0.1981
+f_cover front_hub_cover_04_paintable.sii 4_paint.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_04_paintable.pmd | L x[-0.2510 -0.1673] cx -0.2092 r 0.1981 | R x[+0.1673 +0.2510] cx +0.2092 r 0.1981
+f_cover front_hub_cover_05.sii 5.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_05.pmd | L x[-0.2309 -0.1702] cx -0.2005 r 0.1848 | R x[+0.1702 +0.2309] cx +0.2005 r 0.1848
+f_cover front_hub_cover_05_paintable.sii 5_paint.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_05_paintable.pmd | L x[-0.2309 -0.1702] cx -0.2005 r 0.1848 | R x[+0.1702 +0.2309] cx +0.2005 r 0.1848
+f_cover front_hub_cover_dragon.sii dragon.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_dragon.pmd | L x[-0.2443 -0.1693] cx -0.2068 r 0.1588 | R x[+0.1693 +0.2443] cx +0.2068 r 0.1588
+f_cover front_hub_cover_sring.sii sring.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_sring.pmd | L x[-0.1988 -0.1677] cx -0.1832 r 0.1993 | R x[+0.1677 +0.1988] cx +0.1832 r 0.1993
+f_cover front_hub_cover_sring_paintable.sii sring_p.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_sring_paintable.pmd | L x[-0.1988 -0.1677] cx -0.1832 r 0.1993 | R x[+0.1677 +0.1988] cx +0.1832 r 0.1993
+f_cover front_hub_cover_volvo_tuning.sii volvo_tuning.fcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/front_hub_cover_volvo_tuning2.pmd | L x[-0.2189 -0.1691] cx -0.1940 r 0.1932 | R x[+0.1691 +0.2189] cx +0.1940 r 0.1932
+f_wheel 1.dlc_raven.sii 1_dlc_raven.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_1.dlc_raven.pmd | L x[-0.1823 +0.1871] cx +0.0024 r 0.5131 | R x[-0.1871 +0.1823] cx -0.0024 r 0.5131
+f_wheel 1.sii 1.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_1.pmd | L x[-0.1805 +0.1871] cx +0.0033 r 0.5131 | R x[-0.1871 +0.1808] cx -0.0031 r 0.5131
+f_wheel 2.sii 2.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_2.pmd | L x[-0.1805 +0.1871] cx +0.0033 r 0.5131 | R x[-0.1871 +0.1808] cx -0.0031 r 0.5131
+f_wheel 3.sii 3.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_3.pmd | L x[-0.1805 +0.1871] cx +0.0033 r 0.5131 | R x[-0.1871 +0.1808] cx -0.0031 r 0.5131
+f_wheel 4.sii 4.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_4.pmd | L x[-0.1993 +0.1871] cx -0.0061 r 0.5131 | R x[-0.1871 +0.1993] cx +0.0061 r 0.5131
+f_wheel 5.sii 5.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_5.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel 6.sii 6.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_6.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel 7.sii 7.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_7.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel 8.sii 8.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_8.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel steel.sii steel.fwheel | ts None ws None | /vehicle/wheel/steel/front.pmd | L x[-0.1960 +0.1957] cx -0.0001 r 0.5131 | R x[-0.1956 +0.1983] cx +0.0014 r 0.5131
+f_wheel steel_black.sii steel_black.fwheel | ts None ws None | /vehicle/wheel/steel/front.pmd | L x[-0.1960 +0.1957] cx -0.0001 r 0.5131 | R x[-0.1956 +0.1983] cx +0.0014 r 0.5131
+r_tire 1.sii 1.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/rear_1.pmd | L x[-0.3394 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3394 +0.3394] cx -0.0000 r 0.5116
+r_tire 2.sii 2.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/rear_1.pmd | L x[-0.3394 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3394 +0.3394] cx -0.0000 r 0.5116
+r_tire 3.sii 3.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/rear_2.pmd | L x[-0.3394 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3394 +0.3394] cx -0.0000 r 0.5116
+r_tire 315_70_michelin_xline_energy_z2.sii 31570mxlez2.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire 315_70_michelin_xmulti_d.sii 31570mxmd.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin_arrow.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire 315_70_michelin_xmulti_energy_z.sii 31570mxmez.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin_arrow.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire 315_70_michelin_xmulti_hd_d.sii 31570mxmhdd.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_goodyear_fmax.sii 70_gy_fmax.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_goodyear.pmd | L x[-0.3395 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3395 +0.3394] cx -0.0000 r 0.5116
+r_tire r315-70_goodyear_kmax.sii 70_gy_kmax.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_goodyear.pmd | L x[-0.3395 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3395 +0.3394] cx -0.0000 r 0.5116
+r_tire r315-70_michelin_xde.dlc_michelin.sii 70_mich_xde.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_michelin_xlined.dlc_michelin.sii 70_mich_xld.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_michelin_xlinez.dlc_michelin.sii 70_mich_xlz.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_michelin_xze.dlc_michelin.sii 70_mich_xze.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-80_michelin_xde.dlc_michelin.sii 80_mich_xde.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-80_michelin.pmd | L x[-0.3393 +0.3476] cx +0.0042 r 0.5453 | R x[-0.3393 +0.3476] cx +0.0042 r 0.5453
+r_tire r315-80_michelin_xze.dlc_michelin.sii 80_mich_xze.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-80_michelin.pmd | L x[-0.3393 +0.3476] cx +0.0042 r 0.5453 | R x[-0.3393 +0.3476] cx +0.0042 r 0.5453
+r_disc rdisc_claws_alu_paintable.sii claws_alu.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rdisc_claws_alu_paintable.pmd | L x[-0.3154 -0.0110] cx -0.1632 r 0.3031 | R x[+0.0110 +0.3154] cx +0.1632 r 0.3031
+r_disc rdisc_tuna_alu_paintable.sii tuna_paint.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rdisc_tuna_alu_paintable.pmd | L x[-0.3174 -0.0087] cx -0.1630 r 0.3031 | R x[+0.0087 +0.3174] cx +0.1630 r 0.3031
+r_disc rear_disc_01.sii 1.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_black.sii 1_black.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_black.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_black_chrome.sii 1_blk_chrome.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_black_chrome.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_black_paint.sii 1_blk_pnt.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_black_paint.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_chrome.sii 1_chrome.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_chrome.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_half_paintable.sii 1_h_paint.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_half_paintable.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_matt_gray.sii 1_matt_gray.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_matt_gray.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_paintable.sii 1_paint.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_paintable.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_01_scania.sii 1_scania.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_01_scania.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_02.sii 2.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_02.pmd | L x[-0.3155 -0.0205] cx -0.1680 r 0.3031 | R x[+0.0205 +0.3155] cx +0.1680 r 0.3031
+r_disc rear_disc_02_chrome.sii 2_chrome.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_02_chrome.pmd | L x[-0.3155 -0.0205] cx -0.1680 r 0.3031 | R x[+0.0205 +0.3155] cx +0.1680 r 0.3031
+r_disc rear_disc_02_paintable.sii 2_paint.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_02_paintable.pmd | L x[-0.3155 -0.0205] cx -0.1680 r 0.3031 | R x[+0.0205 +0.3155] cx +0.1680 r 0.3031
+r_disc rear_disc_08_half_paintable.sii 8_h_paint.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_08_half_paintable.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_disc rear_disc_renault.sii renault.rdisc | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/disc/rear_disc_renault.pmd | L x[-0.3174 -0.0213] cx -0.1694 r 0.3031 | R x[+0.0213 +0.3174] cx +0.1694 r 0.3031
+r_rim 1.sii 1.rrim | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/rim/rear_1.pmd | L x[-0.3210 -0.0425] cx -0.1818 r 0.4775 | R x[+0.0425 +0.3210] cx +0.1818 r 0.4775
+r_rim 2.sii 2.rrim | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/rim/rear_2.pmd | L x[-0.3210 -0.0425] cx -0.1818 r 0.4775 | R x[+0.0425 +0.3210] cx +0.1818 r 0.4775
+r_rim 3.sii 3.rrim | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/rim/rear_3.pmd | L x[-0.3210 -0.0425] cx -0.1818 r 0.4775 | R x[+0.0425 +0.3210] cx +0.1818 r 0.4775
+r_rim raven.dlc_raven.sii raven.rrim | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/rim/raven_rrim.dlc_raven.pmd | L x[-0.3210 -0.0425] cx -0.1818 r 0.4775 | R x[+0.0425 +0.3210] cx +0.1818 r 0.4775
+r_rim steel.sii steel.rrim | ts Some(-0.01) ws None | /vehicle/truck/upgrade/wheel/rim/rear_steel.pmd | L x[-0.3210 -0.0425] cx -0.1818 r 0.4775 | R x[+0.0425 +0.3210] cx +0.1818 r 0.4775
+r_hub rear_hub_01.sii 1.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_01.pmd | L x[-0.1113 -0.0220] cx -0.0666 r 0.1330 | R x[+0.0220 +0.1113] cx +0.0666 r 0.1330
+r_hub rear_hub_01_paintable.sii 1_paint.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_01_paintable.pmd | L x[-0.1113 -0.0220] cx -0.0666 r 0.1330 | R x[+0.0220 +0.1113] cx +0.0666 r 0.1330
+r_hub rear_hub_02.sii 2.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_02.pmd | L x[-0.1666 -0.0208] cx -0.0937 r 0.1330 | R x[+0.0208 +0.1666] cx +0.0937 r 0.1330
+r_hub rear_hub_02_paintable.sii 2_paint.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_02_paintable.pmd | L x[-0.1666 -0.0208] cx -0.0937 r 0.1330 | R x[+0.0208 +0.1666] cx +0.0937 r 0.1330
+r_hub rear_hub_02_scania.sii 2_scania.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_02_scania.pmd | L x[-0.1666 -0.0208] cx -0.0937 r 0.1330 | R x[+0.0208 +0.1666] cx +0.0937 r 0.1330
+r_hub rear_hub_03.sii 3.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_03.pmd | L x[-0.1201 -0.0213] cx -0.0707 r 0.1342 | R x[+0.0213 +0.1201] cx +0.0707 r 0.1342
+r_hub rear_hub_mercedes.sii mercedes.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_mercedes.pmd | L x[-0.2861 -0.0345] cx -0.1603 r 0.1343 | R x[+0.0345 +0.2861] cx +0.1603 r 0.1343
+r_hub rear_hub_mercedes_paintable.sii mercedes_p.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_mercedes_paintable.pmd | L x[-0.2861 -0.0345] cx -0.1603 r 0.1343 | R x[+0.0345 +0.2861] cx +0.1603 r 0.1343
+r_hub rear_hub_mg.sii rhub_mg.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_mg.pmd | L x[-0.1734 -0.0208] cx -0.0971 r 0.1330 | R x[+0.0208 +0.1734] cx +0.0971 r 0.1330
+r_hub rear_hub_scania.sii scania.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_scania.pmd | L x[-0.2633 -0.0153] cx -0.1393 r 0.1310 | R x[+0.0153 +0.2633] cx +0.1393 r 0.1310
+r_hub rear_hub_scania_paintable.sii scania_p.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_scania_paintable.pmd | L x[-0.2633 -0.0153] cx -0.1393 r 0.1310 | R x[+0.0153 +0.2633] cx +0.1393 r 0.1310
+r_hub rear_hub_volvo.sii volvo.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_volvo.pmd | L x[-0.2886 -0.0345] cx -0.1616 r 0.1340 | R x[+0.0345 +0.2886] cx +0.1616 r 0.1340
+r_hub rear_hub_volvo_paintable.sii volvo_p.rhub | ts None ws None | /vehicle/truck/upgrade/wheel/hub/rear_hub_volvo_paintable.pmd | L x[-0.2886 -0.0345] cx -0.1616 r 0.1340 | R x[+0.0345 +0.2886] cx +0.1616 r 0.1340
+r_nuts rear_nuts_01_steel.sii 1_steel.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_01_steel.pmd | L x[-0.0614 -0.0393] cx -0.0503 r 0.1747 | R x[+0.0393 +0.0614] cx +0.0503 r 0.1747
+r_nuts rear_nuts_02_chrome.sii 2_chrome.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_02_chrome.pmd | L x[-0.0791 -0.0388] cx -0.0590 r 0.1746 | R x[+0.0388 +0.0791] cx +0.0590 r 0.1746
+r_nuts rear_nuts_02_legacy.sii 2_legacy.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_02_legacy.pmd | L x[-0.0791 -0.0388] cx -0.0590 r 0.1746 | R x[+0.0388 +0.0791] cx +0.0590 r 0.1746
+r_nuts rear_nuts_02_paintable.sii 2_paint.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_02_paintable.pmd | L x[-0.0791 -0.0388] cx -0.0590 r 0.1746 | R x[+0.0388 +0.0791] cx +0.0590 r 0.1746
+r_nuts rear_nuts_02_steel.sii 2_steel.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_02_steel.pmd | L x[-0.0791 -0.0388] cx -0.0590 r 0.1746 | R x[+0.0388 +0.0791] cx +0.0590 r 0.1746
+r_nuts rear_nuts_03_chrome.sii 3_chrome.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_03_chrome.pmd | L x[-0.1211 -0.0383] cx -0.0797 r 0.1715 | R x[+0.0383 +0.1211] cx +0.0797 r 0.1715
+r_nuts rear_nuts_03_paintable.sii 3_paint.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_03_paintable.pmd | L x[-0.1211 -0.0383] cx -0.0797 r 0.1715 | R x[+0.0383 +0.1211] cx +0.0797 r 0.1715
+r_nuts rear_nuts_04_chrome.sii 4_chrome.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_04_chrome.pmd | L x[-0.0885 -0.0383] cx -0.0634 r 0.1715 | R x[+0.0383 +0.0885] cx +0.0634 r 0.1715
+r_nuts rear_nuts_04_paintable.sii 4_paint.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_04_paintable.pmd | L x[-0.0885 -0.0383] cx -0.0634 r 0.1715 | R x[+0.0383 +0.0885] cx +0.0634 r 0.1715
+r_nuts rear_nuts_05_paintable.sii 5_paint.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_05_paintable.pmd | L x[-0.0828 -0.0391] cx -0.0609 r 0.1731 | R x[+0.0391 +0.0828] cx +0.0609 r 0.1731
+r_nuts rear_nuts_renault.sii renault.rnuts | ts None ws None | /vehicle/truck/upgrade/wheel/nuts/rear_nuts_renault.pmd | L x[-0.0751 -0.0387] cx -0.0569 r 0.1743 | R x[+0.0387 +0.0751] cx +0.0569 r 0.1743
+r_cover daf_new.sii daf_new.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/r_new_logo.pmd | L x[-0.2022 -0.0311] cx -0.1167 r 0.1932 | R x[+0.0311 +0.2022] cx +0.1167 r 0.1932
+r_cover daf_old.sii daf_old.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/r_old_logo.pmd | L x[-0.2001 -0.0311] cx -0.1156 r 0.1932 | R x[+0.0311 +0.2001] cx +0.1156 r 0.1932
+r_cover rear_hub_cover_01.sii 01.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_01.pmd | L x[-0.0667 -0.0228] cx -0.0448 r 0.2004 | R x[+0.0228 +0.0667] cx +0.0448 r 0.2004
+r_cover rear_hub_cover_01_paintable.sii 1_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_01_paintable.pmd | L x[-0.0667 -0.0228] cx -0.0448 r 0.2004 | R x[+0.0228 +0.0667] cx +0.0448 r 0.2004
+r_cover rear_hub_cover_02.sii 2.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_02.pmd | L x[-0.2074 -0.0311] cx -0.1192 r 0.1932 | R x[+0.0311 +0.2074] cx +0.1192 r 0.1932
+r_cover rear_hub_cover_02_paintable.sii 2_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_02_paintable.pmd | L x[-0.2074 -0.0311] cx -0.1192 r 0.1932 | R x[+0.0311 +0.2074] cx +0.1192 r 0.1932
+r_cover rear_hub_cover_03.sii 3.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_03.pmd | L x[-0.2766 -0.0370] cx -0.1568 r 0.1981 | R x[+0.0370 +0.2766] cx +0.1568 r 0.1981
+r_cover rear_hub_cover_03_paintable.sii 3_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_03_paintable.pmd | L x[-0.2766 -0.0370] cx -0.1568 r 0.1981 | R x[+0.0370 +0.2766] cx +0.1568 r 0.1981
+r_cover rear_hub_cover_04.sii 4.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_04.pmd | L x[-0.3285 -0.3015] cx -0.3150 r 0.2947 | R x[+0.3015 +0.3285] cx +0.3150 r 0.2947
+r_cover rear_hub_cover_04_paintable.sii 4_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_04_paintable.pmd | L x[-0.3285 -0.3015] cx -0.3150 r 0.2947 | R x[+0.3015 +0.3285] cx +0.3150 r 0.2947
+r_cover rear_hub_cover_05.sii 5.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_05.pmd | L x[-0.1715 -0.0333] cx -0.1024 r 0.1848 | R x[+0.0333 +0.1715] cx +0.1024 r 0.1848
+r_cover rear_hub_cover_05_paintable.sii 5_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_05_paintable.pmd | L x[-0.1715 -0.0333] cx -0.1024 r 0.1848 | R x[+0.0333 +0.1715] cx +0.1024 r 0.1848
+r_cover rear_hub_cover_06.sii 6.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_06.pmd | L x[-0.2224 -0.0376] cx -0.1300 r 0.1347 | R x[+0.0376 +0.2224] cx +0.1300 r 0.1347
+r_cover rear_hub_cover_06_paintable.sii 6_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_06_paintable.pmd | L x[-0.2224 -0.0376] cx -0.1300 r 0.1347 | R x[+0.0376 +0.2224] cx +0.1300 r 0.1347
+r_cover rear_hub_cover_08.sii 8.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_08.pmd | L x[-0.2276 -0.0376] cx -0.1326 r 0.1347 | R x[+0.0376 +0.2276] cx +0.1326 r 0.1347
+r_cover rear_hub_cover_08_paintable.sii 8_paint.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_08_paintable.pmd | L x[-0.2276 -0.0376] cx -0.1326 r 0.1347 | R x[+0.0376 +0.2276] cx +0.1326 r 0.1347
+r_cover rear_hub_cover_dragon.sii dragon.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_dragon.pmd | L x[-0.3395 -0.2847] cx -0.3121 r 0.2777 | R x[+0.2847 +0.3395] cx +0.3121 r 0.2777
+r_cover rear_hub_cover_sring.sii sring.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_sring.pmd | L x[-0.0668 -0.0357] cx -0.0512 r 0.1993 | R x[+0.0357 +0.0668] cx +0.0512 r 0.1993
+r_cover rear_hub_cover_sring_paintable.sii sring_p.rcover | ts None ws None | /vehicle/truck/upgrade/wheel/cover/rear_hub_cover_sring_paintable.pmd | L x[-0.0668 -0.0357] cx -0.0512 r 0.1993 | R x[+0.0357 +0.0668] cx +0.0512 r 0.1993
+r_wheel 1.dlc_raven.sii 1_dlc_raven.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_1.dlc_raven.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel 1.sii 1.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_1.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel 2.sii 2.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_2.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel 3.sii 3.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_3.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel steel.sii steel.rwheel | ts None ws None | /vehicle/wheel/steel/rear.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel steel_single.sii steel_single.rwheel | ts None ws None | /vehicle/wheel/steel/front.pmd | L x[-0.1960 +0.1957] cx -0.0001 r 0.5131 | R x[-0.1956 +0.1983] cx +0.0014 r 0.5131
+# presets: truck | wheel selections
+daf.2021 | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xd | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_electric | f_disc/front_disc_01.sii f_hub/front_hub_02.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.hiway | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.stralis | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.sway | f_cover/front_cover_iveco_blk.sii f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_2020 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros2014 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.etech_t | f_cover/front_cover_etech.sii f_disc/front_disc_renault.sii f_hub/front_hub_05.sii f_nuts/front_nuts_renault.sii f_tire/1.sii r_disc/rear_disc_renault.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_renault.sii r_tire/1.sii
+renault.magnum | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.premium | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.t | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2024e | f_cover/front_hub_cover_03_scania.sii f_disc/front_disc_05_scania.sii f_hub/front_hub_01.sii f_nuts/front_nuts_02_chrome.sii f_tire/1.sii r_disc/rear_disc_01_scania.sii r_hub/rear_hub_02_scania.sii r_nuts/rear_nuts_02_chrome.sii r_tire/1.sii
+scania.streamline | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16_2012 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2021 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2024 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+
+## 7. Executable string scan (byte offset:string)
+35332192:wheel_shift
+35332488:tire_shift
+
+## 8. real_install every_preset_wheel_sits_in_its_tyre (tolerance 6 mm)
+Before the fix (tyres at the locator):  103 of 104 wheels misaligned, e.g.
+  scania.s_2016 1.ftire on 5.fdisc (Some("left")): bead Some(-1.1879745) lip Some(-1.2296076)
+  scania.s_2016 1.rtire on 1.rdisc (Some("left")): bead Some(-1.232565) lip Some(-1.2473828)
+With tire_shift applied in the (rotated) locator frame: "2 of 103 wheels misaligned" (one is a tyre whose shift went into z):
+  man.tgx 1.rtire: tyre without rim                      (wheel_r_1_0 yawed -90 deg)
+  renault.magnum 1.rtire on 1_matt_gray.rdisc (Some("right")): bead Some(1.219904) lip Some(0.63104016)   (wheel_r_1 yawed 180 deg)
+With tire_shift and locator rotation ignored: ok (104 wheels, 26 presets)

@@ -1,0 +1,376 @@
+372 relevant of 518
+0x141ce8460  Complete Object Locator'
+0x1420ffde0 ??A?$array_t@V?$owner_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@QEAAAEAV?$owner_ptr_t@Vmodel_hookup_u@prism@@@1@_K@Z
+0x1421006e0 Locator
+0x1421006e8 Hookup
+0x142114bf8 g_debug_show_all_hookups
+0x142114e00 g_rain_reflect_hookups
+0x142115cf8 hookup_reload
+0x142116308 /unit/hookup
+0x14211b170 [prefab] No suitable semaphore locator found for selected prefab selected_semaphores (0x%I64X)
+0x14211b280 [prefab] Unable to find semaphore profile '%s' for locator with id %u (%s)
+0x14211ec10 ?append_block_copy_or_abort@?$array_t@V?$link_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@IEAAXAEBV12@@Z
+0x14211ecf0 ?element_at@?$array_t@V?$link_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$link_ptr_t@Vmodel_hookup_u@prism@@@2@_K@Z
+0x14212dee0 Unable to find glass pane locator '%s'
+0x14212df38 Unable to find addon hookup (%s)
+0x14212df60 mirror angle for locator '%s': %f, %f, %f
+0x14212df90 mirror normal for locator '%s': %f, %f, %f
+0x14212e140 [visual_interior] Multiple interior UI addons/hookups request same drawable with different UI scripts, all addons with 'ui_drawable_path': '%s' will u
+0x14212e210 External locator for toy addon group '%s' was not found, expect problems!
+0x14212e270 [visual_interior] Failed to load UI hookup from accessory: %s
+0x14212e330 External locator for pach addon group '%s' was not found, expect problems!
+0x14212e410 External locator for toy addon group '%s' was not found, expect problems
+0x14213a530 rain_reflect_hookups
+0x14213b828 Invalid bus station locator name detected! (Loc:%s, Prefab:%s)
+0x14213ee70 Found hookup at %.1f;%.1f;%.1f and started emitting particles.
+ Load effect: %s, impact effect %s.
+0x14213f270 Could not find or initialize cargo_particle_hookup, try to get closer and try again.
+0x142141510 [cargo_particle_hookup] Requesting placement of hookup that has no test shape!
+0x142141830 [player] Found hookup item with cargo_particle_hookup and found cargo accessory data.
+0x142141890 [player] Could not find or initialize dynamic cargo pile hookup. Aborting dynamic cargo (un)loading, reverting to standard cargo (un)loading.
+0x142141920 [player] Could not find mover or pile hookup for dynamic cargo (un)loading. Reverting to standard cargo (un)loading.
+0x142141a60 [player] Could not initialize grab pile hookup for dynamic cargo (un)loading. Aborting dynamic (un)loading, reverting to standard cargo (un)loading.
+0x142141b00 [player] Successfully found cargo_particle_hookup and initialized trailer for dynamic cargo (un)loading.
+0x142141ce0 [player] Could not find or initialize cargo_particle_hookup. Aborting dynamic cargo (un)loading, reverting to standard cargo (un)loading.
+0x1421423b0 [player] Incrementing cargo on a different trailer or compartment than that which is touching the cargo particle hookup!
+0x142142810 [player] Incrementing cargo when no trailer is touching cargo particle hookup!
+0x1421428d8 light2.addon_hookup
+0x142143418 horn1.addon_hookup
+0x142156f90 ?index_of@?$array_t@PEAV?$callback_1_t@XQEBVcargo_particle_hookup_u@prism@@@prism@@@prism@@QEBA_KQEBQEAV?$callback_1_t@XQEBVcargo_particle_hookup_u@pr
+0x142157040 ?remove@?$array_t@PEAV?$callback_1_t@XQEBVcargo_particle_hookup_u@prism@@@prism@@@prism@@QEAAPEAPEAV?$callback_1_t@XQEBVcargo_particle_hookup_u@prism@
+0x1421570e0 ?index_of@?$array_t@PEAV?$callback_1_t@XQEBVdynamic_cargo_pile_hookup_u@prism@@@prism@@@prism@@QEBA_KQEBQEAV?$callback_1_t@XQEBVdynamic_cargo_pile_hoo
+0x142157190 ?remove@?$array_t@PEAV?$callback_1_t@XQEBVdynamic_cargo_pile_hookup_u@prism@@@prism@@@prism@@QEAAPEAPEAV?$callback_1_t@XQEBVdynamic_cargo_pile_hookup_
+0x142159e40 [game_trailer_actor] particle hookup and dynamic load compartments count mismatch! There should be precisely one hookup per compartment!
+0x142159ed0 [game_trailer_actor] Cannot initialize dynamic cargo hookups without unload shapes! Ensure all dynamic cargo unload shapes are defined/required!
+0x142159f70 [game_trailer_actor] Two particle hookups share the same compartment number! %u! Please make sure every particle hookup has a unique number.
+0x14215a000 [game_trailer_actor] Incorrect compartment definition for particle hookup! Please ensure each locator name is in the format '%s' + compartment index
+0x14215a3f0 [game_trailer_actor] Failed initing particle hookup on trailer!
+0x14215acb0 [phys_vehicle] Collision model used for trailer cables defined in accessory (%s), but vehicle doesn't have locator for it, ignoring it!
+0x14215ae00 There is no visible cabin locator!
+0x14215b600 Highlights all models (model items, curves etc.) with color overlay indicating what level of detail are they set to.
+Currently does not work for Smart
+0x14215ec08 Missing wheel model locator '%s' (chassis '%s')
+0x14215ecb0 Unable to find %s locator for trailer body in chassis %s.
+0x14215fa30 variant_uk
+0x1421600b0 Chassis %s contains fewer pendle axle locators than pendle axle models, expect crash.
+0x142160110 More than one wheel locator found on pendle axle %s, using only the first one.
+0x142160160 Chassis %s contains fewer axle locators than axle models, expect crash.
+0x1421601e0 No wheel locators found for '%s', expect crash.
+0x142165e38 wheel_fixed_width
+0x142169668 sound_hookup
+0x142169688 sound_hookup_u
+0x1421696b8 [sound] Undefined sound in the sound hookup object.
+0x14216a740 ?element_at@?$array_t@V?$owner_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$owner_ptr_t@Vmodel_hookup_u@prism@@@2@_K@Z
+0x14216ab88 Portal has no visualization_model_hookup
+0x14216bb20 ?index_of@?$array_t@V?$owner_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@QEBA_KQEBV?$owner_ptr_t@Vmodel_hookup_u@prism@@@2@@Z
+0x14216bba0 ?remove_fast@?$array_t@V?$owner_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$owner_ptr_t@Vmodel_hookup_u@prism@@@2@_K@Z
+0x14216c500 ??A?$array_t@Usign_hookup_info_t@prism@@@prism@@QEAAAEAUsign_hookup_info_t@1@_K@Z
+0x14216cc10 Hookup payload error - 'height' parameter value (%.1f) too low.
+0x14216cc50 Ignoring hookup payload - supported only for lamp-like spot light source.
+0x14216cca0 Hookup payload error - missing mandatory 'height' parameter.
+0x14216cd10 Ignoring hookup payload - not supported for type:point light source.
+0x14216dea8 mover_hookup_u
+0x14216deb8 mover_hookup
+0x14216e1d0 [gate_trigger] Unable to find a valid associated semaphore for gate_trigger hookup at [%.1f;%.1f;%.1f]!
+0x14216e780 [pedestrian_hookup] Obsolete pedestrian mover at [%.1f;%.1f;%.1f]!
+0x14216e7d0 [pedestrian_hookup] Unable to find pedestrian mover at [%.1f;%.1f;%.1f]!
+0x14216e820 [pedestrian_hookup] Using obsolete pedestrian attribute 'model' at [%.1f;%.1f;%.1f]'. Please use 'mover_name' instead.
+0x14216e8a0 [pedestrian_hookup] Missing 'default country' pedestrian definition! (%.1f;%.1f;%.1f)
+0x14216e8f8 enable_child_hookups
+0x14216e928 pedestrian_hookup_u
+0x14216e940 pedestrian_hookup
+0x14216e9d0 ?remove_fast@?$array_t@V?$link_ptr_t@Vpedestrian_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$link_ptr_t@Vpedestrian_hookup_u@prism@@@2@_K@Z
+0x14216ea60 ?index_of@?$array_t@V?$link_ptr_t@Vpedestrian_hookup_u@prism@@@prism@@@prism@@QEBA_KQEBV?$link_ptr_t@Vpedestrian_hookup_u@prism@@@2@@Z
+0x14216eaf0 ?remove_fast@?$array_t@Uanim_sync_info_t@pedestrian_hookup_u@prism@@@prism@@QEAAPEAUanim_sync_info_t@pedestrian_hookup_u@2@_K@Z
+0x14216eb70 ?index_of@?$array_t@Uanim_sync_info_t@pedestrian_hookup_u@prism@@@prism@@QEBA_KQEBUanim_sync_info_t@pedestrian_hookup_u@2@@Z
+0x14216ebf0 ?element_at@?$array_t@V?$link_ptr_t@Vpedestrian_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$link_ptr_t@Vpedestrian_hookup_u@prism@@@2@_K@Z
+0x14216ec80 ?append_block_copy_or_abort@?$array_t@V?$link_ptr_t@Vpedestrian_hookup_u@prism@@@prism@@@prism@@IEAAXAEBV12@@Z
+0x14216ecf0 [cutscene_hookup] Failed to convert cutscene (%s) of unit (%s).
+0x14216ed38 [cutscene_hookup] Failed to convert condition data (%s).
+0x14216ed80 [cutscene_hookup] Merging 'cutscene_names' into 'condition_data_cutscenes' (%s).
+0x14216ede0 [cutscene_hookup] Incorrect size of condition data arrays (%s).
+0x14216ee20 [cutscene_hookup] We have no aspirant to choose (%s).
+0x14216ee60 [cutscene_hookup] Failed to convert condition cutscenes data (%s).
+0x14216ef48 cutscene_hookup_u
+0x14216ef60 cutscene_hookup
+0x142177778 /def/vehicle/addon_hookup_storage.sii
+0x142177948 Loaded addon hookups: %Iu
+0x142177970 ??$collect_subitems@Uprebuilt_ortho_t@prism@@Vsphere_ortho_culler_custom_t@2@$00$00@prism@@YA_NQEAV?$array_t@PEAVr_proto_t@prism@@@0@QEAV?$array_t@I@0
+0x142177b30 [vis_query] Failed to grow the array of visible hookups.
+0x142177b70 ??$collect_subitems@Uprebuilt_ortho_t@prism@@Vsphere_ortho_culler_custom_t@2@$00$0A@@prism@@YA_NQEAV?$array_t@PEAVr_proto_t@prism@@@0@QEAV?$array_t@I@
+0x142177d00 ??$collect_subitems@Uprebuilt_frustum_t@prism@@Vsphere_frustum_culler_custom_t@2@$0A@$0A@@prism@@YA_NQEAV?$array_t@PEAVr_proto_t@prism@@@0@QEAV?$array
+0x142177e50 ??$collect_subitems@Uprebuilt_frustum_t@prism@@Vsphere_frustum_culler_custom_t@2@$0A@$00@prism@@YA_NQEAV?$array_t@PEAVr_proto_t@prism@@@0@QEAV?$array_
+0x142178570 ?element_at@?$array_t@PEBVhookup_info_t@prism@@@prism@@QEAAPEAPEBVhookup_info_t@2@_K@Z
+0x14217c198 /unit/post_hookup/*.sii
+0x14217c1c8 /unit/no_hookups.cfg
+0x14217c1e0 /unit/hookup/*.sii
+0x14217db60 Number of elements drawn into given views.
+Each model, hookup, segment, instance counts as an 'element'.
+0x14217e180 [phys_trailer] Unable to find body locator on trailer chassis.
+0x14217e250 [phys_trailer] No slave hook locator on trailer '%s'.
+0x14217e350 [phys_trailer] Collision model used for trailer cables defined in accessory (%s), but vehicle doesn't have locator for it, ignoring it!
+0x14218bb10 hookup_item
+0x14218bb30 hookup_unit_name
+0x14218bb50 [hookup_item] Hookup template does not support editor '%s' ! (0x%I64X)
+0x14218bc08 [hookup_item] Cannot find hookup template '%s' ! (0x%I64X)
+0x14218f260 ?index_of@?$array_t@V?$link_ptr_t@Vpolice_car_hookup_u@prism@@@prism@@@prism@@QEBA_KQEBV?$link_ptr_t@Vpolice_car_hookup_u@prism@@@2@@Z
+0x14218f2f0 ?remove_fast@?$array_t@V?$link_ptr_t@Vpolice_car_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$link_ptr_t@Vpolice_car_hookup_u@prism@@@2@_K@Z
+0x1421923b8 user_wheel_front_back
+0x142195e20 'shadow_x_ori' nor 'shd_x_ori' locator not found in model '%s' which has valid extended shadow texture '%s'
+0x142195e90 'shadow_x_crn' nor 'shd_x_crn' locator not found in model '%s' which has valid extended shadow texture '%s'
+0x142195f00 'shadow_ori' nor 'shd_or' locator not found in model '%s' which has valid shadow texture '%s'
+0x142195f60 'shadow_crn' nor 'shd_crn' locator not found in model '%s' which has valid shadow texture '%s'
+0x142196850 [trailer_cables] One of the cables in trailer cables accessory '%s' has invalid prefix locator token: '%s', cable won't be created!
+0x1421968e0 [trailer_cables] Can't find 2nd cable attachment locator: '%s' on trailer or rest locator: '%s' in vehicle upgrade, aborting cable creation!
+0x142196970 [trailer_cables] Trailer cables accessory defined in '%s' is missing locator: '%s', cable won't be created!
+0x1421a1e50 wheel_frontback_anim
+0x1421a1e88 wheel_frontback_anim_default
+0x1421a3670 locator
+0x1421a47b8 vehicle_addon_accessory
+0x1421a47d0 vehicle_addon_accessory_u
+0x1421a4800 slot_hookup
+0x1421a4bc0 accessory_addon_patch_data
+0x1421a4be0 accessory_addon_patch_data_u
+0x1421a4c70 accessory_hookup_int_data
+0x1421a4c90 accessory_hookup_int_data_u
+0x1421a4d20 accessory_addon_int_data
+0x1421a4d40 accessory_addon_int_data_u
+0x1421a4e28 suitable_for
+0x1421a4e38 conflict_with
+0x1421a4f60 accessory_addon_painted_data
+0x1421a4f80 accessory_addon_painted_data_u
+0x1421a5438 accessory_addon_int_ui_data
+0x1421a5458 accessory_addon_int_ui_data_u
+0x1421a54b8 [accessory_addon_int_ui_data] Missing required UI window path!
+0x1421a5500 [accessory_addon_int_ui_data] Missing required UI drawable texture path!
+0x1421a5550 [accessory_addon_int_ui_data] Drawable size[0] is not power of 2!
+0x1421a55a0 [accessory_addon_int_ui_data] Drawable size[1] is not power of 2!
+0x1421a5648 accessory_hookup_int_ui_data
+0x1421a5668 accessory_hookup_int_ui_data_u
+0x1421a5690 [accessory_hookup_int_ui_data] Missing required UI window path!
+0x1421a56d0 [accessory_hookup_int_ui_data] Missing required UI drawable texture path!
+0x1421a5720 [accessory_hookup_int_ui_data] Drawable size[0] is not power of 2!
+0x1421a5770 [accessory_hookup_int_ui_data] Drawable size[1] is not power of 2!
+0x1421aa5a8 [traffic] Too many license plate hookups (%s)
+0x1421aae50 aux_models_locators
+0x1421ac3f0 [prefab] Unable to resolve semaphore profile '%s' for locator with id %u (%s)
+0x1421b0dd0 accessory_truck_data_u
+0x1421b0de8 accessory_truck_data
+0x1421b3ea0 accessory_addon_data
+0x1421b3eb8 accessory_addon_data_u
+0x1421b3f98 exterior_model
+0x1421b3fa8 interior_model
+0x1421b3fb8 exterior_model_uk
+0x1421b3fd0 interior_model_uk
+0x1421b7f50 cargo_particle_hookup
+0x1421b7fc8 cargo_particle_hookup_u
+0x1421b8010 [cargo_particle_hookup] Could not find placeholder_particles with unit name %s!
+0x1421b8060 [cargo_particle_hookup] Hookup '%s' does not have a defined dynamic cargo loading type. It will accept trailers of all types. Please set 'dyn_cargo_lo
+0x1421b8130 [cargo_particle_hookup] Empty cargo particle unit name. Falling back to standard cargo loading.
+0x1421b8190 [cargo_particle_hookup] Attempting to initialize non-unload hookup with empty dynamic cargo data! Falling back to standard cargo loading.
+0x1421b8220 [cargo_particle_hookup] Cargo particle hookup %s has both 'dyn_cargo_load_type' and 'accepted_dyn_cargo_load_types' defined! Erase 'dyn_cargo_load_typ
+0x1421b8310 [cargo_particle_hookup] Non-trailer hookup %s has negative dimensions or zero volume of test shape! Cannot use.
+0x1421b8380 [cargo_particle_hookup] Trailer particle %s hookup cannot have non-zero test shape! Please erase test_shape_dim and test_shape_offset parameters. 
+0x1421b8420 [cargo_particle_hookup] Trailer cargo particle hookup without proper compartment index! Please name all cargo particle hookups '%s' followed by number
+0x1421b84d0 [cargo_particle_hookup] Two trailers are touching the same cargo particle hookup! This should not happen, ignoring the second trailer.
+0x1421b8560 [cargo_particle_hookup] Missing or invalid number after '%s' prefix in cargo_particle_hookup '%s'. Skipping... 
+0x1421b85d0 [cargo_particle_hookup] Could not find impact_particle with name %s!
+0x1421b8620 [cargo_particle_hookup] Could not find cargo_particles with name %s!
+0x1421b8670 [cargo_particle_hookup] Detected unload shape has invalid or missing number after '%s' string! Cannot unload. 
+0x1421b86e0 [cargo_particle_hookup] Detected load shape has invalid or missing number after '%s' string! Cannot load. 
+0x1421b8980 [Animation %s] Wheel %Iu - failed to find suspension locator %s on model %s. Expect wrong suspension model placement.
+0x1421b8f98 hookups|
+0x1421b9260 [Animation %s] Hookup %s not found on model %s. Animation may not work correctly.
+0x1421b92c0 [Animation %s] Hookup token %s defined for model %s is invalid. Animation may not work correctly.
+0x1421bbc10 [dynamic_cargo_pile_hookup] Static model could not be generated, it is not defined for dynamic cargo '%s'.
+0x1421bbc80 [dynamic_cargo_pile_hookup] No variants found for grab pile type '%s', could not initialize model.
+0x1421bbcf0 [dynamic_cargo_pile_hookup] No dynamic cargo data available for trailer match.
+0x1421bbd40 [dynamic_cargo_pile_hookup] No world pile to generate.
+0x1421bbd80 [dynamic_cargo_pile_hookup] Could not initialize, no trailer supplied.
+0x1421bbdd0 [dynamic_cargo_pile_hookup] Trailer match has no valid cargo accessory data, skipping.
+0x1421bbe30 [dynamic_cargo_pile_hookup] Trailer in chain has a cargo accessory but no valid cargo accessory data, stopping.
+0x1421bbea0 [dynamic_cargo_pile_hookup] No trailers with cargo accessories found during preparation of trailer chain data!
+0x1421bbf10 [dynamic_cargo_pile_hookup] Generating grab handle static model pile
+0x1421bbf60 [dynamic_cargo_pile_hookup] Could not select the touching trailer, it is not known to the hookup! Did you swap trailers during dynamic cargo (un)loadi
+0x1421bc000 [dynamic_cargo_pile_hookup] Could not generate pile, cannot select trailer to (un)load!
+0x1421bc060 [dynamic_cargo_pile_hookup] Cannot generate grab pile from nothing. Chain trailer has neither dynamic nor static models.
+0x1421bc0e0 [dynamic_cargo_pile_hookup] acquired static model for trailer match.
+0x1421bc130 [dynamic_cargo_pile_hookup] No static model to create aabox from.
+0x1421bc180 [dynamic_cargo_pile_hookup] Selected grab pile model variant '%s' for trailer match
+0x1421bc1e0 [dynamic_cargo_pile_hookup] failed caching static model of variant '%s'.
+0x1421bc240 [dynamic_cargo_pile_hookup] No cargo could be packed. Cargo radius is larger than grab handle radius!
+0x1421bc2c8 dynamic_cargo_pile_hookup
+0x1421bc2e8 dynamic_cargo_pile_hookup_u
+0x1421bc310 [dynamic_cargo_pile_hookup] Cannot set empty grab token! Please supply a valid non-empty grab token to the grab handle.
+0x1421bc390 [dynamic_cargo_pile_hookup] Trailer in chain does not have a valid vehicle unit, stopping.
+0x1421bc3f0 [dynamic_cargo_pile_hookup] Player is not inside pile, enabling collision.
+0x1421bc440 [dynamic_cargo_pile_hookup] Cannot set grab action '%s' it is not prefixed with '%s'
+0x1421bc4a0 [dynamic_cargo_pile_hookup] dynamic cargo pile hookup '%s' has non-positive dimensions! Please make them all positive.
+0x1421bc520 [dynamic_cargo_pile_hookup] dynamic cargo pile hookup '%s' has undefined pile type! It will accept all dynamic cargo types. 
+0x1421bc5a0 [dynamic_cargo_pile_hookup] The cargo to pack is very small with respect to grab handle, the result might not be visually pleasing. Relative r: %.3f
+0x1421bc640 [dynamic_cargo_pile_hookup] Cargo could not be packed into grab handle. Cargo is too small with respect to grab handle and not supported! Relative r: 
+0x1421bc740 [dynamic_cargo_pile_hookup] Could not generate pile, no cargo original models were found!
+0x1421bc7d0 [dynamic_cargo_pile_hookup] Trying to hide non-static pile hookup!
+0x1421bc820 [dynamic_cargo_pile_hookup] Cannot generate cylinder pile from no models!
+0x1421bc870 [dynamic_cargo_pile_hookup] No trailer selected, cannot check compatibility.
+0x1421bc8c0 [dynamic_cargo_pile_hookup] Current touching trailer is different from the selected trailer.
+0x1421bca20 [dynamic_cargo_pile_hookup] Cannot initialize world pile, a trailer match has no cargo accessory.
+0x1421bcb00 [dynamic_cargo_pile_hookup] No static model of idx %Iu
+0x1421bcb40 [dynamic_cargo_pile_hookup] Could not generate pile, no cached placements to be used were found.
+0x1421bd5a0 [mover_dynamic_cargo_controller] Init failed. Could not create grab pile hookup on loader mover.
+0x1421bd930 [mover_dynamic_cargo_controller] No world pile hookup, continuing with 'non-bulk/cylinder' loading method.
+0x1421bf100 [mover_instance_t::start_action_effects] Action with name '%s' has prop with no model nor hookup!
+0x1421bf4f0 [mover_instance::add_props_hookup] Cannot add prop hookup without hookup params, cached_hookup_params was not set!
+0x1421bfaa8 Hookup %s is not a model_particle_u
+0x1421bfb08 Locator must be a hookup in missing cargo visualization model
+0x1421bfb48 Hookup %s not found
+0x1421bfb90 Exactly one locator expected in missing cargo visualization model
+0x1421c2f90 [core_vehicle] Auxiliary model placement failed, locator '%s' wasn't found in any provided model instances:
+0x1421c31f0 accessory_addon_tank_data_u
+0x1421c3210 accessory_addon_tank_data
+0x1421ca508 hookup
+0x1421ca510 [mover_anim_props_u::_post_load] Prop can be defined either as a hookup or as a model, not both! Unit: '%s' has both 'hookup' and 'model' attributes d
+0x1421ca5b0 [mover_anim_props_u::_post_load] Undefined prop! Unit: '%s' doesn't have 'hookup' nor 'model' attributes defined!
+0x1421ccfe8 Unable to find hookup '%s' for model %s
+0x1421d3208 police_car_hookup
+0x1421d3220 police_car_hookup_u
+0x1421d48b0 animated_hookup_u
+0x1421d48f0 animated_hookup
+0x1421d49e8 lod_model_hookup_u
+0x1421d4a00 hookup_variant
+0x1421d4a10 lod_model_hookup
+0x1421d4a30 [lod_model_hookup] Ignoring obsolete attribute 'probability'. (%s)
+0x1421d4a80 [lod_model_hookup] Converting obsolete attribute 'probability'. Please use 'probability_day' and/or 'probability_night' instead. (%s)
+0x1421d4bf8 passenger_hookup
+0x1421d4c10 passenger_hookup_u
+0x1421d4d38 compass_hookup
+0x1421d4d48 compass_hookup_u
+0x1421d4f68 visualization_model_hookup
+0x1421d6188 fifth_wheel_roll
+0x1421d84f8 accessory_addon_trailer_cables_data_u
+0x1421d8520 accessory_addon_trailer_cables_data
+0x1421d8678 accessory_hookup_data_u
+0x1421d8690 accessory_hookup_data
+0x1421d8720 accessory_horn_hookup_data_u
+0x1421d8740 accessory_horn_hookup_data
+0x1421d9818 rest_locator_prefix
+0x1421d9830 locator_prefix
+0x1421d9b00 locator_hook_offset
+0x1421e1cc0 [trigger_hookup] Attribute reverse_direction: true on non one way hookup! Automatically set to false. Unit name: %s
+0x1421e1d40 [trigger_hookup] Badly defined trigger dimensions! Please set only circular (trigger_distance) or only rectangular (trigger_length, trigger_width) dim
+0x1421e1ed0 trigger_hookup
+0x1421e1ef8 trigger_hookup_u
+0x1421e25d0 ??A?$array_t@Uhookup_compound_lod_t@prism@@@prism@@QEAAAEAUhookup_compound_lod_t@1@_K@Z
+0x1421e3490 ??A?$array_t@Vmodel_hookup_payload_t@prism@@@prism@@QEAAAEAVmodel_hookup_payload_t@1@_K@Z
+0x1421e3630 ?element_at@?$array_t@Useg_hookup_instance_t@prism@@@prism@@QEAAPEAUseg_hookup_instance_t@2@_K@Z
+0x1421e36a0 ?index_of@?$array_t@Uhookup_compound_lod_t@prism@@@prism@@QEBA_KQEBUhookup_compound_lod_t@2@@Z
+0x1421e3960 ??A?$array_t@Vmodel_hookup_payload_t@prism@@@prism@@QEBAAEBVmodel_hookup_payload_t@1@_K@Z
+0x1421e9670 Area width between model locators and definition is desynced (model: %s)!
+0x1421e96c0 Area length between model locators and definition is desynced (model: %s)!
+0x1421e9960 [cargo_ctrl] Missing cargo locator in the body or chassis, custom load will be badly positioned on the model: '%s'
+0x1421ea298 [perform_truck_config] Missing actor unit!
+0x1421ec110 [traffic_model_cables] Aborting trailer cables creation as accessory model is not initialized in '%s', ensure that vehicle has proper locator for trai
+0x1421ec1d0 [traffic_model_cables] Invalid locator prefix token ('%s') for a cable in vehicle '%s', aborting cable creation!
+0x1421ec250 [traffic_model_cables] Can't find cable locator ('%s') in trailer '%s' nor rest locator ('%s') in trailer cable accessory of '%s', aborting cable crea
+0x1421ec438 Traffic trailer hookup locator '%s' not found.
+0x1421ec468 Traffic trailer addon locator '%s' not found.
+0x1421ec498 [traffic_trailer] Missing slave trailer hook locator! (%s)
+0x1421ed690 [cargo_ctrl] Missing loading area locator for area %Iu with name: '%s', model '%s'
+0x1421ed6f0 [cargo_ctrl] Missing at least one direct lashing point locator ('%s_0') in the cargo model: '%s'
+0x1421ed800 [cargo_ctrl] Missing lashing rails start and end locators in the cargo model: '%s', no lash over can be done!
+0x1421ee110 [cargo_ctrl] Could not find lash mount start locator: '%s' or lash mount end locator: '%s' within the model: '%s'
+0x1421ee190 [cargo_ctrl] Could not load lash mount with start locator: '%s' and end locator: '%s' from the model: '%s', start Z coordinate is bigger than end Z co
+0x1421ee260 [cargo_ctrl] Could not load lash mount with start locator: '%s' and end locator: '%s' from the model: '%s', possibly misoriented since length of the m
+0x1421ee320 [cargo_ctrl] Could not load lash mount with start locator: '%s' and end locator: '%s' from the model: '%s', possibly misoriented start and ends are on
+0x1421f3c10 Mixing hookups with other items in one compound is not allowed!
+0x1421f3e00 Mixing signs or hookups with other items in one compound is not allowed!
+0x1422021e8 Unable to find hookup %s
+0x142209c20 hookup_dlg
+0x142214df0 Enter hookup item flags to further filter the found items. If you want only a specific flag combination to be valid, enter all wanted flags separated 
+0x142214e90 Enter substring of unit name of hookups you want to search for.
+0x142215470 find_items_hookup
+0x142217178 Hookup item replace %s -> %s
+0x14221d030 Sign model '%s' must contain board pin locators.
+0x14221d0a8 Sign model '%s' may contain max %u board pin locators!
+0x142227e88 Locators
+0x14222a3c0 Hookup properties
+0x14223bbb0 /ui/truck_configuration_bcg.sii
+0x14223c7b0 ?on_wshow@truck_config_hdl_u@prism@@UEAAXXZ
+0x14223c850 truck_config_hdl
+0x14223c8b8 truck_config_hdl_u
+0x14223c9c8 <img src=/material/ui/truck_config/add.mat>
+0x14223c9f8 <img src=/material/ui/truck_config/cart.mat>
+0x14223cb08 Failed to copy name of hookup occupying slot '%s'
+0x14223cb50 Attempted to remove an addon hookup, which doesn't belong to a vehicle_addon_accessory_u! 				[addon group='%s', data='%s', slot='%s']
+0x14223ccb0 Failed to create hookup slot name. Hookup wasn't created!
+0x14223cd30 A hookup already exists on the given position (%Iu) for parent '%s'. Adding new hookup ignored!
+0x14223cd90 Parent accessory not found for hookup; expected an existing '%s' accessory.
+0x14223cf18 truck_config_left
+0x14223cf30 d:\buildbot\slaves\win_slave\final_build_ets2_160_windows_bin_steam_x64\build\prism\eurotrucks\game\ui\truck_config_hdl.cpp
+0x14223cfc8 truck_config_right
+0x14223d020 ?element_at@?$array_t@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@@prism@@QEBAPEBV?$array_dyn_t@Uaccessory_filter
+0x14223d0f0 ?element_at@?$array_t@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@@prism@@QEAAPEAV?$array_dyn_t@Uaccessory_filter
+0x14223d1c0 ?remove_fast@?$array_t@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@@prism@@QEAAPEAV?$array_dyn_t@Uaccessory_filte
+0x14223d290 ?index_of@?$array_t@Uhookup_memory_t@truck_config_hdl_u@prism@@@prism@@QEBA_KQEBUhookup_memory_t@truck_config_hdl_u@2@@Z
+0x14223d3b0 ?remove@?$array_t@Uhookup_memory_t@truck_config_hdl_u@prism@@@prism@@QEAAPEAUhookup_memory_t@truck_config_hdl_u@2@_K@Z
+0x14223d430 ??$copy_in@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@@?$array_t@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@
+0x14223d660 ??$move_in@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@@?$array_t@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@
+0x14223d860 [truck_config_hdl_u] Failed to find required button. Base id: %u Pin id: %Iu
+0x14223d8e8 Can't locate hookup index
+0x14223e180 ?element_at@?$array_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@QEAAPEAUaccessory_filter_cache_entry_t@truck_config_hdl_u@2@_K
+0x14223e220 ?append_block_copy_or_abort@?$array_t@V?$array_dyn_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@@prism@@IEAAXAEBV12@@Z
+0x14223e400 ?append_block_copy_or_abort@?$array_t@Uaccessory_filter_cache_entry_t@truck_config_hdl_u@prism@@@prism@@IEAAXAEBV12@@Z
+0x142252550 truck_config
+0x142253888 @@no_used_truck_configs@@
+0x1422543a0 ?element_at@?$array_t@PEAVaccessory_truck_data_u@prism@@@prism@@QEAAPEAPEAVaccessory_truck_data_u@2@_K@Z
+0x142254410 ?append_block_copy_or_abort@?$array_t@PEAVaccessory_truck_data_u@prism@@@prism@@IEAAXAEBV12@@Z
+0x142254600 ??A?$array_t@V?$array_dyn_t@PEAVaccessory_truck_data_u@prism@@@prism@@@prism@@QEAAAEAV?$array_dyn_t@PEAVaccessory_truck_data_u@prism@@@1@_K@Z
+0x14225ab38 hookups_exterior_only
+0x142267648 truck_config_dispatch_hdl_u
+0x142267668 truck_config_dispatch_hdl
+0x14226c8e0 @@truck_configuration_copy_message@@
+0x1422840d0 ?append_block_copy_or_abort@?$array_t@Uhookups_entry_t@profile_accessory_message_t@prism@@@prism@@IEAAXAEBV12@@Z
+0x1422841d0 ??4?$array_local_t@Umirror_rot_entry_t@profile_online_truck_config_message_t@prism@@$07@prism@@QEAAAEAV01@AEBV01@@Z
+0x142284380 ?element_at@?$array_t@Uhookups_entry_t@profile_accessory_message_t@prism@@@prism@@QEAAPEAUhookups_entry_t@profile_accessory_message_t@2@_K@Z
+0x1422870d0 ??4?$array_local_t@Uhookup_changes_entry_t@profile_online_vehicle_customization_message_t@prism@@$0EAA@@prism@@QEAAAEAV01@AEBV01@@Z
+0x14228a7f0 ??A?$array_t@Uhookup_changes_entry_t@profile_online_vehicle_customization_message_t@prism@@@prism@@QEBAAEBUhookup_changes_entry_t@profile_online_vehic
+0x14228aed0 ??A?$array_t@Uhookups_entry_t@profile_accessory_message_t@prism@@@prism@@QEBAAEBUhookups_entry_t@profile_accessory_message_t@1@_K@Z
+0x14228af60 ??A?$array_t@Uhookups_entry_t@profile_accessory_message_t@prism@@@prism@@QEAAAEAUhookups_entry_t@profile_accessory_message_t@1@_K@Z
+0x14228b080 ??A?$array_t@Umirror_rot_entry_t@profile_online_truck_config_message_t@prism@@@prism@@QEBAAEBUmirror_rot_entry_t@profile_online_truck_config_message_t
+0x14228b120 ??A?$array_t@Umirror_rot_entry_t@profile_online_truck_config_message_t@prism@@@prism@@QEAAAEAUmirror_rot_entry_t@profile_online_truck_config_message_t
+0x14228d510 ??A?$array_t@Unew_truck_config_entry_t@profile_online_vehicles_change_request_t@prism@@@prism@@QEBAAEBUnew_truck_config_entry_t@profile_online_vehicle
+0x1422978e0 ?remove@?$array_t@Uhookups_entry_t@profile_accessory_message_t@prism@@@prism@@QEAAPEAUhookups_entry_t@profile_accessory_message_t@2@_K@Z
+0x142297970 ?index_of@?$array_t@Uhookups_entry_t@profile_accessory_message_t@prism@@@prism@@QEBA_KQEBUhookups_entry_t@profile_accessory_message_t@2@@Z
+0x142297f10 [online_vehicle] Failed to find hookup with slot ID %u on accessory with slot ID %hu on vehicle with slot ID %u
+0x142297f80 [online_vehicle] Vehicle accessory message for accessory with slot ID %hu on vehicle with slot ID %u doesn't have its text hookups up to date
+0x142298690 [profile_service_utils] Failed to find online data for hookup '%s'.
+0x14229ab70 ??4?$array_local_t@Unew_truck_config_entry_t@profile_online_vehicles_change_request_t@prism@@$07@prism@@QEAAAEAV01@AEBV01@@Z
+0x14229b458 incompatible_hookup
+0x14229b4d8 duplicate_hookup
+0x14229b508 invalid_hookup
+0x14229bbf8 [online_vehicle] Failed to find data for hookup %I32u
+0x14229bc30 [online_vehicle] Hookups are not allowed on drive plate addon %I32u
+0x1422b14d8 profile_dynamic_data_premade_hookup
+0x1422b1500 hookups
+0x1422b1510 profile_dynamic_data_premade_hookup_u
+0x1422f87b8 Hookup payload contains invalid param type (%s).
+0x1422f87f0 Hookup payload contains invalid float value.
+0x1422f8820 Hookup payload contains too many params.
+0x1422f8850 Hookup payload param cannot be loaded.
+0x1422f8d00 ?update_hookup@model_object_u@prism@@UEAAXQEBV?$map_t@PEBUunit_descriptor_t@prism@@PEAXVmap_fake_key_t@2@@2@_N@Z
+0x1422f8d78 FIXME: model_object_u as hookup is not supported yet.
+0x1422f9200 ?remove@?$array_t@V?$owner_ptr_t@Vmodel_hookup_u@prism@@@prism@@@prism@@QEAAPEAV?$owner_ptr_t@Vmodel_hookup_u@prism@@@2@_K@Z
+0x1422f9f00 ?update_hookup@model_template_u@prism@@UEAAXQEBV?$map_t@PEBUunit_descriptor_t@prism@@PEAXVmap_fake_key_t@2@@2@_N@Z
+0x1422fa000 ?setup_hookup@model_template_u@prism@@UEAAXQEAVmodel_hookup_u@2@AEBVplacement_t@2@QEBV?$map_t@PEBUunit_descriptor_t@prism@@PEAXVmap_fake_key_t@2@@2@_N
+0x1422fa0a0 This object can not be really used as a hookup.
+0x1422fa1e0 ?generate_hookup@model_template_u@prism@@UEAAXXZ
+0x1422fa400 ?update_hookup@model_duplicate_u@prism@@UEAAXQEBV?$map_t@PEBUunit_descriptor_t@prism@@PEAXVmap_fake_key_t@2@@2@_N@Z
+0x1422fa500 ?setup_hookup@model_duplicate_u@prism@@UEAAXQEAVmodel_hookup_u@2@AEBVplacement_t@2@QEBV?$map_t@PEBUunit_descriptor_t@prism@@PEAXVmap_fake_key_t@2@@2@_
+0x1422fa5a0 FIXME: model_duplicate_u support for hookups is not done yet.
+0x1422fa790 model_hookup
+0x1422fa7b0 ?clone@model_hookup_u@prism@@UEBAPEAV12@XZ
+0x1422fa7e0 Can not clone instance of abstract class model_hookup_u.
+0x1422fa820 model_hookup_u
+0x1422fa858 setup_locator_name
+0x142314060 [traffic_vehicle] '%s' has too many %s hookups: %u detected, max. allowed %u!
+0x142314140 [traffic_vehicle] '%s' has less %s hookups detected as it should: %u detected, min. needed: %u, is it intentional?
