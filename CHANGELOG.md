@@ -1,0 +1,53 @@
+# Changelog
+
+All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+### Changed
+- **The app is now all Rust:** Bevy 0.19 + egui (`app/specsheet`) replaces the Tauri + React + three.js app. Run it with `cargo run --release -p specsheet`.
+  - Same features: the game's scenes, hotspots with clustering, the sidebar with options and reasons, live re-assembly, LHD/RHD, interior markers and the orbit camera.
+  - Textures go to the GPU BC-compressed through wgpu (DirectX 12/Vulkan). Malformed textures and meshes are skipped with a warning instead of crashing.
+  - Empty-slot markers are drawn as rings, and each wheel axle as one marker.
+  - The last truck is remembered.
+  - New dev script mode (`SPECSHEET_SCRIPT`) for scripted runs and screenshots.
+  - Node.js and WebView2 are no longer needed. The NSIS installer is gone for now.
+- Hotspot anchors flag empty slots (`Anchor::empty`) and group wheel parts per axle (`Anchor::group`: `wheel_f`, `wheel_r`).
+- **Name:** the app is now called **SpecSheet** (tagline "SpecSheet: ETS2 Save Edit"). The window title, top-bar brand, installer product name and app identifier (`dev.specsheet.app`) are updated. Settings saved under the old identifier are not migrated, so the game directory is detected again on first launch.
+
+### Added
+- **Archives:** read-only HashFS v2 (`.scs`) reader.
+  - CityHash64 v1.0.3 path hashing.
+  - zlib entries; GDeflate packed textures with alignment unpacking.
+  - Layered VFS that follows the game's mount order.
+- **Parsers:**
+  - SII text definitions with `@include`, arrays, tuples and hex floats.
+  - PMD v4 descriptors (looks, variants, part visibility).
+  - PMG v0x15 geometry (parts, locators, pieces).
+  - `.mat` materials.
+- **Install handling:** discovery via `ETS2_DIR` or Steam library folders; English localisation.
+- **Tuning core:** truck catalogs from `/def/vehicle/truck/*`, including shared wheel parts.
+  - Rules: `suitable_for` with globs, two-way `conflict_with`, `defaults`, `require` slots, slot availability from model locators.
+  - Configuration repair after base-part changes.
+  - The game's presets load as the starting configuration. All 26 trucks validate with zero issues.
+- **Assembly:** chassis, cabin, addons at slot locators, wheels at wheel locators (left/right variants). Hotspot anchors and interior/exterior classification.
+- **Desktop app** (first built on Tauri 2 + React + three.js, now Bevy; see Changed):
+  - Truck picker, 3D viewport built from the original models and BC textures.
+  - Camera-following hotspots with screen-space clustering.
+  - Sidebar with compatible and incompatible options and their reasons.
+  - Live re-assembly on selection; left/right-hand drive.
+- **Game tuning scenes:** the scenes from `/def/desktop/config*.sii` (garage model, camera, lights, fog, truck pose) load from the install, with a scene picker and per-piece fallbacks.
+- **Materials:** additive (`add`) and translucent water effects.
+- **Research tooling:** archive survey, VFS browser, model, definition, locator and geometry surveys. Outputs live in `research/evidence/`.
+
+### Fixed
+- The cab is no longer hollow: each selected interior's exterior-view model is placed at the cabin's `ext_interior` locator (all 26 presets, both drives).
+- HashFS metadata record type `0x07` (8,970 `effect.scs` shader `.rfx` entries) is accepted; every archive in the install now indexes with zero skipped entries (guarded by the real-install tests).
+- Base parts (chassis, cabin) are checked against their own `suitable_for` in the backend, not only in the UI.
+- Selecting a paint job applies its colour (the preset colour override is cleared). Game colours (`base_color`, `.mat` `diffuse`) are treated as linear.
+- Selection commands no longer run on the UI thread.
+- **Wheels:** tyres now sit on their rims. Each tyre is shifted along the axle by its disc/rim `tire_shift` (for example, 3.8 cm outboard on the Scania S 2016 front wheels). Wheels also ignore yawed chassis wheel locators, which had turned the MAN TGX and Renault Magnum rear-right wheels sideways or onto the wrong side.
+
+### Changed
+- The game directory is remembered between launches, and discovery also checks common Steam library folders on every drive.
+- Slots without a 3D marker (paint job, engine, interior-only parts…) are listed in a "General" sidebar group.
