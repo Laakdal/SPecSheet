@@ -9,7 +9,7 @@ use bevy::prelude::*;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_data::assembly::{Drive, Placement};
-use specsheet_data::scene::Scene;
+use specsheet_data::scene::{tuning_scene, OrbitSpec, Scene};
 use specsheet_data::session::{GameSession, TruckSession};
 use specsheet_data::view::{self, SlotOptions, TruckEntry, TruckOverview};
 use specsheet_data::GameInstall;
@@ -70,7 +70,12 @@ pub struct Actions(pub Vec<Action>);
 pub struct SceneEntry {
     pub scene: Scene,
     pub name: String,
+    /// The truck configuration screen's orbit camera, for its own scene.
+    pub orbit: Option<OrbitSpec>,
 }
+
+/// Name of the truck configuration screen's own scene in the picker.
+const TUNING_SCENE_NAME: &str = "Truck configuration";
 
 struct Opened {
     game: Arc<GameSession>,
@@ -211,15 +216,25 @@ fn open_game(dir: Option<String>, saved: Option<std::path::PathBuf>) -> Result<O
     }
     .map_err(|e| e.to_string())?;
     let game = Arc::new(GameSession::open(install).map_err(|e| e.to_string())?);
-    let scenes = game
+    // The truck configuration screen's own scene first, then the hub scenes.
+    let tuning = tuning_scene(game.fs())
+        .map_err(|e| warn!("truck configuration scene: {e}"))
+        .ok()
+        .map(|tuning| SceneEntry {
+            scene: tuning.scene,
+            name: TUNING_SCENE_NAME.to_owned(),
+            orbit: tuning.orbit,
+        });
+    let hubs = game
         .scenes()
         .map_err(|e| e.to_string())?
         .into_iter()
         .map(|scene| SceneEntry {
             name: game.localization().resolve(&scene.name),
             scene,
-        })
-        .collect();
+            orbit: None,
+        });
+    let scenes = tuning.into_iter().chain(hubs).collect();
     Ok(Opened {
         trucks: view::trucks(&game),
         scenes,

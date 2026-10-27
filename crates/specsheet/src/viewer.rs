@@ -15,7 +15,7 @@ use bevy::render::renderer::RenderDevice;
 use bevy::render::settings::WgpuFeatures;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_data::assembly::Placement;
-use specsheet_data::scene::Scene;
+use specsheet_data::scene::{OrbitSpec, Scene};
 
 use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
 use crate::studio::{FrameSet, Studio};
@@ -70,6 +70,8 @@ pub struct Orbit {
     pub pitch: f32,
     pub distance: f32,
     pub max_distance: f32,
+    pub min_pitch: f32,
+    pub max_pitch: f32,
 }
 
 const MIN_DISTANCE: f32 = 2.5;
@@ -90,12 +92,32 @@ impl Orbit {
             pitch,
             distance,
             max_distance: MAX_DISTANCE.max(distance),
+            min_pitch: MIN_PITCH,
+            max_pitch: MAX_PITCH,
+        };
+        orbit.clamped()
+    }
+
+    /// The truck configuration screen's own camera. The game's elevation is
+    /// negative above the aim, so pitch is its negation, and its elevation
+    /// limits become the pitch range (Hypothesis, see `OrbitSpec::position`).
+    pub fn from_spec(spec: &OrbitSpec) -> Self {
+        let distance = (spec.zoom * spec.relative_bounds[0]).max(MIN_DISTANCE);
+        let [low, high] = spec.elevation_limit;
+        let orbit = Self {
+            target: Vec3::from(spec.aim),
+            yaw: spec.azimuth,
+            pitch: -spec.elevation,
+            distance,
+            max_distance: MAX_DISTANCE.max(distance),
+            min_pitch: (-high).min(-low),
+            max_pitch: (-high).max(-low),
         };
         orbit.clamped()
     }
 
     fn clamped(mut self) -> Self {
-        self.pitch = self.pitch.clamp(MIN_PITCH, MAX_PITCH);
+        self.pitch = self.pitch.clamp(self.min_pitch, self.max_pitch);
         self.distance = self.distance.clamp(MIN_DISTANCE, self.max_distance);
         self
     }
@@ -444,9 +466,13 @@ fn apply_scene(
         let Some(scene) = studio.scene.and_then(|i| studio.scenes.get(i)) else {
             return;
         };
+        let spec = scene.orbit.as_ref();
         let scene = &scene.scene;
         if let Some(pose) = &scene.camera {
-            *orbit = Orbit::from_pose(Vec3::from(pose.position), Vec3::from(pose.aim));
+            *orbit = match spec {
+                Some(spec) => Orbit::from_spec(spec),
+                None => Orbit::from_pose(Vec3::from(pose.position), Vec3::from(pose.aim)),
+            };
             if let Projection::Perspective(perspective) = &mut *projection {
                 perspective.fov = pose.fov.to_radians();
             }
@@ -619,6 +645,25 @@ fn orbit_camera(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_game_orbit_matches_its_default_pose_and_limits() {
+        let spec = OrbitSpec {
+            aim: [0.0, 2.6, -1.465],
+            fov: 50.0,
+            azimuth: -2.516,
+            elevation: -0.068,
+            zoom: 1.0,
+            elevation_limit: [-0.35, 0.0],
+            relative_bounds: [7.5; 3],
+            aim_y_bounds: [-8.0, 10.0],
+            rotation_sensitivity: 0.2,
+            zoom_sensitivity: 0.2,
+        };
+        let orbit = Orbit::from_spec(&spec);
+        assert!(orbit.position().distance(Vec3::from(spec.position())) < 1e-4);
+        assert_eq!((orbit.min_pitch, orbit.max_pitch), (0.0, 0.35));
+    }
 
     #[test]
     fn orbit_round_trips_a_pose() {
