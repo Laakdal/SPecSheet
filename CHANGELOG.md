@@ -40,8 +40,16 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Game tuning scenes:** the scenes from `/def/desktop/config*.sii` (garage model, camera, lights, fog, truck pose) load from the install, with a scene picker and per-piece fallbacks.
 - **Materials:** additive (`add`) and translucent water effects.
 - **Research tooling:** archive survey, VFS browser, model, definition, locator and geometry surveys. Outputs live in `research/evidence/`.
+- **Project:**
+  - MIT license (`LICENSE`) and `THIRD_PARTY_NOTICES.md`.
+  - Windows CI on every push and pull request: guard, format, lint, tests.
+  - The Rust toolchain is pinned to 1.95.0 (`rust-toolchain.toml`).
+  - LF line endings on every platform (`.gitattributes`).
+  - Commits are signed.
+- **Game version pin:** `GameInstall::version()` reads the installed version from `version.scs`. The real-install tests fail with instructions on any version other than `TESTED_GAME_VERSION` (1.60.1.7).
 
 ### Fixed
+- The docs listed sk-zk's TruckLib references as MIT. They are GPL-2.0, so SPecSheet (MIT) takes only facts from them, never code.
 - Right-hand drive shows the right-hand-drive interior (each interior's UK twin, paired for all 219 units).
 - The cab is no longer hollow: each selected interior's exterior-view model is placed at the cabin's `ext_interior` locator (all 26 presets, both drives).
 - HashFS metadata record type `0x07` (8,970 `effect.scs` shader `.rfx` entries) is accepted; every archive in the install now indexes with zero skipped entries (guarded by the real-install tests).
