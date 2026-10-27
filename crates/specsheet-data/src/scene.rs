@@ -109,19 +109,22 @@ pub fn tuning_scene(fs: &GameFs) -> Result<TuningScene> {
 
 fn tuning_scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> TuningScene {
     let mut scene = scene_from_unit(fs, path, unit);
+    // Non-finite values (SII hex floats can encode NaN and inf) fall back
+    // to the defaults, like missing ones.
     let vec3 = |key: &str| unit.get(key).and_then(floats3);
     let vec2 = |key: &str| unit.get(key).and_then(floats2);
+    let num = |key: &str| unit.get_f32(key).filter(|v| v.is_finite());
     let orbit = vec3("camera_aim").map(|aim| OrbitSpec {
         aim,
-        fov: unit.get_f32("camera_fov").unwrap_or(45.0),
-        azimuth: unit.get_f32("camera_default_azimuth").unwrap_or(0.0),
-        elevation: unit.get_f32("camera_default_elevation").unwrap_or(0.0),
-        zoom: unit.get_f32("camera_default_zoom").unwrap_or(1.0),
+        fov: num("camera_fov").unwrap_or(45.0),
+        azimuth: num("camera_default_azimuth").unwrap_or(0.0),
+        elevation: num("camera_default_elevation").unwrap_or(0.0),
+        zoom: num("camera_default_zoom").unwrap_or(1.0),
         elevation_limit: vec2("camera_elevation_limit").unwrap_or([-1.5, 1.5]),
         relative_bounds: vec3("camera_relative_bounds").unwrap_or([7.5; 3]),
         aim_y_bounds: vec2("camera_aim_y_bounds").unwrap_or([f32::MIN, f32::MAX]),
-        rotation_sensitivity: unit.get_f32("mouse_rot_sens").unwrap_or(1.0),
-        zoom_sensitivity: unit.get_f32("camera_zoom_sens").unwrap_or(1.0),
+        rotation_sensitivity: num("mouse_rot_sens").unwrap_or(1.0),
+        zoom_sensitivity: num("camera_zoom_sens").unwrap_or(1.0),
     });
     if let Some(orbit) = &orbit {
         scene.camera = Some(CameraPose {
@@ -347,12 +350,16 @@ fn framing(pose: &CameraPose, truck: [f32; 3]) -> Option<CameraPose> {
     })
 }
 
+/// The first three components, if all are finite.
 fn floats3(value: &Value) -> Option<[f32; 3]> {
-    value.as_floats()?.get(..3)?.try_into().ok()
+    let v: [f32; 3] = value.as_floats()?.get(..3)?.try_into().ok()?;
+    v.iter().all(|c| c.is_finite()).then_some(v)
 }
 
+/// The first two components, if both are finite.
 fn floats2(value: &Value) -> Option<[f32; 2]> {
-    value.as_floats()?.get(..2)?.try_into().ok()
+    let v: [f32; 2] = value.as_floats()?.get(..2)?.try_into().ok()?;
+    v.iter().all(|c| c.is_finite()).then_some(v)
 }
 
 #[cfg(test)]
@@ -434,6 +441,37 @@ hookups_exterior_only[]: sunshld
         assert!(tuning.pins[1].double_sided && !tuning.pins[0].double_sided);
         assert_eq!(tuning.interior_only, vec!["carpet".to_owned()]);
         assert_eq!(tuning.hookups_exterior_only, vec!["sunshld".to_owned()]);
+    }
+
+    #[test]
+    fn non_finite_orbit_values_fall_back_to_defaults() {
+        // `&7fc00000` is a NaN and `&7f800000` +inf as SII hex floats.
+        let src = br#"SiiNunit
+{
+ui_truck_scene_config : _nameless.config {
+camera_aim: ( 0.0, &7fc00000, 0.0 )
+camera_elevation_limit: (&7fc00000, &7fc00000)
+camera_relative_bounds: (&7f800000, 7.5, 7.5)
+camera_default_azimuth: &7fc00000
+camera_default_zoom: &7f800000
+}
+}"#;
+        let doc = sii::parse("/def/s.sii", src).expect("parse");
+        let unit = doc.units_of_class(TUNING_SCENE_CLASS).next().expect("unit");
+        let fs = GameFs::new(specsheet_archive::Vfs::new());
+        let tuning = tuning_scene_from_unit(&fs, "/def/s.sii", unit);
+        // A non-finite aim leaves no usable camera.
+        assert_eq!(tuning.orbit, None);
+        let src = String::from_utf8_lossy(src).replace("( 0.0, &7fc00000, 0.0 )", "( 0, 2, 0 )");
+        let doc = sii::parse("/def/s.sii", src.as_bytes()).expect("parse");
+        let unit = doc.units_of_class(TUNING_SCENE_CLASS).next().expect("unit");
+        let orbit = tuning_scene_from_unit(&fs, "/def/s.sii", unit)
+            .orbit
+            .expect("orbit");
+        assert!(orbit.elevation_limit.iter().all(|v| v.is_finite()));
+        assert!(orbit.relative_bounds.iter().all(|v| v.is_finite()));
+        assert!(orbit.azimuth.is_finite() && orbit.zoom.is_finite());
+        assert!(orbit.position().iter().all(|v| v.is_finite()));
     }
 
     #[test]
