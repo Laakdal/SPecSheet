@@ -1,12 +1,172 @@
-//! The game's truck-tuning ("desktop") scenes: `/def/desktop/config*.sii`
-//! (`ui_truck_scene_base_config`, finding F7) and their cinematic cameras
-//! (`/def/camera/ui/*.sii`, `cinematic_camera` / `orbit_camera` /
-//! `camera_animation_info`).
+//! The game's truck scenes:
+//! * the truck configuration screen's own scene, named by the `config_path`
+//!   of the `ui_truck_scene` widget in `/ui/truck_configuration_bcg.sii`
+//!   (`ui_truck_scene_config`: garage model, lights, an orbit camera and
+//!   per-slot pin data; see [`tuning_scene`]);
+//! * the hub ("desktop") scenes: `/def/desktop/config*.sii`
+//!   (`ui_truck_scene_base_config`, finding F7) and their cinematic cameras
+//!   (`/def/camera/ui/*.sii`, `cinematic_camera` / `orbit_camera` /
+//!   `camera_animation_info`).
 
 use specsheet_formats::sii::{SiiDocument, Unit, Value};
 
-use crate::error::Result;
+use crate::error::{GameDataError, Result};
 use crate::fs::GameFs;
+
+/// Background layout of the truck configuration screen. The executable
+/// names it next to the `truck_config_hdl_u` strings (F8); the screen's
+/// `screen_desc` does not list it.
+const TUNING_BACKGROUND_LAYOUT: &str = "/ui/truck_configuration_bcg.sii";
+const TUNING_SCENE_WIDGET: &str = "ui_truck_scene";
+const TUNING_SCENE_CLASS: &str = "ui_truck_scene_config";
+
+/// The truck configuration screen's orbit camera, in the definition's own
+/// terms: angles in radians around `aim`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct OrbitSpec {
+    pub aim: [f32; 3],
+    /// Vertical field of view in degrees.
+    pub fov: f32,
+    pub azimuth: f32,
+    pub elevation: f32,
+    pub zoom: f32,
+    /// `(min, max)` elevation.
+    pub elevation_limit: [f32; 2],
+    pub relative_bounds: [f32; 3],
+    pub aim_y_bounds: [f32; 2],
+    pub rotation_sensitivity: f32,
+    pub zoom_sensitivity: f32,
+}
+
+impl OrbitSpec {
+    /// The default camera position (Hypothesis): `azimuth` turns around +y
+    /// from +z towards +x, negative `elevation` raises the camera, and the
+    /// distance is `zoom` times the x extent of `relative_bounds`. With the
+    /// 1.60 values this is a front-left three-quarter view about 7.5 m out.
+    pub fn position(&self) -> [f32; 3] {
+        let distance = self.zoom * self.relative_bounds[0];
+        let (sin_az, cos_az) = self.azimuth.sin_cos();
+        let (sin_el, cos_el) = self.elevation.sin_cos();
+        [
+            self.aim[0] + distance * cos_el * sin_az,
+            self.aim[1] - distance * sin_el,
+            self.aim[2] + distance * cos_el * cos_az,
+        ]
+    }
+}
+
+/// Where and how a slot's pin is drawn (`pin_*` arrays, parallel by index).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PinSpec {
+    /// Slot name the entry applies to (Hypothesis: 60 of 65 match a truck
+    /// slot directory).
+    pub group: String,
+    /// Pin style: `custom_acc`, or `acc_cover` / `acc_hub` / `acc_nuts`.
+    pub look: String,
+    pub offset: [f32; 3],
+    pub dir: [f32; 3],
+    /// Direction for right-hand-drive (UK) trucks.
+    pub dir_uk: [f32; 3],
+    pub double_sided: bool,
+}
+
+/// The truck configuration screen's scene: what the game shows behind the
+/// tuning UI.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TuningScene {
+    /// Model, lights and truck pose; `camera` is the orbit's default pose.
+    pub scene: Scene,
+    pub orbit: Option<OrbitSpec>,
+    pub pins: Vec<PinSpec>,
+    /// Slots whose pins only show in the interior view.
+    pub interior_only: Vec<String>,
+    /// Hookup slots whose pins only show in the exterior view.
+    pub hookups_exterior_only: Vec<String>,
+}
+
+/// Loads the truck configuration screen's scene through its background
+/// layout's `config_path`.
+pub fn tuning_scene(fs: &GameFs) -> Result<TuningScene> {
+    let layout = fs.read_sii(TUNING_BACKGROUND_LAYOUT)?;
+    let path = layout
+        .units_of_class(TUNING_SCENE_WIDGET)
+        .find_map(|unit| unit.get_str("config_path"))
+        .ok_or_else(|| GameDataError::Definition {
+            path: TUNING_BACKGROUND_LAYOUT.to_owned(),
+            message: format!("no {TUNING_SCENE_WIDGET} with a config_path"),
+        })?
+        .to_owned();
+    let doc = fs.read_sii(&path)?;
+    let unit = doc
+        .units_of_class(TUNING_SCENE_CLASS)
+        .next()
+        .ok_or_else(|| GameDataError::Definition {
+            path: path.clone(),
+            message: format!("no {TUNING_SCENE_CLASS} unit"),
+        })?;
+    Ok(tuning_scene_from_unit(fs, &path, unit))
+}
+
+fn tuning_scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> TuningScene {
+    let mut scene = scene_from_unit(fs, path, unit);
+    let vec3 = |key: &str| unit.get(key).and_then(floats3);
+    let vec2 = |key: &str| unit.get(key).and_then(floats2);
+    let orbit = vec3("camera_aim").map(|aim| OrbitSpec {
+        aim,
+        fov: unit.get_f32("camera_fov").unwrap_or(45.0),
+        azimuth: unit.get_f32("camera_default_azimuth").unwrap_or(0.0),
+        elevation: unit.get_f32("camera_default_elevation").unwrap_or(0.0),
+        zoom: unit.get_f32("camera_default_zoom").unwrap_or(1.0),
+        elevation_limit: vec2("camera_elevation_limit").unwrap_or([-1.5, 1.5]),
+        relative_bounds: vec3("camera_relative_bounds").unwrap_or([7.5; 3]),
+        aim_y_bounds: vec2("camera_aim_y_bounds").unwrap_or([f32::MIN, f32::MAX]),
+        rotation_sensitivity: unit.get_f32("mouse_rot_sens").unwrap_or(1.0),
+        zoom_sensitivity: unit.get_f32("camera_zoom_sens").unwrap_or(1.0),
+    });
+    if let Some(orbit) = &orbit {
+        scene.camera = Some(CameraPose {
+            position: orbit.position(),
+            aim: orbit.aim,
+            fov: orbit.fov,
+        });
+    }
+    let strings =
+        |key: &str| -> Vec<String> { unit.array_str(key).into_iter().map(str::to_owned).collect() };
+    let looks = strings("pin_look");
+    let offsets = unit.array("pin_offset");
+    let dirs = unit.array("pin_dir");
+    let dirs_uk = unit.array("pin_dir_uk");
+    let double_sided = unit.array("double_sided");
+    // The arrays are parallel; an entry missing a field gets a neutral one.
+    let pins = strings("pin_group")
+        .into_iter()
+        .enumerate()
+        .map(|(i, group)| {
+            let dir = dirs
+                .get(i)
+                .and_then(|v| floats3(v))
+                .unwrap_or([0.0, 0.0, 1.0]);
+            PinSpec {
+                group,
+                look: looks.get(i).cloned().unwrap_or_default(),
+                offset: offsets.get(i).and_then(|v| floats3(v)).unwrap_or([0.0; 3]),
+                dir,
+                dir_uk: dirs_uk.get(i).and_then(|v| floats3(v)).unwrap_or(dir),
+                double_sided: double_sided
+                    .get(i)
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
+            }
+        })
+        .collect();
+    TuningScene {
+        scene,
+        orbit,
+        pins,
+        interior_only: strings("interior_only"),
+        hookups_exterior_only: strings("hookups_exterior_only"),
+    }
+}
 
 const SCENE_DIR: &str = "/def/desktop";
 const SCENE_CLASS: &str = "ui_truck_scene_base_config";
@@ -191,6 +351,10 @@ fn floats3(value: &Value) -> Option<[f32; 3]> {
     value.as_floats()?.get(..3)?.try_into().ok()
 }
 
+fn floats2(value: &Value) -> Option<[f32; 2]> {
+    value.as_floats()?.get(..2)?.try_into().ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,6 +385,55 @@ mod tests {
         let far =
             framing(&pose([3.65, 1.88, -8.87], [-277.3, -4.8, 576.1]), truck).expect("frames");
         assert!(far.aim.iter().all(|c| c.abs() < 6.0), "{:?}", far.aim);
+    }
+
+    #[test]
+    fn reads_the_tuning_screen_orbit_and_parallel_pin_arrays() {
+        let src = br#"SiiNunit
+{
+ui_truck_scene_config : _nameless.config {
+camera_aim: ( 0.0, 2.6, -1.465 )
+camera_elevation_limit: (-0.35, 0.0)
+camera_relative_bounds: (7.5, 7.5, 7.5)
+camera_fov: 50
+camera_default_azimuth: -2.516
+camera_default_elevation: -0.068
+camera_default_zoom: 1
+scene_model_path: "/model/ui/garage/g.pmd"
+pin_group[]: air_tank
+pin_look[]: custom_acc
+pin_offset[]: (0.0, 0.0, 0.0)
+pin_dir[]: (0, 0, 1)
+pin_dir_uk[]: (0, 0, 1)
+double_sided[]: false
+pin_group[]: f_tire
+pin_look[]: custom_acc
+pin_offset[]: (-0.1, 0.4, 0.0)
+pin_dir[]: (-1, 0, 0)
+pin_dir_uk[]: (-1, 0, 0)
+double_sided[]: true
+interior_only[]: carpet
+hookups_exterior_only[]: sunshld
+}
+}"#;
+        let doc = sii::parse("/def/s.sii", src).expect("parse");
+        let unit = doc.units_of_class(TUNING_SCENE_CLASS).next().expect("unit");
+        let fs = GameFs::new(specsheet_archive::Vfs::new());
+        let tuning = tuning_scene_from_unit(&fs, "/def/s.sii", unit);
+        let orbit = tuning.orbit.expect("orbit");
+        assert_eq!(orbit.fov, 50.0);
+        assert_eq!(orbit.elevation_limit, [-0.35, 0.0]);
+        // Front-left three-quarter view, slightly above the aim, ~7.5 m out.
+        let [x, y, z] = orbit.position();
+        assert!(x < -3.0 && z < -5.0 && y > orbit.aim[1], "{:?}", [x, y, z]);
+        let camera = tuning.scene.camera.expect("camera");
+        assert_eq!(camera.aim, orbit.aim);
+        assert_eq!(tuning.pins.len(), 2);
+        assert_eq!(tuning.pins[1].group, "f_tire");
+        assert_eq!(tuning.pins[1].offset, [-0.1, 0.4, 0.0]);
+        assert!(tuning.pins[1].double_sided && !tuning.pins[0].double_sided);
+        assert_eq!(tuning.interior_only, vec!["carpet".to_owned()]);
+        assert_eq!(tuning.hookups_exterior_only, vec!["sunshld".to_owned()]);
     }
 
     #[test]

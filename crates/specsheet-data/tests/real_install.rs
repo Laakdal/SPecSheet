@@ -176,6 +176,22 @@ fn every_preset_validates_and_assembles_without_warnings() {
 }
 
 #[test]
+fn the_truck_configuration_screen_has_a_scene_orbit_and_pins() {
+    let Some(fs) = game_fs() else { return };
+    let tuning = specsheet_data::scene::tuning_scene(&fs).expect("tuning scene");
+    let model = tuning.scene.model.as_ref().expect("scene model");
+    assert!(fs.exists(&model.path), "missing {}", model.path);
+    let orbit = tuning.orbit.as_ref().expect("orbit camera");
+    assert!(orbit.fov > 0.0 && orbit.relative_bounds[0] > 0.0);
+    assert!(tuning.scene.camera.is_some());
+    assert!(!tuning.pins.is_empty(), "no pin data");
+    assert!(tuning
+        .pins
+        .iter()
+        .all(|p| !p.group.is_empty() && !p.look.is_empty()));
+}
+
+#[test]
 fn every_tuning_scene_has_a_model_and_a_camera() {
     let Some(fs) = game_fs() else { return };
     let scenes = specsheet_data::scene::list_scenes(&fs).expect("scenes");
