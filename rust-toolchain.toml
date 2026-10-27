@@ -1,0 +1,5 @@
+# Pins the compiler every machine, session and CI run uses. Bevy 0.19 needs
+# 1.95; upgrading Rust (or Bevy) is a deliberate change made here.
+[toolchain]
+channel = "1.95.0"
+components = ["rustfmt", "clippy"]

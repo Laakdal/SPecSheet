@@ -3,7 +3,7 @@ name = "specsheet"
 version = "0.1.0"
 description = "SpecSheet: standalone ETS2 truck tuning viewer (Bevy + egui)."
 edition.workspace = true
-rust-version = "1.95"
+rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
