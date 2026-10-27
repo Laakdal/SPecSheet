@@ -287,7 +287,7 @@ fn widget_markup(
     let args: Vec<&str> = value.map(|v| v.split('|').collect()).unwrap_or_default();
     let template = widget.look_template.as_deref();
     if let Some(text) = template.and_then(|t| assets.templates.text(t)) {
-        return Some(substitute(&text.markup, &args));
+        return Some(fill(&text.markup, &args));
     }
     if let Some(button) = template.and_then(|t| assets.templates.button(t)) {
         let markup = if hovered() {
@@ -295,7 +295,7 @@ fn widget_markup(
         } else {
             &button.normal
         };
-        return Some(substitute(markup, &args));
+        return Some(fill(markup, &args));
     }
     widget.text.clone()
 }
@@ -335,12 +335,45 @@ fn tab_row(
         } else {
             &button.normal
         };
-        cx.paint(&substitute(markup, &[token]), [width, height], rect);
+        cx.paint(&fill(markup, &[token]), [width, height], rect);
         if response.clicked() {
             clicks.push(Click::Tab(tab));
         }
     }
     Some(target)
+}
+
+/// Fills a template's parameters. An `<img>` whose tag uses an empty or
+/// missing argument is dropped first: it would name an image that does not
+/// exist (`accessory_%9.mat` with no `%9`). Design: the game draws nothing
+/// there either, as far as screenshots show.
+fn fill(template: &str, args: &[&str]) -> String {
+    let empty = |tag: &str| {
+        let bytes = tag.as_bytes();
+        bytes.windows(2).any(|w| {
+            w[0] == b'%'
+                && w[1].is_ascii_digit()
+                && args
+                    .get(usize::from(w[1] - b'0'))
+                    .is_none_or(|a| a.is_empty())
+        })
+    };
+    let mut kept = String::with_capacity(template.len());
+    let mut rest = template;
+    while let Some(start) = rest.find("<img") {
+        kept.push_str(&rest[..start]);
+        let Some(len) = rest[start..].find('>') else {
+            rest = &rest[start..];
+            break;
+        };
+        let tag = &rest[start..start + len + 1];
+        if !empty(tag) {
+            kept.push_str(tag);
+        }
+        rest = &rest[start + len + 1..];
+    }
+    kept.push_str(rest);
+    substitute(&kept, args)
 }
 
 /// Price as the game prints it (`€ 22 563,-` in the layout placeholders).
@@ -445,7 +478,7 @@ fn tile_markup(
     } else {
         &button.normal
     };
-    substitute(markup, &args)
+    fill(markup, &args)
 }
 
 /// The slot a base tab shows directly, if any.
@@ -492,6 +525,15 @@ mod tests {
             egui::vec2(720.0, 450.0),
         ));
         assert_eq!(half.rect(KeepAspect::Left, &r).width(), 50.0);
+    }
+
+    #[test]
+    fn drops_images_named_by_empty_arguments() {
+        let markup = "<img src=/a/%1>x<img src=/t/accessory_%9.mat color=FF>%0";
+        assert_eq!(
+            fill(markup, &["Cab", "cab_icon"]),
+            "<img src=/a/cab_icon>xCab"
+        );
     }
 
     #[test]
