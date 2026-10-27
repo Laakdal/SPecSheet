@@ -26,6 +26,11 @@ ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
   cargo test -p specsheet-data --release --test real_install
 ```
 
+**Game version pin.** The research and tests were checked against ETS2 `TESTED_GAME_VERSION` (`specsheet-data/src/install.rs`, currently 1.60.1.7). `GameInstall::version()` reads it from `version.scs` (`fs_pack_set.version`). With `ETS2_DIR` set, `cargo test -p specsheet-data --test game_version` fails on any other version. After a game update:
+1. rerun the real-install tests;
+2. recheck `docs/PARITY.md` and `docs/REVERSE_ENGINEERING.md`;
+3. raise the constant.
+
 **Which crates to check.** The library crates never depend on Bevy. Testing only the crates a change touches, plus their dependents, avoids compiling the roughly 400 Bevy crates. The full table is in `AGENTS.md` under "Done means":
 
 ```
