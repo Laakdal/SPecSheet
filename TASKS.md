@@ -85,8 +85,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 4. **Wheels:** whether the tuning screen shows lift axles raised or lowered (reference screenshot or REA), the inner twin-tyre bead, `wheel_shift`. Axle variants are done (F13).
 5. **UI fidelity:** the game screen is drawn from its layouts (see Done). Next:
    - the game's MSDF fonts instead of egui's;
-   - per-line centring of wrapped text;
-   - price box, money and cart;
+   - money (needs the player's profile) and the cart;
    - the colour picker on the colour tab;
    - search and filter;
    - the game's pin look (`pin_look`, `custom_acc`);
