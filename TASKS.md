@@ -62,6 +62,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - pins only on the accessory tabs.
   - The app opens on `/def/truck_config_scene.sii` with the game's orbit camera.
   - Seen working in `SPECSHEET_SCRIPT` screenshots: cabin tab, exterior accessories with pins, the light-bar list, and a pick that fits the bar and moves the ✓.
+- [x] **Visual parity runner:** `specsheet --parity` renders `parity/cases.json` (Scania S preset, Volvo FH 2024 preset, Scania S with the first light bar) and scores them against references in `research/parity/` (MAE, SSIM, diff heatmap). Verified end to end with a render as its own reference (MAE 0, SSIM 1); real references are still to be captured by the user (`docs/DEVELOPMENT.md`).
 
 ## In progress
 
