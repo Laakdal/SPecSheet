@@ -6,3 +6,5 @@
 .claude/settings.local.json
 # Screenshots of the app stay local (rendered game content, large).
 /research/screenshots/
+# Reference screenshots of the real game for parity checks (local only).
+/research/parity/
