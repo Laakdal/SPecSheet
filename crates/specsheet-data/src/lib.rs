@@ -13,6 +13,7 @@ pub mod render;
 pub mod scene;
 pub mod session;
 pub mod slots;
+pub mod ui;
 pub mod view;
 
 pub use catalog::{

@@ -192,6 +192,60 @@ fn the_truck_configuration_screen_has_a_scene_orbit_and_pins() {
 }
 
 #[test]
+fn the_truck_configuration_screen_layouts_and_templates_load() {
+    use specsheet_data::ui;
+    let Some(fs) = game_fs() else { return };
+    let screen = ui::load_screen(&fs, "truck.config").expect("screen");
+    assert!(!screen.layouts.is_empty());
+    let (templates, failed) = ui::load_templates(&fs).expect("templates");
+    assert!(failed.is_empty(), "templates failed to parse: {failed:?}");
+    let mut failures = Vec::new();
+    for layout in &screen.layouts {
+        assert!(!layout.widgets.is_empty(), "{}: no widgets", layout.path);
+        for widget in &layout.widgets {
+            if let Some(name) = &widget.look_template {
+                if templates.class(name).is_none() {
+                    failures.push(format!("{}: unknown template {name}", layout.path));
+                }
+            }
+            if !widget.id_list.is_empty() && widget.id_list.len() != widget.value_list.len() {
+                failures.push(format!("{}: {} ids vs values", layout.path, widget.name));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn every_accessory_icon_material_names_an_existing_texture() {
+    use specsheet_data::{list_trucks, load_catalog, ui};
+    let Some(fs) = game_fs() else { return };
+    let mut icons = std::collections::BTreeSet::new();
+    for truck in list_trucks(&fs).expect("trucks") {
+        let (catalog, _) = load_catalog(&fs, &truck.id).expect("catalog");
+        icons.extend(catalog.accessories().filter_map(|a| a.icon.clone()));
+    }
+    assert!(!icons.is_empty());
+    let mut failures = Vec::new();
+    for icon in &icons {
+        let path = ui::accessory_icon(icon);
+        // A few definitions name icons the game does not ship; those are
+        // data quirks, not parse failures.
+        if !fs.exists(&path) {
+            continue;
+        }
+        match ui::load_ui_material(&fs, &path) {
+            Ok(material) => match material.texture {
+                Some(texture) if fs.exists(&texture) => {}
+                other => failures.push(format!("{path}: texture {other:?}")),
+            },
+            Err(error) => failures.push(format!("{path}: {error}")),
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
 fn every_tuning_scene_has_a_model_and_a_camera() {
     let Some(fs) = game_fs() else { return };
     let scenes = specsheet_data::scene::list_scenes(&fs).expect("scenes");
