@@ -27,5 +27,5 @@ For each feature, how close we are to in-game tuning. The goal is a 1:1 replica 
 | Paint jobs | base colour | | masks, flakes, liveries | |
 | Interior seen through the windows | ✔ `ext_model` at `ext_interior` (F10) | | RHD interior units | |
 | Interior camera and interior slots | | | ✔ | |
-| Addon hookups (accessories on accessories) | | | ✔ | F8 strings show parent/position structure |
+| Addon hookups (accessories on accessories) | ✔ catalogue, `slot_NN` positions, `slot_name`/`slot_hookup` (F11) | dropped when the host changes | per-position type limits | Placement verified on the game's oversize Mercedes |
 | `overrides[]`, `hide_in` | | | ✔ | |

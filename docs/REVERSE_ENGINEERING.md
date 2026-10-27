@@ -160,6 +160,30 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
 - **Implementation.** `game-data::assembly` places it there. The real-install test `every_preset_validates_and_assembles_without_warnings` requires an interior placement for every preset in both drives.
 - **Unknown.** Right-hand drive uses separate `uk_*` interior units (`left_hand_traffic: true`). The app keeps the preset's interior when switching drive.
 
+### F11: Addon hookups mount on numbered positions of their host accessory (Confirmed data, Hypothesis on position rules)
+Evidence:
+- `research/evidence/hookup-slot-survey.txt` (example `hookup_survey`);
+- the definitions below, read with the `scs`, `attr_scan` and `model_info` examples;
+- F8 strings `A hookup already exists on the given position (%Iu) for parent '%s'` and `Parent accessory not found for hookup`.
+
+- **Catalogue (Confirmed).**
+  - `/def/vehicle/addon_hookup_storage.sii`, plus one `addon_hookup_storage.<dlc>.sii` per DLC, include `addon_hookups/*.sui`.
+  - Classes: `accessory_hookup_data` (aux lights, beacons, small lights), `accessory_horn_hookup_data`, and `accessory_hookup_int_data` / `accessory_hookup_int_ui_data` (dashboard, glass and cup-holder items).
+  - Each unit (`<id>.addon_hookup`) has `model`, `name`, `icon`, `price`, `unlock` and `suitable_for[]`. Unlike accessories, its `suitable_for[]` lists **host slot names**: `light` → `r_grill`, `f_grill`; `smalllight` → 16 host slots including `f_bumper`, `sideskirt`, `exhaust_l`; `horn` → `r_grill`; dashboard items → `set_dashbrd`.
+- **Positions (Confirmed).**
+  - Host accessory models carry locators `slot_<n>`. Example: `dutch_lightbox_modern.pmd` has `slot_74` … `slot_78`.
+  - The survey found them on 20 host slots, from 1 model (`f_logo`) to 303 models (`r_grill`).
+- **Configuration (Confirmed).**
+  - A host's `vehicle_addon_accessory` stores parallel arrays `slot_name[i]` (position locator) and `slot_hookup[i]` (hookup unit).
+  - Example `/def/vehicle/truck_company/oversize/mercedes_6x4.sii`: `.r_grill` has `slot_name[] = slot_4, slot_0` and `slot_hookup[] = cyl01.addon_hookup` (×2).
+  - 4,131 `vehicle_addon_accessory` units carry the arrays, mostly empty.
+- **Placement (Hypothesis, strong).**
+  - A hookup sits at the host model's position locator, composed with the host's own placement.
+  - Real-install test `configured_hookups_sit_on_their_host_model`: both beacons of the example land within the light bar's bounds.
+- **Unknown.**
+  - Whether a position restricts which hookup types fit it (big vs small lights). Today any hookup that fits the host slot may go on any of its positions.
+  - The per-type size limits the game may apply.
+
 ## Open questions
 
 | Question | Next step |

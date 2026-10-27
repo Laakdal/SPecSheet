@@ -58,9 +58,17 @@ The app starts every truck from its game preset.
 
 A base-model locator belongs to the longest slot name it starts with (`mirror_s` → `mirror`, `doorsteps` → `doorstep`). Only locators in parts visible in the current variant count. That variant is `variant`, or `variant_uk` in right-hand drive. The UK cabin parts carry mirrored locators.
 
+## Addon hookups (F11)
+
+- `Hookup` units (aux lights, beacons, horns, small lights, dashboard items) are loaded into each truck's catalog when they fit one of its slots. The catalog adds them with `TruckCatalog::with_hookups`.
+- `Configuration` maps `host slot → position (slot_NN) → hookup`:
+  - `set_hookup` requires that the host slot is filled, that the hookup lists the host slot in `suitable_for[]`, and that the position exists on the host model (positions come from `Assembly::hookup_positions`);
+  - changing or removing a host accessory removes its hookups (Design);
+  - `validate` reports `InvalidHookup`.
+- Game configs (`slot_name[]` / `slot_hookup[]`) load through `load_preset` and `load_vehicle_config`.
+
 ## Not implemented yet
 
-- Addon hookups (`/def/vehicle/addon_hookups`, accessories mounted on accessories, e.g. horns on light bars).
 - `overrides[]`.
 - `hide_in`.
 - Paint-job textures and masks (only the base colour is applied).
