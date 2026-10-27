@@ -92,6 +92,12 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Tuning scenes | `specsheet-data/src/scene.rs` | unit; `real_install::every_tuning_scene_has_a_model_and_a_camera` |
 | Display strings | `specsheet-data/src/localization.rs` | unit |
 | Session (options, select, hookups, drive) | `specsheet-data/src/session.rs` | through `real_install` |
+| Display data: labels, which slots get markers, incompatibility reasons | `specsheet-data/src/view.rs` | unit |
+| App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
+| Meshes, materials, textures to GPU (with upload checks) | `specsheet/src/assets.rs` | unit |
+| Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
+| egui panels and hotspot markers (projection, culling, clustering) | `specsheet/src/{ui,hotspots}.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
+| Dev script mode | `specsheet/src/script.rs` | unit |
 
 ## Read only when needed
 
