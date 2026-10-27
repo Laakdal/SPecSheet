@@ -1,0 +1,17 @@
+[package]
+name = "game-data"
+version = "0.1.0"
+description = "Loads ETS2 installation data: archives, truck/accessory definitions and models."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+scs-archive = { path = "../scs-archive" }
+scs-formats = { path = "../scs-formats" }
+tuning-core = { path = "../tuning-core" }
+thiserror.workspace = true
+
+[lints]
+workspace = true
