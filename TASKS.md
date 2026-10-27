@@ -60,7 +60,9 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 
 - [x] REA trace: the pin-button string is used by `FUN_140fe0fc0` (F8).
-- [ ] REA decompilation of `FUN_140fe0fc0` (pin creation). The first run was stopped by Claude Code when the machine ran low on memory (Ghidra plus other sessions' builds). Re-run it when memory allows, with the CLI command from CLAUDE.md: `rea function <exe> --procedure=0x140fe0fc0`.
+- [x] REA decompilation of `FUN_140fe0fc0` (F5): it selects a pin (button `10000 + n`; hookups `11000 + m`) after switching to one of the game's 8 tabs. It does not create or place pins.
+- [ ] License-safe re-derivation of the PMG/PMD layouts and texture `unpack` from our own byte dumps (approved by the user; dumps are in the scratchpad).
+- [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
 
 ## Next
 
@@ -70,8 +72,8 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 2. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
 3. **Interior:** interior models and an interior camera; `hide_in`.
 4. **Wheels:** rear-axle and lift-axle variants (6x2/8x4), inner twin-tyre bead, `wheel_shift`.
-5. **UI fidelity:** game accessory icons and categories; layout per `ui/truck_configuration_center.sii`.
-6. **REA decompilation:** callers of `0x14223d860` (pin creation) and `0x1421c2f90` (locator lookup), then `hide_in` and defaults/repair. Each CLI call re-runs the roughly 28 min analysis; can be delegated to the `ets2-researcher` subagent.
+5. **UI fidelity:** game accessory icons; the game's 8 tabs (F5) as categories; layout per `ui/truck_configuration_center.sii`.
+6. **REA decompilation:** `FUN_140fbf860` (pin creation and placement, the caller of `FUN_140fe0fc0`) and the caller of `0x1421c2f90` (locator lookup), batched into one run; then `hide_in` and defaults/repair. Each CLI call re-runs the roughly 28 min analysis; can be delegated to the `ets2-researcher` subagent.
 7. **Markers:** anchor empty slots on their first compatible option, put a wheel group on the camera-side wheel, and add a depth test (see docs/app/hotspots.md "Known gaps").
 8. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `crates/specsheet/icon.png`.
 9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
