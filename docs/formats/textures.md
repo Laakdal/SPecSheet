@@ -17,7 +17,7 @@ The image record is two `u32`s: a dims word (width − 1 in bits 0–15, height 
 | 20–23 | log₂ pitch alignment        |
 | 24–27 | log₂ image alignment        |
 
-**Status: Confirmed** (`research/evidence/texture-unpack-derivation.txt`, `texture_layout` example). The fields predict the exact decompressed size of every sampled texture, about 25 per format and face count, cube maps included. The prediction fails under any other padding model.
+**Status: Confirmed** (`research/evidence/texture-unpack-derivation.txt`, `texture_layout` example). The fields predict the exact decompressed size of every sampled texture, about 25 per format and face count, cube maps included. The prediction fails under any other padding model. Across every texture in the base archives, the cube flag is set exactly on the 60 six-face textures.
 
 ## Sample record
 

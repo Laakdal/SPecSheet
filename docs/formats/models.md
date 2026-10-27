@@ -70,7 +70,7 @@ Evidence: `research/evidence/pmg-layout-derivation.txt`. Record sizes come from 
 - colour `u32`;
 - [uv `2f × n`].
 
-colour2 and the bone streams never occur in the samples. The parser sizes them as `u32` and `4u8 + 4u8`, and rejects any piece whose stored stride disagrees with the present streams. Every truck model passes (`real_install::every_truck_model_parses`).
+colour2 and the bone streams never occur in the six dumps. The parser sizes them as `u32`, `4u8` and `4u8`, and rejects any piece whose stored stride disagrees with the present streams. Every `.pmg` in the base archives passes: 53,917 models, of them 4,388 skinned. This confirms the bone stream sizes; colour2 remains Reference.
 
 **Indices** are a `u16` triangle list per piece. Each piece's list starts 4-byte aligned. Front faces are **clockwise**: in 99.3% of 4.85M sampled triangles, the face normal is opposite the stored vertex normal (`research/evidence/geometry-survey.txt`).
 

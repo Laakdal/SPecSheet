@@ -77,7 +77,7 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - hookup pin = button `11000 + m`;
   - the tab ids come from an `.rdata` table sorted by id: `500 510 520 530 540 550 560 570 571 572`. Names come from the `id_list` positions above: 500 chassis, 510 cabin, 520 engine, 530 transmission, 540 interior, 550 color, 560 e_accessories, 570 i_accessories. 571/572 are `trailer_chain`/`trailer_body` in `ui/trailer_configuration_center.sii` (`research/evidence/ui-layout-survey.txt` §K).
 - **Which slots get a pin (Hypothesis, strong).**
-  - Slots in a 12-token table filled at run time use a fixed tab button and get no pin. These are presumably cabin, chassis, engine, transmission and paint.
+  - Slots in a token table filled at run time use a fixed tab button and get no pin. These are presumably cabin, chassis, engine, transmission and paint. The loop scans 12 tokens, but the id table holds 10 ids; how the last two map is **Unknown**.
   - Every other accessory gets a pin under `e_accessories` (560). It goes under `i_accessories` (570) instead when its slot is in an interior-slot token list or is `steering_w` (a token stored in the executable).
   - **File-backed candidate for the interior list (Hypothesis).** `/def/truck_config_scene.sii` has `interior_only[]` with 17 slot names, all of them truck slot directories. It also has `hookups_exterior_only[]: sunshld` (ui-layout-survey §M).
 - **Pin data (Confirmed contents, Hypothesis use).** `/def/truck_config_scene.sii` is the `config_path` of the scene widget in `ui/truck_configuration_bcg.sii` (`ui_truck_scene`, id 400). It holds 65 parallel entries: `pin_group`, `pin_look`, `pin_offset`, `pin_dir`, `pin_dir_uk`, `double_sided` (§J).
@@ -234,7 +234,7 @@ Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chass
 | Question | Next step |
 |---|---|
 | Exact slot-to-locator matching rule (suffixes `_s`, `_sl`, digits) | REA: decompile the caller of `0x1421c2f90` (F8) |
-| How pins are positioned, and which 12 slot tokens use fixed tabs instead | REA: decompile `FUN_140fbf860` (the caller of `FUN_140fe0fc0`, F5) and the writer of the token table `0x14350cc00` |
+| How pins are positioned, and which slot tokens use fixed tabs instead | REA: decompile `FUN_140fbf860` (the caller of `FUN_140fe0fc0`, F5) and the writer of the token table `0x14350cc00` |
 | DLC mount priority | Runtime log does not show it; low impact (DLCs rarely override base files) |
 | Metadata record types `0x05` and `0x06` | No impact on reading content |
 | Meaning of `hide_in` bitmask on addons | Probably camera-dependent hiding; not needed for exterior preview |
