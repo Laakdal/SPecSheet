@@ -217,6 +217,100 @@ fn the_truck_configuration_screen_layouts_and_templates_load() {
 }
 
 #[test]
+fn every_ui_template_parses_and_the_tuning_screen_lays_out() {
+    use specsheet_data::ui::{self, flow};
+    use specsheet_formats::ui_markup;
+    let Some(fs) = game_fs() else { return };
+    let (templates, _) = ui::load_templates(&fs).expect("templates");
+    let mut failures: Vec<String> = templates
+        .markups()
+        .filter_map(|(name, markup)| {
+            ui_markup::parse(markup)
+                .err()
+                .map(|e| format!("{name}: {e}"))
+        })
+        .collect();
+
+    /// Real image sizes; text 8 units per character.
+    struct Real<'a> {
+        fs: &'a specsheet_data::GameFs,
+        missing: Vec<String>,
+    }
+    impl flow::Measure for Real<'_> {
+        fn image_size(&mut self, src: &str) -> Option<[f32; 2]> {
+            let size = ui::load_ui_material(self.fs, src)
+                .ok()
+                .and_then(|m| m.texture)
+                .and_then(|t| specsheet_data::render::load_texture(self.fs, &t).ok())
+                .and_then(|t| t.mips.first().map(|m| [m.width as f32, m.height as f32]));
+            if size.is_none() {
+                self.missing.push(src.to_owned());
+            }
+            size
+        }
+        fn text_size(&mut self, text: &str, font: &flow::Font) -> [f32; 2] {
+            [
+                8.0 * text.chars().count() as f32 * font.scale[0],
+                16.0 * font.scale[1],
+            ]
+        }
+    }
+    let localization =
+        specsheet_data::localization::Localization::load(&fs, "en_us").expect("locale");
+    let screen = ui::load_screen(&fs, "truck.config").expect("screen");
+    let mut measure = Real {
+        fs: &fs,
+        missing: Vec::new(),
+    };
+    let mut laid_out = 0;
+    for layout in &screen.layouts {
+        for widget in &layout.widgets {
+            let Some(template) = widget
+                .look_template
+                .as_deref()
+                .and_then(|t| templates.text(t))
+            else {
+                continue;
+            };
+            let value = widget.value.as_deref().unwrap_or_default();
+            let args: Vec<&str> = value.split('|').collect();
+            let markup = localization.resolve(&ui::substitute(&template.markup, &args));
+            let nodes = match ui_markup::parse(&markup) {
+                Ok(nodes) => nodes,
+                Err(e) => {
+                    failures.push(format!("{}: {e}", widget.name));
+                    continue;
+                }
+            };
+            let size = [widget.rect.width(), widget.rect.height()];
+            for item in flow::layout(&nodes, size, &mut measure) {
+                if item.bounds().iter().any(|v| !v.is_finite()) {
+                    failures.push(format!("{}: non-finite item", widget.name));
+                }
+            }
+            laid_out += 1;
+        }
+    }
+    assert!(laid_out > 0);
+    // Images on the screen's text widgets all exist (lists and pins are
+    // filled by code and are not covered here).
+    failures.extend(
+        measure
+            .missing
+            .iter()
+            .map(|src| format!("missing image {src}")),
+    );
+    assert!(
+        failures.is_empty(),
+        "{}",
+        failures.join(
+            "
+"
+        )
+    );
+}
+
+#[test]
 fn every_accessory_icon_material_names_an_existing_texture() {
     use specsheet_data::{list_trucks, load_catalog, ui};
     let Some(fs) = game_fs() else { return };

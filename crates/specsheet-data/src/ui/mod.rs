@@ -3,6 +3,8 @@
 //! from, UI colours and UI materials. Presentation-neutral: front ends turn
 //! this into drawing and fill the containers the game fills in code.
 
+pub mod flow;
+
 use std::collections::HashMap;
 
 use specsheet_formats::mat::Material;
@@ -259,6 +261,19 @@ impl Templates {
 
     pub fn button(&self, name: &str) -> Option<&ButtonTemplate> {
         self.buttons.get(name)
+    }
+
+    /// Every text template and button state as `(name, markup)`.
+    pub fn markups(&self) -> impl Iterator<Item = (&str, &str)> {
+        let text = self
+            .text
+            .iter()
+            .map(|(name, t)| (name.as_str(), t.markup.as_str()));
+        let buttons = self.buttons.iter().flat_map(|(name, b)| {
+            [&b.normal, &b.selected, &b.pressed, &b.disabled]
+                .map(|markup| (name.as_str(), markup.as_str()))
+        });
+        text.chain(buttons)
     }
 
     /// The class of template `name`, e.g. `slider_template`.
