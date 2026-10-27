@@ -1,0 +1,616 @@
+//! The 3D view: the assembled truck, the game's tuning scene (finding F7)
+//! and the orbit camera. Models load on the async compute pool and are
+//! shared between instances; placements are diffed so unchanged parts stay.
+
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+
+use bevy::camera::Exposure;
+use bevy::core_pipeline::tonemapping::Tonemapping;
+use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll, MouseScrollUnit};
+use bevy::light::EnvironmentMapLight;
+use bevy::pbr::{DistanceFog, FogFalloff};
+use bevy::prelude::*;
+use bevy::render::renderer::RenderDevice;
+use bevy::render::settings::WgpuFeatures;
+use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
+use specsheet_data::assembly::Placement;
+use specsheet_data::scene::Scene;
+
+use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
+use crate::studio::Studio;
+
+/// Parent of every truck model; carries the scene's truck pose.
+#[derive(Component)]
+pub struct TruckRoot;
+
+/// Parent of the scene (garage) model.
+#[derive(Component)]
+pub struct SceneRoot;
+
+/// The floor shown while no scene model is loaded.
+#[derive(Component)]
+pub struct FallbackFloor;
+
+#[derive(Component)]
+pub struct Sun;
+
+/// Orbit camera state, in the spirit of three.js `OrbitControls`.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub struct Orbit {
+    pub target: Vec3,
+    /// Angle around +y, 0 looking from +z.
+    pub yaw: f32,
+    /// Elevation above the horizontal plane.
+    pub pitch: f32,
+    pub distance: f32,
+    pub max_distance: f32,
+}
+
+const MIN_DISTANCE: f32 = 2.5;
+const MAX_DISTANCE: f32 = 25.0;
+/// Keeps the camera just above the floor (three.js `maxPolarAngle` 0.495π).
+const MIN_PITCH: f32 = 0.005 * std::f32::consts::PI;
+const MAX_PITCH: f32 = 0.5 * std::f32::consts::PI - 0.01;
+const ROTATE_SPEED: f32 = 0.008;
+
+impl Orbit {
+    pub fn from_pose(position: Vec3, target: Vec3) -> Self {
+        let offset = position - target;
+        let distance = offset.length().max(MIN_DISTANCE);
+        let pitch = (offset.y / distance).clamp(-1.0, 1.0).asin();
+        let orbit = Self {
+            target,
+            yaw: offset.x.atan2(offset.z),
+            pitch,
+            distance,
+            max_distance: MAX_DISTANCE.max(distance),
+        };
+        orbit.clamped()
+    }
+
+    fn clamped(mut self) -> Self {
+        self.pitch = self.pitch.clamp(MIN_PITCH, MAX_PITCH);
+        self.distance = self.distance.clamp(MIN_DISTANCE, self.max_distance);
+        self
+    }
+
+    pub fn position(&self) -> Vec3 {
+        let (sin_yaw, cos_yaw) = self.yaw.sin_cos();
+        let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
+        self.target + Vec3::new(cos_pitch * sin_yaw, sin_pitch, cos_pitch * cos_yaw) * self.distance
+    }
+
+    pub fn transform(&self) -> Transform {
+        Transform::from_translation(self.position()).looking_at(self.target, Vec3::Y)
+    }
+}
+
+/// Lighting before a game scene applies, and for pieces a scene omits.
+/// SCS trucks face -z; the default view is a front three-quarter one.
+const DEFAULT_CAMERA: Vec3 = Vec3::new(-6.5, 3.2, -8.5);
+const DEFAULT_TARGET: Vec3 = Vec3::new(0.0, 1.5, 0.0);
+const DEFAULT_FOV_DEGREES: f32 = 40.0;
+const DEFAULT_SUN_DIRECTION: Vec3 = Vec3::new(6.0, -10.0, 8.0);
+const BACKGROUND: Color = Color::srgb(0.082, 0.094, 0.114);
+
+/// Lux per unit of the game's `light_diffuse`, and cd/m² per unit of
+/// `light_ambient` and `light_environment`, at `Exposure::BLENDER`. These
+/// reproduce the three.js viewer's balance; the game's own light units are
+/// Unknown.
+const SUN_LUX: f32 = 1000.0;
+const AMBIENT_NITS: f32 = 1500.0;
+const ENVIRONMENT_NITS: f32 = 500.0;
+const DEFAULT_SUN: f32 = 1.6;
+/// three.js used 0xdde6ff at 0.6 against 1.5 for scenes, folded into the colour.
+const DEFAULT_AMBIENT: [f32; 3] = [0.29, 0.32, 0.4];
+/// The three.js viewer capped the environment at twice its default.
+const MAX_ENVIRONMENT: f32 = 4.0;
+const DEFAULT_ENVIRONMENT: f32 = 2.0;
+
+pub fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    let orbit = Orbit::from_pose(DEFAULT_CAMERA, DEFAULT_TARGET);
+    commands.spawn((
+        Camera3d::default(),
+        Projection::Perspective(PerspectiveProjection {
+            fov: DEFAULT_FOV_DEGREES.to_radians(),
+            near: 0.1,
+            far: 500.0,
+            ..default()
+        }),
+        Camera {
+            clear_color: ClearColorConfig::Custom(BACKGROUND),
+            ..default()
+        },
+        Tonemapping::AcesFitted,
+        Exposure::BLENDER,
+        environment(&mut images, DEFAULT_ENVIRONMENT),
+        orbit.transform(),
+        orbit,
+    ));
+    commands.spawn((
+        Sun,
+        DirectionalLight {
+            illuminance: DEFAULT_SUN * SUN_LUX,
+            shadow_maps_enabled: false,
+            ..default()
+        },
+        Transform::default().looking_to(DEFAULT_SUN_DIRECTION, Vec3::Y),
+    ));
+    commands.insert_resource(GlobalAmbientLight {
+        color: Color::linear_rgb(DEFAULT_AMBIENT[0], DEFAULT_AMBIENT[1], DEFAULT_AMBIENT[2]),
+        brightness: AMBIENT_NITS,
+        ..default()
+    });
+    commands.spawn((
+        FallbackFloor,
+        Mesh3d(meshes.add(Circle::new(14.0))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Color::srgb(0.137, 0.153, 0.18),
+            perceptual_roughness: 0.9,
+            ..default()
+        })),
+        Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+    ));
+    commands.spawn((SceneRoot, Transform::default(), Visibility::default()));
+    commands.spawn((TruckRoot, Transform::default(), Visibility::default()));
+}
+
+/// A neutral studio gradient standing in for the game's cube reflections
+/// (`light_environment` scales it).
+fn environment(images: &mut Assets<Image>, strength: f32) -> EnvironmentMapLight {
+    let mut light = EnvironmentMapLight::hemispherical_gradient(
+        images,
+        Color::linear_rgb(1.0, 1.0, 1.0),
+        Color::linear_rgb(0.45, 0.45, 0.45),
+        Color::linear_rgb(0.12, 0.12, 0.12),
+    );
+    light.intensity = strength * ENVIRONMENT_NITS;
+    light
+}
+
+enum ModelState {
+    Loading(Task<Result<ModelPayload, String>>),
+    Ready(Arc<GpuModel>),
+    Failed,
+}
+
+/// Every model requested so far, by key, and the converted textures.
+#[derive(Resource, Default)]
+pub struct ModelCache {
+    models: HashMap<ModelKey, ModelState>,
+    textures: HashMap<String, Option<Handle<Image>>>,
+    /// Bumped whenever a model finishes loading.
+    generation: u64,
+    /// Load problems, newest last.
+    pub warnings: Vec<String>,
+}
+
+impl ModelCache {
+    /// The model if it is ready; starts loading it otherwise.
+    fn get(&mut self, studio: &Studio, key: &ModelKey) -> Option<Arc<GpuModel>> {
+        match self.models.get(key) {
+            Some(ModelState::Ready(model)) => Some(Arc::clone(model)),
+            Some(_) => None,
+            None => {
+                let game = studio.game.clone()?;
+                let task_key = key.clone();
+                let task = AsyncComputeTaskPool::get()
+                    .spawn(async move { assets::load_model(&game, &task_key) });
+                self.models.insert(key.clone(), ModelState::Loading(task));
+                None
+            }
+        }
+    }
+
+    fn failed(&self, key: &ModelKey) -> bool {
+        matches!(self.models.get(key), Some(ModelState::Failed))
+    }
+
+    pub fn loading(&self) -> bool {
+        self.models
+            .values()
+            .any(|m| matches!(m, ModelState::Loading(_)))
+    }
+}
+
+/// Uploads models whose loading finished.
+pub fn finish_models(
+    mut cache: ResMut<ModelCache>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut images: ResMut<Assets<Image>>,
+    device: Option<Res<RenderDevice>>,
+) {
+    let bc_supported =
+        device.is_some_and(|d| d.features().contains(WgpuFeatures::TEXTURE_COMPRESSION_BC));
+    let cache = &mut *cache;
+    let mut finished = Vec::new();
+    for (key, state) in &mut cache.models {
+        if let ModelState::Loading(task) = state {
+            if let Some(result) = check_ready(task) {
+                finished.push((key.clone(), result));
+            }
+        }
+    }
+    for (key, result) in finished {
+        let state = match result {
+            Ok(payload) => {
+                let mut stores = Stores {
+                    meshes: &mut meshes,
+                    materials: &mut materials,
+                    images: &mut images,
+                    textures: &mut cache.textures,
+                    bc_supported,
+                };
+                let (model, warnings) = assets::upload(payload, &mut stores);
+                cache.warnings.extend(warnings);
+                ModelState::Ready(model)
+            }
+            Err(error) => {
+                cache.warnings.push(format!("{}: {error}", key.path));
+                ModelState::Failed
+            }
+        };
+        cache.models.insert(key, state);
+        cache.generation += 1;
+    }
+}
+
+fn placement_key(placement: &Placement) -> ModelKey {
+    ModelKey {
+        path: placement.model.clone(),
+        look: placement.look.clone(),
+        variant: placement.variant.clone(),
+        parts: Vec::new(),
+    }
+}
+
+/// Instances are diffed by model and transform, so unchanged parts are not
+/// rebuilt.
+fn instance_key(placement: &Placement) -> String {
+    let t = &placement.transform;
+    format!(
+        "{}|{:?}|{:?}|{:?}|{:?}|{}",
+        placement.model, placement.look, placement.variant, t.translation, t.rotation, t.scale
+    )
+}
+
+/// The spawned truck and what it was built from.
+#[derive(Resource, Default)]
+pub struct TruckInstances {
+    entities: HashMap<String, Entity>,
+    /// (truck generation, model-cache generation) last synced.
+    synced: (u64, u64),
+    paint: Option<[f32; 3]>,
+    paintable: HashSet<AssetId<StandardMaterial>>,
+    /// Truck-space bounds of the placed models.
+    pub bounds: Option<(Vec3, Vec3)>,
+}
+
+/// Brings the spawned truck in line with the studio's placements.
+pub fn sync_truck(
+    mut commands: Commands,
+    studio: Res<Studio>,
+    mut cache: ResMut<ModelCache>,
+    mut instances: ResMut<TruckInstances>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    root: Single<Entity, With<TruckRoot>>,
+) {
+    let generations = (studio.truck_generation, cache.generation);
+    if instances.synced == generations {
+        return;
+    }
+    instances.synced = generations;
+    let paint = studio.overview.as_ref().and_then(|o| o.paint_color);
+    let wanted: HashMap<String, &Placement> = studio
+        .placements
+        .iter()
+        .map(|p| (instance_key(p), p))
+        .collect();
+    instances.entities.retain(|key, entity| {
+        let keep = wanted.contains_key(key);
+        if !keep {
+            commands.entity(*entity).despawn();
+        }
+        keep
+    });
+    let mut bounds: Option<(Vec3, Vec3)> = None;
+    let mut new_paintable = Vec::new();
+    for (key, placement) in &wanted {
+        let model_key = placement_key(placement);
+        let Some(model) = cache.get(&studio, &model_key) else {
+            continue;
+        };
+        let t = &placement.transform;
+        let transform = Transform {
+            translation: Vec3::from(t.translation),
+            rotation: Quat::from_array(t.rotation),
+            scale: Vec3::splat(t.scale),
+        };
+        let corners = [model.aabb_min, model.aabb_max];
+        for corner in (0..8).map(|i| {
+            Vec3::new(
+                corners[i & 1].x,
+                corners[(i >> 1) & 1].y,
+                corners[(i >> 2) & 1].z,
+            )
+        }) {
+            let p = transform.transform_point(corner);
+            bounds = Some(bounds.map_or((p, p), |(lo, hi)| (lo.min(p), hi.max(p))));
+        }
+        if instances.entities.contains_key(key) {
+            continue;
+        }
+        let entity = commands
+            .spawn((transform, Visibility::default(), ChildOf(*root)))
+            .id();
+        for (mesh, material) in &model.pieces {
+            commands.spawn((
+                Mesh3d(mesh.clone()),
+                MeshMaterial3d(material.clone()),
+                ChildOf(entity),
+            ));
+        }
+        new_paintable.extend(model.paintable.iter().map(Handle::id));
+        instances.entities.insert(key.clone(), entity);
+    }
+    instances.bounds = bounds;
+    let repaint_all = instances.paint != paint;
+    instances.paint = paint;
+    let color = paint_color(paint);
+    let targets: Vec<AssetId<StandardMaterial>> = if repaint_all {
+        instances.paintable.extend(new_paintable);
+        instances.paintable.iter().copied().collect()
+    } else {
+        new_paintable
+            .into_iter()
+            .filter(|id| instances.paintable.insert(*id))
+            .collect()
+    };
+    for id in targets {
+        if let Some(mut material) = materials.get_mut(id) {
+            material.base_color = color;
+        }
+    }
+}
+
+/// Game paint colours are linear (e.g. Coffee Brown is (0.034, 0.023, 0.014)).
+fn paint_color(paint: Option<[f32; 3]>) -> Color {
+    match paint {
+        Some([r, g, b]) => Color::linear_rgb(r, g, b),
+        None => Color::linear_rgb(0.6, 0.6, 0.6),
+    }
+}
+
+/// The scene as last applied, and its model once spawned.
+#[derive(Resource, Default)]
+pub struct SceneState {
+    generation: u64,
+    model: Option<(ModelKey, [f32; 3])>,
+    model_entity: Option<Entity>,
+    /// True while the scene supplies the camera: the target is not re-centred.
+    pub scene_camera: bool,
+}
+
+/// Applies the selected game scene: camera, lights, fog, truck pose and the
+/// scene model. Each piece falls back on its own.
+pub fn apply_scene(
+    mut commands: Commands,
+    studio: Res<Studio>,
+    mut state: ResMut<SceneState>,
+    mut cache: ResMut<ModelCache>,
+    mut images: ResMut<Assets<Image>>,
+    mut ambient: ResMut<GlobalAmbientLight>,
+    camera: Single<(Entity, &mut Orbit, &mut Projection), With<Camera3d>>,
+    mut sun: Single<(&mut DirectionalLight, &mut Transform), (With<Sun>, Without<TruckRoot>)>,
+    mut truck: Single<&mut Transform, (With<TruckRoot>, Without<Sun>)>,
+    mut floor: Single<&mut Visibility, With<FallbackFloor>>,
+    scene_root: Single<Entity, With<SceneRoot>>,
+) {
+    let (camera_entity, mut orbit, mut projection) = camera.into_inner();
+    if state.generation != studio.scene_generation {
+        state.generation = studio.scene_generation;
+        let Some(scene) = studio.scene.and_then(|i| studio.scenes.get(i)) else {
+            return;
+        };
+        let scene = &scene.scene;
+        if let Some(pose) = &scene.camera {
+            *orbit = Orbit::from_pose(Vec3::from(pose.position), Vec3::from(pose.aim));
+            if let Projection::Perspective(perspective) = &mut *projection {
+                perspective.fov = pose.fov.to_radians();
+            }
+            state.scene_camera = true;
+        }
+        let (sun_light, sun_transform) = &mut *sun;
+        apply_lights(scene, &mut ambient, sun_light, sun_transform);
+        let strength = scene
+            .light_environment
+            .map_or(DEFAULT_ENVIRONMENT, |e| e.min(MAX_ENVIRONMENT));
+        let mut camera_commands = commands.entity(camera_entity);
+        camera_commands.insert(environment(&mut images, strength));
+        match (scene.fog_color, scene.fog_density) {
+            (Some([r, g, b]), Some(density)) => camera_commands.insert(DistanceFog {
+                color: Color::linear_rgb(r, g, b),
+                falloff: FogFalloff::ExponentialSquared { density },
+                ..default()
+            }),
+            _ => camera_commands.remove::<DistanceFog>(),
+        };
+        let [rx, ry, rz] = scene.truck_rotation.map(f32::to_radians);
+        **truck = Transform {
+            translation: Vec3::from(scene.truck_position),
+            rotation: Quat::from_euler(EulerRot::XYZ, rx, ry, rz),
+            ..default()
+        };
+        if let Some(entity) = state.model_entity.take() {
+            commands.entity(entity).despawn();
+        }
+        state.model = scene.model.as_ref().map(|m| {
+            let key = ModelKey {
+                path: m.path.clone(),
+                look: m.look.clone(),
+                variant: m.variant.clone(),
+                parts: m.parts.clone(),
+            };
+            (key, m.position)
+        });
+        **floor = Visibility::Inherited;
+    }
+    if state.model_entity.is_some() {
+        return;
+    }
+    let Some((key, position)) = state.model.clone() else {
+        return;
+    };
+    if cache.failed(&key) {
+        state.model = None;
+        return;
+    }
+    let Some(model) = cache.get(&studio, &key) else {
+        return;
+    };
+    let entity = commands
+        .spawn((
+            Transform::from_translation(Vec3::from(position)),
+            Visibility::default(),
+            ChildOf(*scene_root),
+        ))
+        .id();
+    for (mesh, material) in &model.pieces {
+        commands.spawn((
+            Mesh3d(mesh.clone()),
+            MeshMaterial3d(material.clone()),
+            ChildOf(entity),
+        ));
+    }
+    state.model_entity = Some(entity);
+    **floor = Visibility::Hidden;
+}
+
+fn apply_lights(
+    scene: &Scene,
+    ambient: &mut GlobalAmbientLight,
+    sun: &mut DirectionalLight,
+    sun_transform: &mut Transform,
+) {
+    if let Some([r, g, b]) = scene.light_ambient {
+        ambient.color = Color::linear_rgb(r, g, b);
+    }
+    if let Some(diffuse) = scene.light_diffuse {
+        let peak = diffuse.iter().copied().fold(1e-3, f32::max);
+        let [r, g, b] = diffuse.map(|c| c / peak);
+        sun.color = Color::linear_rgb(r, g, b);
+        sun.illuminance = peak * SUN_LUX;
+    }
+    if let Some(direction) = scene.light_direction {
+        // The definition gives the direction the light travels.
+        let direction = Vec3::from(direction);
+        if direction.length_squared() > 1e-6 {
+            *sun_transform = Transform::default().looking_to(direction, Vec3::Y);
+        }
+    }
+}
+
+/// Centres the orbit on the truck when no game scene supplies a camera.
+pub fn frame_truck(
+    state: Res<SceneState>,
+    instances: Res<TruckInstances>,
+    truck: Single<&GlobalTransform, With<TruckRoot>>,
+    mut orbit: Single<&mut Orbit>,
+) {
+    if state.scene_camera {
+        return;
+    }
+    let Some((lo, hi)) = instances.bounds else {
+        return;
+    };
+    let center = truck.transform_point((lo + hi) / 2.0);
+    if center.distance(orbit.target) > 0.5 {
+        orbit.target = center;
+    }
+}
+
+/// Whether the pointer may drive the camera, decided by the UI each frame.
+#[derive(Resource, Default)]
+pub struct ViewportInput {
+    /// The pointer is over the 3D view and no marker or panel.
+    pub hovered: bool,
+    dragging: bool,
+}
+
+/// Left drag rotates, right or middle drag pans, the wheel zooms.
+pub fn orbit_camera(
+    buttons: Res<ButtonInput<MouseButton>>,
+    motion: Res<AccumulatedMouseMotion>,
+    scroll: Res<AccumulatedMouseScroll>,
+    mut input: ResMut<ViewportInput>,
+    camera: Single<(&mut Orbit, &mut Transform, &Projection)>,
+) {
+    let (mut orbit, mut transform, projection) = camera.into_inner();
+    let pressed = [MouseButton::Left, MouseButton::Right, MouseButton::Middle];
+    if buttons.any_just_pressed(pressed) && input.hovered {
+        input.dragging = true;
+    }
+    if !buttons.any_pressed(pressed) {
+        input.dragging = false;
+    }
+    let mut next = *orbit;
+    if input.dragging && motion.delta != Vec2::ZERO {
+        if buttons.pressed(MouseButton::Left) {
+            next.yaw -= motion.delta.x * ROTATE_SPEED;
+            next.pitch += motion.delta.y * ROTATE_SPEED;
+        } else {
+            let fov = match projection {
+                Projection::Perspective(p) => p.fov,
+                _ => DEFAULT_FOV_DEGREES.to_radians(),
+            };
+            // One pixel of drag moves the target by about one pixel on screen.
+            let scale = 2.0 * next.distance * (fov / 2.0).tan() / 800.0;
+            let right = *transform.right();
+            let up = *transform.up();
+            next.target += (-motion.delta.x * right + motion.delta.y * up) * scale;
+        }
+    }
+    if input.hovered && scroll.delta.y != 0.0 {
+        let steps = match scroll.unit {
+            MouseScrollUnit::Line => scroll.delta.y,
+            MouseScrollUnit::Pixel => scroll.delta.y / 100.0,
+        };
+        next.distance *= 0.9_f32.powf(steps);
+    }
+    let next = next.clamped();
+    if next != *orbit || transform.translation != next.position() {
+        *orbit = next;
+        *transform = next.transform();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn orbit_round_trips_a_pose() {
+        let orbit = Orbit::from_pose(Vec3::new(-6.5, 3.2, -8.5), Vec3::new(0.0, 1.5, 0.0));
+        assert!(orbit.position().distance(Vec3::new(-6.5, 3.2, -8.5)) < 1e-4);
+    }
+
+    #[test]
+    fn orbit_keeps_the_camera_above_the_floor_and_in_range() {
+        let low = Orbit::from_pose(Vec3::new(0.0, -5.0, 10.0), Vec3::ZERO);
+        assert!(low.pitch >= MIN_PITCH);
+        let near = Orbit::from_pose(Vec3::new(0.0, 0.5, 0.5), Vec3::ZERO);
+        assert_eq!(near.distance, MIN_DISTANCE);
+        let far = Orbit::from_pose(Vec3::new(0.0, 10.0, 40.0), Vec3::ZERO);
+        assert!(
+            far.distance > MAX_DISTANCE,
+            "scene cameras may start farther out"
+        );
+    }
+}

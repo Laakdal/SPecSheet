@@ -1,0 +1,17 @@
+[package]
+name = "specsheet-data"
+version = "0.1.0"
+description = "Loads ETS2 installation data: archives, truck/accessory definitions and models."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+specsheet-archive = { path = "../specsheet-archive" }
+specsheet-formats = { path = "../specsheet-formats" }
+specsheet-core = { path = "../specsheet-core" }
+thiserror.workspace = true
+
+[lints]
+workspace = true
