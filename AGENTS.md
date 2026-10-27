@@ -84,20 +84,23 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Packed textures, GDeflate | `specsheet-archive/src/{texture,gdeflate}.rs` | unit tests in those files |
 | SII definitions | `specsheet-formats/src/sii.rs` | unit; `real_install::every_vehicle_definition_parses` |
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
+| UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
 | Rules, configuration, hookups | `specsheet-core/src/{config,catalog,hookup}.rs` | `specsheet-core/src/tests.rs` |
 | Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
 | Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
 | Slot to locator matching | `specsheet-data/src/slots.rs` | unit |
 | Assembly: base, wheels, hookups, interior, anchors | `specsheet-data/src/assembly.rs`, `assembly/*.rs` | tests in `assembly.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
 | Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |
-| Tuning scenes | `specsheet-data/src/scene.rs` | unit; `real_install::every_tuning_scene_has_a_model_and_a_camera` |
+| Tuning scenes: the truck configuration scene (orbit, pin data) and the hub scenes | `specsheet-data/src/scene.rs` | unit; `real_install::{the_truck_configuration_screen_has_a_scene_orbit_and_pins, every_tuning_scene_has_a_model_and_a_camera}` |
+| UI screens, templates, colours, UI materials; markup layout | `specsheet-data/src/ui/{mod,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
 | Display strings | `specsheet-data/src/localization.rs` | unit |
 | Session (options, select, hookups, drive) | `specsheet-data/src/session.rs` | through `real_install` |
-| Display data: labels, which slots get markers, incompatibility reasons | `specsheet-data/src/view.rs` | unit |
+| Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-data/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
 | App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
 | Meshes, materials, textures to GPU (with upload checks) | `specsheet/src/assets.rs` | unit |
 | Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
-| egui panels and hotspot markers (projection, culling, clustering) | `specsheet/src/{ui,hotspots}.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
+| The game's truck configuration screen (layout drawing, tabs, lists), UI textures, SpecSheet window | `specsheet/src/ui/{mod,screen,textures}.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
+| Pins over the 3D view (projection, culling, clustering) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
 | Dev script mode | `specsheet/src/script.rs` | unit |
 
 ## Read only when needed
