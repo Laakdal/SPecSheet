@@ -1,0 +1,50 @@
+Clean-room rewrite, phase 1 (decision D13): pmd.rs, pmg.rs, texture.rs
+======================================================================
+
+Why: SPecSheet is MIT. These files had been written while reading sk-zk's
+TruckLib (GPL-2.0). At the user's request they were rewritten clean-room.
+
+Process
+- Spec side (the coordinating session, which had seen the old code): replaced
+  the three files with interface-only stubs (public types, signatures, doc
+  comments in its own words, `todo!()` bodies, old tests removed) on the local
+  branch `cleanroom` (commit 20b2828, base aa3a751).
+- Clean side: a fresh agent with no project history implemented the stubs from
+  docs/formats/{models,textures}.md, research/evidence/pmg-layout-derivation.txt,
+  research/evidence/texture-unpack-derivation.txt, shared helpers (binary.rs,
+  token.rs), call sites, and its own dumps of game files. Forbidden and, per its
+  report, not opened: %USERPROFILE%\refsrc, any TruckLib/Extractor code, the old
+  implementation and its git history, tools/research/model_layout.py,
+  crates/specsheet-archive/examples/texture_layout.rs.
+- Security review of the clean commits found three resource-exhaustion paths
+  (UV set count, pieces sharing one stream range, variant x attribute values).
+  They were fixed test-first before integration.
+- Integration: the three files were copied onto main unchanged, one commit each
+  (32a22d7 texture.rs, 4ed51e7 pmd.rs, 4b789f5 pmg.rs).
+
+Acceptance: differential fingerprint over the whole install (ETS2 1.60.1.7,
+base + all DLC archives)
+- Tool: a throwaway program (outside the repo) that walks the mounted Vfs and,
+  for every .pmd/.pmg, hashes the Debug output of the parsed value; for every
+  packed .tobj, hashes ImageMeta, SampleMeta and every unpacked surface (face,
+  mip, width, height, bytes). The same source was built once against the old
+  code (aa3a751) and once against the clean code.
+- Result:
+    files          old      new      identical
+    .pmd         70,076   70,076    70,076
+    .pmg         70,079   70,079    70,079
+    textures    138,478  138,478   138,478
+    total       278,633  278,633   278,633 (0 differences)
+  Both reject the same 197 textures: 194 under asset/skybox and 3 under
+  material/ui, all DXGI 67 (R9G9B9E5_SHAREDEXP), unsupported by both.
+- Also passing: fmt; clippy --workspace --all-targets -D warnings; the three
+  crates' unit tests (89); real_install with ETS2_DIR set.
+
+Facts the clean side measured on all base archives (its probes are not kept):
+- The most UV sets on any piece is 4 (models.md had said 0-3).
+- Summed vertex bytes never exceed the vertex pool, and summed index bytes never
+  exceed the index pool. No two pieces' vertex ranges overlap.
+- Every .pmd value block is exactly 4 x its attribute count.
+- Every supported texture format unpacks at exactly its stored size, and fails
+  when one byte short (DXGI 35, 61, 71, 72, 75, 77, 78, 80, 83, 87, 88, 91, 93,
+  including 6-face cubes).
