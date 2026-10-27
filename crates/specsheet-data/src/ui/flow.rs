@@ -135,20 +135,38 @@ pub fn layout(nodes: &[Node], size: [f32; 2], measure: &mut dyn Measure) -> Vec<
     let mut color = WHITE;
     let mut fonts = vec![Font::default()];
     let mut aligns: Vec<AlignFrame> = Vec::new();
+    let mut nowrap = false;
     let mut items = Vec::new();
     for node in nodes {
         match node {
             Node::Text(text) => {
                 let font = fonts.last().cloned().unwrap_or_default();
-                let [w, h] = measure.text_size(text, &font);
-                items.push(Item::Text {
-                    bounds: [cursor.x, cursor.y, cursor.x + w, cursor.y + h],
-                    text: text.clone(),
-                    font,
-                    color,
-                });
-                cursor.x += w;
-                cursor.line_height = cursor.line_height.max(h);
+                let lines = if nowrap {
+                    vec![text.clone()]
+                } else {
+                    wrap(
+                        text,
+                        cursor.margin[1] - cursor.x,
+                        cursor.margin[1] - cursor.margin[0],
+                        &mut |t| measure.text_size(t, &font)[0],
+                    )
+                };
+                for (i, line) in lines.into_iter().enumerate() {
+                    let [w, h] = measure.text_size(&line, &font);
+                    if i > 0 {
+                        cursor.x = cursor.margin[0];
+                        cursor.y += cursor.line_height.max(h);
+                        cursor.line_height = 0.0;
+                    }
+                    items.push(Item::Text {
+                        bounds: [cursor.x, cursor.y, cursor.x + w, cursor.y + h],
+                        text: line,
+                        font: font.clone(),
+                        color,
+                    });
+                    cursor.x += w;
+                    cursor.line_height = cursor.line_height.max(h);
+                }
             }
             Node::Open { name, .. } => match name.as_str() {
                 "color" => {
@@ -169,6 +187,7 @@ pub fn layout(nodes: &[Node], size: [f32; 2], measure: &mut dyn Measure) -> Vec<
                         scale: [scale("xscale", 1.0), scale("yscale", 1.0)],
                     });
                 }
+                "nowrap" => nowrap = true,
                 "margin" => {
                     let [l, _, r, _] = cursor.frame;
                     cursor.margin = [
@@ -239,6 +258,7 @@ pub fn layout(nodes: &[Node], size: [f32; 2], measure: &mut dyn Measure) -> Vec<
                 "margin" => {
                     cursor.margin = [cursor.frame[0], cursor.frame[2]];
                 }
+                "nowrap" => nowrap = false,
                 "align" => {
                     if let Some(frame) = aligns.pop() {
                         align(&mut items[frame.first_item..], &frame);
@@ -254,6 +274,40 @@ pub fn layout(nodes: &[Node], size: [f32; 2], measure: &mut dyn Measure) -> Vec<
         align(&mut items[frame.first_item..], &frame);
     }
     items
+}
+
+/// Splits `text` into lines at spaces: the first line has `first_room`,
+/// the following ones `full_room`. Text that fits stays one line, spacing
+/// intact; a word wider than a line gets a line of its own.
+fn wrap(
+    text: &str,
+    first_room: f32,
+    full_room: f32,
+    width: &mut dyn FnMut(&str) -> f32,
+) -> Vec<String> {
+    if width(text) <= first_room || !text.contains(' ') {
+        return vec![text.to_owned()];
+    }
+    let mut lines = Vec::new();
+    let mut current = String::new();
+    let mut room = first_room;
+    for word in text.split(' ').filter(|w| !w.is_empty()) {
+        let candidate = if current.is_empty() {
+            word.to_owned()
+        } else {
+            format!("{current} {word}")
+        };
+        if current.is_empty() || width(&candidate) <= room {
+            current = candidate;
+        } else {
+            lines.push(std::mem::replace(&mut current, word.to_owned()));
+            room = full_room;
+        }
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines
 }
 
 fn image(node: &Node, cursor: &Cursor, color: [u8; 4], measure: &mut dyn Measure) -> Option<Item> {
@@ -450,6 +504,22 @@ mod tests {
             panic!("text")
         };
         assert_eq!(font.face.as_deref(), Some("/font/normal.font"));
+    }
+
+    #[test]
+    fn long_text_wraps_at_spaces_unless_nowrap() {
+        // 8 units per character: "aaaa bbbb" (72) does not fit in 50.
+        let items = run("aaaa bbbb cc", [50.0, 40.0]);
+        assert_eq!(
+            bounds(&items),
+            vec![
+                [0.0, 0.0, 32.0, 10.0],
+                [0.0, 10.0, 32.0, 20.0],
+                [0.0, 20.0, 16.0, 30.0]
+            ]
+        );
+        let items = run("<nowrap>aaaa bbbb cc</nowrap>", [50.0, 40.0]);
+        assert_eq!(bounds(&items), vec![[0.0, 0.0, 96.0, 10.0]]);
     }
 
     #[test]
