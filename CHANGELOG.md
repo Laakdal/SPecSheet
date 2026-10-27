@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Changed
+- **The game's own tuning screen:** the app now draws ETS2's truck configuration screen from the game's layout files, templates, colours and icons in your install:
+  - "Vehicle configurator" panel, category bar with the game's 8 tabs, accessory tiles with icons and prices, folded vehicle analysis and leave button;
+  - pins only on the accessory tabs, as in the game;
+  - it opens on the game's truck configuration garage and camera.
+  - The truck, drive and scene pickers moved to a small "SpecSheet" window. The dev script's `interior on|off` is replaced by `tab <token>`.
 - **The app is now all Rust:** Bevy 0.19 + egui (`crates/specsheet`) replaces the Tauri + React + three.js app. Run it with `cargo run --release -p specsheet`.
   - Same features: the game's scenes, hotspots with clustering, the sidebar with options and reasons, live re-assembly, LHD/RHD, interior markers and the orbit camera.
   - Textures go to the GPU BC-compressed through wgpu (DirectX 12/Vulkan). Malformed textures and meshes are skipped with a warning instead of crashing.
