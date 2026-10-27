@@ -140,6 +140,7 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
         }
     }
 
+    pair_uk_interiors(&mut accessories);
     let catalog = TruckCatalog::new(truck.clone(), info, required_slots, fallbacks, accessories);
     // Only hookups that fit one of this truck's slots are relevant.
     let slots = catalog.slots();
@@ -148,6 +149,53 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
         .filter(|h| h.hosts.iter().any(|host| slots.contains(host)))
         .collect();
     Ok((catalog.with_hookups(hookups), warnings))
+}
+
+/// Gives every interior the exterior-view model of its right-hand-drive
+/// twin as `exterior_uk` / `variant_uk` (finding F10). The twin lives in the
+/// same directory and its file name is the interior's with one extra `uk`
+/// word (`uk_a.sii`, `a_uk.sii`, `standard_uk_low.sii` for `standard_low`).
+/// This pairs all 219 interiors of 1.60 one-to-one.
+fn pair_uk_interiors(accessories: &mut [Accessory]) {
+    use std::collections::HashMap;
+
+    let key = |path: &str| -> Option<(String, Vec<String>)> {
+        let (dir, file) = path.rsplit_once('/')?;
+        let stem = file.strip_suffix(".sii")?;
+        Some((dir.to_owned(), stem.split('_').map(str::to_owned).collect()))
+    };
+    // EU key (directory, words without one `uk`) -> UK twin's model and variant.
+    type Key = (String, Vec<String>);
+    let mut twins: HashMap<Key, (Option<String>, Option<String>)> = HashMap::new();
+    for accessory in accessories
+        .iter()
+        .filter(|a| a.kind == AccessoryKind::Interior)
+    {
+        let Some((dir, words)) = key(&accessory.def_path) else {
+            continue;
+        };
+        for (index, _) in words.iter().enumerate().filter(|(_, w)| *w == "uk") {
+            let mut eu_words = words.clone();
+            eu_words.remove(index);
+            twins.insert(
+                (dir.clone(), eu_words),
+                (
+                    accessory.model.exterior.clone(),
+                    accessory.model.variant.clone(),
+                ),
+            );
+        }
+    }
+    for accessory in accessories
+        .iter_mut()
+        .filter(|a| a.kind == AccessoryKind::Interior)
+    {
+        let Some(twin) = key(&accessory.def_path).and_then(|k| twins.get(&k)) else {
+            continue;
+        };
+        accessory.model.exterior_uk = twin.0.clone();
+        accessory.model.variant_uk = twin.1.clone();
+    }
 }
 
 /// Every hookup unit of the installation.
@@ -460,6 +508,57 @@ mod tests {
             None
         );
         assert_eq!(slot_for_dir(root, root), None);
+    }
+
+    fn interior(path: &str, model: &str, variant: &str) -> Accessory {
+        let mut unit_path = path.rsplit('/').next().unwrap_or(path).to_owned();
+        unit_path.truncate(unit_path.len() - 4);
+        Accessory {
+            id: AccessoryId::new(unit_path),
+            slot: SlotId::from(slots::INTERIOR),
+            kind: AccessoryKind::Interior,
+            def_path: path.to_owned(),
+            name: String::new(),
+            icon: None,
+            price: None,
+            unlock_level: None,
+            model: ModelRef {
+                exterior: Some(model.to_owned()),
+                variant: Some(variant.to_owned()),
+                ..ModelRef::default()
+            },
+            suitable_for: Vec::new(),
+            conflict_with: Vec::new(),
+            defaults: Vec::new(),
+            requires: Vec::new(),
+            base_color: None,
+            wheel: None,
+        }
+    }
+
+    #[test]
+    fn interiors_get_their_uk_twin_as_right_hand_drive_model() {
+        let dir = "/def/vehicle/truck/t/interior";
+        let mut items = vec![
+            interior(&format!("{dir}/cab_high.sii"), "/ext.pmd", "s_h_eu"),
+            interior(&format!("{dir}/uk_cab_high.sii"), "/ext.pmd", "s_h_uk"),
+            interior(&format!("{dir}/slp_dyn.sii"), "/slp.pmd", "default"),
+            interior(&format!("{dir}/slp_dyn_uk.sii"), "/slp.pmd", "cabin_uk"),
+            interior(&format!("{dir}/standard_low.sii"), "/low.pmd", "eu"),
+            interior(&format!("{dir}/standard_uk_low.sii"), "/low_uk.pmd", "uk"),
+            interior(&format!("{dir}/lonely.sii"), "/l.pmd", "eu"),
+        ];
+        pair_uk_interiors(&mut items);
+        let uk = |i: usize| {
+            (
+                items[i].model.exterior_uk.as_deref(),
+                items[i].model.variant_uk.as_deref(),
+            )
+        };
+        assert_eq!(uk(0), (Some("/ext.pmd"), Some("s_h_uk")), "uk_ prefix");
+        assert_eq!(uk(2), (Some("/slp.pmd"), Some("cabin_uk")), "_uk suffix");
+        assert_eq!(uk(4), (Some("/low_uk.pmd"), Some("uk")), "uk in the middle");
+        assert_eq!(uk(6), (None, None), "no twin");
     }
 
     #[test]

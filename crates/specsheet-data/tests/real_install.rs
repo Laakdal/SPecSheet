@@ -138,8 +138,23 @@ fn every_preset_validates_and_assembles_without_warnings() {
             // The cab must not look hollow: every preset's interior has an
             // exterior-view model at the cabin's `ext_interior` locator.
             let interior = SlotId::from(specsheet_core::slots::INTERIOR);
-            if !assembly.placements.iter().any(|p| p.slot == interior) {
-                failures.push(format!("{} {drive:?}: no interior placement", truck.id));
+            match assembly.placements.iter().find(|p| p.slot == interior) {
+                None => failures.push(format!("{} {drive:?}: no interior placement", truck.id)),
+                // Right-hand drive shows the interior's UK twin (F10).
+                Some(placement) if drive == Drive::Right => {
+                    let model = preset
+                        .selected(&interior)
+                        .and_then(|id| catalog.accessory(id))
+                        .map(|a| &a.model);
+                    let expected = model.and_then(|m| m.exterior_uk.as_ref());
+                    if expected != Some(&placement.model) {
+                        failures.push(format!(
+                            "{}: RHD interior {} is not the UK twin {expected:?}",
+                            truck.id, placement.model
+                        ));
+                    }
+                }
+                Some(_) => {}
             }
             // Wheel anchors form one marker per axle group.
             for anchor in assembly.anchors.iter().filter(|a| {
@@ -363,4 +378,29 @@ fn configured_hookups_sit_on_their_host_model() {
             .iter()
             .any(|p| p.position == beacon.transform.translation));
     }
+}
+
+#[test]
+fn every_interior_has_a_right_hand_drive_twin() {
+    use specsheet_core::AccessoryKind;
+    use specsheet_data::{list_trucks, load_catalog};
+
+    let Some(fs) = game_fs() else { return };
+    let (mut interiors, mut paired) = (0, 0);
+    for truck in list_trucks(&fs).expect("trucks") {
+        let (catalog, _) = load_catalog(&fs, &truck.id).expect("catalog");
+        for accessory in catalog
+            .accessories()
+            .filter(|a| a.kind == AccessoryKind::Interior)
+        {
+            interiors += 1;
+            if accessory.model.exterior_uk.is_some() {
+                paired += 1;
+            }
+        }
+    }
+    // 438 interior units: 219 left-hand-drive units, each with one UK twin
+    // (finding F10). The UK units themselves have no further twin.
+    assert_eq!(interiors, 438);
+    assert_eq!(paired, 219);
 }

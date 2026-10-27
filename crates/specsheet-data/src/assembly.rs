@@ -192,7 +192,7 @@ pub fn assemble(
     let rear = wheel_locators(REAR_WHEELS);
     let wheels = wheel_placements(&selected, &front, &rear, &mut assembly.warnings);
     assembly.placements.extend(wheels);
-    let interior = interior_placements(&selected, &base_locators, &mut assembly.warnings);
+    let interior = interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
     assembly.placements.extend(interior);
     let (positions, hookups) = hookup_placements(fs, cache, catalog, config, &assembly.placements);
     assembly.hookup_positions = positions;
@@ -380,6 +380,7 @@ fn hookup_placements(
 fn interior_placements(
     selected: &[&specsheet_core::Accessory],
     base_locators: &[Locator],
+    drive: Drive,
     warnings: &mut Vec<String>,
 ) -> Vec<Placement> {
     let mut placements = Vec::new();
@@ -387,7 +388,15 @@ fn interior_placements(
         .iter()
         .filter(|a| a.kind == AccessoryKind::Interior)
     {
-        let Some(model) = accessory.model.exterior.as_ref() else {
+        // Right-hand drive uses the interior's UK twin (finding F10).
+        let (model, variant) = match (drive, accessory.model.exterior_uk.as_ref()) {
+            (Drive::Right, Some(uk)) => (Some(uk), accessory.model.variant_uk.as_ref()),
+            _ => (
+                accessory.model.exterior.as_ref(),
+                accessory.model.variant.as_ref(),
+            ),
+        };
+        let Some(model) = model else {
             continue;
         };
         let Some(locator) = base_locators.iter().find(|l| l.name == INTERIOR_LOCATOR) else {
@@ -402,7 +411,7 @@ fn interior_placements(
             accessory: accessory.id.clone(),
             model: model.clone(),
             look: accessory.model.look.clone(),
-            variant: accessory.model.variant.clone(),
+            variant: variant.cloned(),
             transform: Transform::from_locator(locator),
         });
     }
@@ -820,13 +829,19 @@ mod tests {
             locator("ext_interior", [-0.683, 2.705, -1.862]),
         ];
         let mut warnings = Vec::new();
-        let placements = interior_placements(&[&interior], &locators, &mut warnings);
+        interior.model.exterior_uk = Some("/uk.pmd".to_owned());
+        interior.model.variant_uk = Some("s_h_std_uk".to_owned());
+        let placements = interior_placements(&[&interior], &locators, Drive::Left, &mut warnings);
         assert!(warnings.is_empty(), "{warnings:?}");
         assert_eq!(placements.len(), 1);
         assert_eq!(placements[0].transform.translation, [-0.683, 2.705, -1.862]);
         assert_eq!(placements[0].variant.as_deref(), Some("s_h_std_eu"));
 
-        let none = interior_placements(&[&interior], &locators[..1], &mut warnings);
+        let uk = interior_placements(&[&interior], &locators, Drive::Right, &mut warnings);
+        assert_eq!(uk[0].model, "/uk.pmd");
+        assert_eq!(uk[0].variant.as_deref(), Some("s_h_std_uk"));
+
+        let none = interior_placements(&[&interior], &locators[..1], Drive::Left, &mut warnings);
         assert!(none.is_empty());
         assert_eq!(warnings.len(), 1, "a missing locator is reported");
     }
