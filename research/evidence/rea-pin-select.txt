@@ -1,0 +1,99 @@
+REA function analysis of the pin-button routine (finding F5/F8)
+================================================================
+
+Command (Git Bash, about 28 min of Ghidra auto-analysis):
+  REA_GHIDRA_STARTUP_TIMEOUT_MS=10800000 JAVA_HOME="C:\Program Files\Java\jdk-22" \
+  GHIDRA_INSTALL_DIR=%USERPROFILE%\AppData\Local\Programs\Ghidra\ghidra_12.1.4_PUBLIC \
+  npx -y rea-agents@6.4.0 function <eurotrucks2.exe> --procedure=0x140fe0fc0 \
+    --provider ghidra --snapshot "$S/eurotrucks2.snapshot" --format json \
+    > "$S/function-pin-setup.json"          (S = %USERPROFILE%\rea-ets2)
+
+Evidence ID: ev_47817a8206a278f996aa8bdd5002e18731d8e65fbf27ad42fa0857b42bc3d520
+Operation:   analyze_function {"procedure": "0x140fe0fc0"}
+Subject:     eurotrucks2.exe, ETS2 1.60.1.7,
+             sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Provider:    Ghidra 12.1.4, default analyzers. Static only: nothing was executed.
+
+The full REA record (pseudocode and assembly) stays outside the repository
+(%USERPROFILE%\rea-ets2\function-pin-setup.json): it is a decompilation of
+SCS code. Below are our observations from it, in our own words.
+
+Function
+--------
+FUN_140fe0fc0, 0x140fe0fc0-0x140fe1569 (1,450 bytes), two arguments: the
+screen object and a 32-bit id of the accessory to show.
+Single caller: FUN_140fbf860 (0x140fbf860-0x140fc0b90, 4,913 bytes).
+
+Referenced strings:
+  "[truck_config_hdl_u] Failed to find required button. Base id: %u Pin id: %Iu"
+  "Cart data not found"
+  "Can't locate hookup index"
+  "Index outside array boundaries" with the mangled array_t<prism::acc_info_t>
+  operator[], i.e. the screen keeps an array of `acc_info_t` records.
+
+Callees (13): FUN_1400ee9f0, FUN_1400f6cd0 (bounds-check abort), FUN_1400f7c00
+(log), FUN_1401263e0, FUN_140375ce0, FUN_140375e60 (find child widget by id),
+FUN_14038bf50 (called on every found button), FUN_14038f4c0, FUN_140fbaf50,
+FUN_140fc1c70, FUN_140fcba50, FUN_140fdf610, FUN_140fe6a50.
+
+Observed control flow
+---------------------
+1. The accessory record holds a 64-bit word at +0x40: the low 16 bits are a
+   kind code, the bits above it a "cart" index. The routine finds the cart
+   record with that index in an array of 0x198-byte records, or logs
+   "Cart data not found".
+2. It derives a token from the accessory and compares it with a 12-entry token
+   table at 0x14350cc00 (.data, zero in the file, filled at run time). On a
+   match the button id comes from the u32 table at 0x141d39978 and that button
+   is activated: the accessory has a fixed button, not a pin.
+3. Otherwise it picks a group button: table 0x141d39990 indexed by one flag.
+   The flag is set when the slot token is in a token list reached through the
+   screen (offset +0x138, then +0x3c8 / +0x3d0 count) or equals the token at
+   0x142c02ff0. The group button is searched for by id and activated.
+4. It then searches the acc_info_t array (64-byte records) for the record whose
+   first field equals the cart's index and whose +8 field equals the token.
+   The record index n gives the pin button id 10000 + n.
+   - If the record's byte at +0x3e is 0 and its int at +0x18 is not -1, that
+     int is stored on the screen (+0x350) and FUN_140fcba50 runs first.
+   - Kind code 6 (hookup): it searches a second 64-byte array for the hookup's
+     index m and activates button 11000 + m, or logs
+     "Can't locate hookup index".
+   - A missing button logs the "Failed to find required button" message with
+     base id 10000 or 11000 and the index.
+
+Static data read from the executable (read-only; PE sections parsed with a
+throwaway Python script, VA -> file offset through the section table):
+  0x141d39978 (.rdata) u32: 500 510 520 530 540 550 560 570 571 572,
+                            then 0xbf800000 (-1.0f) and 0x41200000 (10.0f)
+  0x141d39990 (.rdata) = entry 6 of the table above: 560 (flag 0), 570 (flag 1)
+  0x142c02ff0 (.data)  u64 0x0013f2d461a7bbb5 = token "steering_w"
+  0x14350cc00 (.data)  uninitialised in the file (run-time token table)
+
+Game data that names these ids
+------------------------------
+/ui/truck_configuration_center.sii, ui::button_row id 499 (btn.truck_grp, radio):
+  value_list: "cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interior~~i_accessories"
+  id_list:    "510~~500~~520~~530~~550~~560~~540~~570"
+The same file has ui::group accpins, id 9000, with no children.
+Ids 571, 572, 10000+ and 11000+ appear in no file under /ui (all 457 .sii
+files dumped with the `scs` example and grepped).
+
+Conclusions
+-----------
+Observed:
+  - Accessory pins are buttons with ids 10000 + n, one per acc_info_t record,
+    keyed by (cart index, slot token). Hookup pins are 11000 + m.
+  - Selecting an accessory first switches the tab row (id 499) to the right
+    tab, then activates its pin.
+Inferred (Hypothesis):
+  - Accessories whose slot is one of the 12 run-time tokens (cabin, chassis,
+    engine, transmission, paint ...) have no pin; they use the fixed tab
+    buttons 500-572.
+  - Other accessories live under "e_accessories" (560) unless their slot is an
+    interior slot (the token list) or `steering_w`, which go under
+    "i_accessories" (570).
+  - 571 and 572 are tab ids with no button in this file (trailer or unused).
+Unknown:
+  - Where the pins are positioned on screen and which code creates the
+    acc_info_t records (likely the caller FUN_140fbf860 or the writer of the
+    array at screen +0x208).
