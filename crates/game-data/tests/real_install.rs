@@ -302,3 +302,65 @@ fn every_preset_wheel_sits_in_its_tyre() {
         failures.join("\n")
     );
 }
+
+#[test]
+fn configured_hookups_sit_on_their_host_model() {
+    use game_data::assembly::{assemble, Drive};
+    use game_data::model::ModelCache;
+    use game_data::{load_catalog, load_vehicle_config};
+    use tuning_core::{SlotId, TruckId};
+
+    let Some(fs) = game_fs() else { return };
+    let cache = ModelCache::new();
+    // The game's oversize Mercedes carries two beacons (`cyl01`) on its
+    // light bar: `slot_name[] = slot_4, slot_0` (finding F11).
+    let (catalog, _) = load_catalog(&fs, &TruckId::from("mercedes.actros")).expect("catalog");
+    assert!(
+        catalog.hookup(&"cyl01.addon_hookup".into()).is_some(),
+        "hookup catalogue loaded"
+    );
+    let path = "/def/vehicle/truck_company/oversize/mercedes_6x4.sii";
+    let (config, warnings) = load_vehicle_config(&fs, &catalog, path).expect("config");
+    assert!(warnings.is_empty(), "{warnings:?}");
+    let host = SlotId::from("r_grill");
+    assert_eq!(config.hookups(&host).map(|h| h.len()), Some(2));
+    assert!(config
+        .validate(&catalog, &Default::default())
+        .iter()
+        .all(|issue| { !matches!(issue, tuning_core::ConfigIssue::InvalidHookup { .. }) }));
+
+    let assembly = assemble(&fs, &cache, &catalog, &config, Drive::Left);
+    assert!(
+        assembly.warnings.iter().all(|w| !w.contains("hookup")),
+        "{:?}",
+        assembly.warnings
+    );
+    let beacons: Vec<_> = assembly
+        .placements
+        .iter()
+        .filter(|p| p.accessory.as_str() == "cyl01.addon_hookup")
+        .collect();
+    assert_eq!(beacons.len(), 2);
+    // Each beacon stands on the light bar: its origin is within the host
+    // model's world bounds (a wrong transform composition lands metres off).
+    let positions = &assembly.hookup_positions[&host];
+    let bar = assembly
+        .placements
+        .iter()
+        .find(|p| p.slot == host && p.accessory.as_str() != "cyl01.addon_hookup")
+        .expect("light bar placed");
+    let model = cache.load(&fs, &bar.model).expect("bar model");
+    for beacon in &beacons {
+        let local = (0..3).map(|i| beacon.transform.translation[i] - bar.transform.translation[i]);
+        for (i, offset) in local.enumerate() {
+            assert!(
+                offset >= model.pmg.aabb.min[i] - 0.05 && offset <= model.pmg.aabb.max[i] + 0.05,
+                "beacon axis {i} offset {offset} outside the bar {:?}",
+                model.pmg.aabb
+            );
+        }
+        assert!(positions
+            .iter()
+            .any(|p| p.position == beacon.transform.translation));
+    }
+}

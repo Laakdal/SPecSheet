@@ -15,7 +15,9 @@ pub mod session;
 pub mod slots;
 pub mod view;
 
-pub use catalog::{list_trucks, load_catalog, load_preset, LoadWarning, TruckSummary};
+pub use catalog::{
+    list_trucks, load_catalog, load_preset, load_vehicle_config, LoadWarning, TruckSummary,
+};
 pub use error::{GameDataError, Result};
 pub use fs::GameFs;
 pub use install::{parse_library_folders, GameInstall, BASE_MOUNT_ORDER};

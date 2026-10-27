@@ -7,6 +7,8 @@
 //! * Wheel parts are placed at the chassis `wheel_f*` / `wheel_r*` locators;
 //!   their models have `left`/`right` variants, chosen by the locator side.
 //!   Tyres are offset by the rim's `tire_shift` (finding F9).
+//! * Hookups are placed at the `slot_NN` locators of their host accessory's
+//!   model, composed with the host's own placement (finding F11).
 //! * The selected interior's light exterior-view model (`ext_model`) is
 //!   placed at the cabin's `ext_interior` locator, so the cab is not hollow
 //!   when seen through the windows (`research/evidence/interior-survey.txt`).
@@ -38,6 +40,18 @@ impl Transform {
         rotation: [0.0, 0.0, 0.0, 1.0],
         scale: 1.0,
     };
+
+    /// `self` applied after `child`: the child's transform expressed in
+    /// the parent's space (parent ∘ child).
+    pub fn compose(&self, child: &Transform) -> Transform {
+        let scaled = child.translation.map(|c| c * self.scale);
+        let rotated = rotate(self.rotation, scaled);
+        Transform {
+            translation: [0, 1, 2].map(|i| self.translation[i] + rotated[i]),
+            rotation: quat_mul(self.rotation, child.rotation),
+            scale: self.scale * child.scale,
+        }
+    }
 
     fn from_locator(locator: &Locator) -> Self {
         let [w, x, y, z] = locator.rotation_wxyz;
@@ -76,9 +90,20 @@ pub struct Anchor {
     pub group: Option<String>,
 }
 
+/// A position on a host accessory where a hookup can be mounted.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HookupPosition {
+    /// The `slot_NN` locator name, as stored in configurations.
+    pub name: String,
+    /// Truck-space position (on the first placement of the host).
+    pub position: [f32; 3],
+}
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Assembly {
     pub placements: Vec<Placement>,
+    /// Hookup positions offered by each placed host accessory, by slot.
+    pub hookup_positions: BTreeMap<SlotId, Vec<HookupPosition>>,
     pub availability: SlotAvailability,
     pub anchors: Vec<Anchor>,
     /// Non-fatal problems (missing models, unmatched slots).
@@ -97,6 +122,8 @@ const FRONT_WHEELS: &str = "wheel_f";
 const REAR_WHEELS: &str = "wheel_r";
 /// Cabin locator the interior's exterior-view model attaches to.
 const INTERIOR_LOCATOR: &str = "ext_interior";
+/// Prefix of the hookup position locators on host accessory models.
+const HOOKUP_LOCATOR: &str = "slot_";
 
 /// Assembles `config`. Base models that fail to load are reported as
 /// warnings; the rest of the truck is still assembled.
@@ -167,6 +194,14 @@ pub fn assemble(
     assembly.placements.extend(wheels);
     let interior = interior_placements(&selected, &base_locators, &mut assembly.warnings);
     assembly.placements.extend(interior);
+    let (positions, hookups) = hookup_placements(fs, cache, catalog, config, &assembly.placements);
+    assembly.hookup_positions = positions;
+    for (placement, warning) in hookups {
+        match placement {
+            Some(placement) => assembly.placements.push(placement),
+            None => assembly.warnings.extend(warning),
+        }
+    }
 
     let cabin_box = base_boxes
         .iter()
@@ -257,6 +292,86 @@ fn wheel_placements(
         }
     }
     placements
+}
+
+type HookupResult = (Option<Placement>, Option<String>);
+
+/// The hookup positions of every placed host accessory, and the placements
+/// of the configured hookups (or a warning per hookup that cannot be
+/// placed). A hookup's transform is its host's placement composed with the
+/// position locator.
+fn hookup_placements(
+    fs: &GameFs,
+    cache: &ModelCache,
+    catalog: &TruckCatalog,
+    config: &Configuration,
+    placements: &[Placement],
+) -> (BTreeMap<SlotId, Vec<HookupPosition>>, Vec<HookupResult>) {
+    let mut positions = BTreeMap::new();
+    let mut hosts: BTreeMap<&SlotId, Vec<(&Placement, Vec<Locator>)>> = BTreeMap::new();
+    for placement in placements {
+        let Ok(model) = cache.load(fs, &placement.model) else {
+            continue;
+        };
+        let variant = model.variant_index(placement.variant.as_deref());
+        let locators: Vec<Locator> = model
+            .visible_locators(variant)
+            .filter(|l| l.name.starts_with(HOOKUP_LOCATOR))
+            .cloned()
+            .collect();
+        if locators.is_empty() {
+            continue;
+        }
+        positions.entry(placement.slot.clone()).or_insert_with(|| {
+            locators
+                .iter()
+                .map(|l| HookupPosition {
+                    name: l.name.clone(),
+                    position: placement
+                        .transform
+                        .compose(&Transform::from_locator(l))
+                        .translation,
+                })
+                .collect()
+        });
+        hosts
+            .entry(&placement.slot)
+            .or_default()
+            .push((placement, locators));
+    }
+    let mut results = Vec::new();
+    for (host, position, id) in config.all_hookups() {
+        let Some(model) = catalog.hookup(id).and_then(|h| h.model.as_ref()) else {
+            results.push((None, Some(format!("hookup {id} has no model"))));
+            continue;
+        };
+        let mut placed = false;
+        for (host_placement, locators) in hosts.get(host).into_iter().flatten() {
+            if let Some(locator) = locators.iter().find(|l| l.name == position) {
+                placed = true;
+                results.push((
+                    Some(Placement {
+                        slot: host.clone(),
+                        accessory: id.clone(),
+                        model: model.clone(),
+                        look: None,
+                        variant: None,
+                        transform: host_placement
+                            .transform
+                            .compose(&Transform::from_locator(locator)),
+                    }),
+                    None,
+                ));
+            }
+        }
+        if !placed {
+            results.push((
+                None,
+                Some(format!("hookup {id}: no position `{position}` on {host}")),
+            ));
+        }
+    }
+    (positions, results)
 }
 
 /// Places the selected interior's exterior-view model at the cabin's
@@ -508,6 +623,18 @@ pub fn slot_availability(
     }
 }
 
+/// Hamilton product `a * b` of quaternions stored `(x, y, z, w)`.
+fn quat_mul(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
+    let [ax, ay, az, aw] = a;
+    let [bx, by, bz, bw] = b;
+    [
+        aw * bx + ax * bw + ay * bz - az * by,
+        aw * by - ax * bz + ay * bw + az * bx,
+        aw * bz + ax * by - ay * bx + az * bw,
+        aw * bw - ax * bx - ay * by - az * bz,
+    ]
+}
+
 /// Rotates `v` by the unit quaternion `q = (x, y, z, w)`.
 fn rotate(q: [f32; 4], v: [f32; 3]) -> [f32; 3] {
     let [x, y, z, w] = q;
@@ -702,6 +829,37 @@ mod tests {
         let none = interior_placements(&[&interior], &locators[..1], &mut warnings);
         assert!(none.is_empty());
         assert_eq!(warnings.len(), 1, "a missing locator is reported");
+    }
+
+    #[test]
+    fn composes_parent_and_child_transforms() {
+        let half = std::f32::consts::FRAC_1_SQRT_2;
+        // Parent at (1, 2, 3), turned 90 degrees about +y; child 1 m along
+        // the parent's +x lands 1 m along world -z.
+        let parent = Transform {
+            translation: [1.0, 2.0, 3.0],
+            rotation: [0.0, half, 0.0, half],
+            scale: 1.0,
+        };
+        let child = Transform {
+            translation: [1.0, 0.0, 0.0],
+            ..Transform::IDENTITY
+        };
+        let world = parent.compose(&child);
+        let close = |a: [f32; 3], b: [f32; 3]| (0..3).all(|i| (a[i] - b[i]).abs() < 1e-5);
+        assert!(
+            close(world.translation, [1.0, 2.0, 2.0]),
+            "{:?}",
+            world.translation
+        );
+        assert_eq!(Transform::IDENTITY.compose(&child), child);
+        let twice = parent.compose(&parent);
+        // Two 90 degree turns are 180 degrees about +y: (0, 1, 0, 0).
+        assert!(
+            (twice.rotation[1].abs() - 1.0).abs() < 1e-5,
+            "{:?}",
+            twice.rotation
+        );
     }
 
     #[test]

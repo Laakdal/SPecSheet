@@ -2,10 +2,10 @@
 //! preset configurations from `/def/vehicle/truck_desktop/` (findings F3,
 //! F6 in `docs/REVERSE_ENGINEERING.md`).
 
-use scs_formats::sii::Unit;
+use scs_formats::sii::{SiiDocument, Unit};
 use tuning_core::{
-    slots, Accessory, AccessoryId, AccessoryKind, Configuration, ModelRef, SlotId, TruckCatalog,
-    TruckId, WheelPart,
+    slots, Accessory, AccessoryId, AccessoryKind, Configuration, Hookup, ModelRef, SlotId,
+    TruckCatalog, TruckId, WheelPart,
 };
 
 use crate::error::{GameDataError, Result};
@@ -13,6 +13,10 @@ use crate::fs::GameFs;
 
 const TRUCK_DEFS: &str = "/def/vehicle/truck";
 const PRESET_DEFS: &str = "/def/vehicle/truck_desktop";
+/// Hookup catalogue: `addon_hookup_storage.sii` plus one file per DLC,
+/// each including `addon_hookups/*.sui` (finding F11).
+const HOOKUP_DIR: &str = "/def/vehicle";
+const HOOKUP_STORAGE: &str = "addon_hookup_storage";
 /// Directory holding addon slots: `accessory/<slot>/<item>.sii`.
 const ADDON_DIR: &str = "accessory";
 /// Shared wheel part groups under `/def/vehicle/<group>/`, used by every
@@ -136,10 +140,61 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
         }
     }
 
-    Ok((
-        TruckCatalog::new(truck.clone(), info, required_slots, fallbacks, accessories),
-        warnings,
-    ))
+    let catalog = TruckCatalog::new(truck.clone(), info, required_slots, fallbacks, accessories);
+    // Only hookups that fit one of this truck's slots are relevant.
+    let slots = catalog.slots();
+    let hookups: Vec<Hookup> = load_hookups(fs, &mut warnings)?
+        .into_iter()
+        .filter(|h| h.hosts.iter().any(|host| slots.contains(host)))
+        .collect();
+    Ok((catalog.with_hookups(hookups), warnings))
+}
+
+/// Every hookup unit of the installation.
+fn load_hookups(fs: &GameFs, warnings: &mut Vec<LoadWarning>) -> Result<Vec<Hookup>> {
+    let mut hookups = Vec::new();
+    for file in fs.list_dir(HOOKUP_DIR)?.files {
+        if !(file.starts_with(HOOKUP_STORAGE) && file.ends_with(".sii")) {
+            continue;
+        }
+        let path = format!("{HOOKUP_DIR}/{file}");
+        match fs.read_sii(&path) {
+            Ok(doc) => hookups.extend(doc.units.iter().filter_map(hookup_from_unit)),
+            Err(error) => warnings.push(LoadWarning {
+                path,
+                message: error.to_string(),
+            }),
+        }
+    }
+    Ok(hookups)
+}
+
+/// `accessory_hookup_data`, `accessory_horn_hookup_data`,
+/// `accessory_hookup_int_data`, `accessory_hookup_int_ui_data`.
+fn hookup_from_unit(unit: &Unit) -> Option<Hookup> {
+    if !(unit.class.starts_with("accessory_") && unit.class.contains("hookup")) {
+        return None;
+    }
+    Some(Hookup {
+        id: AccessoryId::new(unit.name.clone()),
+        name: unit
+            .get_str("name")
+            .map(str::to_owned)
+            .unwrap_or_else(|| item_label(&unit.name)),
+        icon: unit.get_str("icon").map(str::to_owned),
+        price: unit.get_i64("price"),
+        unlock_level: unit.get_i64("unlock"),
+        model: unit
+            .get_str("model")
+            .or_else(|| unit.get_str("exterior_model"))
+            .map(str::to_owned),
+        hosts: unit
+            .array_str("suitable_for")
+            .into_iter()
+            .map(SlotId::from)
+            .collect(),
+        interior: unit.class.contains("_int_"),
+    })
 }
 
 /// The game's preset configuration for `truck`, if one exists. Selections
@@ -150,41 +205,96 @@ pub fn load_preset(
 ) -> Result<Option<(Configuration, Vec<LoadWarning>)>> {
     let data_path = format!("{TRUCK_DEFS}/{}/data.sii", catalog.truck);
     for file in fs.list_dir(PRESET_DEFS)?.files {
-        let doc = fs.read_sii(&format!("{PRESET_DEFS}/{file}"))?;
-        let paths: Vec<&str> = doc
-            .units
-            .iter()
-            .filter(|u| u.class.starts_with("vehicle_") && u.class.ends_with("accessory"))
+        let path = format!("{PRESET_DEFS}/{file}");
+        let doc = fs.read_sii(&path)?;
+        let for_truck = vehicle_units(&doc)
             .filter_map(|u| u.get_str("data_path"))
-            .collect();
-        if !paths.iter().any(|p| p.eq_ignore_ascii_case(&data_path)) {
-            continue;
+            .any(|p| p.eq_ignore_ascii_case(&data_path));
+        if for_truck {
+            return Ok(Some(config_from_vehicle(&doc, catalog, &path)));
         }
-        let preset_path = format!("{PRESET_DEFS}/{file}");
-        let mut selections = Vec::new();
-        let mut warnings = Vec::new();
-        let paint_color = doc
-            .units_of_class("vehicle_paint_job_accessory")
-            .find_map(|u| u.get("base_color").and_then(|v| v.as_floats()))
-            .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok());
-        // The truck's own `data.sii` is listed too; it is not an accessory.
-        for path in paths
-            .into_iter()
-            .filter(|p| !p.eq_ignore_ascii_case(&data_path))
-        {
-            match catalog.by_def_path(path) {
-                Some(a) => selections.push((a.slot.clone(), a.id.clone())),
-                None => warnings.push(LoadWarning {
-                    path: preset_path.clone(),
-                    message: format!("selection {path} is not in the catalog"),
-                }),
-            }
-        }
-        let mut config = Configuration::from_selections(catalog.truck.clone(), selections);
-        config.set_paint_color(paint_color);
-        return Ok(Some((config, warnings)));
     }
     Ok(None)
+}
+
+/// Reads any vehicle configuration file (`vehicle` + `vehicle_*accessory`
+/// units, as in `/def/vehicle/truck_desktop`, `truck_company`, `truck_used`)
+/// for the truck of `catalog`.
+pub fn load_vehicle_config(
+    fs: &GameFs,
+    catalog: &TruckCatalog,
+    path: &str,
+) -> Result<(Configuration, Vec<LoadWarning>)> {
+    Ok(config_from_vehicle(&fs.read_sii(path)?, catalog, path))
+}
+
+fn vehicle_units(doc: &SiiDocument) -> impl Iterator<Item = &Unit> {
+    doc.units
+        .iter()
+        .filter(|u| u.class.starts_with("vehicle_") && u.class.ends_with("accessory"))
+}
+
+fn config_from_vehicle(
+    doc: &SiiDocument,
+    catalog: &TruckCatalog,
+    source: &str,
+) -> (Configuration, Vec<LoadWarning>) {
+    let data_path = format!("{TRUCK_DEFS}/{}/data.sii", catalog.truck);
+    let mut selections = Vec::new();
+    let mut hookups = Vec::new();
+    let mut warnings = Vec::new();
+    let warn = |warnings: &mut Vec<LoadWarning>, message: String| {
+        warnings.push(LoadWarning {
+            path: source.to_owned(),
+            message,
+        })
+    };
+    for unit in vehicle_units(doc) {
+        let Some(path) = unit.get_str("data_path") else {
+            continue;
+        };
+        // The truck's own `data.sii` is listed too; it is not an accessory.
+        if path.eq_ignore_ascii_case(&data_path) {
+            continue;
+        }
+        let Some(accessory) = catalog.by_def_path(path) else {
+            warn(
+                &mut warnings,
+                format!("selection {path} is not in the catalog"),
+            );
+            continue;
+        };
+        selections.push((accessory.slot.clone(), accessory.id.clone()));
+        // Hookups mounted on this accessory: `slot_name[i]` is a position
+        // (`slot_NN` locator of its model), `slot_hookup[i]` the hookup unit.
+        let names = unit.array_str("slot_name");
+        let units = unit.array_str("slot_hookup");
+        if names.len() != units.len() {
+            warn(
+                &mut warnings,
+                format!(
+                    "{path}: {} slot names for {} hookups",
+                    names.len(),
+                    units.len()
+                ),
+            );
+        }
+        for (position, hookup) in names.into_iter().zip(units) {
+            hookups.push((
+                accessory.slot.clone(),
+                position.to_owned(),
+                AccessoryId::from(hookup),
+            ));
+        }
+    }
+    let paint_color = doc
+        .units_of_class("vehicle_paint_job_accessory")
+        .find_map(|u| u.get("base_color").and_then(|v| v.as_floats()))
+        .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok());
+    let mut config =
+        Configuration::from_selections(catalog.truck.clone(), selections).with_hookups(hookups);
+    config.set_paint_color(paint_color);
+    (config, warnings)
 }
 
 /// The slot a definition directory provides accessories for:

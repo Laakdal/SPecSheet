@@ -6,11 +6,11 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use tuning_core::{
-    Accessory, AccessoryId, ChangeSet, ConfigError, Configuration, Incompatibility, SlotId,
+    Accessory, AccessoryId, ChangeSet, ConfigError, Configuration, Hookup, Incompatibility, SlotId,
     TruckCatalog, TruckId,
 };
 
-use crate::assembly::{assemble, slot_availability, Assembly, Drive};
+use crate::assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
 use crate::catalog::{list_trucks, load_catalog, load_preset, LoadWarning, TruckSummary};
 use crate::error::Result;
 use crate::fs::GameFs;
@@ -191,6 +191,42 @@ impl TruckSession {
         let changes = self
             .config
             .select(&self.catalog, &availability, accessory)?;
+        self.reassemble(game);
+        Ok(changes)
+    }
+
+    /// Hookups that fit on the accessory in `host` (accessories mounted on
+    /// accessories, finding F11), and the positions its model offers.
+    pub fn hookup_options(&self, host: &SlotId) -> (Vec<&Hookup>, &[HookupPosition]) {
+        let positions = self
+            .assembly
+            .hookup_positions
+            .get(host)
+            .map_or(&[][..], Vec::as_slice);
+        if positions.is_empty() {
+            return (Vec::new(), positions);
+        }
+        (self.catalog.hookups_for(host).collect(), positions)
+    }
+
+    /// Mounts `hookup` at `position` of the accessory in `host`, or empties
+    /// the position, and re-assembles the truck.
+    pub fn set_hookup(
+        &mut self,
+        game: &GameSession,
+        host: &SlotId,
+        position: &str,
+        hookup: Option<&AccessoryId>,
+    ) -> Result<ChangeSet, ConfigError> {
+        let positions: Vec<String> = self
+            .assembly
+            .hookup_positions
+            .get(host)
+            .map(|p| p.iter().map(|p| p.name.clone()).collect())
+            .unwrap_or_default();
+        let changes = self
+            .config
+            .set_hookup(&self.catalog, host, position, &positions, hookup)?;
         self.reassemble(game);
         Ok(changes)
     }
