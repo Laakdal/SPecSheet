@@ -61,7 +61,8 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 - [x] REA trace: the pin-button string is used by `FUN_140fe0fc0` (F8).
 - [x] REA decompilation of `FUN_140fe0fc0` (F5): it selects a pin (button `10000 + n`; hookups `11000 + m`) after switching to one of the game's 8 tabs. It does not create or place pins.
-- [ ] License-safe re-derivation of the PMG/PMD layouts and texture `unpack` from our own byte dumps (approved by the user; dumps are in the scratchpad).
+- [x] License-safe re-derivation: the PMD/PMG layouts and the texture image/sample records are now cited from our own bytes (`pmg-layout-derivation.txt`, `texture-unpack-derivation.txt`). Corrections: piece +60 is the vertex stride (now checked), and an empty hookup string means no hookup.
+- [ ] DXGI 67 (R9G9B9E5_SHAREDEXP, skyboxes and HDR UI images) is missing from `pixel_layout`, so those textures do not unpack. Needed only if the app renders skyboxes.
 - [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
 
 ## Next
