@@ -13,55 +13,33 @@
 //!   placed at the cabin's `ext_interior` locator, so the cab is not hollow
 //!   when seen through the windows (`research/evidence/interior-survey.txt`).
 
-use std::collections::{BTreeMap, BTreeSet};
+mod anchors;
+mod base;
+mod hookups;
+mod interior;
+mod transform;
+mod wheels;
+
+use std::collections::BTreeMap;
 
 use specsheet_core::{
-    AccessoryId, AccessoryKind, Configuration, SlotAvailability, SlotId, TruckCatalog, WheelPart,
+    AccessoryId, AccessoryKind, Configuration, SlotAvailability, SlotId, TruckCatalog,
 };
-use specsheet_formats::pmg::{Aabb, Locator};
+use specsheet_formats::pmg::Locator;
+
+pub use anchors::Anchor;
+pub use base::slot_availability;
+pub use hookups::HookupPosition;
+pub use transform::Transform;
 
 use crate::fs::GameFs;
 use crate::model::ModelCache;
 use crate::slots::locators_by_slot;
-
-/// Rigid transform of a placed model, in game (truck) space: x right,
-/// y up, -z forward.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Transform {
-    pub translation: [f32; 3],
-    /// Unit quaternion `(x, y, z, w)`.
-    pub rotation: [f32; 4],
-    pub scale: f32,
-}
-
-impl Transform {
-    pub const IDENTITY: Self = Self {
-        translation: [0.0; 3],
-        rotation: [0.0, 0.0, 0.0, 1.0],
-        scale: 1.0,
-    };
-
-    /// `self` applied after `child`: the child's transform expressed in
-    /// the parent's space (parent ∘ child).
-    pub fn compose(&self, child: &Transform) -> Transform {
-        let scaled = child.translation.map(|c| c * self.scale);
-        let rotated = rotate(self.rotation, scaled);
-        Transform {
-            translation: [0, 1, 2].map(|i| self.translation[i] + rotated[i]),
-            rotation: quat_mul(self.rotation, child.rotation),
-            scale: self.scale * child.scale,
-        }
-    }
-
-    fn from_locator(locator: &Locator) -> Self {
-        let [w, x, y, z] = locator.rotation_wxyz;
-        Self {
-            translation: locator.position,
-            rotation: [x, y, z, w],
-            scale: locator.scale,
-        }
-    }
-}
+use anchors::{anchors, placed_boxes};
+use base::{addon_slots, base_layout};
+use hookups::hookup_placements;
+use interior::interior_placements;
+use wheels::wheel_placements;
 
 /// One model instance of the assembled truck.
 #[derive(Clone, Debug, PartialEq)]
@@ -72,31 +50,6 @@ pub struct Placement {
     pub look: Option<String>,
     pub variant: Option<String>,
     pub transform: Transform,
-}
-
-/// Where a slot's clickable marker sits, in truck space.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Anchor {
-    pub slot: SlotId,
-    pub position: [f32; 3],
-    /// The slot's parts sit inside the cabin (interior accessories).
-    pub interior: bool,
-    /// Nothing is placed in the slot; the anchor sits at its bare locators,
-    /// which can lie away from any visible geometry (e.g. below a bumper).
-    pub empty: bool,
-    /// Anchors sharing a group (e.g. every front wheel part) have the same
-    /// position and form one marker. The key is the locator prefix the
-    /// group's parts attach to (`wheel_f`, `wheel_r`).
-    pub group: Option<String>,
-}
-
-/// A position on a host accessory where a hookup can be mounted.
-#[derive(Clone, Debug, PartialEq)]
-pub struct HookupPosition {
-    /// The `slot_NN` locator name, as stored in configurations.
-    pub name: String,
-    /// Truck-space position (on the first placement of the host).
-    pub position: [f32; 3],
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -120,10 +73,6 @@ pub enum Drive {
 
 const FRONT_WHEELS: &str = "wheel_f";
 const REAR_WHEELS: &str = "wheel_r";
-/// Cabin locator the interior's exterior-view model attaches to.
-const INTERIOR_LOCATOR: &str = "ext_interior";
-/// Prefix of the hookup position locators on host accessory models.
-const HOOKUP_LOCATOR: &str = "slot_";
 
 /// Assembles `config`. Base models that fail to load are reported as
 /// warnings; the rest of the truck is still assembled.
@@ -220,477 +169,12 @@ pub fn assemble(
     assembly
 }
 
-/// Places the selected wheel parts at the front (`f_*` slots) and rear
-/// wheel locators, using model variant `left` for x < 0 and `right`
-/// otherwise.
-///
-/// Tyres are moved along the wheel axis by the `tire_shift` of the axle's
-/// rim/disc (finding F9): towards the truck's centre line when positive.
-/// Hub-face parts stay at the locator. Locator rotations are ignored.
-fn wheel_placements(
-    selected: &[&specsheet_core::Accessory],
-    front: &[&Locator],
-    rear: &[&Locator],
-    warnings: &mut Vec<String>,
-) -> Vec<Placement> {
-    let is_front = |a: &specsheet_core::Accessory| a.slot.as_str().starts_with("f_");
-    let wheel_parts: Vec<_> = selected
-        .iter()
-        .filter(|a| a.kind == AccessoryKind::Wheel)
-        .collect();
-    let mut placements = Vec::new();
-    for (front_axle, locators) in [(true, front), (false, rear)] {
-        let axle: Vec<_> = wheel_parts
-            .iter()
-            .filter(|a| is_front(a) == front_axle)
-            .collect();
-        let shifts: Vec<(&AccessoryId, f32)> = axle
-            .iter()
-            .filter_map(|a| match a.wheel {
-                Some(WheelPart::Rim {
-                    tire_shift: Some(shift),
-                }) => Some((&a.id, shift)),
-                _ => None,
-            })
-            .collect();
-        if shifts.len() > 1 {
-            warnings.push(format!(
-                "several tire_shift values on one axle, using the first: {shifts:?}"
-            ));
-        }
-        let tire_shift = shifts.first().map_or(0.0, |(_, shift)| *shift);
-        for accessory in axle {
-            let Some(model) = accessory.model.exterior.as_ref() else {
-                continue;
-            };
-            let shift = if accessory.wheel == Some(WheelPart::Tire) {
-                tire_shift
-            } else {
-                0.0
-            };
-            for locator in locators {
-                let left = locator.position[0] < 0.0;
-                // Wheels take only the locator's position (finding F9): a
-                // few chassis carry yawed wheel locators.
-                let mut transform = Transform {
-                    translation: locator.position,
-                    scale: locator.scale,
-                    ..Transform::IDENTITY
-                };
-                // The model's +x points inboard on the left, outboard on
-                // the right.
-                transform.translation[0] += if left { shift } else { -shift } * locator.scale;
-                placements.push(Placement {
-                    slot: accessory.slot.clone(),
-                    accessory: accessory.id.clone(),
-                    model: model.clone(),
-                    look: accessory.model.look.clone(),
-                    variant: Some(if left { "left" } else { "right" }.to_owned()),
-                    transform,
-                });
-            }
-        }
-    }
-    placements
-}
-
-type HookupResult = (Option<Placement>, Option<String>);
-
-/// The hookup positions of every placed host accessory, and the placements
-/// of the configured hookups (or a warning per hookup that cannot be
-/// placed). A hookup's transform is its host's placement composed with the
-/// position locator.
-fn hookup_placements(
-    fs: &GameFs,
-    cache: &ModelCache,
-    catalog: &TruckCatalog,
-    config: &Configuration,
-    placements: &[Placement],
-) -> (BTreeMap<SlotId, Vec<HookupPosition>>, Vec<HookupResult>) {
-    let mut positions = BTreeMap::new();
-    let mut hosts: BTreeMap<&SlotId, Vec<(&Placement, Vec<Locator>)>> = BTreeMap::new();
-    for placement in placements {
-        let Ok(model) = cache.load(fs, &placement.model) else {
-            continue;
-        };
-        let variant = model.variant_index(placement.variant.as_deref());
-        let locators: Vec<Locator> = model
-            .visible_locators(variant)
-            .filter(|l| l.name.starts_with(HOOKUP_LOCATOR))
-            .cloned()
-            .collect();
-        if locators.is_empty() {
-            continue;
-        }
-        positions.entry(placement.slot.clone()).or_insert_with(|| {
-            locators
-                .iter()
-                .map(|l| HookupPosition {
-                    name: l.name.clone(),
-                    position: placement
-                        .transform
-                        .compose(&Transform::from_locator(l))
-                        .translation,
-                })
-                .collect()
-        });
-        hosts
-            .entry(&placement.slot)
-            .or_default()
-            .push((placement, locators));
-    }
-    let mut results = Vec::new();
-    for (host, position, id) in config.all_hookups() {
-        let Some(model) = catalog.hookup(id).and_then(|h| h.model.as_ref()) else {
-            results.push((None, Some(format!("hookup {id} has no model"))));
-            continue;
-        };
-        let mut placed = false;
-        for (host_placement, locators) in hosts.get(host).into_iter().flatten() {
-            if let Some(locator) = locators.iter().find(|l| l.name == position) {
-                placed = true;
-                results.push((
-                    Some(Placement {
-                        slot: host.clone(),
-                        accessory: id.clone(),
-                        model: model.clone(),
-                        look: None,
-                        variant: None,
-                        transform: host_placement
-                            .transform
-                            .compose(&Transform::from_locator(locator)),
-                    }),
-                    None,
-                ));
-            }
-        }
-        if !placed {
-            results.push((
-                None,
-                Some(format!("hookup {id}: no position `{position}` on {host}")),
-            ));
-        }
-    }
-    (positions, results)
-}
-
-/// Places the selected interior's exterior-view model at the cabin's
-/// `ext_interior` locator (all 26 presets fit there; six would not fit at
-/// the origin, interior survey E3).
-fn interior_placements(
-    selected: &[&specsheet_core::Accessory],
-    base_locators: &[Locator],
-    drive: Drive,
-    warnings: &mut Vec<String>,
-) -> Vec<Placement> {
-    let mut placements = Vec::new();
-    for accessory in selected
-        .iter()
-        .filter(|a| a.kind == AccessoryKind::Interior)
-    {
-        // Right-hand drive uses the interior's UK twin (finding F10).
-        let (model, variant) = match (drive, accessory.model.exterior_uk.as_ref()) {
-            (Drive::Right, Some(uk)) => (Some(uk), accessory.model.variant_uk.as_ref()),
-            _ => (
-                accessory.model.exterior.as_ref(),
-                accessory.model.variant.as_ref(),
-            ),
-        };
-        let Some(model) = model else {
-            continue;
-        };
-        let Some(locator) = base_locators.iter().find(|l| l.name == INTERIOR_LOCATOR) else {
-            warnings.push(format!(
-                "{}: cabin has no visible `{INTERIOR_LOCATOR}` locator",
-                accessory.id
-            ));
-            continue;
-        };
-        placements.push(Placement {
-            slot: accessory.slot.clone(),
-            accessory: accessory.id.clone(),
-            model: model.clone(),
-            look: accessory.model.look.clone(),
-            variant: variant.cloned(),
-            transform: Transform::from_locator(locator),
-        });
-    }
-    placements
-}
-
-/// World-space bounding box of every slot's placed models.
-fn placed_boxes(
-    fs: &GameFs,
-    cache: &ModelCache,
-    placements: &[Placement],
-) -> BTreeMap<SlotId, Aabb> {
-    let mut boxes: BTreeMap<SlotId, Aabb> = BTreeMap::new();
-    for placement in placements {
-        let Ok(model) = cache.load(fs, &placement.model) else {
-            continue;
-        };
-        let world = transform_aabb(&model.pmg.aabb, &placement.transform);
-        boxes
-            .entry(placement.slot.clone())
-            .and_modify(|b| *b = b.union(&world))
-            .or_insert(world);
-    }
-    boxes
-}
-
-/// Margin by which a model must stick out of the cabin box to count as
-/// exterior; absorbs parts modelled flush with the cabin surface.
-const INTERIOR_MARGIN: f32 = 0.05;
-
-/// One anchor per slot (design choice D7 in `docs/DECISIONS.md`):
-/// * addon slots anchor at their placed models' bounding-box centre, or at
-///   their locators while empty. A centre hidden inside the cabin (models
-///   spanning both sides, e.g. mirror pairs) moves to the box's left (-x)
-///   face so the marker stays on visible geometry;
-/// * a slot is "interior" when its models (or locators) lie inside the
-///   cabin box;
-/// * an anchor is "empty" when no model is placed in its slot;
-/// * wheel slots anchor at the left wheels of their axle group and share
-///   the group (`wheel_f` / `wheel_r`); base slots anchor at their model
-///   centre.
-fn anchors(
-    catalog: &TruckCatalog,
-    by_slot: &BTreeMap<SlotId, Vec<&Locator>>,
-    slot_boxes: &BTreeMap<SlotId, Aabb>,
-    base_boxes: &[(Aabb, &specsheet_core::Accessory)],
-    cabin_box: Option<Aabb>,
-    front: &[&Locator],
-    rear: &[&Locator],
-) -> Vec<Anchor> {
-    let cabin_inner = cabin_box.map(|cabin| cabin.shrunk(INTERIOR_MARGIN));
-    let inside = |p: [f32; 3]| cabin_inner.is_some_and(|c| c.contains_point(p));
-    let mut anchors: Vec<Anchor> = by_slot
-        .iter()
-        .map(|(slot, locators)| match slot_boxes.get(slot) {
-            Some(aabb) => {
-                let center = aabb.center();
-                let interior = cabin_inner.is_some_and(|c| c.contains_box(aabb));
-                let position = if inside(center) && !interior {
-                    [aabb.min[0], center[1], center[2]]
-                } else {
-                    center
-                };
-                Anchor {
-                    slot: slot.clone(),
-                    position,
-                    interior,
-                    empty: false,
-                    group: None,
-                }
-            }
-            None => {
-                let position = mean(locators.iter().map(|l| l.position));
-                Anchor {
-                    slot: slot.clone(),
-                    position,
-                    interior: inside(position),
-                    empty: true,
-                    group: None,
-                }
-            }
-        })
-        .collect();
-    for (aabb, accessory) in base_boxes {
-        anchors.push(Anchor {
-            slot: accessory.slot.clone(),
-            position: aabb.center(),
-            interior: false,
-            empty: false,
-            group: None,
-        });
-    }
-    let mut wheel_slots: Vec<SlotId> = catalog
-        .accessories()
-        .filter(|a| a.kind == AccessoryKind::Wheel)
-        .map(|a| a.slot.clone())
-        .collect();
-    wheel_slots.sort();
-    wheel_slots.dedup();
-    for slot in wheel_slots {
-        let (group, locators) = if slot.as_str().starts_with("f_") {
-            (FRONT_WHEELS, front)
-        } else {
-            (REAR_WHEELS, rear)
-        };
-        let left: Vec<[f32; 3]> = locators
-            .iter()
-            .map(|l| l.position)
-            .filter(|p| p[0] < 0.0)
-            .collect();
-        if !left.is_empty() {
-            anchors.push(Anchor {
-                empty: !slot_boxes.contains_key(&slot),
-                slot,
-                position: mean(left.into_iter()),
-                interior: false,
-                group: Some(group.to_owned()),
-            });
-        }
-    }
-    anchors
-}
-
-fn mean(points: impl Iterator<Item = [f32; 3]>) -> [f32; 3] {
-    let (sum, count) = points.fold(([0.0f32; 3], 0usize), |(s, n), p| {
-        ([s[0] + p[0], s[1] + p[1], s[2] + p[2]], n + 1)
-    });
-    if count == 0 {
-        return [0.0; 3];
-    }
-    let n = count as f32;
-    [sum[0] / n, sum[1] / n, sum[2] / n]
-}
-
-/// Base models (chassis, cabin) of a configuration: their placements,
-/// visible locators and bounding boxes.
-struct BaseLayout<'a> {
-    placements: Vec<Placement>,
-    locators: Vec<Locator>,
-    boxes: Vec<(Aabb, &'a specsheet_core::Accessory)>,
-    warnings: Vec<String>,
-}
-
-fn base_layout<'a>(
-    fs: &GameFs,
-    cache: &ModelCache,
-    catalog: &'a TruckCatalog,
-    config: &Configuration,
-    drive: Drive,
-) -> BaseLayout<'a> {
-    let mut layout = BaseLayout {
-        placements: Vec::new(),
-        locators: Vec::new(),
-        boxes: Vec::new(),
-        warnings: Vec::new(),
-    };
-    let bases = config
-        .selections()
-        .values()
-        .filter_map(|id| catalog.accessory(id))
-        .filter(|a| a.kind.is_base());
-    for accessory in bases {
-        let Some(path) = accessory.model.exterior.as_deref() else {
-            continue;
-        };
-        let variant = match drive {
-            Drive::Right => accessory
-                .model
-                .variant_uk
-                .as_ref()
-                .or(accessory.model.variant.as_ref()),
-            Drive::Left => accessory.model.variant.as_ref(),
-        };
-        match cache.load(fs, path) {
-            Ok(model) => {
-                let index = model.variant_index(variant.map(String::as_str));
-                layout
-                    .locators
-                    .extend(model.visible_locators(index).cloned());
-                layout.placements.push(Placement {
-                    slot: accessory.slot.clone(),
-                    accessory: accessory.id.clone(),
-                    model: path.to_owned(),
-                    look: accessory.model.look.clone(),
-                    variant: variant.cloned(),
-                    transform: Transform::IDENTITY,
-                });
-                layout.boxes.push((model.pmg.aabb, accessory));
-            }
-            Err(error) => layout.warnings.push(format!("{}: {error}", accessory.id)),
-        }
-    }
-    layout
-}
-
-fn addon_slots(catalog: &TruckCatalog) -> BTreeSet<SlotId> {
-    catalog
-        .accessories()
-        .filter(|a| a.needs_exterior_locator())
-        .map(|a| a.slot.clone())
-        .collect()
-}
-
-/// Which addon slots the base models of `config` can host. Cheaper than a
-/// full [`assemble`]; used while the rules repair a configuration.
-pub fn slot_availability(
-    fs: &GameFs,
-    cache: &ModelCache,
-    catalog: &TruckCatalog,
-    config: &Configuration,
-    drive: Drive,
-) -> SlotAvailability {
-    let base = base_layout(fs, cache, catalog, config, drive);
-    SlotAvailability {
-        available: locators_by_slot(&addon_slots(catalog), base.locators.iter())
-            .into_keys()
-            .collect(),
-    }
-}
-
-/// Hamilton product `a * b` of quaternions stored `(x, y, z, w)`.
-fn quat_mul(a: [f32; 4], b: [f32; 4]) -> [f32; 4] {
-    let [ax, ay, az, aw] = a;
-    let [bx, by, bz, bw] = b;
-    [
-        aw * bx + ax * bw + ay * bz - az * by,
-        aw * by - ax * bz + ay * bw + az * bx,
-        aw * bz + ax * by - ay * bx + az * bw,
-        aw * bw - ax * bx - ay * by - az * bz,
-    ]
-}
-
-/// Rotates `v` by the unit quaternion `q = (x, y, z, w)`.
-fn rotate(q: [f32; 4], v: [f32; 3]) -> [f32; 3] {
-    let [x, y, z, w] = q;
-    // v' = v + w*t + q_xyz × t, with t = 2 * (q_xyz × v)
-    let t = [
-        2.0 * (y * v[2] - z * v[1]),
-        2.0 * (z * v[0] - x * v[2]),
-        2.0 * (x * v[1] - y * v[0]),
-    ];
-    [
-        v[0] + w * t[0] + (y * t[2] - z * t[1]),
-        v[1] + w * t[1] + (z * t[0] - x * t[2]),
-        v[2] + w * t[2] + (x * t[1] - y * t[0]),
-    ]
-}
-
-fn transform_aabb(aabb: &Aabb, transform: &Transform) -> Aabb {
-    let corners = (0..8).map(|corner| {
-        let local = [
-            if corner & 1 == 0 {
-                aabb.min[0]
-            } else {
-                aabb.max[0]
-            },
-            if corner & 2 == 0 {
-                aabb.min[1]
-            } else {
-                aabb.max[1]
-            },
-            if corner & 4 == 0 {
-                aabb.min[2]
-            } else {
-                aabb.max[2]
-            },
-        ];
-        let rotated = rotate(transform.rotation, local.map(|c| c * transform.scale));
-        let world = [0, 1, 2].map(|i| rotated[i] + transform.translation[i]);
-        Aabb {
-            min: world,
-            max: world,
-        }
-    });
-    corners.reduce(|a, b| a.union(&b)).unwrap_or(*aabb)
-}
-
 #[cfg(test)]
 mod tests {
+    use specsheet_core::{AccessoryId, AccessoryKind, SlotId, WheelPart};
+    use specsheet_formats::pmg::{Aabb, Locator};
+
+    use super::transform::{rotate, transform_aabb};
     use super::*;
 
     fn wheel_part(id: &str, slot: &str, wheel: WheelPart) -> specsheet_core::Accessory {
