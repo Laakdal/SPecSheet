@@ -1,0 +1,10 @@
+#!/bin/sh
+# Refuses game content in commits; see tools/check_public_tree.py.
+# `python3` is a Microsoft Store placeholder on some Windows machines, so try each name.
+for py in python3 python py; do
+    if "$py" -c "" >/dev/null 2>&1; then
+        exec "$py" tools/check_public_tree.py
+    fi
+done
+echo "pre-commit: Python 3 is required for tools/check_public_tree.py" >&2
+exit 1
