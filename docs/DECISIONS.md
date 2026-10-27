@@ -104,3 +104,10 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - Keep the verified code with an evidence trail. Rejected by the user in favour of zero doubt.
   - Load the user's own compiled shaders at runtime. Rejected: legal, but brittle against SCS's engine bindings.
   - Generic PBR without reading the shaders. Rejected: not 1:1.
+
+### D14: `image` for the parity runner's PNG I/O
+- **Context:** `specsheet --parity` must read the user's reference PNGs and the app's screenshots, and write diff heatmaps.
+- **Decision:** depend on `image` 0.25 (PNG only) in the `specsheet` crate. Bevy already builds it, so it adds no compile time.
+- **Alternatives:**
+  - Bevy's own image types. Rejected: they don't expose PNG decoding outside the asset system.
+  - A separate tool crate. Rejected: the runner re-runs the app binary itself, and keeping it in the binary avoids a second build target.
