@@ -78,6 +78,9 @@ pub enum Field {
     MultiChannel,
 }
 
+/// Largest texture side accepted, as for 3D textures (`assets.rs`).
+const MAX_SIDE: u32 = 16384;
+
 /// Edge softness of distance fields, in distance units around 0.5.
 const DISTANCE_SOFTNESS: f32 = 0.08;
 
@@ -85,6 +88,9 @@ const DISTANCE_SOFTNESS: f32 = 0.08;
 /// UI textures in 1.60 are B8G8R8A8/X8 (docs/formats/ui.md).
 pub fn color_image(data: &TextureData, field: Field) -> Result<egui::ColorImage, String> {
     let mip = data.mips.first().ok_or("texture has no surfaces")?;
+    if mip.width == 0 || mip.height == 0 || mip.width > MAX_SIDE || mip.height > MAX_SIDE {
+        return Err(format!("unsupported size {}x{}", mip.width, mip.height));
+    }
     let (w, h) = (mip.width as usize, mip.height as usize);
     let pixels = w.checked_mul(h).ok_or("texture too large")?;
     let rgba: Vec<u8> = match data.format {
@@ -149,6 +155,17 @@ mod tests {
         let red = rgba(&[[255, 0, 0, 255]], 1);
         let image = color_image(&red, Field::SingleChannel).expect("image");
         assert_eq!(image.pixels[0].a(), 255);
+    }
+
+    #[test]
+    fn rejects_empty_and_oversized_textures() {
+        let mut empty = rgba(&[], 1);
+        empty.mips[0].width = 0;
+        empty.mips[0].height = 0;
+        assert!(color_image(&empty, Field::None).is_err());
+        let mut huge = rgba(&[[0; 4]], 1);
+        huge.mips[0].width = MAX_SIDE + 1;
+        assert!(color_image(&huge, Field::None).is_err());
     }
 
     #[test]
