@@ -1,6 +1,6 @@
 # App UI (egui)
 
-`app/specsheet/src/ui.rs` draws the interface with bevy_egui 0.42 (egui 0.36). It renders what `game-data::view` reports and turns clicks into `studio::Action`s; it holds no tuning rules. The layout is our own design (see [../PARITY.md](../PARITY.md)). Matching the game's `ui/truck_configuration_center.sii` layout, icons and categories is ROADMAP Phase 5.
+`crates/specsheet/src/ui.rs` draws the interface with bevy_egui 0.42 (egui 0.36). It renders what `specsheet-data::view` reports and turns clicks into `studio::Action`s; it holds no tuning rules. The layout is our own design (see [../PARITY.md](../PARITY.md)). Matching the game's `ui/truck_configuration_center.sii` layout, icons and categories is ROADMAP Phase 5.
 
 ## Layout
 

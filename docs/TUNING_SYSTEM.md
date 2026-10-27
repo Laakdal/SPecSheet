@@ -1,6 +1,6 @@
 # Tuning system
 
-How the game describes truck customisation, and how `tuning-core` + `game-data` reproduce it.
+How the game describes truck customisation, and how `specsheet-core` + `specsheet-data` reproduce it.
 
 Labels follow [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md): **Confirmed**, **Hypothesis**, **Design** (our own choice).
 
@@ -31,7 +31,7 @@ Model references:
 - Addons use `exterior_model[_uk]`, `look` and `variant`.
 - Wheels use `model` and `look`.
 
-## Rules (`tuning_core::Configuration`)
+## Rules (`specsheet_core::Configuration`)
 
 | Rule | Data | Status |
 |---|---|---|

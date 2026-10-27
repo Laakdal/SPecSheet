@@ -1,6 +1,6 @@
 # Effects (`effect.scs`)
 
-What the shader archive contains. It is read through `crates/scs-archive`; no dedicated parser exists yet. Material files name an effect (see [models.md](models.md#mat-materials)), and this archive maps each effect to shaders.
+What the shader archive contains. It is read through `crates/specsheet-archive`; no dedicated parser exists yet. Material files name an effect (see [models.md](models.md#mat-materials)), and this archive maps each effect to shaders.
 
 **Indexing evidence:** the `survey` of `effect.scs` reaches 24,481 entries with 0 skipped. This needs metadata record `0x07`, see [hashfs.md](hashfs.md#metadata-records).
 

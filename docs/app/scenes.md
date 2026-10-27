@@ -1,6 +1,6 @@
 # Tuning scenes, lights and camera
 
-The viewer loads the game's own scenes from `/def/desktop/config*.sii` through `game-data::scene` (finding F7). The default garage ("Home at Last") is listed first, and the scene picker lists all 10 scenes found in 1.60. A peer note says these may be hub ("desktop") backgrounds rather than the tuning garage itself; see [../PARITY.md](../PARITY.md).
+The viewer loads the game's own scenes from `/def/desktop/config*.sii` through `specsheet-data::scene` (finding F7). The default garage ("Home at Last") is listed first, and the scene picker lists all 10 scenes found in 1.60. A peer note says these may be hub ("desktop") backgrounds rather than the tuning garage itself; see [../PARITY.md](../PARITY.md).
 
 `viewer::apply_scene` applies a scene. Each piece falls back on its own: with no camera the current one is kept, and a scene model that fails to load leaves the plain floor.
 

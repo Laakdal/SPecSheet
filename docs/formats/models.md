@@ -1,6 +1,6 @@
 # Models: PMD, PMG, tokens and materials
 
-What model files contain. Implemented in `crates/scs-formats/src/{pmd,pmg,token,mat}.rs`. How the app draws them is in [../RENDERING.md](../RENDERING.md); how accessories attach at locators is in [../REVERSE_ENGINEERING.md](../REVERSE_ENGINEERING.md) (F4).
+What model files contain. Implemented in `crates/specsheet-formats/src/{pmd,pmg,token,mat}.rs`. How the app draws them is in [../RENDERING.md](../RENDERING.md); how accessories attach at locators is in [../REVERSE_ENGINEERING.md](../REVERSE_ENGINEERING.md) (F4).
 
 ## PMD (model descriptor, version 4)
 

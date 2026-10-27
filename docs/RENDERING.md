@@ -10,13 +10,13 @@ How the app turns game data into the 3D tuning view. What the game files contain
 ## Pipeline
 
 ```
-game-data::assembly::assemble   →  placements (model, look, variant, transform) + anchors
-game-data::render::build_mesh   →  MeshData (visible parts, CCW indices, material info)
-game-data::render::load_texture →  TextureData (unpacked mips, BGRA→RGBA)
-game-data::view::overview       →  hotspots, slot list, paint colour, warnings
-app/specsheet/src/assets.rs     →  validated Bevy meshes, StandardMaterials, BC images
-app/specsheet/src/viewer.rs     →  truck and scene entities, lights, fog, orbit camera
-app/specsheet/src/ui.rs         →  egui panels and hotspot markers
+specsheet-data::assembly::assemble   →  placements (model, look, variant, transform) + anchors
+specsheet-data::render::build_mesh   →  MeshData (visible parts, CCW indices, material info)
+specsheet-data::render::load_texture →  TextureData (unpacked mips, BGRA→RGBA)
+specsheet-data::view::overview       →  hotspots, slot list, paint colour, warnings
+crates/specsheet/src/assets.rs     →  validated Bevy meshes, StandardMaterials, BC images
+crates/specsheet/src/viewer.rs     →  truck and scene entities, lights, fog, orbit camera
+crates/specsheet/src/ui.rs         →  egui panels and hotspot markers
 ```
 
 `assets::load_model` runs `build_mesh` and the texture loads on Bevy's async compute pool. The upload happens on the main thread (`viewer::finish_models`).

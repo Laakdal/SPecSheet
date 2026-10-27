@@ -4,7 +4,7 @@ How the app draws game materials. The effect files themselves are described in [
 
 ## Effect tokens → Bevy `StandardMaterial`
 
-`game-data::render::MaterialInfo` classifies each `.mat` by its effect tokens. `app/specsheet/src/assets.rs::material` maps the result:
+`specsheet-data::render::MaterialInfo` classifies each `.mat` by its effect tokens. `crates/specsheet/src/assets.rs::material` maps the result:
 
 | Effect tokens | `MaterialInfo` | Bevy |
 |---|---|---|
@@ -25,7 +25,7 @@ This is an approximation, not the game's shaders.
 
 ## Texture upload
 
-`game-data::render::load_texture` unpacks a `.tobj` surface chain. `assets::texture_image` then builds a Bevy `Image` with the full mip chain and the sampler from the `.tobj` (repeat or clamp, linear filtering, 4× anisotropy). Before upload it rejects, with a warning rather than a wgpu panic:
+`specsheet-data::render::load_texture` unpacks a `.tobj` surface chain. `assets::texture_image` then builds a Bevy `Image` with the full mip chain and the sampler from the `.tobj` (repeat or clamp, linear filtering, 4× anisotropy). Before upload it rejects, with a warning rather than a wgpu panic:
 
 - BC surfaces whose base size is not a multiple of 4;
 - a mip whose size is not `max(1, base >> level)`;

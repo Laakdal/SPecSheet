@@ -17,7 +17,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 # Integration tests against the real game (they return early if ETS2_DIR is unset):
 ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
-  cargo test -p game-data --release --test real_install
+  cargo test -p specsheet-data --release --test real_install
 ```
 
 ## Run the app
@@ -26,7 +26,7 @@ ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
 ETS2_DIR="<game dir>" cargo run --release -p specsheet
 ```
 
-- The app is `app/specsheet` (Bevy 0.19 + bevy_egui 0.42).
+- The app is `crates/specsheet` (Bevy 0.19 + bevy_egui 0.42).
 - Without `ETS2_DIR` it tries the remembered directory, then Steam discovery.
 - Release builds have no console window. Debug builds keep one for logs.
 - The first build compiles Bevy and takes several minutes. When other sessions use the repo, build with your own `CARGO_TARGET_DIR` so the shared `target/` isn't locked.
@@ -73,27 +73,27 @@ These are examples, not shipped binaries. All of them read `ETS2_DIR`.
 export MSYS_NO_PATHCONV=1   # Git Bash only: keep /game/paths intact
 
 # Archive survey: entry kinds per extension, texture formats, reachability
-cargo run --release -p scs-archive --example survey -- "<game>/def.scs" ...
+cargo run --release -p specsheet-archive --example survey -- "<game>/def.scs" ...
 
 # Browse the layered file system
-cargo run --release -p scs-archive --example scs -- ls def/vehicle/truck
-cargo run --release -p scs-archive --example scs -- cat def/vehicle/truck/scania.s_2016/data.sii
-cargo run --release -p scs-archive --example scs -- find vehicle/truck/scania_2016 .pmd
+cargo run --release -p specsheet-archive --example scs -- ls def/vehicle/truck
+cargo run --release -p specsheet-archive --example scs -- cat def/vehicle/truck/scania.s_2016/data.sii
+cargo run --release -p specsheet-archive --example scs -- find vehicle/truck/scania_2016 .pmd
 
 # Model structure: looks, variants, parts, locators
-cargo run --release -p game-data --example model_info -- /vehicle/truck/scania_2016/cabin/cab_s_low.pmd
+cargo run --release -p specsheet-data --example model_info -- /vehicle/truck/scania_2016/cabin/cab_s_low.pmd
 
 # Definition statistics / samples (optional last argument: root directory, default /def/vehicle/truck)
-cargo run --release -p game-data --example def_stats
-cargo run --release -p game-data --example def_stats -- /def/vehicle/f_disc
-cargo run --release -p game-data --example def_grep -- accessory_addon_data conflict_with 3
-cargo run --release -p game-data --example def_grep -- accessory_rim_data tire_shift 5 /def/vehicle/f_disc
+cargo run --release -p specsheet-data --example def_stats
+cargo run --release -p specsheet-data --example def_stats -- /def/vehicle/f_disc
+cargo run --release -p specsheet-data --example def_grep -- accessory_addon_data conflict_with 3
+cargo run --release -p specsheet-data --example def_grep -- accessory_rim_data tire_shift 5 /def/vehicle/f_disc
 
 # Wheel parts: x extents and tire_shift per part, rim lip vs tyre bead, yawed wheel locators (F9)
-cargo run --release -p game-data --example wheel_fit
-cargo run --release -p game-data --example wheel_fit -- fit
-cargo run --release -p game-data --example wheel_fit -- locators
-cargo run --release -p game-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left
+cargo run --release -p specsheet-data --example wheel_fit
+cargo run --release -p specsheet-data --example wheel_fit -- fit
+cargo run --release -p specsheet-data --example wheel_fit -- locators
+cargo run --release -p specsheet-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left
 ```
 
 ## Debugging tips

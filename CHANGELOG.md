@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Changed
-- **The app is now all Rust:** Bevy 0.19 + egui (`app/specsheet`) replaces the Tauri + React + three.js app. Run it with `cargo run --release -p specsheet`.
+- **The app is now all Rust:** Bevy 0.19 + egui (`crates/specsheet`) replaces the Tauri + React + three.js app. Run it with `cargo run --release -p specsheet`.
   - Same features: the game's scenes, hotspots with clustering, the sidebar with options and reasons, live re-assembly, LHD/RHD, interior markers and the orbit camera.
   - Textures go to the GPU BC-compressed through wgpu (DirectX 12/Vulkan). Malformed textures and meshes are skipped with a warning instead of crashing.
   - Empty-slot markers are drawn as rings, and each wheel axle as one marker.

@@ -7,7 +7,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] HashFS v2 reader, CityHash64 v1.0.3, GDeflate textures, layered VFS. Every entry of the surveyed archives is reachable.
 - [x] Mount order from `game.log.txt`.
 - [x] SII (with `@include`), PMD v4, PMG v0x15 and MAT parsers. Every `/def/vehicle` definition and every truck model parses (`real_install` tests).
-- [x] `tuning-core`: catalog, rules (`suitable_for` globs, conflicts, defaults, required slots, slot availability) and repair. Unit tests pass, and all 26 game presets validate with 0 issues (`catalog_info`).
+- [x] `specsheet-core`: catalog, rules (`suitable_for` globs, conflicts, defaults, required slots, slot availability) and repair. Unit tests pass, and all 26 game presets validate with 0 issues (`catalog_info`).
 - [x] Slot→locator rule measured: 626/626 preset addons resolve (`locator_check`).
 - [x] Wheel tyre offset (F9): tyres shifted by the rim's `tire_shift` and wheel locator yaw ignored. All 104 preset wheels fit their tyre within 6 mm (`real_install` test `every_preset_wheel_sits_in_its_tyre`).
 - [x] Assembly with wheels, hotspot anchors and the interior/exterior split.
@@ -38,7 +38,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 - [x] Interior exterior-view model at `ext_interior` (F10), empty-slot and wheel-group anchor flags. Real-install tests cover all 26 presets in both drives.
 
-- [x] **All-Rust app (D11):** Bevy 0.19 + bevy_egui 0.42 in `app/specsheet` replaces Tauri + React + three.js. Display logic moved into `game-data::view`. Seen working with `SPECSHEET_SCRIPT` screenshots and real mouse input (user32):
+- [x] **All-Rust app (D11):** Bevy 0.19 + bevy_egui 0.42 in `crates/specsheet` replaces Tauri + React + three.js. Display logic moved into `specsheet-data::view`. Seen working with `SPECSHEET_SCRIPT` screenshots and real mouse input (user32):
   - Scania S in the "Home at Last" garage, with markers and the parts list.
   - A marker click opens the slot (Main Mirrors).
   - Picking a light bar adds it on the roof.
@@ -71,7 +71,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 7. **UI fidelity:** game accessory icons and categories; layout per `ui/truck_configuration_center.sii`.
 8. **REA decompilation:** callers of `0x14223d860` (pin creation) and `0x1421c2f90` (locator lookup), then `hide_in` and defaults/repair. Each CLI call re-runs the roughly 28 min analysis; can be delegated to the `ets2-researcher` subagent.
 9. **Markers:** anchor empty slots on their first compatible option, put a wheel group on the camera-side wheel, and add a depth test (see docs/app/hotspots.md "Known gaps").
-10. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `app/specsheet/icon.png`.
+10. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `crates/specsheet/icon.png`.
 11. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 
 ## Blockers and notes

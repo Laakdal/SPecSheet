@@ -1,6 +1,6 @@
 # HashFS v2 (`.scs` archives)
 
-What the game's archives contain. Implemented in `crates/scs-archive` (`hashfs.rs`, `city.rs`). Status labels are explained in [../ASSET_FORMATS.md](../ASSET_FORMATS.md). Texture entries are covered in [textures.md](textures.md).
+What the game's archives contain. Implemented in `crates/specsheet-archive` (`hashfs.rs`, `city.rs`). Status labels are explained in [../ASSET_FORMATS.md](../ASSET_FORMATS.md). Texture entries are covered in [textures.md](textures.md).
 
 Every shipped archive starts with `SCS#`, version `2`, hash method `CITY`.
 

@@ -1,6 +1,6 @@
 # Packed textures (`.tobj` + `.dds`)
 
-What texture entries contain. Implemented in `crates/scs-archive/src/{texture,gdeflate}.rs`. The archive container itself is covered in [hashfs.md](hashfs.md).
+What texture entries contain. Implemented in `crates/specsheet-archive/src/{texture,gdeflate}.rs`. The archive container itself is covered in [hashfs.md](hashfs.md).
 
 The `.tobj` path is the entry key. The archive does not contain a separate `.dds`. An entry has an image record (`0x01`), a sample record (`0x02`) and a mip-tail blob (`0x84`).
 

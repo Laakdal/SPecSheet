@@ -17,7 +17,7 @@ Findings about ETS2 that the implementation relies on, with their evidence.
 | Tool | Used for | Evidence |
 |---|---|---|
 | REA 6.4.0 (MCP + CLI, `npx rea-agents@6.4.0`) with Ghidra 12.1.4 | Executable analysis | "REA Evidence" |
-| Our own parsers and the research examples (`scs-archive/examples/{survey,scs}.rs`, `game-data/examples/{model_info,def_stats,def_grep}.rs`) | Archive and definition content | "Parser observation", reproducible with the commands in [DEVELOPMENT.md](DEVELOPMENT.md) |
+| Our own parsers and the research examples (`specsheet-archive/examples/{survey,scs}.rs`, `specsheet-data/examples/{model_info,def_stats,def_grep}.rs`) | Archive and definition content | "Parser observation", reproducible with the commands in [DEVELOPMENT.md](DEVELOPMENT.md) |
 | The game's own `game.log.txt` from a real session | Runtime behaviour | "Runtime log" (passive; we did not run the game) |
 | sk-zk TruckLib.HashFs / TruckLib.Models / GisDeflate (MIT) | Cross-checking our layouts | "Reference", never proof on its own |
 
@@ -157,7 +157,7 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
 - **Placement (Hypothesis, strong).** The light model is placed at the cabin's only `ext_interior` locator.
   - That placement fits inside the cabin box for all 26 presets.
   - Placing it at the origin would fail for 6 of them: MAN TGX 2020 and Euro 6, Scania R 2016, S 2016 and S 2024e, and Volvo FH16.
-- **Implementation.** `game-data::assembly` places it there. The real-install test `every_preset_validates_and_assembles_without_warnings` requires an interior placement for every preset in both drives.
+- **Implementation.** `specsheet-data::assembly` places it there. The real-install test `every_preset_validates_and_assembles_without_warnings` requires an interior placement for every preset in both drives.
 - **Unknown.** Right-hand drive uses separate `uk_*` interior units (`left_hand_traffic: true`). The app keeps the preset's interior when switching drive.
 
 ### F11: Addon hookups mount on numbered positions of their host accessory (Confirmed data, Hypothesis on position rules)

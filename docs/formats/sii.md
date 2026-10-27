@@ -1,6 +1,6 @@
 # SII (text definitions) and localisation
 
-What the game's definition files contain. Implemented in `crates/scs-formats/src/sii.rs`, with localisation in `crates/game-data/src/localization.rs`. How the tuning rules use these definitions is covered in [../TUNING_SYSTEM.md](../TUNING_SYSTEM.md).
+What the game's definition files contain. Implemented in `crates/specsheet-formats/src/sii.rs`, with localisation in `crates/specsheet-data/src/localization.rs`. How the tuning rules use these definitions is covered in [../TUNING_SYSTEM.md](../TUNING_SYSTEM.md).
 
 ## Syntax
 

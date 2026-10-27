@@ -2,7 +2,7 @@
 
 The clickable markers on the truck. How the game itself creates its pins is in [../REVERSE_ENGINEERING.md](../REVERSE_ENGINEERING.md) (F5, F8); which parts of this match the game is tracked in [../PARITY.md](../PARITY.md).
 
-## Anchors (`game-data::assembly`)
+## Anchors (`specsheet-data::assembly`)
 
 - Each slot's anchor is the centre of its placed models' bounding box.
 - An anchor that would fall inside the cabin box (models spanning both sides, e.g. mirror pairs) moves to the box's −x face.
@@ -10,11 +10,11 @@ The clickable markers on the truck. How the game itself creates its pins is in [
 - **Interior slots:** a slot is interior when its models lie entirely inside the cabin box shrunk by 5 cm.
 - **Wheel groups:** every wheel part of an axle shares one position and a group key (`Anchor::group`, e.g. `wheel_f`, the locator prefix).
 
-## Which slots get a marker (`game-data::view::overview`)
+## Which slots get a marker (`specsheet-data::view::overview`)
 
 A slot gets a marker when it has at least two options, or when it is an addon slot. All other slots (paint job, engine, interior-only parts…) are listed in the sidebar's "General" group. Each `Hotspot` carries its sidebar category (chassis & cabin, exterior, wheels, interior), the selected part's name, and the `empty` and `group` flags.
 
-## On screen (`app/specsheet`)
+## On screen (`crates/specsheet`)
 
 Every frame, `ui::ui` projects each anchor through the truck's transform and the 3D camera:
 

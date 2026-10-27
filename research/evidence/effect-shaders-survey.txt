@@ -2,7 +2,7 @@ effect.scs shader survey (ETS2 1.60.1.7)
 =========================================
 
 Commands (Git Bash, ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2", MSYS_NO_PATHCONV=1,
-research examples built with: cargo build --release -p scs-archive --example scs --example survey):
+research examples built with: cargo build --release -p specsheet-archive --example scs --example survey):
 
   survey "$ETS2_DIR/effect.scs"
   scs ls effect ; scs ls effect/eut2 ; scs ls effect/eut2/truckpaint ; scs ls effect/eut2/_shd
@@ -60,7 +60,7 @@ Extracted shader text was kept OUTSIDE the repo (session scratchpad). Never comm
    metadata record type 0x07 ("unsupported metadata record type 0x07"), and their count equals
    the listed-but-missing count. The .rfx files presumably map an effect name plus flavours
    (airbrush, flipflake, altuv, a, skinned, ...) to the _shd hashes.
-   Next step: decode metadata record 0x07 in scs-archive (see ASSET_FORMATS "Metadata records"),
+   Next step: decode metadata record 0x07 in specsheet-archive (see ASSET_FORMATS "Metadata records"),
    then read one .rfx.
 
 Implementation implications

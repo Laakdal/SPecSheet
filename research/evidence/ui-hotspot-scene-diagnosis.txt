@@ -4,7 +4,7 @@ ETS2 1.60.1.7. Produced 2026-10-27 by session ets2-tuning-gui-d3 (diagnosis only
 Commands (Git Bash; E = release examples built from this repo, D = scratch diag tool)
   export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
   D scania.s_2016                       # scratch tool: assemble(preset, Drive::Left), print every Anchor sorted by y
-                                        #   (out-of-repo crate depending on game-data; just calls game_data::assembly::assemble)
+                                        #   (out-of-repo crate depending on specsheet-data; just calls specsheet_data::assembly::assemble)
   E/model_info /vehicle/truck/scania_2016/chassis/chs_4x2.pmd
   E/scs cat def/vehicle/truck/scania.s_2016/accessory/b_grill/hss_matte1.sii
   E/model_info /vehicle/truck/scania_2016/accessory/b_grill/hss_bottomgrill_01.pmd
@@ -74,7 +74,7 @@ keep empty-slot pins but anchor them per (a); group the sidebar by the game's ca
 ==========================================================================
 Confirmed (def/desktop/config.under_bridge.sii):
    camera_position (0.0, 3.1, -15)   camera_aim (0.0, 2.5, -0.7)   camera_fov 20   truck_rot (0, 15, 0)
-Confirmed (crates/game-data/src/scene.rs, test camera_must_stand_outside_and_look_through_the_truck): the app picks this static
+Confirmed (crates/specsheet-data/src/scene.rs, test camera_must_stand_outside_and_look_through_the_truck): the app picks this static
 pose for the bridge, keeps FOV 20 and only moves the orbit target onto the same view ray. The app reproduces the data as
 written, using FOV as the vertical angle (three.js PerspectiveCamera).
 Geometry: 15 m away with a vertical FOV of 20 deg gives ~4.0 m visible height at the cab front (z ~ -3.7). With the aim at

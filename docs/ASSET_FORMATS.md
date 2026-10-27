@@ -1,6 +1,6 @@
 # Asset formats
 
-What ETS2 1.60.1.7 game files contain, as implemented in `crates/scs-archive` and `crates/scs-formats`. How the app uses them is described in [RENDERING.md](RENDERING.md).
+What ETS2 1.60.1.7 game files contain, as implemented in `crates/specsheet-archive` and `crates/specsheet-formats`. How the app uses them is described in [RENDERING.md](RENDERING.md).
 
 ## Status labels
 
