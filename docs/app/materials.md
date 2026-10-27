@@ -45,4 +45,4 @@ R16G16 (two car-paint normal maps) is unsupported.
 
 ## Next: the game's own shaders
 
-The game's shaders are readable GLSL inside `effect.scs` ([../formats/effects.md](../formats/effects.md); survey in `research/evidence/effect-shaders-survey.txt`). The plan is to write our own WGSL Bevy materials that follow the same maths, in this order: `truckpaint` (flip colour, paint-job texture, flakes), `dif.spec.add.env`, glass, lamp. Garage materials also need `texture_mult` and the `showroom_cube` reflection. Never commit extracted shader text; it is game code.
+The game's shaders are readable GLSL inside `effect.scs` ([../formats/effects.md](../formats/effects.md); survey in `research/evidence/effect-shaders-survey.txt`). The plan is to write our own WGSL Bevy materials clean-room (D13): a spec agent writes the maths to `docs/app/shader-specs/<effect>.md`, and a different agent writes the WGSL from it without seeing the shaders. Order: `truckpaint` (flip colour, paint-job texture, flakes), `dif.spec.add.env`, glass, lamp. Garage materials also need `texture_mult` and the `showroom_cube` reflection. Never commit extracted shader text; it is game code.

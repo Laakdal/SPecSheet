@@ -92,3 +92,15 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - `game-archive`/`game-formats`, matching `game-data`. Rejected in favour of one prefix for every crate.
   - Bare names (`archive`, `formats`). Rejected: `use formats::pmd` doesn't say whose formats.
 - **Costs accepted:** one large rename commit; commands in older evidence files were updated to the new `-p` names.
+
+### D13: Clean-room code for everything learned from non-MIT sources
+- **Context:** SPecSheet is MIT. Some format code was written while reading sk-zk's TruckLib (GPL-2.0), and the materials work would follow the game's own shaders (SCS's code, no license). Facts (offsets, layouts, the maths) are free to use; copied or translated code is not.
+- **Decision (the user's choice):** rewrite or write such code clean-room. Interface stubs and our own evidence go to an agent that has never seen the source code, and the result must match the old behaviour on the whole install.
+  - Phase 1: `pmd.rs`, `pmg.rs`, `texture.rs` (in progress, branch `cleanroom`).
+  - Phase 2: `hashfs.rs`, after byte-level evidence for its layout (`hashfs.md` facts were only functionally confirmed).
+  - Shaders: a spec agent writes `docs/app/shader-specs/<effect>.md` (maths in prose and equations); a different agent writes the WGSL from it. Visual parity against reference screenshots.
+- **Provenance of the rest:** `city.rs` ports Google's CityHash v1.0.3 (MIT, notice in `THIRD_PARTY_NOTICES.md`); `gdeflate.rs` follows GisDeflate's stream header (MIT, notice included) and decodes with libdeflate; `read_at.rs` is unreviewed; everything else is our own work.
+- **Alternatives:**
+  - Keep the verified code with an evidence trail. Rejected by the user in favour of zero doubt.
+  - Load the user's own compiled shaders at runtime. Rejected: legal, but brittle against SCS's engine bindings.
+  - Generic PBR without reading the shaders. Rejected: not 1:1.

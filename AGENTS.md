@@ -26,6 +26,7 @@ A standalone ETS2 truck-tuning app, all in Rust: a workspace of library crates p
 - Build test fixtures in code. The pre-commit guard (`tools/check_public_tree.py`) rejects game files and game-format fixtures; never commit extracted assets.
 - Before relying on a new fact about ETS2, record it with evidence and a label (Confirmed / Hypothesis / Unknown) in the reverse-engineering or format doc. Community code (sk-zk TruckLib, etc.) is a cross-check, never evidence.
 - TruckLib and Extractor (sk-zk) are GPL-2.0 and this project is MIT. Take only facts from them (offsets, magic numbers, layouts), and write the code from our own byte observations. Never copy, port or translate their code.
+- The game's shaders (`effect.scs` GLSL/SPIR-V) are SCS Software's code with no license. Never copy, port or translate them. Materials are clean-room (D13): one agent reads the shaders and writes the maths in prose and equations to `docs/app/shader-specs/<effect>.md`; a different agent that has never seen the shaders writes the WGSL from that spec. Never commit or quote extracted shader text.
 - Fix bugs test-first: a failing regression test, then the fix.
 - Refactors replace code. Delete the old path in the same change.
 - Split a module when it grows distinct responsibilities, not by line count. A split is a pure move in its own commit.
