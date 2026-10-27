@@ -51,7 +51,12 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 - [x] Addon hookups (F11): catalogue, rules, placement, config loading; real-install test on the game's oversize Mercedes config. Exposed through `TruckSession::{hookup_options, set_hookup}` for the app.
 
+- [x] Right-hand-drive interiors: UK twins paired for all 219 units (F10).
+- [x] Volvo "FH6" name and missing side mirrors explained as game data (F12).
+
 ## In progress
+
+- [ ] Build speed: targeted checks are documented (AGENTS.md, DEVELOPMENT.md). The `rust-lld` measurement is pending: the cold Bevy baseline build was stopped by Claude Code when the machine ran low on memory, with several sessions each building Bevy in their own target dir. Re-run it when the machine is quiet. sccache awaits the user's direct confirmation (it installs a tool).
 
 
 - [x] REA trace: the pin-button string is used by `FUN_140fe0fc0` (F8).
@@ -62,17 +67,14 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
 1. **Materials:** chrome and metal render nearly black. Use `env_factor`/`shininess`/reflection hints from `.mat`.
-2. **Data quirks:**
-   - `volvo.fh_2024` is named "Volvo FH6". Check which `info[]` keys get resolved.
-   - The Volvo FH 2024 preset shows no side mirrors. Investigate.
-4. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
-5. **Interior:** interior models and an interior camera; `hide_in`.
-6. **Wheels:** rear-axle and lift-axle variants (6x2/8x4), inner twin-tyre bead, `wheel_shift`.
-7. **UI fidelity:** game accessory icons and categories; layout per `ui/truck_configuration_center.sii`.
-8. **REA decompilation:** callers of `0x14223d860` (pin creation) and `0x1421c2f90` (locator lookup), then `hide_in` and defaults/repair. Each CLI call re-runs the roughly 28 min analysis; can be delegated to the `ets2-researcher` subagent.
-9. **Markers:** anchor empty slots on their first compatible option, put a wheel group on the camera-side wheel, and add a depth test (see docs/app/hotspots.md "Known gaps").
-10. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `crates/specsheet/icon.png`.
-11. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
+2. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
+3. **Interior:** interior models and an interior camera; `hide_in`.
+4. **Wheels:** rear-axle and lift-axle variants (6x2/8x4), inner twin-tyre bead, `wheel_shift`.
+5. **UI fidelity:** game accessory icons and categories; layout per `ui/truck_configuration_center.sii`.
+6. **REA decompilation:** callers of `0x14223d860` (pin creation) and `0x1421c2f90` (locator lookup), then `hide_in` and defaults/repair. Each CLI call re-runs the roughly 28 min analysis; can be delegated to the `ets2-researcher` subagent.
+7. **Markers:** anchor empty slots on their first compatible option, put a wheel group on the camera-side wheel, and add a depth test (see docs/app/hotspots.md "Known gaps").
+8. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `crates/specsheet/icon.png`.
+9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 
 ## Blockers and notes
 

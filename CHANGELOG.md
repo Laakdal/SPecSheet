@@ -42,6 +42,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Research tooling:** archive survey, VFS browser, model, definition, locator and geometry surveys. Outputs live in `research/evidence/`.
 
 ### Fixed
+- Right-hand drive shows the right-hand-drive interior (each interior's UK twin, paired for all 219 units).
 - The cab is no longer hollow: each selected interior's exterior-view model is placed at the cabin's `ext_interior` locator (all 26 presets, both drives).
 - HashFS metadata record type `0x07` (8,970 `effect.scs` shader `.rfx` entries) is accepted; every archive in the install now indexes with zero skipped entries (guarded by the real-install tests).
 - Base parts (chassis, cabin) are checked against their own `suitable_for` in the backend, not only in the UI.
