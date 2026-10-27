@@ -1,0 +1,304 @@
+Truck material survey: shine and reflection attributes (materials task)
+=======================================================================
+
+Command (ETS2 1.60.1.7, install opened read-only):
+  ETS2_DIR=<game> cargo run --release -p specsheet-data --example material_survey
+
+Every distinct .mat referenced by a /vehicle/truck .pmd look, grouped by effect
+family. Per family: each numeric attribute's count and min/max per component,
+and up to 4 example sources per texture slot. Then the first 25 materials whose
+base texture path contains "chrom" or "metal".
+
+Observations (Confirmed, from the output below):
+- Only effects containing `env` carry `env_factor`, `fresnel` and a
+  `texture_reflection` cube (/material/environment/*_reflection*.tobj).
+- Typical chrome (`dif.spec.weight.add.env`, chrome_plain/chrome_c bases):
+  diffuse 0.214, env_factor 0.977, shininess 70, specular 1.0, fresnel (1, 1),
+  reflection cube vehicle_reflection.tobj. The diffuse is dark on purpose; the
+  look comes from the environment term.
+- shininess ranges 0..650 for most families (one outlier at 90000).
+Meaning of each attribute in the shader: not established here (see the
+effect GLSL in effect.scs; never commit shader text).
+
+Output
+------
+4822 distinct truck materials, 0 unreadable
+
+dif.spec: 644
+  additional_ambient   n=  644 min=[0.0] max=[1.0]
+  diffuse              n=  644 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  reflection           n=  644 min=[0.0] max=[0.0]
+  shininess            n=  644 min=[0.0] max=[400.0]
+  specular             n=  644 min=[0.0, 0.0, 0.0] max=[1.5, 1.5, 1.5]
+  texture texture_base         e.g. {"/vehicle/truck/daf_2021/ai/base_c.tobj", "/vehicle/truck/mercedes_actros_2009/color.tobj", "/vehicle/truck/renault_magnum_2009/interior/seat_orange.tobj", "/vehicle/truck/upgrade/interior_decors/toybed/michelin_coat_c.tobj"}
+
+dif.spec.add.env: 367
+  additional_ambient   n=  367 min=[0.0] max=[1.0]
+  diffuse              n=  367 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=  367 min=[0.0, 0.0, 0.0] max=[3.0, 3.0, 3.0]
+  fresnel              n=  367 min=[-22.0, 0.0] max=[1.0, 18.0]
+  reflection           n=  367 min=[0.0] max=[20.0]
+  shininess            n=  367 min=[0.0] max=[650.0]
+  specular             n=  367 min=[0.0, 0.0, 0.0] max=[2.0, 2.0, 2.0]
+  texture texture_base         e.g. {"/vehicle/truck/man_tgx_2020/ai/tires.tobj", "/vehicle/truck/share/metal.tobj", "/vehicle/truck/upgrade/dash_set/daf_xf/darksolid.tobj", "/vehicle/truck/volvo_fh_2024/lights_c.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/fuzzy_reflection_bright/fuzzy_reflection_bright.tobj", "/material/environment/interior_reflection.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.weight.add.env.tsnmap: 301
+  additional_ambient   n=  301 min=[-0.25] max=[0.0]
+  diffuse              n=  301 min=[0.0, 0.024591, 0.024217] max=[1.24277, 1.041881, 1.0]
+  env_factor           n=  301 min=[0.0, 0.0, 0.0] max=[1.5, 1.5, 1.5]
+  fresnel              n=  301 min=[0.0, 0.0] max=[3.0, 1.0]
+  reflection           n=  301 min=[0.0] max=[1.0]
+  shininess            n=  301 min=[10.0] max=[152.0]
+  specular             n=  301 min=[0.0, 0.0, 0.0] max=[2.000001, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/daf_xf_electric/interior/plastic_leather_charcoal.tobj", "/vehicle/truck/renault_etech_t/interior/steering_wheel_collumn_c.tobj", "/vehicle/truck/renault_t/interior/model_24/plastic_hexa_c.tobj", "/vehicle/truck/scania_2016/interior/plastic_cracks_c.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/truck/daf_xf_electric/interior/plastic_leather_n.tobj", "/vehicle/truck/renault_etech_t/interior/steering_wheel_collumn_n.tobj", "/vehicle/truck/renault_t/interior/model_24/plastic_hexa_n.tobj", "/vehicle/truck/scania_2016/interior/plastic_cracks_n.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/interior_reflection_blurry2.tobj", "/material/environment/interior_reflection_blurry3.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.weight.add.env: 273
+  additional_ambient   n=  273 min=[-0.25] max=[1.0]
+  diffuse              n=  273 min=[0.003936, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=  273 min=[0.0, 0.0, 0.0] max=[3.0, 1.5, 1.5]
+  fresnel              n=  273 min=[-0.1, 0.0] max=[2.0, 2.0]
+  reflection           n=  273 min=[0.0] max=[10.0]
+  shininess            n=  273 min=[10.0] max=[90000.0]
+  specular             n=  273 min=[0.0, 0.0, 0.0] max=[1.8, 1.8, 1.8]
+  texture texture_base         e.g. {"/vehicle/share/textures/metal/chrome_base.tobj", "/vehicle/truck/daf_xf_electric/interior/mattress_top.tobj", "/vehicle/truck/daf_xf_euro6/chrome_c.tobj", "/vehicle/truck/upgrade/wheel/hub/front_hub_07_c.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/interior_reflection.tobj", "/material/environment/interior_reflection_blurry4.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.weight.add.env.tsnmapuv: 240
+  additional_ambient   n=  240 min=[-0.25] max=[0.5]
+  diffuse              n=  240 min=[0.030713, 0.030713, 0.030713] max=[1.0, 1.0, 1.0]
+  env_factor           n=  240 min=[0.0, 0.0, 0.0] max=[1.5, 1.5, 1.5]
+  fresnel              n=  240 min=[-0.1, 0.0] max=[1.0, 1.0]
+  reflection           n=  240 min=[0.0] max=[0.0]
+  shininess            n=  240 min=[4.0] max=[500.0]
+  specular             n=  240 min=[0.024335, 0.024335, 0.024335] max=[1.5, 1.5, 1.5]
+  texture texture_base         e.g. {"/vehicle/share/models/accessory/fifthwheel/jost_jsk_37mc.tobj", "/vehicle/truck/scania_2016/plastic_glossy.tobj", "/vehicle/truck/upgrade/wheel/cover/front_hub_cover_04_c.tobj", "/vehicle/truck/upgrade/wheel/cover/rear_hub_cover_daf_c.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/share/models/accessory/fifthwheel/jost_details_nm.tobj", "/vehicle/truck/scania_s_2024e/cover_02_n.tobj", "/vehicle/truck/upgrade/wheel/cover/front_hub_cover_04_n.tobj", "/vehicle/truck/upgrade/wheel/cover/rear_hub_cover_daf_n.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/fuzzy_reflection/fuzzy_reflection.tobj", "/material/environment/interior_static/interior_static.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.tsnmap: 233
+  additional_ambient   n=  233 min=[0.0] max=[1.0]
+  diffuse              n=  233 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  reflection           n=  233 min=[0.0] max=[1.0]
+  shininess            n=  233 min=[0.0] max=[150.0]
+  specular             n=  233 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/mercedes_actros_2014/interior/carpet_rubber_c.tobj", "/vehicle/truck/renault_t/interior/external/ext_seat_textile_diff.tobj", "/vehicle/truck/scania_2016/cooler.tobj", "/vehicle/truck/volvo_fh16_2012/interior/external/gt_fh16_2021_dif.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/truck/mercedes_actros_2014/interior/carpet_rubber_n.tobj", "/vehicle/truck/renault_t/interior/external/ext_seat_textile_nrm.tobj", "/vehicle/truck/scania_2016/cooler_n.tobj", "/vehicle/truck/volvo_fh16_2012/interior/external/gt_fh16_2021_nrm.tobj"}
+
+dif.spec.add.env.nofresnel: 153
+  additional_ambient   n=  153 min=[-0.25] max=[1.0]
+  diffuse              n=  153 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=  153 min=[0.033105, 0.033105, 0.033105] max=[1.0, 1.0, 1.0]
+  reflection           n=  153 min=[0.0] max=[100.0]
+  shininess            n=  153 min=[4.42] max=[200.0]
+  specular             n=  153 min=[0.010023, 0.010023, 0.010023] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/renault_t/paint_color.tobj", "/vehicle/truck/upgrade/doorhandle/iveco_stralis/doorhandle_01.tobj", "/vehicle/truck/upgrade/mirror/mercedes_actros_2009/mirror_03.tobj", "/vehicle/truck/volvo_fh16_2009/accessory/mirror/mirror_03.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/fuzzy_reflection.tobj", "/material/environment/interior_reflection.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+glass: 144
+  additional_ambient   n=  144 min=[0.0] max=[0.0]
+  diffuse              n=  144 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=   55 min=[0.0, 0.0, 0.0] max=[24.0, 24.0, 24.0]
+  fresnel              n=  144 min=[0.0, -1.0] max=[1.5, 2.0]
+  glass_tint_color     n=  144 min=[0.0, 0.0, 0.0] max=[1.401031, 1.0, 1.0]
+  glass_tint_opacity   n=  144 min=[-0.01] max=[0.92]
+  queue_bias           n=  144 min=[0.0] max=[2.0]
+  shininess            n=  144 min=[0.0] max=[250.0]
+  specular             n=  144 min=[0.0, 0.0, 0.0] max=[1.3, 1.3, 1.3]
+  texture texture_base         e.g. {"/vehicle/truck/share/glass_ex.tobj", "/vehicle/truck/upgrade/share/upg_shared.tobj", "/vehicle/truck/upgrade/sunshield/volvo_fh16_2009/sunshield_06.tobj", "/vehicle/truck/volvo_fh16_2012/accessory/sunshld/sunshield_01.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/interior_reflection.tobj", "/material/environment/interior_static/interior_static.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.add.env.tsnmap: 143
+  additional_ambient   n=  143 min=[0.0] max=[0.0]
+  diffuse              n=  143 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=  143 min=[0.0, 0.010023, 0.009761] max=[1.0, 1.0, 1.0]
+  fresnel              n=  143 min=[-1.0, 0.0] max=[1.0, 2.0]
+  reflection           n=  143 min=[0.0] max=[0.0]
+  shininess            n=  143 min=[4.0] max=[300.0]
+  specular             n=  143 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/daf_xf/interior/swheel_01.tobj", "/vehicle/truck/iveco_sway/interior/external/ext_seat.tobj", "/vehicle/truck/iveco_sway/interior/external/ext_seat_fabric.tobj", "/vehicle/truck/upgrade/interior_decors/toystand/cosmonaut_co.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/truck/daf_xf/interior/swheel_01_n.tobj", "/vehicle/truck/iveco_sway/interior/external/ext_seat_fabric_n.tobj", "/vehicle/truck/iveco_sway/interior/external/ext_seat_n.tobj", "/vehicle/truck/upgrade/interior_decors/toystand/cosmonaut_no.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/interior_reflection.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/supersoft_reflection/supersoft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.add.env.tsnmapuv: 143
+  additional_ambient   n=  143 min=[-0.25] max=[1.0]
+  diffuse              n=  143 min=[0.005127, 0.007453, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=  143 min=[0.0, 0.0, 0.0] max=[7.294559, 7.294559, 7.294559]
+  fresnel              n=  143 min=[-1.0, 0.0] max=[1.0, 1.1]
+  reflection           n=  143 min=[0.0] max=[1.0]
+  shininess            n=  143 min=[4.0] max=[250.0]
+  specular             n=  143 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/share/textures/generic/white_0.tobj", "/vehicle/share/textures/metal/metal_3.tobj", "/vehicle/truck/upgrade/interior_decors/toyseat/polar_wolf.tobj", "/vehicle/truck/upgrade/interior_decors/toystand/hal24_ghost2.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/truck/renault_etech_t/etech_n.tobj", "/vehicle/truck/renault_etech_t/plastic_etech_n.tobj", "/vehicle/truck/upgrade/interior_decors/toyseat/polar_wolf_nrm.tobj", "/vehicle/truck/upgrade/interior_decors/toystand/hal24_ghost2_nrm.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/fuzzy_reflection/fuzzy_reflection.tobj", "/material/environment/interior_reflection.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.spec.tsnmapuv: 136
+  additional_ambient   n=  136 min=[0.0] max=[0.0]
+  diffuse              n=  136 min=[0.021252, 0.021252, 0.021252] max=[1.0, 1.0, 1.0]
+  reflection           n=  136 min=[0.0] max=[100.0]
+  shininess            n=  136 min=[2.0] max=[500.0]
+  specular             n=  136 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/iveco_hiway/matte_color.tobj", "/vehicle/truck/scania_2016/plastic_hard.tobj", "/vehicle/truck/upgrade/interior_decors/toybed/bob_gloves.tobj", "/vehicle/truck/upgrade/interior_decors/toybed/bob_hcap.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/truck/iveco_hiway/matte_normal.tobj", "/vehicle/truck/scania_2016/logo_n.tobj", "/vehicle/truck/upgrade/interior_decors/toybed/bob_gloves_nrm.tobj", "/vehicle/truck/upgrade/interior_decors/toybed/bob_hcap_nrm.tobj"}
+
+dif.spec.a: 104
+  additional_ambient   n=  104 min=[0.0] max=[3.0]
+  diffuse              n=  104 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  reflection           n=  104 min=[0.0] max=[0.0]
+  shininess            n=  104 min=[0.0] max=[250.0]
+  specular             n=  104 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/daf_2021/ai/decals_c.tobj", "/vehicle/truck/iveco_sway/net_small_c.tobj", "/vehicle/truck/renault_t/accessory/curtain_f/renault_curtain2.tobj", "/vehicle/truck/upgrade/interior_decors/curtains/curtain_3.dlc_toys.tobj"}
+
+dif.spec.weight: 104
+  additional_ambient   n=  104 min=[0.0] max=[1.0]
+  diffuse              n=  104 min=[0.107717, 0.107717, 0.017003] max=[1.0, 1.0, 1.0]
+  reflection           n=  104 min=[0.0] max=[0.0]
+  shininess            n=  104 min=[2.0] max=[80.0]
+  specular             n=  104 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/material/color/white01.tobj", "/vehicle/truck/scania_2016/interior/wall_side_c.tobj", "/vehicle/truck/scania_rcab_2009/interior/fabric_seat_2.tobj", "/vehicle/truck/scania_rcab_2009/interior/sew_2.tobj"}
+
+dif.spec.decal.over: 98
+  additional_ambient   n=   98 min=[0.0] max=[0.0]
+  diffuse              n=   98 min=[0.023299, 0.023299, 0.023299] max=[1.0, 1.0, 1.0]
+  queue_bias           n=   98 min=[0.0] max=[0.0]
+  reflection           n=   98 min=[0.0] max=[0.0]
+  shininess            n=   98 min=[2.0] max=[250.0]
+  specular             n=   98 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/daf_2021/shadow_8x4m.tobj", "/vehicle/truck/renault_t/interior/sews_2.tobj", "/vehicle/truck/upgrade/dash_set/mercedes_actros_2009/fake_shadow.tobj", "/vehicle/truck/upgrade/frontmudflaps/scania_rcab_2009/f_mf_mgscania_mg.tobj"}
+
+light.tex: 83
+  depth_bias           n=   83 min=[0.0] max=[0.0]
+  diffuse              n=   83 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  env_factor           n=   83 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  luminance_night      n=   83 min=[0.0] max=[15.0]
+  luminance_output     n=   83 min=[0.0] max=[5000.0]
+  shininess            n=   43 min=[0.0] max=[1.0]
+  specular             n=   83 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/upgrade/f_logo/mercedes_actros_2014/logo_underlit.tobj", "/vehicle/truck/upgrade/frntglass_mid/mercedes_actros_2009/mb_logos_l.tobj", "/vehicle/truck/upgrade/frntglass_mid/mercedes_actros_2014/mb_logos_l.tobj", "/vehicle/truck/upgrade/frontbadge/daf_xf/glow.tobj"}
+
+lamp.add.env: 73
+  additional_ambient   n=   73 min=[0.0] max=[0.0]
+  diffuse              n=   73 min=[0.223228, 0.341915, 0.341915] max=[1.0, 1.0, 1.0]
+  env_factor           n=   73 min=[0.082983, 0.082983, 0.082983] max=[1.0, 1.0, 1.0]
+  fresnel              n=   73 min=[0.0, 0.0] max=[0.9, 1.0]
+  shininess            n=   73 min=[0.0] max=[250.0]
+  specular             n=   73 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/renault_magnum_2009/color.tobj", "/vehicle/truck/upgrade/rearbumper/mercedes_actros_2009/var3_lights.tobj", "/vehicle/truck/upgrade/rearbumper/mercedes_actros_2014/var2_lights.tobj", "/vehicle/truck/volvo_fh16_2012/accessory/r_bumper/square_lights.tobj"}
+  texture texture_mask         e.g. {"/vehicle/truck/renault_magnum_2009/lightmask.tobj", "/vehicle/truck/upgrade/rearbumper/mercedes_actros_2009/var3_lights_mask.tobj", "/vehicle/truck/upgrade/rearbumper/mercedes_actros_2014/var2_lights_mask.tobj", "/vehicle/truck/volvo_fh16_2012/accessory/r_bumper/square_lights_mask.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/interior_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+dif.lum.decal.over: 70
+  additional_ambient   n=   70 min=[0.0] max=[0.0]
+  diffuse              n=   70 min=[0.214041, 0.214041, 0.214041] max=[1.0, 1.0, 1.0]
+  luminance_night      n=   70 min=[0.0] max=[10.0]
+  luminance_output     n=   70 min=[0.0] max=[2000.0]
+  queue_bias           n=   70 min=[0.0] max=[0.0]
+  reflection           n=   70 min=[0.0] max=[0.0]
+  shininess            n=   70 min=[2.0] max=[64.0]
+  specular             n=   70 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/daf_xf/interior/dashboard.tobj", "/vehicle/truck/iveco_hiway/interior/dashboard.tobj", "/vehicle/truck/iveco_hiway/interior/uk/dashboard_uk.tobj", "/vehicle/truck/volvo_fh_2021/accessory/decals/fh16.tobj"}
+
+decalshadow: 68
+  diffuse              n=   37 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/mercedes_actros_2009/actrosdecal.tobj", "/vehicle/truck/upgrade/interior_decors/toystand/krone_mug_ao.tobj", "/vehicle/truck/upgrade/toystand/scania_rcab_2009/toystand_shdw.tobj", "/vehicle/truck/upgrade/toystand/share/cap/toystand_shdw.tobj"}
+
+dif.lum: 63
+  additional_ambient   n=   63 min=[0.0] max=[0.0]
+  diffuse              n=   63 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  luminance_night      n=   63 min=[0.0] max=[10.0]
+  luminance_output     n=   63 min=[-1.0] max=[2000.0]
+  reflection           n=   63 min=[0.0] max=[0.0]
+  shininess            n=   63 min=[4.0] max=[70.0]
+  specular             n=   63 min=[0.0, 0.0, 0.0] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/material/environment/front_mirror_reflection.tobj", "/vehicle/truck/share/dashboard.tobj", "/vehicle/truck/share/gps.tobj", "/vehicle/truck/upgrade/lightbox/design_b_diflum.tobj"}
+
+dif.spec.weight.add.env.tsnmap.a: 59
+  additional_ambient   n=   59 min=[-0.25] max=[0.0]
+  diffuse              n=   59 min=[0.005208, 0.005208, 0.005208] max=[1.0, 1.0, 1.0]
+  env_factor           n=   59 min=[0.061998, 0.061998, 0.061998] max=[1.0, 1.0, 1.0]
+  fresnel              n=   59 min=[0.04, 0.9] max=[1.0, 1.0]
+  reflection           n=   59 min=[0.0] max=[0.0]
+  shininess            n=   59 min=[4.0] max=[200.0]
+  specular             n=   59 min=[0.050876, 0.050876, 0.050876] max=[1.0, 1.0, 1.0]
+  texture texture_base         e.g. {"/vehicle/truck/iveco_sway/f_mask_solid_c.tobj", "/vehicle/truck/upgrade/share/fence_wires.tobj", "/vehicle/truck/upgrade/stoneguard/scania_rcab_2009/fence_wires_01.tobj", "/vehicle/truck/volvo_fh_2024/intakegrill_fh6.tobj"}
+  texture texture_nmap         e.g. {"/vehicle/truck/iveco_sway/f_mask_solid_nmp.tobj", "/vehicle/truck/upgrade/share/fence_wires_n.tobj", "/vehicle/truck/upgrade/stoneguard/scania_rcab_2009/fence_wires_01_nm.tobj", "/vehicle/truck/volvo_fh_2024/intakegrill_fh6_nrm.tobj"}
+  texture texture_reflection   e.g. {"/material/environment/fuzzy_reflection/fuzzy_reflection.tobj", "/material/environment/interior_reflection_blurry3.tobj", "/material/environment/soft_reflection/soft_reflection.tobj", "/material/environment/vehicle_reflection.tobj"}
+
+Materials with a chrome/metal base texture:
+  /automat/01/014baa710f39b4f9.mat: dif.spec.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.210229", "0.210229", "0.210229"]) env_factor=Tuple(["0.033105", "0.033105", "0.033105"]) fresnel=Tuple(["0.200000", "0.900000"]) reflection=Text("0.000000") shininess=Text("30.000000") specular=Tuple(["0.050055", "0.050055", "0.050055"])
+    texture_base=/vehicle/truck/share/metal.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/01/01a554c6d3730c97.mat: dif.spec.weight.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.695747", "0.016612", "0.039301"]) env_factor=Tuple(["1.556000", "0.130814", "0.377790"]) fresnel=Tuple(["2.000000", "1.000000"]) reflection=Text("1.000000") shininess=Text("260.000000") specular=Tuple(["1.000000", "0.573767", "0.645169"])
+    texture_base=/vehicle/share/textures/metal/chrome_base.tobj texture_reflection=/material/environment/interior_reflection.tobj
+  /automat/03/03eeb26fc6797b8b.mat: dif.spec.weight.add.env
+    additional_ambient=Text("-0.250000") diffuse=Tuple(["0.214041", "0.214041", "0.214041"]) env_factor=Tuple(["0.977402", "0.977402", "0.977402"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("70.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/daf_xf_euro6/chrome_c.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/07/07b489b715d269f9.mat: dif.spec.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["0.014152", "0.014152", "0.014152"]) fresnel=Tuple(["0.200000", "0.900000"]) reflection=Text("0.000000") shininess=Text("50.000000") specular=Tuple(["0.525736", "0.525736", "0.525736"])
+    texture_base=/vehicle/truck/daf_xf/interior/brushed_metal.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/09/09910d1c29fab21f.mat: dif.spec.add.env.tsnmapuv
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.526238", "0.526238", "0.526238"]) env_factor=Tuple(["0.759438", "0.759438", "0.759438"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("72.000000") specular=Tuple(["0.587810", "0.587810", "0.587810"])
+    texture_base=/vehicle/share/textures/metal/metal_3.tobj texture_nmap=/vehicle/truck/renault_etech_t/etech_n.tobj texture_reflection=/material/environment/fuzzy_reflection/fuzzy_reflection.tobj
+  /automat/0a/0a50ac98ac12818a.mat: dif.spec.weight.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.214041", "0.214041", "0.214041"]) env_factor=Tuple(["0.977402", "0.977402", "0.977402"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("70.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/share/textures/metal/chrome_plain.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/0b/0b79519097077743.mat: dif.spec.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.374090", "0.374090", "0.374090"]) env_factor=Tuple(["0.977402", "0.977402", "0.977402"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("70.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/iveco_sway/accessory/s_guard/chrome_base.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/0b/0bc08671aaa0027d.mat: dif.spec.weight.add.env.tsnmap
+    additional_ambient=Text("-0.250000") diffuse=Tuple(["0.214041", "0.214041", "0.214041"]) env_factor=Tuple(["0.977402", "0.977402", "0.977402"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("70.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/share/textures/metal/metal_2.tobj texture_nmap=/vehicle/truck/man_tgx_euro6/normalmap.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/0c/0c49bebc925b9562.mat: dif.spec.add.env.nofresnel.tsnmap
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.318547", "0.130055", "0.007479"]) env_factor=Tuple(["0.791177", "0.514766", "0.219449"]) reflection=Text("0.000000") shininess=Text("50.000000") specular=Tuple(["2.137000", "2.137000", "1.100055"])
+    texture_base=/vehicle/share/textures/metal/chrome_plain.tobj texture_nmap=/vehicle/truck/upgrade/interior_decors/toyhang/xmas_tree_progress/silvergold_nm.tobj texture_reflection=/material/environment/interior_static/interior_static.tobj
+  /automat/0c/0cd642d866c4e17b.mat: dif.spec.weight.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) fresnel=Tuple(["0.900000", "1.000000"]) reflection=Text("0.000000") shininess=Text("40.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/man_tgx_2020/interior/chrome_c.tobj texture_reflection=/material/environment/interior_reflection_blurry4.tobj
+  /automat/0d/0d92d38b223fe017.mat: dif.spec.weight.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["0.122264", "0.122264", "0.122264"]) fresnel=Tuple(["1.000000", "0.000000"]) reflection=Text("0.000000") shininess=Text("100.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/scania_2016/interior/metal_c.tobj texture_reflection=/material/environment/interior_reflection.tobj
+  /automat/0e/0e14a2dc08c4b832.mat: dif.spec
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.073239", "0.073239", "0.073239"]) reflection=Text("0.000000") shininess=Text("70.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/daf_xf/interior/brushed_metal.tobj
+  /automat/0f/0f5ddf06d644fa63.mat: dif.spec.weight.add.env
+    additional_ambient=Text("-0.250000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["0.890006", "0.956809", "1.000000"]) fresnel=Tuple(["0.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("50.000000") specular=Tuple(["0.890006", "0.956809", "1.000000"])
+    texture_base=/vehicle/truck/scania_2016/metal.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/0f/0fd2e0d9b4646bf1.mat: dif.spec
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.999998", "0.999998", "0.999998"]) reflection=Text("0.000000") shininess=Text("12.000000") specular=Tuple(["0.049809", "0.049809", "0.049809"])
+    texture_base=/vehicle/truck/renault_t/metal_color.tobj
+  /automat/10/103f78a68680ca27.mat: dif.spec.add.env.nofresnel
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("60.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/upgrade/share/upg_chrome.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/10/10c4a6a683afde42.mat: dif.spec.add.env.nofresnel.tsnmap
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.143625", "0.143625", "0.143625"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("50.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/share/textures/metal/chrome_plain.tobj texture_nmap=/vehicle/truck/upgrade/interior_decors/toyhang/xmas_tree_progress/silvergold_nm.tobj texture_reflection=/material/environment/interior_static/interior_static.tobj
+  /automat/11/11a1e6235f694280.mat: dif.spec.add.env.nofresnel
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.214041", "0.214041", "0.214041"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("80.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/share/textures/metal/shared_metal_0.tobj texture_reflection=/material/environment/soft_reflection/soft_reflection.tobj
+  /automat/12/121fea306c7592e4.mat: dif.spec.add.env.nofresnel.tsnmapuv
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("200.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/renault_t/metal_color.tobj texture_nmap=/vehicle/truck/renault_t/normals.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/12/1276d7b45261b635.mat: dif.spec.oclu.weight.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.533979", "0.533979", "0.533979"]) env_factor=Tuple(["0.785810", "0.785810", "0.785810"]) fresnel=Tuple(["0.200000", "-0.500000"]) reflection=Text("0.000000") shininess=Text("20.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/share/textures/metal/metal_3.tobj texture_oclu=/vehicle/truck/renault_t/interior/ao.tobj texture_reflection=/material/environment/fuzzy_reflection/fuzzy_reflection.tobj
+  /automat/12/12b2b90eab01523b.mat: dif.spec.add.env.tsnmap
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["0.132868", "0.132868", "0.132868"]) fresnel=Tuple(["0.500000", "1.100000"]) reflection=Text("0.000000") shininess=Text("50.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/daf_xf_euro6/chrome_c.tobj texture_nmap=/vehicle/truck/daf_xf_euro6/chrome_n.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/14/14287ae3dc0d7ff3.mat: dif.spec.add.env.nofresnel.shadow
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["0.787412", "0.787412", "0.787412"]) reflection=Text("0.000000") shadowmap_bias=Text("0.000000") shininess=Text("60.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/upgrade/share/upg_chrome.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/15/1506761b6782d214.mat: dif.spec.weight.add.env
+    additional_ambient=Text("-0.250000") diffuse=Tuple(["0.214041", "0.214041", "0.214041"]) env_factor=Tuple(["0.977402", "0.977402", "0.977402"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("70.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/scania_2016/chrome.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/15/153545daaf3d6ac9.mat: dif.spec.add.env.nofresnel.tsnmap
+    additional_ambient=Text("0.000000") diffuse=Tuple(["1.000000", "1.000000", "1.000000"]) env_factor=Tuple(["0.787412", "0.787412", "0.787412"]) reflection=Text("0.000000") shininess=Text("60.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/truck/daf_xf_euro6/chrome_c.tobj texture_nmap=/vehicle/truck/daf_xf_euro6/chrome_n.tobj texture_reflection=/material/environment/vehicle_reflection.tobj
+  /automat/16/164531bd497f66a0.mat: dif.spec.weight.add.env.tsnmapuv
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.510937", "0.510937", "0.510937"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) fresnel=Tuple(["1.000000", "1.000000"]) reflection=Text("0.000000") shininess=Text("100.000000") specular=Tuple(["0.447988", "0.447988", "0.447988"])
+    texture_base=/vehicle/truck/volvo_fh16_2012/interior/chrome_c.tobj texture_nmap=/vehicle/truck/volvo_fh16_2012/interior/details_n.tobj texture_reflection=/material/environment/interior_static/interior_static.tobj
+  /automat/16/164ce36e600e4092.mat: dif.spec.weight.add.env
+    additional_ambient=Text("0.000000") diffuse=Tuple(["0.323032", "0.323032", "0.323032"]) env_factor=Tuple(["1.000000", "1.000000", "1.000000"]) fresnel=Tuple(["0.400000", "0.800000"]) reflection=Text("0.000000") shininess=Text("100.000000") specular=Tuple(["1.000000", "1.000000", "1.000000"])
+    texture_base=/vehicle/share/textures/metal/metal_painted_0.tobj texture_reflection=/material/environment/interior_static/interior_static.tobj
