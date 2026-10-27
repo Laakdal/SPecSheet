@@ -113,6 +113,8 @@ pub struct Hotspot {
     pub category: HotspotCategory,
     /// Display name of the selected accessory.
     pub selected: Option<String>,
+    /// Icon of the selected accessory.
+    pub selected_icon: Option<String>,
     pub option_count: usize,
     /// Nothing is placed in the slot; the anchor sits on bare locators.
     pub empty: bool,
@@ -129,8 +131,58 @@ pub struct SlotEntry {
     pub slot: SlotId,
     pub label: String,
     pub selected: Option<String>,
+    pub selected_icon: Option<String>,
     pub option_count: usize,
     pub tab: Tab,
+}
+
+/// A slot listed under a tab.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TabSlot<'a> {
+    pub slot: &'a SlotId,
+    pub label: &'a str,
+    pub selected: Option<&'a str>,
+    pub selected_icon: Option<&'a str>,
+    pub option_count: usize,
+    /// The slot has a pin on the truck.
+    pub pinned: bool,
+}
+
+/// Every slot of `tab`, pinned or not, by label. Accessory tabs reach
+/// slots without a pin (no anchor yet) through this list.
+pub fn tab_slots(overview: &TruckOverview, tab: Tab) -> Vec<TabSlot<'_>> {
+    let pinned = overview
+        .hotspots
+        .iter()
+        .filter(|h| h.tab == tab)
+        .map(|h| TabSlot {
+            slot: &h.slot,
+            label: &h.label,
+            selected: h.selected.as_deref(),
+            selected_icon: h.selected_icon.as_deref(),
+            option_count: h.option_count,
+            pinned: true,
+        });
+    let others = overview
+        .general
+        .iter()
+        .filter(|s| s.tab == tab)
+        .map(|s| TabSlot {
+            slot: &s.slot,
+            label: &s.label,
+            selected: s.selected.as_deref(),
+            selected_icon: s.selected_icon.as_deref(),
+            option_count: s.option_count,
+            pinned: false,
+        });
+    let mut slots: Vec<TabSlot<'_>> = pinned.chain(others).collect();
+    slots.sort_by(|a, b| {
+        a.label
+            .cmp(b.label)
+            .then(a.slot.as_str().cmp(b.slot.as_str()))
+    });
+    slots.dedup_by(|a, b| a.slot == b.slot);
+    slots
 }
 
 /// Everything a front end shows about the truck being tuned.
@@ -228,6 +280,14 @@ fn humanize(slot: &str) -> String {
     words.join(" ")
 }
 
+fn selected_icon(session: &TruckSession, slot: &SlotId) -> Option<String> {
+    session
+        .config()
+        .selected(slot)
+        .and_then(|id| session.catalog().accessory(id))
+        .and_then(|a| a.icon.clone())
+}
+
 fn selected_name(game: &GameSession, session: &TruckSession, slot: &SlotId) -> Option<String> {
     session
         .config()
@@ -272,6 +332,7 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
                     category(kind)
                 },
                 selected: selected_name(game, session, &anchor.slot),
+                selected_icon: selected_icon(session, &anchor.slot),
                 option_count,
                 empty: anchor.empty,
                 group: anchor.group.clone(),
@@ -287,6 +348,7 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
         .map(|slot| SlotEntry {
             label: slot_label(game, &slot),
             selected: selected_name(game, session, &slot),
+            selected_icon: selected_icon(session, &slot),
             option_count: catalog.in_slot(&slot).count(),
             tab: catalog
                 .in_slot(&slot)

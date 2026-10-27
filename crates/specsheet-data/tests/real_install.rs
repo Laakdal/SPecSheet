@@ -655,3 +655,49 @@ fn every_chassis_has_one_wheel_pair_per_declared_axle() {
         failures.join("\n")
     );
 }
+
+#[test]
+fn every_slot_with_a_choice_is_reachable_on_the_tuning_screen() {
+    use specsheet_data::assembly::Drive;
+    use specsheet_data::session::GameSession;
+    use specsheet_data::view;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let install = GameInstall::discover().expect("install");
+    let game = GameSession::open(install).expect("open");
+    let mut failures = Vec::new();
+    for truck in view::trucks(&game) {
+        let mut session = game.start_truck(&truck.id).expect("truck");
+        for drive in [Drive::Left, Drive::Right] {
+            session.set_drive(&game, drive);
+            let overview = view::overview(&game, &session);
+            // Accessory tabs reach every slot through their list; a base tab
+            // opens one slot, so it may hold only one slot with a choice.
+            for slot in overview.general.iter().filter(|s| s.option_count > 1) {
+                let listed = view::tab_slots(&overview, slot.tab)
+                    .iter()
+                    .any(|t| t.slot == &slot.slot);
+                let base_slot = overview
+                    .general
+                    .iter()
+                    .find(|s| s.tab == slot.tab && s.option_count > 1)
+                    .map(|s| &s.slot);
+                let reachable = if slot.tab.has_pins() {
+                    listed
+                } else {
+                    base_slot == Some(&slot.slot)
+                };
+                if !reachable {
+                    failures.push(format!("{} {drive:?}: {}", truck.id, slot.slot));
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} unreachable:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
