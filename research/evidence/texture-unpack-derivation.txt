@@ -1,0 +1,134 @@
+Packed texture layout derived from our own bytes (license-safety re-derivation)
+===============================================================================
+
+Input: ETS2 1.60.1.7 archives base, base_vehicle, base_map, base_cfg, core,
+base_share, def (opened read-only).
+
+Command:
+  cargo run --release -p specsheet-archive --example texture_layout -- \
+    "<game>/base.scs" "<game>/base_vehicle.scs" "<game>/base_map.scs" \
+    "<game>/base_cfg.scs" "<game>/core.scs" "<game>/base_share.scs" "<game>/def.scs"
+
+Method (image record, 0x01):
+- The image record's two u32 words are decoded with the bit layout in
+  docs/formats/textures.md. width/height (dims word, 16 bits each, minus 1),
+  mip count, DXGI format, face count and the two log2 alignments give a
+  predicted size for the GDeflate-decompressed surface data.
+- Four padding models are compared with the actual decompressed length, for
+  up to 25 textures per (DXGI format, face count) bucket. In every model,
+  padding goes BEFORE each mip (image alignment) and BEFORE each row (pitch
+  alignment); the data ends with the last row, unpadded. Padding the last
+  row too fails: 512x512 BC3 with 10 mips is 352,784 bytes, which ends 16
+  bytes (one 4x4 block) after the last mip's 512-byte boundary.
+- Only "pitch + image alignment" matches every texture of every format that
+  pixel_layout knows, across 1x1-block tail mips, non-square sizes and
+  6-face cube maps. So the bit fields are confirmed jointly: a wrong mip count,
+  format, face count or alignment would break the exact size.
+- Face-major order (all mips of face 0, then face 1) is not testable by size;
+  it stays a Hypothesis (the DDS convention).
+- DXGI 67 (R9G9B9E5_SHAREDEXP: skyboxes, HDR brightness UI images) and 75
+  (BC2_UNORM_SRGB) appear. 67 is missing from pixel_layout, so those
+  textures do not unpack (none is used by trucks).
+
+Method (sample record, 0x02): tally per top-level directory, then look at
+which textures carry the rare states. The meaning follows from the content:
+- bits 0/1 clear (point sampling) only on lookup data: MLAA weights, jitter
+  map, deferred attribute LUTs, window-interior LUTs, notfound;
+- address value 3 (clamp to border) only on projected shadow and light masks;
+- U = 0 (repeat) with V = 2 (clamp to edge) on skybox panoramas: they wrap
+  horizontally and clamp vertically. So bits 4-6 are U, bits 7-9 are V,
+  0 = repeat, 2 = clamp to edge.
+- Values 1 and 4+ (clamp, mirror ...) never occur in these archives.
+
+Output
+------
+Exact size matches per hypothesis (["tight", "image alignment only", "pitch alignment only", "pitch + image alignment"]), out of n:
+  dxgi  35 faces 1: [0, 0, 7, 11] of n=11
+  dxgi  61 faces 1: [9, 9, 25, 25] of n=25
+  dxgi  67 faces 1: [0, 0, 0, 0] of n=25
+  dxgi  71 faces 1: [0, 0, 0, 25] of n=25
+  dxgi  72 faces 1: [0, 7, 1, 25] of n=25
+  dxgi  72 faces 6: [7, 9, 11, 25] of n=25
+  dxgi  75 faces 1: [0, 0, 0, 1] of n=1
+  dxgi  77 faces 1: [0, 1, 0, 25] of n=25
+  dxgi  78 faces 1: [0, 3, 0, 25] of n=25
+  dxgi  78 faces 6: [9, 10, 10, 13] of n=13
+  dxgi  80 faces 1: [0, 0, 0, 25] of n=25
+  dxgi  83 faces 1: [0, 2, 0, 25] of n=25
+  dxgi  87 faces 1: [9, 9, 23, 24] of n=24
+  dxgi  88 faces 1: [25, 25, 25, 25] of n=25
+  dxgi  88 faces 6: [2, 2, 3, 3] of n=3
+  dxgi  91 faces 1: [22, 22, 25, 25] of n=25
+  dxgi  93 faces 1: [8, 8, 25, 25] of n=25
+  dxgi  93 faces 6: [0, 1, 0, 1] of n=1
+Examples:
+  dlc/dead_end_dlc.tobj: 128x64 mips 8 dxgi 78 faces 1 pitch 256 image 512 -> 13328 bytes
+  dlc/direction_blocker_dlc.tobj: 256x64 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 24080 bytes
+  model/bank_conc_sand.tobj: 512x512 mips 10 dxgi 78 faces 1 pitch 256 image 512 -> 352784 bytes
+  model/bank_metal_stone.tobj: 512x512 mips 10 dxgi 78 faces 1 pitch 256 image 512 -> 352784 bytes
+  model/billboard.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/dam.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_bgreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_flower.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_rggreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_ygreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/satellite.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+Unusual sampler states or formats (up to 4 paths each):
+  mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=61: ["material/deferred/custom/mlaa_weights.tobj"]
+  mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=87: ["system/special/stereo.tobj"]
+  mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=88: ["material/deferred/render_textures/attributes_0.tobj", "material/deferred/render_textures/attributes_1.tobj", "material/deferred/render_textures/attributes_2.tobj", "material/deferred/render_textures/attributes_3.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=61: ["material/environment/star_noise.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=83: ["system/special/flat_nrm.tobj", "material/ground/water/water_waves_03_nrm.tobj", "material/obsolete/special/flat_nrm.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=87: ["material/deferred/custom/jitter_map.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=88: ["material/window_interior/admin/admin_01_lut.tobj", "material/window_interior/apartments/apartments_01_lut.tobj", "material/window_interior/industrial/industrial_01_lut.tobj", "material/window_interior/restaurants/restaurants_01_lut.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=91: ["system/notfound/notfound.tobj", "material/environment/water_palette.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=72: ["material/decal/proj_shadow.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=78: ["model2/landmark/ee/tartu_bus_station_01_bus.tobj", "vehicle/ai/bombardier_traxx/locomotive_shadow.tobj", "vehicle/ai/forklift/shadow.tobj", "vehicle/ai/share/shadow_occlusion.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=80: ["vehicle/truck/upgrade/toystand/share/bbhead_etrc_alacko/fakeshdw.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=88: ["material/custom/trucklight_mask.tobj", "material/vehicle/custom/trucklight_mask.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=93: ["material/custom/trucklight_mask_front.tobj", "material/custom/trucklight_mask_high.tobj", "material/custom/trucklight_mask_norm.tobj", "material/custom/trucklight_mask_refracted.tobj"]
+  mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge dxgi=67: ["material/ui/options/brightness_high_hdr.tobj", "material/ui/options/brightness_low_hdr.tobj", "material/ui/options/brightness_mid_hdr.tobj"]
+  mag_linear=true min_linear=true u=Repeat v=ClampToEdge dxgi=67: ["asset/skybox/s_bad_02/s_bad02_03_10_g.tobj", "asset/skybox/s_bad_02/s_bad02_04_05_g.tobj", "asset/skybox/s_bad_02/s_bad02_05_00_g.tobj", "asset/skybox/s_bad_02/s_bad02_06_05_g.tobj"]
+Sample record by top-level directory:
+  asset        mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 2
+  asset        mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 3599
+  asset        mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 9
+  asset        mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 290
+  asset        mag_linear=true min_linear=true u=Repeat v=Repeat: 1875
+  dlc          mag_linear=true min_linear=true u=Repeat v=Repeat: 2
+  font         mag_linear=true min_linear=true u=Repeat v=Repeat: 149
+  material     mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge: 7
+  material     mag_linear=false min_linear=false u=Repeat v=Repeat: 10
+  material     mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 15
+  material     mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 10365
+  material     mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 22
+  material     mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 4
+  material     mag_linear=true min_linear=true u=Repeat v=Repeat: 5911
+  model        mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 1581
+  model        mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 59
+  model        mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 119
+  model        mag_linear=true min_linear=true u=Repeat v=Repeat: 1371
+  model2       mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 1
+  model2       mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 15452
+  model2       mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 10
+  model2       mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 236
+  model2       mag_linear=true min_linear=true u=Repeat v=Repeat: 4075
+  prefab       mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 134
+  prefab       mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 5
+  prefab       mag_linear=true min_linear=true u=Repeat v=Repeat: 267
+  prefab2      mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 1596
+  prefab2      mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 7
+  prefab2      mag_linear=true min_linear=true u=Repeat v=Repeat: 406
+  road_template mag_linear=true min_linear=true u=Repeat v=Repeat: 78
+  system       mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge: 1
+  system       mag_linear=false min_linear=false u=Repeat v=Repeat: 2
+  system       mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 264
+  system       mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 1
+  system       mag_linear=true min_linear=true u=Repeat v=Repeat: 9
+  vehicle      mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 152
+  vehicle      mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 10753
+  vehicle      mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 27
+  vehicle      mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 23
+  vehicle      mag_linear=true min_linear=true u=Repeat v=Repeat: 3357
+  video        mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 5

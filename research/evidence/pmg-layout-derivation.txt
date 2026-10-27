@@ -1,0 +1,462 @@
+PMD v4 / PMG v0x15 layout derived from our own byte dumps (license-safety re-derivation)
+=======================================================================================
+
+Inputs: six models from ETS2 1.60.1.7, dumped read-only from the install with
+  cargo run --release -p specsheet-archive --example scs -- cat <path> > <file>
+  /vehicle/truck/scania_2016/accessory/s_mirror/side_mirror_01.{pmd,pmg}
+  /vehicle/truck/scania_2016/cabin/cab_s_low.{pmd,pmg}
+  /vehicle/truck/scania_2016/chassis/chs_4x2.{pmd,pmg}
+  /vehicle/truck/upgrade/beacon/beacon_01.{pmd,pmg}
+  /vehicle/truck/upgrade/wheel/tire/front_1.{pmd,pmg}
+  /vehicle/truck/volvo_fh_2024/cabin/sleeper_2024.{pmd,pmg}
+(the dumps stay outside the repository).
+
+Command:
+  python -I tools/research/model_layout.py <dumps>/*.pmd <dumps>/*.pmg
+
+How the layout is pinned down (see the [ok]/[FAIL] lines below):
+- Record sizes: each block's size is the gap to the next block's offset,
+  divided by its count. Every block tiles exactly to the end of the file.
+- PMG pools: (offset, size) pairs at 0x58..0x6c chain string pool -> vertex
+  pool -> index pool -> end of file.
+- Stream names come from the values, not the slot order: the "position" slot
+  lies inside the piece AABB and inside the model sphere, the "normal" slot is
+  unit length, the "tangent" slot has unit xyz and w = +-1. The uv slot's size
+  is 8 x the piece's u32 at +12 (1, 2 and 3 sets seen).
+- Quaternion order: 100+ identity locators store 1.0 in the FIRST float; the
+  180-degree yaws (r_light, exhaust_m) store it in the third. So the order is
+  (w, x, y, z), and the 180-degree turns are about y.
+- Index streams: u16, index count x 2 bytes, each stream starting 4-byte
+  aligned (2 bytes of padding after an odd count).
+
+Corrections to what we had (both now in specsheet-formats):
+- Piece header +60 is the vertex stride in bytes (36/52/60/68/28 seen), not a
+  skeleton offset. The parser now rejects a stride that disagrees with the
+  present streams; every truck model passes (real_install).
+- Locators without a hookup point at an empty string (usually pool offset
+  0); -1 was never seen. The parser now maps an empty string to "no hookup".
+- Header 0x20..0x2f (and piece +20..+35) is a bounding sphere, centre and
+  radius: every vertex lies inside it. The centre is not the AABB centre, and
+  the radius is not half the AABB diagonal.
+
+Not determined (always 0 in these samples; no skinned model sampled):
+- PMD 0x0c; PMG 0x0c ("bones") and 0x10; the u64 at 0x18.
+- PMD attribute header +8 (0 for every `visible` attribute).
+- Piece +8: a u32 bit field (0xfffffff0, 0xfffff000, 0xf1fffff0, 0xf2fff110,
+  0xffffffff seen). It tracks the uv set count; its meaning is Unknown.
+- Position of the colour2 and bone streams (never present here).
+
+Output
+------
+== vehicle_truck_scania_2016_accessory_s_mirror_side_mirror_01.pmd (182 bytes)
+  0x00 version                0x4 (4)
+  0x04 materials              0x2 (2)
+  0x08 looks                  0x1 (1)
+  0x0c field_0c               0x0 (0)
+  0x10 variants               0x1 (1)
+  0x14 parts                  0x1 (1)
+  0x18 attributes             0x1 (1)
+  0x1c value_block            0x4 (4)
+  0x20 material_block         0x42 (66)
+  0x24 off_looks              0x40 (64)
+  0x28 off_variants           0x48 (72)
+  0x2c off_part_ranges        0x50 (80)
+  0x30 off_values             0x68 (104)
+  0x34 off_attr_headers       0x58 (88)
+  0x38 off_material_offsets   0x6c (108)
+  0x3c off_material_strings   0x74 (116)
+    [ok] looks start right after the 0x40-byte header
+    [ok] look record = 8 bytes (one token)
+    [ok] variant record = 8 bytes (one token)
+    [ok] part range = 8 bytes (two u32)
+    [ok] attribute header = 16 bytes
+    [ok] values = variants x value_block bytes
+    [ok] material offsets = looks x materials u32
+    [ok] material strings end the file
+    looks: ['default']
+    variants: ['default']
+    part ranges: [(0, 1)]
+    [ok] ranges are [from, to) and tile the attribute list
+    attribute headers (token, u32 at +8, u32 at +12): [('visible', 0, 0)]
+    [ok] u32 at +12 = byte offset in the per-variant value block (4 bytes each)
+    variant 0 values: (1,)
+    [ok] material offsets are absolute file offsets
+    look 0 materials[0..2]: ['/automat/fe/fe81458fc4e29314.mat', '/automat/d2/d223a38b520391a8.mat']
+== vehicle_truck_scania_2016_cabin_cab_s_low.pmd (628 bytes)
+  0x00 version                0x4 (4)
+  0x04 materials              0xc (12)
+  0x08 looks                  0x1 (1)
+  0x0c field_0c               0x0 (0)
+  0x10 variants               0x2 (2)
+  0x14 parts                  0x3 (3)
+  0x18 attributes             0x3 (3)
+  0x1c value_block            0xc (12)
+  0x20 material_block         0x18c (396)
+  0x24 off_looks              0x40 (64)
+  0x28 off_variants           0x48 (72)
+  0x2c off_part_ranges        0x58 (88)
+  0x30 off_values             0xa0 (160)
+  0x34 off_attr_headers       0x70 (112)
+  0x38 off_material_offsets   0xb8 (184)
+  0x3c off_material_strings   0xe8 (232)
+    [ok] looks start right after the 0x40-byte header
+    [ok] look record = 8 bytes (one token)
+    [ok] variant record = 8 bytes (one token)
+    [ok] part range = 8 bytes (two u32)
+    [ok] attribute header = 16 bytes
+    [ok] values = variants x value_block bytes
+    [ok] material offsets = looks x materials u32
+    [ok] material strings end the file
+    looks: ['default']
+    variants: ['default', 'uk']
+    part ranges: [(0, 1), (1, 2), (2, 3)]
+    [ok] ranges are [from, to) and tile the attribute list
+    attribute headers (token, u32 at +8, u32 at +12): [('visible', 0, 0), ('visible', 0, 4), ('visible', 0, 8)]
+    [ok] u32 at +12 = byte offset in the per-variant value block (4 bytes each)
+    variant 0 values: (1, 1, 0)
+    variant 1 values: (1, 0, 1)
+    [ok] material offsets are absolute file offsets
+    look 0 materials[0..2]: ['/automat/fe/fe81458fc4e29314.mat', '/automat/14/14a950810c14dfc2.mat']
+== vehicle_truck_scania_2016_chassis_chs_4x2.pmd (441 bytes)
+  0x00 version                0x4 (4)
+  0x04 materials              0x9 (9)
+  0x08 looks                  0x1 (1)
+  0x0c field_0c               0x0 (0)
+  0x10 variants               0x1 (1)
+  0x14 parts                  0x1 (1)
+  0x18 attributes             0x1 (1)
+  0x1c value_block            0x4 (4)
+  0x20 material_block         0x129 (297)
+  0x24 off_looks              0x40 (64)
+  0x28 off_variants           0x48 (72)
+  0x2c off_part_ranges        0x50 (80)
+  0x30 off_values             0x68 (104)
+  0x34 off_attr_headers       0x58 (88)
+  0x38 off_material_offsets   0x6c (108)
+  0x3c off_material_strings   0x90 (144)
+    [ok] looks start right after the 0x40-byte header
+    [ok] look record = 8 bytes (one token)
+    [ok] variant record = 8 bytes (one token)
+    [ok] part range = 8 bytes (two u32)
+    [ok] attribute header = 16 bytes
+    [ok] values = variants x value_block bytes
+    [ok] material offsets = looks x materials u32
+    [ok] material strings end the file
+    looks: ['default']
+    variants: ['default']
+    part ranges: [(0, 1)]
+    [ok] ranges are [from, to) and tile the attribute list
+    attribute headers (token, u32 at +8, u32 at +12): [('visible', 0, 0)]
+    [ok] u32 at +12 = byte offset in the per-variant value block (4 bytes each)
+    variant 0 values: (1,)
+    [ok] material offsets are absolute file offsets
+    look 0 materials[0..2]: ['/automat/af/af6d4dbc8f17835c.mat', '/automat/1a/1ade066711188ac9.mat']
+== vehicle_truck_upgrade_beacon_beacon_01.pmd (219 bytes)
+  0x00 version                0x4 (4)
+  0x04 materials              0x3 (3)
+  0x08 looks                  0x1 (1)
+  0x0c field_0c               0x0 (0)
+  0x10 variants               0x1 (1)
+  0x14 parts                  0x1 (1)
+  0x18 attributes             0x1 (1)
+  0x1c value_block            0x4 (4)
+  0x20 material_block         0x63 (99)
+  0x24 off_looks              0x40 (64)
+  0x28 off_variants           0x48 (72)
+  0x2c off_part_ranges        0x50 (80)
+  0x30 off_values             0x68 (104)
+  0x34 off_attr_headers       0x58 (88)
+  0x38 off_material_offsets   0x6c (108)
+  0x3c off_material_strings   0x78 (120)
+    [ok] looks start right after the 0x40-byte header
+    [ok] look record = 8 bytes (one token)
+    [ok] variant record = 8 bytes (one token)
+    [ok] part range = 8 bytes (two u32)
+    [ok] attribute header = 16 bytes
+    [ok] values = variants x value_block bytes
+    [ok] material offsets = looks x materials u32
+    [ok] material strings end the file
+    looks: ['default']
+    variants: ['default']
+    part ranges: [(0, 1)]
+    [ok] ranges are [from, to) and tile the attribute list
+    attribute headers (token, u32 at +8, u32 at +12): [('visible', 0, 0)]
+    [ok] u32 at +12 = byte offset in the per-variant value block (4 bytes each)
+    variant 0 values: (1,)
+    [ok] material offsets are absolute file offsets
+    look 0 materials[0..2]: ['/automat/91/91175d552788a48e.mat', '/automat/4c/4c18c969d111a0c8.mat']
+== vehicle_truck_upgrade_wheel_tire_front_1.pmd (382 bytes)
+  0x00 version                0x4 (4)
+  0x04 materials              0x3 (3)
+  0x08 looks                  0x2 (2)
+  0x0c field_0c               0x0 (0)
+  0x10 variants               0x2 (2)
+  0x14 parts                  0x2 (2)
+  0x18 attributes             0x2 (2)
+  0x1c value_block            0x8 (8)
+  0x20 material_block         0xc6 (198)
+  0x24 off_looks              0x40 (64)
+  0x28 off_variants           0x50 (80)
+  0x2c off_part_ranges        0x60 (96)
+  0x30 off_values             0x90 (144)
+  0x34 off_attr_headers       0x70 (112)
+  0x38 off_material_offsets   0xa0 (160)
+  0x3c off_material_strings   0xb8 (184)
+    [ok] looks start right after the 0x40-byte header
+    [ok] look record = 8 bytes (one token)
+    [ok] variant record = 8 bytes (one token)
+    [ok] part range = 8 bytes (two u32)
+    [ok] attribute header = 16 bytes
+    [ok] values = variants x value_block bytes
+    [ok] material offsets = looks x materials u32
+    [ok] material strings end the file
+    looks: ['trailmaster', 'elemental']
+    variants: ['left', 'right']
+    part ranges: [(0, 1), (1, 2)]
+    [ok] ranges are [from, to) and tile the attribute list
+    attribute headers (token, u32 at +8, u32 at +12): [('visible', 0, 0), ('visible', 0, 4)]
+    [ok] u32 at +12 = byte offset in the per-variant value block (4 bytes each)
+    variant 0 values: (1, 0)
+    variant 1 values: (0, 1)
+    [ok] material offsets are absolute file offsets
+    look 0 materials[0..2]: ['/automat/04/04342f8f2209c0f1.mat', '/automat/01/011c1ae8d506336f.mat']
+== vehicle_truck_volvo_fh_2024_cabin_sleeper_2024.pmd (6533 bytes)
+  0x00 version                0x4 (4)
+  0x04 materials              0xd (13)
+  0x08 looks                  0xd (13)
+  0x0c field_0c               0x0 (0)
+  0x10 variants               0x2 (2)
+  0x14 parts                  0x3 (3)
+  0x18 attributes             0x3 (3)
+  0x1c value_block            0xc (12)
+  0x20 material_block         0x15c9 (5577)
+  0x24 off_looks              0x40 (64)
+  0x28 off_variants           0xa8 (168)
+  0x2c off_part_ranges        0xb8 (184)
+  0x30 off_values             0x100 (256)
+  0x34 off_attr_headers       0xd0 (208)
+  0x38 off_material_offsets   0x118 (280)
+  0x3c off_material_strings   0x3bc (956)
+    [ok] looks start right after the 0x40-byte header
+    [ok] look record = 8 bytes (one token)
+    [ok] variant record = 8 bytes (one token)
+    [ok] part range = 8 bytes (two u32)
+    [ok] attribute header = 16 bytes
+    [ok] values = variants x value_block bytes
+    [ok] material offsets = looks x materials u32
+    [ok] material strings end the file
+    looks: ['default', 'gt', 'gt_xl', 'gt_xxl', 'fh16', 'fh16_xl', 'fh16_xxl', 'fh16_780', 'fh16_780_xl', 'fh16_780_xxl', 'fh16_750', 'fh16_750_xl', 'fh16_750_xxl']
+    variants: ['default', 'cabin_uk']
+    part ranges: [(0, 1), (1, 2), (2, 3)]
+    [ok] ranges are [from, to) and tile the attribute list
+    attribute headers (token, u32 at +8, u32 at +12): [('visible', 0, 0), ('visible', 0, 4), ('visible', 0, 8)]
+    [ok] u32 at +12 = byte offset in the per-variant value block (4 bytes each)
+    variant 0 values: (1, 1, 0)
+    variant 1 values: (0, 1, 1)
+    [ok] material offsets are absolute file offsets
+    look 0 materials[0..2]: ['/automat/5f/5fb01bd853839720.mat', '/automat/a1/a13f598c610360b9.mat']
+== vehicle_truck_scania_2016_accessory_s_mirror_side_mirror_01.pmg (22124 bytes)
+    [ok] byte 0 = version 0x15, bytes 1..4 = 'gmP'
+  counts @0x04: pieces=2 parts=1 field_0c=0 field_10=0 locators=2
+  @0x18 u64 0x0; @0x20 sphere (-0.0334, 0.0491, -0.0046, 0.1826); @0x30 aabb (-0.1084, -0.0786, -0.1392, 0.0789, 0.1176, 0.1462)
+  @0x48 offsets: ['0x70', '0x70', '0x88', '0xe0', '0x1a8', '0x4', '0x1ac', '0x3960', '0x3b0c', '0x1b60']
+    [ok] header is 0x70 bytes; the first offset (empty block here) also points there
+    [ok] part record = 24 bytes
+    [ok] locator record = 44 bytes
+    [ok] piece header = 100 bytes
+    [ok] (offset, size) pairs: string pool, vertex pool, index pool tile the file
+    part 0 'defaultpart': pieces 0..2, locators 0..2
+    locator 'cam_s' pos (-0.027, -0.044, 0.003) scale 1.0 q (0.4443, -0.5501, 0.4443, 0.5501) hookup 0 ''
+    locator 'cam_m_s' pos (-0.027, -0.044, 0.003) scale 1.0 q (0.6409, -0.2988, 0.6409, 0.2988) hookup 0 ''
+    [ok] the 4 floats at +24 have unit length (a rotation quaternion)
+    locators whose quaternion is +-1 in one component, by stored position: {'w': 0, 'x': 0, 'y': 0, 'z': 0}
+    piece 0: indices 3180, vertices 367, @+8 0xfffffff0, @+12 1, material 0; streams {'field_60': 36, 'position': 428, 'normal': 440, 'uv': 456, 'colour': 452, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 15116}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    piece 1: indices 324, vertices 41, @+8 0xfffffff0, @+12 1, material 1; streams {'field_60': 36, 'position': 13640, 'normal': 13652, 'uv': 13668, 'colour': 13664, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 21476}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    stride per piece (gap to the next piece / vertex count): [36.0, 36.0]
+    [ok] every piece: position 12, normal 12, tangent 16, colour 4, colour2 4, uv 8 x @+12 bytes
+    [ok] piece field @+60 = vertex stride in bytes
+    [ok] index streams are u16 x index count, each starting 4-byte aligned (padding seen: [0])
+    [ok] slot named position: position in piece AABB
+    [ok] slot named normal: normal unit length
+    [ok] slot named tangent: tangent xyz unit, w = +-1
+    [ok] slot named position: position within the @0x20 sphere
+    [ok] @0x20 = sphere centre (inside the @0x30 AABB) + radius (above: every vertex inside)
+    locator hookup offsets seen: [0]; string pool starts b'\x00\x00\x00\x00'
+    [ok] every u16 index is below the piece's vertex count
+== vehicle_truck_scania_2016_cabin_cab_s_low.pmg (1598240 bytes)
+    [ok] byte 0 = version 0x15, bytes 1..4 = 'gmP'
+  counts @0x04: pieces=16 parts=3 field_0c=0 field_10=0 locators=66
+  @0x18 u64 0x0; @0x20 sphere (0.2187, 2.2564, -1.0104, 2.6563); @0x30 aabb (-1.2589, 0.9019, -3.0494, 1.2589, 3.8892, -0.3653)
+  @0x48 offsets: ['0x70', '0x70', '0xb8', '0xc10', '0x1250', '0x4', '0x1254', '0x14f8ac', '0x150b00', '0x35820']
+    [ok] header is 0x70 bytes; the first offset (empty block here) also points there
+    [ok] part record = 24 bytes
+    [ok] locator record = 44 bytes
+    [ok] piece header = 100 bytes
+    [ok] (offset, size) pairs: string pool, vertex pool, index pool tile the file
+    part 0 'defaultpart': pieces 0..10, locators 0..34
+    part 1 'eu_part': pieces 10..13, locators 34..50
+    part 2 'uk_part': pieces 13..16, locators 50..66
+    locator 'beacon_sl' pos (0.0, 3.484, -2.556) scale 1.0 q (0.9885, -0.151, 0.0, 0.0) hookup 0 ''
+    locator 'f_light_top' pos (0.0, 3.415, -2.848) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'r_grill_sl' pos (0.0, 3.357, -2.806) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'r_horn' pos (0.822, 3.581, -1.86) scale 1.0 q (0.9984, -0.0567, 0.0, 0.0) hookup 0 ''
+    locator 'l_horn' pos (-0.822, 3.581, -1.86) scale 1.0 q (0.9984, -0.0567, 0.0, 0.0) hookup 0 ''
+    locator 'cam_cabin_sl' pos (0.0, 4.057, -1.178) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    [ok] the 4 floats at +24 have unit length (a rotation quaternion)
+    locators whose quaternion is +-1 in one component, by stored position: {'w': 42, 'x': 0, 'y': 2, 'z': 0}
+    piece 0: indices 12630, vertices 4043, @+8 0xfffffff0, @+12 1, material 0; streams {'field_60': 36, 'position': 4692, 'normal': 4704, 'uv': 4720, 'colour': 4716, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 1379072}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    piece 1: indices 63822, vertices 15117, @+8 0xfffff000, @+12 1, material 1; streams {'field_60': 36, 'position': 150240, 'normal': 150252, 'uv': 150268, 'colour': 150264, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 1404332}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    piece 2: indices 306, vertices 68, @+8 0xfffffff0, @+12 1, material 2; streams {'field_60': 36, 'position': 694452, 'normal': 694464, 'uv': 694480, 'colour': 694476, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 1531976}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    stride per piece (gap to the next piece / vertex count): [36.0, 36.0, 36.0, 60.0, 28.0, 36.0]
+    [ok] every piece: position 12, normal 12, tangent 16, colour 4, colour2 4, uv 8 x @+12 bytes
+    [ok] piece field @+60 = vertex stride in bytes
+    [ok] index streams are u16 x index count, each starting 4-byte aligned (padding seen: [0])
+    [ok] slot named position: position in piece AABB
+    [ok] slot named normal: normal unit length
+    [ok] slot named tangent: tangent xyz unit, w = +-1
+    [ok] slot named position: position within the @0x20 sphere
+    [ok] @0x20 = sphere centre (inside the @0x30 AABB) + radius (above: every vertex inside)
+    locator hookup offsets seen: [0]; string pool starts b'\x00\x00\x00\x00'
+    [ok] every u16 index is below the piece's vertex count
+== vehicle_truck_scania_2016_chassis_chs_4x2.pmg (1770108 bytes)
+    [ok] byte 0 = version 0x15, bytes 1..4 = 'gmP'
+  counts @0x04: pieces=9 parts=1 field_0c=0 field_10=0 locators=39
+  @0x18 u64 0x0; @0x20 sphere (0.3536, 0.5089, 0.3226, 4.8558); @0x30 aabb (-2.0551, 0.0983, -3.7032, 2.0551, 1.6987, 4.5188)
+  @0x48 offsets: ['0x70', '0x70', '0x88', '0x73c', '0xac0', '0x34', '0xaf4', '0x18bd54', '0x18c848', '0x23a34']
+    [ok] header is 0x70 bytes; the first offset (empty block here) also points there
+    [ok] part record = 24 bytes
+    [ok] locator record = 44 bytes
+    [ok] piece header = 100 bytes
+    [ok] (offset, size) pairs: string pool, vertex pool, index pool tile the file
+    part 0 'defaultpart': pieces 0..9, locators 0..39
+    locator 'r_bumper' pos (0.0, 0.697, 3.039) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'r_light' pos (0.0, 0.638, 3.039) scale 1.0 q (0.0, 0.0, 1.0, 0.0) hookup 0 ''
+    locator 'r_mudflap' pos (0.0, 0.226, 2.82) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'r_chs_cover' pos (0.0, 0.984, 0.0) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'wheel_r_0' pos (-0.93, 0.5, 2.094) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'exhaust_m' pos (0.0, 1.176, -0.722) scale 1.0 q (0.0, 0.0, 1.0, 0.0) hookup 0 ''
+    [ok] the 4 floats at +24 have unit length (a rotation quaternion)
+    locators whose quaternion is +-1 in one component, by stored position: {'w': 27, 'x': 0, 'y': 7, 'z': 0}
+    piece 0: indices 5196, vertices 1247, @+8 0xfffffff0, @+12 1, material 0; streams {'field_60': 52, 'position': 2804, 'normal': 2816, 'uv': 2848, 'colour': 2844, 'colour2': -1, 'tangent': 2828, 'bone_index': -1, 'bone_weight': -1, 'index': 1624136}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    piece 1: indices 35076, vertices 12985, @+8 0xf1fffff0, @+12 2, material 1; streams {'field_60': 60, 'position': 67648, 'normal': 67660, 'uv': 67692, 'colour': 67688, 'colour2': -1, 'tangent': 67672, 'bone_index': -1, 'bone_weight': -1, 'index': 1634528}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    piece 2: indices 2202, vertices 1163, @+8 0xf1fffff0, @+12 2, material 2; streams {'field_60': 60, 'position': 846748, 'normal': 846760, 'uv': 846792, 'colour': 846788, 'colour2': -1, 'tangent': 846772, 'bone_index': -1, 'bone_weight': -1, 'index': 1704680}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    stride per piece (gap to the next piece / vertex count): [52.0, 60.0, 60.0, 36.0, 36.0, 60.0]
+    [ok] every piece: position 12, normal 12, tangent 16, colour 4, colour2 4, uv 8 x @+12 bytes
+    [ok] piece field @+60 = vertex stride in bytes
+    [ok] index streams are u16 x index count, each starting 4-byte aligned (padding seen: [0, 2])
+    [ok] slot named position: position in piece AABB
+    [ok] slot named normal: normal unit length
+    [ok] slot named tangent: tangent xyz unit, w = +-1
+    [ok] slot named position: position within the @0x20 sphere
+    [ok] @0x20 = sphere centre (inside the @0x30 AABB) + radius (above: every vertex inside)
+    locator hookup offsets seen: [0, 1, 17, 36]; string pool starts b'\x00wheel.particles\x00license'
+    [ok] every u16 index is below the piece's vertex count
+== vehicle_truck_upgrade_beacon_beacon_01.pmg (27660 bytes)
+    [ok] byte 0 = version 0x15, bytes 1..4 = 'gmP'
+  counts @0x04: pieces=3 parts=1 field_0c=0 field_10=0 locators=1
+  @0x18 u64 0x0; @0x20 sphere (0.0013, 0.058, -0.0047, 0.0897); @0x30 aabb (-0.0571, 0.0, -0.0571, 0.0571, 0.1446, 0.0571)
+  @0x48 offsets: ['0x70', '0x70', '0x88', '0xb4', '0x1e0', '0x18', '0x1f8', '0x5a6c', '0x5c64', '0xfa8']
+    [ok] header is 0x70 bytes; the first offset (empty block here) also points there
+    [ok] part record = 24 bytes
+    [ok] locator record = 44 bytes
+    [ok] piece header = 100 bytes
+    [ok] (offset, size) pairs: string pool, vertex pool, index pool tile the file
+    part 0 'part1': pieces 0..3, locators 0..1
+    locator 'ml1' pos (0.0, 0.09, 0.0) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 'flare.vehicle.beacon'
+    [ok] the 4 floats at +24 have unit length (a rotation quaternion)
+    locators whose quaternion is +-1 in one component, by stored position: {'w': 1, 'x': 0, 'y': 0, 'z': 0}
+    piece 0: indices 312, vertices 104, @+8 0xfffffff0, @+12 1, material 0; streams {'field_60': 36, 'position': 504, 'normal': 516, 'uv': 532, 'colour': 528, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 23652}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    piece 1: indices 444, vertices 183, @+8 0xfffffff0, @+12 1, material 1; streams {'field_60': 36, 'position': 4248, 'normal': 4260, 'uv': 4276, 'colour': 4272, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 24276}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    piece 2: indices 1248, vertices 356, @+8 0xfffffff0, @+12 1, material 2; streams {'field_60': 36, 'position': 10836, 'normal': 10848, 'uv': 10864, 'colour': 10860, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 25164}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('colour', 4)] then uv
+    stride per piece (gap to the next piece / vertex count): [36.0, 36.0, 36.0]
+    [ok] every piece: position 12, normal 12, tangent 16, colour 4, colour2 4, uv 8 x @+12 bytes
+    [ok] piece field @+60 = vertex stride in bytes
+    [ok] index streams are u16 x index count, each starting 4-byte aligned (padding seen: [0])
+    [ok] slot named position: position in piece AABB
+    [ok] slot named normal: normal unit length
+    [ok] slot named tangent: tangent xyz unit, w = +-1
+    [ok] slot named position: position within the @0x20 sphere
+    [ok] @0x20 = sphere centre (inside the @0x30 AABB) + radius (above: every vertex inside)
+    locator hookup offsets seen: [0]; string pool starts b'flare.vehicle.beacon\x00\x00\x00\x00'
+    [ok] every u16 index is below the piece's vertex count
+== vehicle_truck_upgrade_wheel_tire_front_1.pmg (63296 bytes)
+    [ok] byte 0 = version 0x15, bytes 1..4 = 'gmP'
+  counts @0x04: pieces=6 parts=2 field_0c=0 field_10=0 locators=1
+  @0x18 u64 0x0; @0x20 sphere (0.0026, 0.0615, -0.233, 0.7717); @0x30 aabb (-0.1679, -0.5119, -0.5091, 0.1679, 0.5119, 0.5091)
+  @0x48 offsets: ['0x70', '0x70', '0xa0', '0xcc', '0x324', '0x4', '0x328', '0xd798', '0xdac0', '0x1c80']
+    [ok] header is 0x70 bytes; the first offset (empty block here) also points there
+    [ok] part record = 24 bytes
+    [ok] locator record = 44 bytes
+    [ok] piece header = 100 bytes
+    [ok] (offset, size) pairs: string pool, vertex pool, index pool tile the file
+    part 0 'l': pieces 0..3, locators 0..1
+    part 1 'r': pieces 3..6, locators 1..1
+    locator 'bb' pos (-0.137, 0.0, 0.506) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    [ok] the 4 floats at +24 have unit length (a rotation quaternion)
+    locators whose quaternion is +-1 in one component, by stored position: {'w': 1, 'x': 0, 'y': 0, 'z': 0}
+    piece 0: indices 1116, vertices 318, @+8 0xfffffff0, @+12 1, material 0; streams {'field_60': 52, 'position': 808, 'normal': 820, 'uv': 852, 'colour': 848, 'colour2': -1, 'tangent': 832, 'bone_index': -1, 'bone_weight': -1, 'index': 56000}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    piece 1: indices 528, vertices 336, @+8 0xffffffff, @+12 0, material 1; streams {'field_60': 28, 'position': 17344, 'normal': 17356, 'uv': -1, 'colour': 17368, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 58232}
+      stream order and byte gaps: [('position', 12), ('normal', 12)] then colour
+    piece 2: indices 180, vertices 60, @+8 0xffffffff, @+12 0, material 2; streams {'field_60': 28, 'position': 26752, 'normal': 26764, 'uv': -1, 'colour': 26776, 'colour2': -1, 'tangent': -1, 'bone_index': -1, 'bone_weight': -1, 'index': 59288}
+      stream order and byte gaps: [('position', 12), ('normal', 12)] then colour
+    stride per piece (gap to the next piece / vertex count): [52.0, 28.0, 28.0, 52.0, 28.0, 28.0]
+    [ok] every piece: position 12, normal 12, tangent 16, colour 4, colour2 4, uv 8 x @+12 bytes
+    [ok] piece field @+60 = vertex stride in bytes
+    [ok] index streams are u16 x index count, each starting 4-byte aligned (padding seen: [0])
+    [ok] slot named position: position in piece AABB
+    [ok] slot named normal: normal unit length
+    [ok] slot named tangent: tangent xyz unit, w = +-1
+    [ok] slot named position: position within the @0x20 sphere
+    [ok] @0x20 = sphere centre (inside the @0x30 AABB) + radius (above: every vertex inside)
+    locator hookup offsets seen: [0]; string pool starts b'\x00\x00\x00\x00'
+    [ok] every u16 index is below the piece's vertex count
+== vehicle_truck_volvo_fh_2024_cabin_sleeper_2024.pmg (2430948 bytes)
+    [ok] byte 0 = version 0x15, bytes 1..4 = 'gmP'
+  counts @0x04: pieces=15 parts=3 field_0c=0 field_10=0 locators=75
+  @0x18 u64 0x0; @0x20 sphere (-0.1925, 1.8886, -2.0094, 2.3295); @0x30 aabb (-1.2416, 0.217, -3.1493, 1.2416, 3.527, -0.8323)
+  @0x48 offsets: ['0x70', '0x70', '0xb8', '0xd9c', '0x1378', '0x18', '0x1390', '0x20ebb4', '0x20ff44', '0x418a0']
+    [ok] header is 0x70 bytes; the first offset (empty block here) also points there
+    [ok] part record = 24 bytes
+    [ok] locator record = 44 bytes
+    [ok] piece header = 100 bytes
+    [ok] (offset, size) pairs: string pool, vertex pool, index pool tile the file
+    part 0 'eu': pieces 0..1, locators 0..20
+    part 1 'part1': pieces 1..14, locators 20..55
+    part 2 'uk': pieces 14..15, locators 55..75
+    locator 'swheel' pos (-0.718, 1.988, -2.567) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'f_mirror' pos (0.709, 2.801, -3.099) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 's_mirror' pos (1.251, 2.879, -2.079) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'driver_0' pos (-0.718, 1.484, -2.424) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'interior' pos (-0.718, 2.692, -1.894) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    locator 'codrv_seat' pos (0.0, 2.338, -1.914) scale 1.0 q (1.0, 0.0, 0.0, 0.0) hookup 0 ''
+    [ok] the 4 floats at +24 have unit length (a rotation quaternion)
+    locators whose quaternion is +-1 in one component, by stored position: {'w': 44, 'x': 0, 'y': 1, 'z': 0}
+    piece 0: indices 564, vertices 174, @+8 0xf1fffff0, @+12 2, material 0; streams {'field_60': 60, 'position': 5008, 'normal': 5020, 'uv': 5052, 'colour': 5048, 'colour2': -1, 'tangent': 5032, 'bone_index': -1, 'bone_weight': -1, 'index': 2162500}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    piece 1: indices 84372, vertices 17777, @+8 0xf2fff110, @+12 3, material 1; streams {'field_60': 68, 'position': 15448, 'normal': 15460, 'uv': 15492, 'colour': 15488, 'colour2': -1, 'tangent': 15472, 'bone_index': -1, 'bone_weight': -1, 'index': 2163628}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    piece 2: indices 111, vertices 62, @+8 0xf1fffff0, @+12 2, material 2; streams {'field_60': 60, 'position': 1224284, 'normal': 1224296, 'uv': 1224328, 'colour': 1224324, 'colour2': -1, 'tangent': 1224308, 'bone_index': -1, 'bone_weight': -1, 'index': 2332372}
+      stream order and byte gaps: [('position', 12), ('normal', 12), ('tangent', 16), ('colour', 4)] then uv
+    stride per piece (gap to the next piece / vertex count): [60.0, 68.0, 60.0, 28.0, 60.0, 36.0]
+    [ok] every piece: position 12, normal 12, tangent 16, colour 4, colour2 4, uv 8 x @+12 bytes
+    [ok] piece field @+60 = vertex stride in bytes
+    [ok] index streams are u16 x index count, each starting 4-byte aligned (padding seen: [0, 2])
+    [ok] slot named position: position in piece AABB
+    [ok] slot named normal: normal unit length
+    [ok] slot named tangent: tangent xyz unit, w = +-1
+    [ok] slot named position: position within the @0x20 sphere
+    [ok] @0x20 = sphere centre (inside the @0x30 AABB) + radius (above: every vertex inside)
+    locator hookup offsets seen: [0, 1]; string pool starts b'\x00flare.vehicle.parkl\x00\x00\x00\x00'
+    [ok] every u16 index is below the piece's vertex count
