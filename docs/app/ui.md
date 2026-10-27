@@ -17,7 +17,7 @@ The app draws the game's own truck configuration screen, `truck.config`. It buil
   - Distance-field materials are converted to white images whose alpha is the shape's coverage (smoothstep at 0.5 ± 0.08), so the template's `color=` tints them. These are the category and toolbar icons (`ui.sdf.rfx`, single channel: the strongest channel) and the font pages (`ui.font.msdf.rfx`: median of RGB).
   - Compressed UI textures are not supported yet; they are skipped with a warning.
 - **Text** uses egui's font, sized per game face: normal 15, small 12.5, big 20 and title 24 reference units, times the markup's `yscale`. Rendering the game's MSDF fonts is a known parity gap.
-- **Wrapping.** Text wraps at spaces inside its margins unless `<nowrap>` is open. A wrapped block is aligned as a whole; its lines are not yet centred one by one.
+- **Wrapping.** Text wraps at spaces inside its margins unless `<nowrap>` is open. Inside an `<align>`, each line is placed horizontally on its own, while the block moves vertically as one.
 
 ## What is shown (Design)
 
@@ -29,7 +29,7 @@ The game's handler shows, hides and fills widgets in code that has not been trac
 | Tab row `[499]` | one `btn.truck_grp` button per `value_list` token (the 64-unit icons fill the row). The open tab uses the selected state, and hover does too |
 | "Select a category" `[380]` | until a tab is chosen |
 | Accessory browser `[305]` with list title `[310]` (`<color>@@clr_sel@@ …` + the tab's caption key) and list `[300]` | while a slot's options are open |
-| Remove button, messages, conflict marker, paint channels, walk-camera notice, crosshair, cart, origin badge, price box, money, unfolded analysis, colour picker, control and tab-key hints, search, filter | hidden: their behaviour is not wired up yet. The money widget's separate background rect still shows |
+| Remove button, messages, conflict marker, paint channels, walk-camera notice, crosshair, cart, origin badge, price box, money, unfolded analysis, colour picker, control and tab-key hints, search, filter | hidden: their behaviour is not wired up yet. An unaddressed sibling with a hidden widget's exact rectangle (its background, e.g. the money box) is hidden with it |
 
 ## Tabs and pins
 
