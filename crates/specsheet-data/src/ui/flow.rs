@@ -374,9 +374,29 @@ fn align(items: &mut [Item], frame: &AlignFrame) {
         Style::Keep => 0.0,
     };
     let [l, t, r, b] = frame.frame;
-    let dx = offset(frame.hstyle, l, r, content[0], content[2]);
     let dy = offset(frame.vstyle, t, b, content[1], content[3]);
-    for item in items {
+    // Each line (items sharing a top edge: wrapped text, or an image and
+    // its caption) is placed on its own; the block moves vertically as one.
+    let tops: Vec<f32> = items.iter().map(|i| i.bounds()[1]).collect();
+    let mut line_dx: Vec<(f32, f32)> = Vec::new();
+    for &top in &tops {
+        if line_dx.iter().any(|(t, _)| *t == top) {
+            continue;
+        }
+        let (from, to) = items
+            .iter()
+            .map(Item::bounds)
+            .filter(|bounds| bounds[1] == top)
+            .fold((f32::MAX, f32::MIN), |(lo, hi), b| {
+                (lo.min(b[0]), hi.max(b[2]))
+            });
+        line_dx.push((top, offset(frame.hstyle, l, r, from, to)));
+    }
+    for (item, top) in items.iter_mut().zip(tops) {
+        let dx = line_dx
+            .iter()
+            .find(|(t, _)| *t == top)
+            .map_or(0.0, |(_, dx)| *dx);
         item.shift(dx, dy);
     }
 }
@@ -520,6 +540,19 @@ mod tests {
         );
         let items = run("<nowrap>aaaa bbbb cc</nowrap>", [50.0, 40.0]);
         assert_eq!(bounds(&items), vec![[0.0, 0.0, 96.0, 10.0]]);
+    }
+
+    #[test]
+    fn wrapped_lines_are_aligned_one_by_one() {
+        let items = run("<align hstyle=center>aaaa bbbb cc</align>", [50.0, 40.0]);
+        assert_eq!(
+            bounds(&items),
+            vec![
+                [9.0, 0.0, 41.0, 10.0],
+                [9.0, 10.0, 41.0, 20.0],
+                [17.0, 20.0, 33.0, 30.0]
+            ]
+        );
     }
 
     #[test]
