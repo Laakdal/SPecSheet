@@ -102,6 +102,10 @@ cargo run --release -p specsheet-archive --example scs -- find vehicle/truck/sca
 # Model structure: looks, variants, parts, locators
 cargo run --release -p specsheet-data --example model_info -- /vehicle/truck/scania_2016/cabin/cab_s_low.pmd
 
+# Byte-level layout checks (independent of our parsers): dump with `scs cat <path> > file`, then
+python -I tools/research/model_layout.py <dumps>/*.pmd <dumps>/*.pmg
+cargo run --release -p specsheet-archive --example texture_layout -- "<game>/base.scs" ...
+
 # Definition statistics / samples (optional last argument: root directory, default /def/vehicle/truck)
 cargo run --release -p specsheet-data --example def_stats
 cargo run --release -p specsheet-data --example def_stats -- /def/vehicle/f_disc
