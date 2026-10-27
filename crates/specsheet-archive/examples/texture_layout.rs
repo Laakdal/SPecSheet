@@ -1,8 +1,9 @@
 //! Research tool: tests the packed-texture layout against the bytes. For a
 //! sample of textures per (format, face count), it predicts the decompressed
 //! surface size from the image record under four padding hypotheses and
-//! counts which one matches exactly. It also tallies the sample record's
-//! address modes per top-level directory.
+//! counts which one matches exactly. It also tallies the cube flag against
+//! the face count, and the sample record's address modes per top-level
+//! directory.
 //!
 //! Usage: cargo run --release -p specsheet-archive --example texture_layout -- <archive.scs>...
 
@@ -25,6 +26,7 @@ fn main() {
     let mut addressing: BTreeMap<(String, String), usize> = BTreeMap::new();
     let mut examples = Vec::new();
     let mut rare: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut cube_flags: BTreeMap<(bool, u32), usize> = BTreeMap::new();
     for path in std::env::args().skip(1) {
         let archive = match Archive::open(&path) {
             Ok(archive) => archive,
@@ -39,6 +41,9 @@ fn main() {
             else {
                 continue;
             };
+            *cube_flags
+                .entry((image.is_cube, image.face_count))
+                .or_default() += 1;
             let top = file.split('/').next().unwrap_or_default().to_owned();
             let modes = format!(
                 "mag_linear={} min_linear={} u={:?} v={:?}",
@@ -99,6 +104,7 @@ fn main() {
     for line in examples {
         println!("{line}");
     }
+    println!("Textures by (cube flag, face count): {cube_flags:?}");
     println!("Unusual sampler states or formats (up to 4 paths each):");
     for (state, paths) in rare {
         println!("  {state}: {paths:?}");
