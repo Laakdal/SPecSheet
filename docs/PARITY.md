@@ -22,7 +22,8 @@ For each feature, how close we are to in-game tuning. The goal is a 1:1 replica 
 | Tuning pins: existence, ids | ✔ F5, F8 | | | Buttons `10000 + n` per accessory slot, `11000 + m` per hookup position |
 | Accessory grouping (tabs) | ✔ F5 | | | Game tabs: cabin, chassis, engine, transmission, color, e_accessories, interior, i_accessories |
 | Tuning pins: placement, which slots | which slots: Hypothesis (F5) | ✔ D7 | placement ✔ | Base parts (cabin, chassis, engine, transmission, paint) use tabs, not pins. Wheel parts share one anchor per axle group and empty slots are flagged (`Anchor::group`, `Anchor::empty`); the app decides how to show them |
-| Tuning screen layout | | ✔ own UI | | Game layout: `ui/truck_configuration_*.sii` |
+| Tuning screen layout | ✔ drawn from the game's `ui/truck_configuration_*.sii`, templates, colours and icons ([app/ui.md](app/ui.md)) | which widgets show when; egui font instead of the game's MSDF fonts; slot list on accessory tabs; markup layout rules (Hypothesis, [formats/ui.md](formats/ui.md)) | how the handler fills and toggles widgets | Price box: `Configuration::price`, sum of part prices (Hypothesis) |
+| Truck configuration scene (`/def/truck_config_scene.sii`) | model, lights, pin data parsed | orbit reading (Hypothesis, F7) | camera conventions until a reference screenshot confirms them | Default scene of the app |
 | Tuning scenes (`/def/desktop`) | data rendered (F7) | camera choice, light mapping | ✔ | Peer note: these may be hub backgrounds rather than the tuning garage |
 | Materials and shading | | ✔ approximation | | Game shaders are readable in `effect.scs` ([formats/effects.md](formats/effects.md)) |
 | Paint jobs | base colour | | masks, flakes, liveries | |
@@ -30,3 +31,15 @@ For each feature, how close we are to in-game tuning. The goal is a 1:1 replica 
 | Interior camera and interior slots | | | ✔ | |
 | Addon hookups (accessories on accessories) | ✔ catalogue, `slot_NN` positions, `slot_name`/`slot_hookup` (F11) | dropped when the host changes | per-position type limits | Placement verified on the game's oversize Mercedes |
 | `overrides[]`, `hide_in` | | | ✔ | |
+
+## Visual checks
+
+`specsheet --parity` renders the cases in `parity/cases.json` and compares each with the user's capture of the real game in `research/parity/<case>.png`. It scores mean absolute luma error and SSIM outside the masked UI regions. How to run it and how to capture references: [DEVELOPMENT.md](DEVELOPMENT.md), "Visual parity checks".
+
+| Case | Truck, steps | Threshold (MAE) | Last score |
+|---|---|---|---|
+| `scania-s-preset` | `scania.s_2016` preset | 0.08 | no reference yet |
+| `volvo-fh-2024-preset` | `volvo.fh_2024` preset | 0.08 | no reference yet |
+| `scania-s-lightbar` | Scania S, `slot r_grill`, `pick 0` | 0.08 | no reference yet |
+
+The thresholds are placeholders until the first references are scored. Renders are deterministic: two runs of a case are pixel-identical (MAE 0.0000, SSIM 1.0000 against itself).

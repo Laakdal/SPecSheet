@@ -84,6 +84,24 @@ Keep screenshots outside the repo (e.g. in a scratch directory); the pre-commit 
 
 To test real mouse input, use user32 `mouse_event` on the window. Drags need relative `MOUSEEVENTF_MOVE` events, because the orbit camera reads raw mouse motion and `SetCursorPos` produces none. Put `echo ready` and `sleep 900` in the script to get a window for the clicks.
 
+### Visual parity checks
+
+```sh
+cargo build --release -p specsheet
+ETS2_DIR="<game dir>" target/release/specsheet --parity [parity/cases.json] [case…]
+```
+
+- For each case in `parity/cases.json` (committed, no images), the app runs itself with a generated dev script. The script loads the truck, runs the case's `steps`, saves `research/parity/out/<case>.png` and exits.
+- If `research/parity/<case>.png` exists, the render is compared with it outside the case's `mask` rectangles. The run writes `out/<case>-diff.png` (a red heatmap; masked areas are dark blue) and prints MAE and SSIM with pass/fail against `threshold`.
+- The table also goes to `research/parity/out/report.txt`, because release builds have no console. Everything under `research/parity/` is gitignored, since it is rendered game content.
+- The exit status is non-zero when any compared case fails or a render fails.
+
+**Capturing a reference** (the user, once per case):
+1. In ETS2, set windowed mode at 1440 × 900 with 100 % scaling. Turn off motion blur, depth of field and vignette, and leave brightness at its default.
+2. Turn on Steam's "Save an uncompressed copy" for screenshots, then press F12. Rename the PNG to `research/parity/<case>.png`.
+3. Open the case's screen and take the shot before touching the mouse or the camera. For the preset cases, that is the truck straight after the configurator opens. For `scania-s-lightbar`, open the light-bar slot and pick the first light bar in the list.
+4. Note the screen (dealer or upgrade shop), the garage or background shown, and LHD/RHD. A case's `steps` can add `scene <n>` or `drive right` to match.
+
 ## Research tools
 
 These are examples, not shipped binaries. All of them read `ETS2_DIR`.
