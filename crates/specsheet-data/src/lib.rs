@@ -20,4 +20,4 @@ pub use catalog::{
 };
 pub use error::{GameDataError, Result};
 pub use fs::GameFs;
-pub use install::{parse_library_folders, GameInstall, BASE_MOUNT_ORDER};
+pub use install::{parse_library_folders, GameInstall, BASE_MOUNT_ORDER, TESTED_GAME_VERSION};

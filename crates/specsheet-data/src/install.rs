@@ -3,8 +3,14 @@
 use std::path::{Path, PathBuf};
 
 use specsheet_archive::{Archive, Vfs};
+use specsheet_formats::sii;
 
 use crate::error::{GameDataError, Result};
+
+/// The game version that the research, docs and real-install tests were
+/// checked against. Game updates can change formats and definitions, so the
+/// real-install tests fail on any other version until someone rechecks.
+pub const TESTED_GAME_VERSION: &str = "1.60.1.7";
 
 /// Steam application id of Euro Truck Simulator 2.
 const ETS2_APP_ID: &str = "227300";
@@ -62,6 +68,22 @@ impl GameInstall {
 
     pub fn root(&self) -> &Path {
         &self.root
+    }
+
+    /// The installed game version, e.g. `"1.60.1.7"`, read from the
+    /// `fs_pack_set` unit in `version.scs/version.sii`.
+    pub fn version(&self) -> Result<String> {
+        let archive = Archive::open(self.root.join("version.scs"))?;
+        let bytes = archive.read("version.sii")?;
+        let document = sii::parse("/version.sii", &bytes)?;
+        let version = document
+            .units_of_class("fs_pack_set")
+            .find_map(|unit| unit.get_str("version"))
+            .map(str::to_owned);
+        version.ok_or_else(|| GameDataError::Definition {
+            path: "version.scs/version.sii".to_owned(),
+            message: "no fs_pack_set version".to_owned(),
+        })
     }
 
     /// Archive paths in mount order: the base archives, then every
