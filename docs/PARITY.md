@@ -19,8 +19,9 @@ For each feature, how close we are to in-game tuning. The goal is a 1:1 replica 
 | Accessory attachment at locators | | longest-prefix rule | engine rule | 626/626 preset parts resolve (F4); engine looks across model instances (F8) |
 | LHD / RHD | ✔ `variant_uk`, `exterior_model_uk` | | | |
 | Wheels | ✔ left/right model variants; `tire_shift` (F9, rule fits 94/96 disc cases) | side from locator x | axle and lift-axle variants | F8 mentions axle locators |
-| Tuning pins: existence | ✔ F5, F8 | | | Created by `truck_config_hdl_u` (`FUN_140fe0fc0`) |
-| Tuning pins: placement, which slots | | ✔ D7 | ✔ | Wheel parts share one anchor per axle group and empty slots are flagged (`Anchor::group`, `Anchor::empty`); the app decides how to show them |
+| Tuning pins: existence, ids | ✔ F5, F8 | | | Buttons `10000 + n` per accessory slot, `11000 + m` per hookup position |
+| Accessory grouping (tabs) | ✔ F5 | | | Game tabs: cabin, chassis, engine, transmission, color, e_accessories, interior, i_accessories |
+| Tuning pins: placement, which slots | which slots: Hypothesis (F5) | ✔ D7 | placement ✔ | Base parts (cabin, chassis, engine, transmission, paint) use tabs, not pins. Wheel parts share one anchor per axle group and empty slots are flagged (`Anchor::group`, `Anchor::empty`); the app decides how to show them |
 | Tuning screen layout | | ✔ own UI | | Game layout: `ui/truck_configuration_*.sii` |
 | Tuning scenes (`/def/desktop`) | data rendered (F7) | camera choice, light mapping | ✔ | Peer note: these may be hub backgrounds rather than the tuning garage |
 | Materials and shading | | ✔ approximation | | Game shaders are readable in `effect.scs` ([formats/effects.md](formats/effects.md)) |

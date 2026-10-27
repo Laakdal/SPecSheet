@@ -69,9 +69,17 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - PMD variants `default`/`uk` toggle these parts (`visible` attribute).
   - The cabin definition picks the variant (`variant` / `variant_uk`).
 
-### F5: The tuning screen places "accessory pins" at runtime (Confirmed layout, Unknown placement)
+### F5: The tuning screen places "accessory pins" at runtime (Confirmed ids and tabs, Unknown placement)
 - `ui/truck_configuration_center.sii` contains `ui::group : _nameless._.accpins` (id 9000) with **no children**. Pins are created by code, not by the UI definition.
-- **Hypothesis:** pins sit at the projected positions of slot locators (F4). REA executable analysis is in progress to confirm this.
+- The same file has the tab row: `ui::button_row` id 499, values `cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interior~~i_accessories`, ids `510~~500~~520~~530~~550~~560~~540~~570`.
+- **Pin and tab ids (Confirmed, REA static).** `FUN_140fe0fc0` (`ev_47817a8…`, `research/evidence/rea-pin-select.txt`) shows an accessory on the tuning screen. It switches the tab row to the accessory's tab, then activates its pin:
+  - accessory pin = button `10000 + n`, where `n` indexes the screen's `acc_info_t` records (one per vehicle and slot token);
+  - hookup pin = button `11000 + m`;
+  - the tab ids come from an `.rdata` table: `500 510 520 530 540 550 560 570 571 572`.
+- **Which slots get a pin (Hypothesis, strong).**
+  - Slots in a 12-token table filled at run time use a fixed tab button and get no pin. These are presumably cabin, chassis, engine, transmission and paint.
+  - Every other accessory gets a pin under `e_accessories` (560). It goes under `i_accessories` (570) instead when its slot is in an interior-slot token list or is `steering_w` (a token stored in the executable).
+- **Unknown:** where pins are positioned on screen, and which code creates the `acc_info_t` records. The best next target is the single caller `FUN_140fbf860`. Projected slot locators (F4) remain the working hypothesis.
 
 ### F6: Preset configurations use the save-game vehicle structure (Confirmed)
 - `/def/vehicle/truck_desktop/<truck>.sii` holds one `vehicle` unit whose `accessories[]` point to:
@@ -111,7 +119,9 @@ Observations (strings only; no code has been decompiled yet, so how they are use
 
 - **REA trace** `ev_5455a45c5b46a548623e6cb05dfd550bef755fd710b92f42ef0472fb0905a4f1` (`research/evidence/rea-trace-pin-button.json`): the pin-button string `0x14223d860` is referenced only from `0x140fe1465`, inside `FUN_140fe0fc0` (`0x140fe0fc0`-`0x140fe1569`, 1,450 bytes). This is the `truck_config_hdl_u` routine that looks up pin buttons by base id + pin index. Static reference only; nothing was executed.
 
-Next REA step: decompile `FUN_140fe0fc0` (pin creation; a background `rea function` run is under way, output `C:\Users\Nightingale\rea-ets2\function-pin-setup.json`), then the caller of `0x1421c2f90` (locator lookup). The aim is to turn F4/F5 into Confirmed.
+- **REA function** `ev_47817a8206a278f996aa8bdd5002e18731d8e65fbf27ad42fa0857b42bc3d520` (`research/evidence/rea-pin-select.txt`): `FUN_140fe0fc0` selects a pin rather than creating one. Results are in F5. Its only caller is `FUN_140fbf860`.
+
+Next REA step: one batched run on `FUN_140fbf860` (pin creation and placement) and the caller of `0x1421c2f90` (locator lookup), to turn F4/F5 into Confirmed.
 
 ### F9: Rims and discs carry the tyre's lateral offset in `tire_shift` (Confirmed attribute, Hypothesis rule)
 Evidence: `research/evidence/wheel-tire-shift.txt`. Rerun with `wheel_fit`, `def_stats` and the commands at the top of that file.
@@ -196,7 +206,7 @@ Evidence:
 | Question | Next step |
 |---|---|
 | Exact slot-to-locator matching rule (suffixes `_s`, `_sl`, digits) | REA: decompile the caller of `0x1421c2f90` (F8) |
-| How pins are positioned and which slots get one | REA: decompile `FUN_140fe0fc0` (references the pin-button string, F8) |
+| How pins are positioned, and which 12 slot tokens use fixed tabs instead | REA: decompile `FUN_140fbf860` (the caller of `FUN_140fe0fc0`, F5) and the writer of the token table `0x14350cc00` |
 | DLC mount priority | Runtime log does not show it; low impact (DLCs rarely override base files) |
 | Metadata record types `0x05` and `0x06` | No impact on reading content |
 | Meaning of `hide_in` bitmask on addons | Probably camera-dependent hiding; not needed for exterior preview |
