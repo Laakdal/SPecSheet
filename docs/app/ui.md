@@ -27,7 +27,7 @@ The game's handler shows, hides and fills widgets in code that has not been trac
 |---|---|
 | Panel backgrounds, title, folded vehicle analysis `[6001]`, leave button `[20]`, category bar | always |
 | Tab row `[499]` | one `btn.truck_grp` button per `value_list` token (the 64-unit icons fill the row). The open tab uses the selected state, and hover does too |
-| "Select a category" `[380]` | while no list is open |
+| "Select a category" `[380]` | until a tab is chosen |
 | Accessory browser `[305]` with list title `[310]` (`<color>@@clr_sel@@ …` + the tab's caption key) and list `[300]` | while a slot's options are open |
 | Remove button, messages, conflict marker, paint channels, walk-camera notice, crosshair, cart, origin badge, price box, money, unfolded analysis, colour picker, control and tab-key hints, search, filter | hidden: their behaviour is not wired up yet. The money widget's separate background rect still shows |
 
@@ -36,6 +36,9 @@ The game's handler shows, hides and fills widgets in code that has not been trac
 The eight tabs follow finding F5 (`specsheet-data::view::Tab`, `tab_of`):
 - **Fixed tabs:** cabin, chassis, engine, transmission, colour (paint job) and interior. They have no pins; opening one lists its slot's options at once.
 - **Exterior and interior accessories:** every other accessory goes under one of these two, by whether its anchor is inside the cab. Opening one shows the pins for that tab only ([hotspots.md](hotspots.md)); clicking a pin lists that slot's options.
+- **Slot list (Design, a deviation).** While no slot is open, an accessory tab also lists all of its slots in `[300]` as `btn.truck_acc` tiles: the slot name, the fitted part's icon, and its name as the info line. Clicking a tile opens the slot, and clicking the tab icon again returns to the list.
+  - The game shows "select a category" here and reaches every accessory through pins. Our pins miss slots without an anchor yet, mostly cab-interior slots whose locators are on the cockpit model, plus a few flags and the rear window. Without the list those slots would be unreachable.
+  - `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` guards this: accessory tabs list every slot, and each fixed tab holds one slot with a choice.
 
 ## Accessory list
 
