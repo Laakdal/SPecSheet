@@ -7,7 +7,7 @@
 //! truck <truck id>         slot <slot id>        back
 //! select <accessory id>    pick <n>              (n-th selectable option of the open slot)
 //! drive left|right         scene <index>
-//! interior on|off          orbit <yaw°> <pitch°> <distance>
+//! tab <token>              orbit <yaw°> <pitch°> <distance>
 //! sleep <frames>           echo <text>           (logs the text, to sync external drivers)
 //! screenshot <png path>    exit
 //! ```
@@ -19,6 +19,7 @@ use bevy::prelude::*;
 use bevy::render::view::screenshot::{save_to_disk, Screenshot};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_data::assembly::Drive;
+use specsheet_data::view::Tab;
 
 use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;
@@ -66,7 +67,9 @@ pub enum Step {
     Act(Action),
     /// Selects the n-th selectable option of the slot shown in the sidebar.
     Pick(usize),
-    Interior(bool),
+    /// Opens a tab of the game screen by its tab-row token (`cabin`,
+    /// `e_accessories`, …).
+    Tab(Tab),
     Orbit {
         yaw: f32,
         pitch: f32,
@@ -125,7 +128,7 @@ fn parse(source: &str) -> Result<Vec<Step>, String> {
                 _ => return Err(error()),
             })),
             "scene" => Step::Act(Action::SetScene(one()?.parse().map_err(|_| error())?)),
-            "interior" => Step::Interior(one()? == "on"),
+            "tab" => Step::Tab(Tab::from_token(one()?).ok_or_else(error)?),
             "sleep" => Step::Sleep(one()?.parse().map_err(|_| error())?),
             "echo" => Step::Echo(args.join(" ")),
             "screenshot" => Step::Screenshot(PathBuf::from(args.join(" "))),
@@ -188,7 +191,11 @@ fn run(
                 None => warn!("pick {n}: no such selectable option"),
             }
         }
-        Step::Interior(on) => ui.show_interior = on,
+        Step::Tab(tab) => {
+            if let Some(overview) = &studio.overview {
+                ui.open_tab(tab, overview, &mut actions);
+            }
+        }
         Step::Sleep(frames) => script.cooldown = frames,
         Step::Echo(text) => info!("script: {text}"),
         Step::Orbit {

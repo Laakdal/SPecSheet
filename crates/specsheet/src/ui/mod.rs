@@ -1,23 +1,32 @@
-//! The egui layer: top bar, sidebar, messages and the hotspot markers over
-//! the 3D view. It renders what `specsheet-data::view` reports and turns clicks
-//! into [`Action`]s; it holds no tuning rules.
+//! The egui layer: the game's truck configuration screen drawn from its own
+//! layout files (`screen`), the pins over the 3D view, and a small
+//! SpecSheet window for what the game's screen has no place for (truck,
+//! drive, scene, messages). It renders what `specsheet-data` reports and
+//! turns clicks into [`Action`]s; it holds no tuning rules.
+
+mod screen;
+mod textures;
 
 use bevy::camera::visibility::RenderLayers;
-use bevy::camera::{CameraOutputMode, Viewport};
+use bevy::camera::CameraOutputMode;
 use bevy::prelude::*;
 use bevy::render::render_resource::BlendState;
 use bevy_egui::{
     egui, EguiContexts, EguiGlobalSettings, EguiPrimaryContextPass, PrimaryEguiContext,
 };
-use egui::{Align2, Color32, Id, LayerId, Order, Pos2, RichText, Sense, Stroke, UiBuilder};
+use egui::{Align2, Color32, Id, Order, Pos2, RichText, Sense, Stroke};
 use specsheet_data::assembly::Drive;
-use specsheet_data::view::{Hotspot, HotspotCategory, OptionView, SlotOptions, TruckOverview};
+use specsheet_data::ui::{load_screen, load_templates};
+use specsheet_data::view::{Hotspot, HotspotCategory, Tab, TruckOverview};
 
 use crate::hotspots::{
     cluster, side_facing, Cluster, Projected, CLUSTER_RADIUS, TRUCK_CENTER_HEIGHT,
 };
 use crate::studio::{Action, Actions, Studio};
 use crate::viewer::{ModelCache, TruckRoot, ViewportInput};
+
+use self::screen::{Click, Mapping, ScreenAssets, ScreenState};
+use self::textures::UiTextures;
 
 /// The egui panels and hotspot markers, drawn through their own camera.
 pub struct UiPlugin;
@@ -38,17 +47,34 @@ const TEXT: Color32 = Color32::from_rgb(0xe8, 0xea, 0xee);
 const MUTED: Color32 = Color32::from_rgb(0x8d, 0x94, 0xa1);
 const ACCENT: Color32 = Color32::from_rgb(0xf5, 0xa6, 0x23);
 const DANGER: Color32 = Color32::from_rgb(0xef, 0x6b, 0x6b);
-const SIDEBAR_WIDTH: f32 = 320.0;
 const MARKER_SIZE: f32 = 16.0;
 const GROUP_SIZE: f32 = 20.0;
+/// The game screen this app reproduces (`/ui/desc/truck.sui`).
+const SCREEN: &str = "truck.config";
 
 #[derive(Resource, Default)]
 pub struct UiState {
     game_dir: String,
-    pub show_interior: bool,
     /// Key of the cluster whose slot list is open.
     open_cluster: Option<String>,
     styled: bool,
+    /// The game screen's layouts, loaded once a game is open.
+    assets: Option<Result<ScreenAssets, String>>,
+    textures: UiTextures,
+    pub screen: ScreenState,
+}
+
+impl UiState {
+    /// Opens a tab of the game screen: base tabs show their slot's options
+    /// at once, accessory tabs wait for a pin.
+    pub fn open_tab(&mut self, tab: Tab, overview: &TruckOverview, actions: &mut Actions) {
+        self.screen.tab = Some(tab);
+        self.screen.scroll = 0.0;
+        self.open_cluster = None;
+        actions
+            .0
+            .push(Action::ShowSlot(screen::tab_slot(overview, tab)));
+    }
 }
 
 fn marker_color(category: HotspotCategory) -> Color32 {
@@ -60,8 +86,7 @@ fn marker_color(category: HotspotCategory) -> Color32 {
     }
 }
 
-/// egui draws through its own full-window camera over the 3D view, so the
-/// 3D camera's viewport can shrink to the area between the panels.
+/// egui draws through its own full-window camera over the 3D view.
 fn setup(mut commands: Commands, mut settings: ResMut<EguiGlobalSettings>) {
     settings.auto_create_primary_context = false;
     commands.spawn((
@@ -94,6 +119,19 @@ fn style(ctx: &egui::Context) {
     ctx.set_visuals(visuals);
 }
 
+fn load_assets(studio: &Studio) -> Option<Result<ScreenAssets, String>> {
+    let game = studio.game.as_ref()?;
+    let screen = load_screen(game.fs(), SCREEN).map_err(|e| e.to_string());
+    let templates = load_templates(game.fs()).map_err(|e| e.to_string());
+    Some(screen.and_then(|screen| {
+        let (templates, failed) = templates?;
+        for path in failed {
+            warn!("UI templates: {path} failed to parse");
+        }
+        Ok(ScreenAssets { screen, templates })
+    }))
+}
+
 fn ui(
     mut contexts: EguiContexts,
     studio: Res<Studio>,
@@ -105,67 +143,79 @@ fn ui(
     truck: Single<&GlobalTransform, With<TruckRoot>>,
 ) -> Result {
     let ctx = contexts.ctx_mut()?.clone();
+    let state = &mut *state;
     if !state.styled {
         style(&ctx);
         state.styled = true;
     }
-    let mut root = egui::Ui::new(
-        ctx.clone(),
-        "root".into(),
-        UiBuilder::new()
-            .layer_id(LayerId::background())
-            .max_rect(ctx.viewport_rect()),
-    );
-    let loading = studio.busy() || cache.loading();
-    top_bar(&mut root, &studio, &mut actions, &mut state, loading);
-    messages(&mut root, &studio, &cache);
-    if let Some(overview) = &studio.overview {
-        egui::Panel::right("sidebar")
-            .exact_size(SIDEBAR_WIDTH)
-            .resizable(false)
-            .show(&mut root, |ui| match &studio.options {
-                Some(options) => option_list(ui, options, studio.busy(), &mut actions),
-                None => slot_list(ui, overview, &mut actions),
-            });
+    if state.assets.is_none() {
+        state.assets = load_assets(&studio);
     }
-    let central = root.available_rect_before_wrap();
-
+    let window = ctx.viewport_rect();
+    // The game draws its screen over a full-window 3D view.
     let (mut camera, camera_transform) = camera.into_inner();
-    let scale = ctx.pixels_per_point();
-    if central.width() >= 1.0 && central.height() >= 1.0 {
-        camera.viewport = Some(Viewport {
-            physical_position: UVec2::new(
-                (central.min.x * scale) as u32,
-                (central.min.y * scale) as u32,
-            ),
-            physical_size: UVec2::new(
-                (central.width() * scale) as u32,
-                (central.height() * scale) as u32,
-            ),
-            ..default()
-        });
-    }
+    camera.viewport = None;
 
     if studio.game.is_none() && !studio.busy() && !studio.discovering {
-        locate(&ctx, &studio, &mut state, &mut actions);
+        locate(&ctx, &studio, state, &mut actions);
     }
+    let loading = studio.busy() || cache.loading();
+    specsheet_window(&ctx, &studio, &mut actions, state, loading);
 
-    if let Some(overview) = &studio.overview {
+    let mut blocking = Vec::new();
+    if let (Some(overview), Some(game), Some(Ok(assets))) =
+        (&studio.overview, &studio.game, &state.assets)
+    {
+        let clicks = egui::Area::new(Id::new("game-screen"))
+            .order(Order::Background)
+            .fixed_pos(window.min)
+            .show(&ctx, |ui| {
+                ui.set_clip_rect(window);
+                let painter = ui.painter().clone();
+                let mut cx = screen::Context {
+                    painter: &painter,
+                    game,
+                    textures: &mut state.textures,
+                    localization: game.localization(),
+                    mapping: Mapping::new(window),
+                };
+                let (clicks, rects) = screen::draw(
+                    ui,
+                    &mut cx,
+                    assets,
+                    overview,
+                    studio.options.as_ref(),
+                    &mut state.screen,
+                );
+                blocking = rects;
+                clicks
+            })
+            .inner;
+        for click in clicks {
+            match click {
+                Click::Tab(tab) => state.open_tab(tab, overview, &mut actions),
+                Click::Select(id) => actions.0.push(Action::Select(id)),
+            }
+        }
+
+        // Pins: only on the open accessory tab (F5).
         let truck_center = truck.transform_point(Vec3::Y * TRUCK_CENTER_HEIGHT);
         let eye = camera_transform.translation();
+        let tab = state.screen.tab.filter(|t| t.has_pins());
         let projected: Vec<Projected> = overview
             .hotspots
             .iter()
             .enumerate()
-            .filter(|(_, h)| state.show_interior || h.category != HotspotCategory::Interior)
+            .filter(|(_, h)| Some(h.tab) == tab)
             .filter_map(|(index, hotspot)| {
                 let world = truck.transform_point(Vec3::from(hotspot.position));
                 if !side_facing(world, truck_center, eye) {
                     return None;
                 }
                 let p = camera.world_to_viewport(camera_transform, world).ok()?;
-                let pos = central.min + egui::vec2(p.x, p.y);
-                central.contains(pos).then_some(Projected {
+                let pos = window.min + egui::vec2(p.x, p.y);
+                let free = window.contains(pos) && !blocking.iter().any(|r| r.contains(pos));
+                free.then_some(Projected {
                     index,
                     position: Vec2::new(pos.x, pos.y),
                 })
@@ -173,13 +223,23 @@ fn ui(
             .collect();
         let active = studio.options.as_ref().map(|o| &o.slot);
         for group in cluster(&projected, CLUSTER_RADIUS) {
-            marker(&ctx, overview, &group, active, &mut state, &mut actions);
+            marker(&ctx, overview, &group, active, state, &mut actions);
         }
+    } else if let (Some(Err(error)), Some(_)) = (&state.assets, &studio.game) {
+        egui::Area::new(Id::new("screen-error"))
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .order(Order::Foreground)
+            .show(&ctx, |ui| {
+                ui.label(
+                    RichText::new(format!("Truck configuration screen: {error}")).color(DANGER),
+                );
+            });
     }
 
     let pointer = ctx.input(|i| i.pointer.hover_pos());
     input.hovered = pointer.is_some_and(|pos| {
-        central.contains(pos)
+        window.contains(pos)
+            && !blocking.iter().any(|r| r.contains(pos))
             && ctx
                 .layer_id_at(pos)
                 .is_none_or(|layer| layer.order == Order::Background)
@@ -190,92 +250,83 @@ fn ui(
     Ok(())
 }
 
-fn top_bar(
-    root: &mut egui::Ui,
+/// Truck, drive and scene pickers plus messages: SpecSheet's own controls,
+/// kept out of the game's screen in a small collapsible window.
+fn specsheet_window(
+    ctx: &egui::Context,
     studio: &Studio,
     actions: &mut Actions,
     state: &mut UiState,
     loading: bool,
 ) {
-    egui::Panel::top("topbar").show(root, |ui| {
-        ui.add_space(4.0);
-        ui.horizontal(|ui| {
-            let (mark, _) = ui.allocate_exact_size(egui::vec2(14.0, 14.0), Sense::hover());
-            ui.painter()
-                .circle_stroke(mark.center(), 5.5, Stroke::new(3.0, ACCENT));
-            ui.label(RichText::new("SpecSheet").strong());
-            ui.add_space(12.0);
-            let enabled = !studio.busy();
-            if let Some(overview) = &studio.overview {
-                egui::ComboBox::from_id_salt("truck")
-                    .selected_text(&overview.name)
-                    .width(220.0)
-                    .show_ui(ui, |ui| {
-                        for truck in &studio.trucks {
-                            let selected = truck.id == overview.truck;
-                            if ui.selectable_label(selected, &truck.name).clicked() && !selected {
-                                actions.0.push(Action::LoadTruck(truck.id.clone()));
+    egui::Window::new("SpecSheet")
+        .anchor(Align2::CENTER_BOTTOM, egui::vec2(0.0, -8.0))
+        .collapsible(true)
+        .resizable(false)
+        .default_open(false)
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                let enabled = !studio.busy();
+                if let Some(overview) = &studio.overview {
+                    egui::ComboBox::from_id_salt("truck")
+                        .selected_text(&overview.name)
+                        .width(200.0)
+                        .show_ui(ui, |ui| {
+                            for truck in &studio.trucks {
+                                let selected = truck.id == overview.truck;
+                                if ui.selectable_label(selected, &truck.name).clicked() && !selected
+                                {
+                                    actions.0.push(Action::LoadTruck(truck.id.clone()));
+                                }
                             }
-                        }
-                    });
-                let (label, other) = match overview.drive {
-                    Drive::Left => ("Left-hand drive", Drive::Right),
-                    Drive::Right => ("Right-hand drive", Drive::Left),
-                };
-                if ui.add_enabled(enabled, egui::Button::new(label)).clicked() {
-                    actions.0.push(Action::SetDrive(other));
+                        });
+                    let (label, other) = match overview.drive {
+                        Drive::Left => ("Left-hand drive", Drive::Right),
+                        Drive::Right => ("Right-hand drive", Drive::Left),
+                    };
+                    if ui.add_enabled(enabled, egui::Button::new(label)).clicked() {
+                        actions.0.push(Action::SetDrive(other));
+                    }
                 }
-            }
-            if let Some(current) = studio.scene.and_then(|i| studio.scenes.get(i)) {
-                egui::ComboBox::from_id_salt("scene")
-                    .selected_text(&current.name)
-                    .width(180.0)
-                    .show_ui(ui, |ui| {
-                        for (index, scene) in studio.scenes.iter().enumerate() {
-                            let selected = studio.scene == Some(index);
-                            if ui.selectable_label(selected, &scene.name).clicked() && !selected {
-                                actions.0.push(Action::SetScene(index));
+                if let Some(current) = studio.scene.and_then(|i| studio.scenes.get(i)) {
+                    egui::ComboBox::from_id_salt("scene")
+                        .selected_text(&current.name)
+                        .width(170.0)
+                        .show_ui(ui, |ui| {
+                            for (index, scene) in studio.scenes.iter().enumerate() {
+                                let selected = studio.scene == Some(index);
+                                if ui.selectable_label(selected, &scene.name).clicked() && !selected
+                                {
+                                    actions.0.push(Action::SetScene(index));
+                                }
                             }
-                        }
-                    });
-            }
-            if studio.overview.is_some() {
-                ui.checkbox(&mut state.show_interior, "Interior markers");
-            }
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if let Some(game) = &studio.game {
-                    let root = game.install().root().display().to_string();
-                    ui.label(RichText::new(&root).color(MUTED))
-                        .on_hover_text(&root);
+                        });
                 }
                 if loading {
                     ui.spinner();
                 }
             });
+            if let Some(game) = &studio.game {
+                ui.label(
+                    RichText::new(game.install().root().display().to_string())
+                        .color(MUTED)
+                        .small(),
+                );
+            }
+            if let Some(error) = &studio.error {
+                ui.label(RichText::new(error).color(DANGER));
+            }
+            let warnings = studio
+                .overview
+                .iter()
+                .flat_map(|o| o.warnings.iter())
+                .chain(state.textures.warnings.iter())
+                .chain(state.assets.as_ref().and_then(|a| a.as_ref().err()))
+                .take(3);
+            for warning in warnings {
+                ui.label(RichText::new(warning).color(MUTED).small());
+            }
         });
-        ui.add_space(4.0);
-    });
-}
-
-fn messages(root: &mut egui::Ui, studio: &Studio, cache: &ModelCache) {
-    let warnings: Vec<&String> = studio
-        .overview
-        .iter()
-        .flat_map(|o| o.warnings.iter())
-        .chain(cache.warnings.iter())
-        .take(3)
-        .collect();
-    if studio.game.is_none() || (studio.error.is_none() && warnings.is_empty()) {
-        return;
-    }
-    egui::Panel::bottom("messages").show(root, |ui| {
-        if let Some(error) = &studio.error {
-            ui.label(RichText::new(error).color(DANGER));
-        }
-        for warning in warnings {
-            ui.label(RichText::new(warning).color(MUTED).small());
-        }
-    });
 }
 
 fn locate(ctx: &egui::Context, studio: &Studio, state: &mut UiState, actions: &mut Actions) {
@@ -304,118 +355,6 @@ fn locate(ctx: &egui::Context, studio: &Studio, state: &mut UiState, actions: &m
                 });
             });
         });
-}
-
-fn slot_list(ui: &mut egui::Ui, overview: &TruckOverview, actions: &mut Actions) {
-    ui.add_space(6.0);
-    ui.horizontal(|ui| {
-        ui.heading("Parts");
-        ui.label(
-            RichText::new((overview.hotspots.len() + overview.general.len()).to_string())
-                .color(MUTED),
-        );
-    });
-    ui.separator();
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        let by_label =
-            |a: &(&str, &str, Option<&str>), b: &(&str, &str, Option<&str>)| a.1.cmp(b.1);
-        let mut groups: Vec<(&str, Vec<(&str, &str, Option<&str>)>)> = HotspotCategory::ALL
-            .iter()
-            .map(|category| {
-                let mut items: Vec<_> = overview
-                    .hotspots
-                    .iter()
-                    .filter(|h| h.category == *category)
-                    .map(|h| (h.slot.as_str(), h.label.as_str(), h.selected.as_deref()))
-                    .collect();
-                items.sort_by(by_label);
-                (category.title(), items)
-            })
-            .collect();
-        let mut general: Vec<_> = overview
-            .general
-            .iter()
-            .map(|s| (s.slot.as_str(), s.label.as_str(), s.selected.as_deref()))
-            .collect();
-        general.sort_by(by_label);
-        groups.push(("General", general));
-        for (title, items) in groups {
-            if items.is_empty() {
-                continue;
-            }
-            ui.add_space(6.0);
-            ui.label(RichText::new(title.to_uppercase()).small().color(MUTED));
-            for (slot, label, selected) in items {
-                let response = ui.add(
-                    egui::Button::new(RichText::new(label))
-                        .right_text(RichText::new(selected.unwrap_or("None")).color(MUTED))
-                        .min_size(egui::vec2(ui.available_width(), 26.0)),
-                );
-                if response.clicked() {
-                    actions
-                        .0
-                        .push(Action::ShowSlot(Some(specsheet_core::SlotId::new(slot))));
-                }
-            }
-        }
-    });
-}
-
-fn option_list(ui: &mut egui::Ui, options: &SlotOptions, busy: bool, actions: &mut Actions) {
-    ui.add_space(6.0);
-    ui.horizontal(|ui| {
-        if ui
-            .button("‹ Parts")
-            .on_hover_text("Back to all parts")
-            .clicked()
-        {
-            actions.0.push(Action::ShowSlot(None));
-        }
-        ui.heading(&options.label);
-        ui.label(RichText::new(options.options.len().to_string()).color(MUTED));
-    });
-    ui.separator();
-    egui::ScrollArea::vertical().show(ui, |ui| {
-        for option in &options.options {
-            option_row(ui, option, busy, actions);
-        }
-    });
-}
-
-fn option_row(ui: &mut egui::Ui, option: &OptionView, busy: bool, actions: &mut Actions) {
-    let mut meta = Vec::new();
-    if let Some(price) = option.price {
-        meta.push(format!("€{price}"));
-    }
-    if let Some(level) = option.unlock_level.filter(|l| *l > 0) {
-        meta.push(format!("Lvl {level}"));
-    }
-    let enabled = !busy && !option.selected && option.compatible;
-    let name = if option.selected {
-        RichText::new(&option.name).color(ACCENT).strong()
-    } else if option.compatible {
-        RichText::new(&option.name)
-    } else {
-        RichText::new(&option.name).color(MUTED)
-    };
-    let response = ui
-        .add_enabled(
-            enabled,
-            egui::Button::new(name)
-                .right_text(RichText::new(meta.join("  ")).color(MUTED))
-                .selected(option.selected)
-                .min_size(egui::vec2(ui.available_width(), 28.0)),
-        )
-        .on_hover_text(option.id.as_str())
-        .on_disabled_hover_text(option.reason.as_deref().unwrap_or(option.id.as_str()));
-    if !option.compatible {
-        if let Some(reason) = &option.reason {
-            ui.label(RichText::new(reason).small().color(DANGER));
-        }
-    }
-    if response.clicked() {
-        actions.0.push(Action::Select(option.id.clone()));
-    }
 }
 
 /// One marker: a dot for a single slot, a numbered dot that opens a slot
