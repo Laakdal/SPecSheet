@@ -103,6 +103,13 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - a `scene_cinematic_camera` (`/def/camera/ui/*.sii`). Its `cinematic_camera` lists `orbit_camera` units (with `camera_fov`) and `camera_animation_info` units (`camera_index`, `positions[]`, `aims[]`, `frame_duration`);
   - `part_order[]`, the scene-model parts drawn (the `coll` part is not listed).
 - **Hypothesis:** the tuning screen itself renders `/def/truck_config_scene.sii` (FOV 50, the `config_path` of `ui/truck_configuration_bcg.sii`; see F5), and the `/def/desktop` scenes are hub backgrounds. The executable string `/ui/truck_configuration_bcg.sii` (`0x14223bbb0`) sits beside the `truck_config_hdl_u` strings (`research/evidence/ui-layout-survey.txt`).
+- **Tuning camera orbit (Hypothesis; read as `specsheet-data::scene::OrbitSpec::position`, nothing traced).** From `/def/truck_config_scene.sii` (see `docs/app/scenes.md`):
+  - `camera_default_azimuth` turns around +y, from +z towards +x;
+  - a negative `camera_default_elevation` raises the camera above `camera_aim`;
+  - distance = `camera_default_zoom` × `camera_relative_bounds.x` (7.5);
+  - `camera_elevation_limit` (−0.35, 0) bounds the elevation, keeping the camera between the aim's height and about 20° above it.
+
+  With the 1.60 values (aim (0, 2.6, −1.465), azimuth −2.516, elevation −0.068) this gives a front-left three-quarter view about 7.5 m out, which looks plausible. A reference screenshot (`research/parity/`) or REA on the `ui_truck_scene` camera code would confirm or refute it. **Unknown:** `camera_aim_y_bounds`, and the units of `mouse_rot_sens` and `camera_zoom_sens`.
 
 ### F8: Executable strings around truck configuration (REA Evidence, static)
 - **REA binary overview** `ev_a558c2ae067820ea6ebd2a3491bad402adfb94658763d5d104b1558d5f34aa56` (Ghidra 12.1.4, about 28 min): 69,598 procedures, 51,977 defined strings. File: `research/evidence/rea-binary-overview.json`.
