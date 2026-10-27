@@ -27,6 +27,7 @@ A standalone ETS2 truck-tuning app, all in Rust: a workspace of library crates p
 - Before relying on a new fact about ETS2, record it with evidence and a label (Confirmed / Hypothesis / Unknown) in the reverse-engineering or format doc. Community code (sk-zk TruckLib, etc.) is a cross-check, never evidence.
 - Fix bugs test-first: a failing regression test, then the fix.
 - Refactors replace code. Delete the old path in the same change.
+- Split a module when it grows distinct responsibilities, not by line count. A split is a pure move in its own commit.
 
 ## Done means
 
