@@ -72,5 +72,5 @@ A base-model locator belongs to the longest slot name it starts with (`mirror_s`
 - `overrides[]`.
 - `hide_in`.
 - Paint-job textures and masks (only the base colour is applied).
-- Interior camera (only the exterior-view interior model is shown), and the `uk_*` interior when switching to right-hand drive.
+- Interior camera (only the exterior-view interior model is shown; right-hand drive shows the interior's UK twin, F10).
 - Engine, transmission, head lights, interior and paint job are selectable from the sidebar's "General" group (slots without a 3D marker), but only the paint job's base colour has a visual effect.

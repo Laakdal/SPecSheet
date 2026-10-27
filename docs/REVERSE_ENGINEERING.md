@@ -158,7 +158,10 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
   - That placement fits inside the cabin box for all 26 presets.
   - Placing it at the origin would fail for 6 of them: MAN TGX 2020 and Euro 6, Scania R 2016, S 2016 and S 2024e, and Volvo FH16.
 - **Implementation.** `specsheet-data::assembly` places it there. The real-install test `every_preset_validates_and_assembles_without_warnings` requires an interior placement for every preset in both drives.
-- **Unknown.** Right-hand drive uses separate `uk_*` interior units (`left_hand_traffic: true`). The app keeps the preset's interior when switching drive.
+- **Right-hand drive (Hypothesis, strong).** 219 of the 438 units are UK twins: they carry `left_hand_traffic: true`, a UK `model` and their own `ext_variant` (e.g. `s_h_std_eu` → `s_h_std_uk`). Nothing in the data links a pair.
+  - **Rule:** the twin is in the same directory, and its file name is the left-hand-drive one with one extra `uk` word (`uk_a`, `a_uk`, `standard_low` → `standard_uk_low`). It pairs all 219 one-to-one with no ambiguity.
+  - **Implementation:** `specsheet-data` stores the twin's exterior model as `exterior_uk` / `variant_uk` and places it in right-hand drive.
+  - **Tests:** `every_interior_has_a_right_hand_drive_twin` (219 of 438), and the preset test's RHD branch.
 
 ### F11: Addon hookups mount on numbered positions of their host accessory (Confirmed data, Hypothesis on position rules)
 Evidence:
@@ -183,6 +186,10 @@ Evidence:
 - **Unknown.**
   - Whether a position restricts which hookup types fit it (big vs small lights). Today any hookup that fits the host slot may go on any of its positions.
   - The per-type size limits the game may apply.
+
+### F12: Two display details that are game data, not bugs (Confirmed)
+- **"Volvo FH6".** The game's own series labels: `/locale/common.sui` has `series_volvo_fh16 = FH3`, `series_volvo_fh16_2012 = FH4`, `series_volvo_fh_2021 = FH5`, `series_volvo_fh_2024 = FH6`. Truck names are `info[]` keys (`@@brand_volvo@@`, `@@series_volvo_fh_2024@@`) resolved through it.
+- **No side mirrors on the Volvo FH 2024 preset.** The preset (`/def/vehicle/truck_desktop/volvo_fh_2024.sii`) selects `mirror/digital_aero.sii`. Its name is `@@mirror_camera@@` and its model is `/vehicle/truck/volvo_fh_2024/accessory/mirror/digital.pmd`: the camera-mirror option.
 
 ## Open questions
 

@@ -25,7 +25,7 @@ For each feature, how close we are to in-game tuning. The goal is a 1:1 replica 
 | Tuning scenes (`/def/desktop`) | data rendered (F7) | camera choice, light mapping | ✔ | Peer note: these may be hub backgrounds rather than the tuning garage |
 | Materials and shading | | ✔ approximation | | Game shaders are readable in `effect.scs` ([formats/effects.md](formats/effects.md)) |
 | Paint jobs | base colour | | masks, flakes, liveries | |
-| Interior seen through the windows | ✔ `ext_model` at `ext_interior` (F10) | | RHD interior units | |
+| Interior seen through the windows | ✔ `ext_model` at `ext_interior`; UK twin in RHD (F10) | twin pairing by file name | | |
 | Interior camera and interior slots | | | ✔ | |
 | Addon hookups (accessories on accessories) | ✔ catalogue, `slot_NN` positions, `slot_name`/`slot_hookup` (F11) | dropped when the host changes | per-position type limits | Placement verified on the game's oversize Mercedes |
 | `overrides[]`, `hide_in` | | | ✔ | |
