@@ -152,6 +152,8 @@ pub struct TruckOverview {
 pub struct OptionView {
     pub id: AccessoryId,
     pub name: String,
+    /// Icon name under `/material/ui/accessory/` (see `ui::accessory_icon`).
+    pub icon: Option<String>,
     pub price: Option<i64>,
     pub unlock_level: Option<i64>,
     pub selected: bool,
@@ -332,6 +334,7 @@ fn option_view(game: &GameSession, option: &SlotOption<'_>) -> OptionView {
     OptionView {
         id: option.accessory.id.clone(),
         name: game.localization().resolve(&option.accessory.name),
+        icon: option.accessory.icon.clone(),
         price: option.accessory.price,
         unlock_level: option.accessory.unlock_level,
         selected: option.selected,
