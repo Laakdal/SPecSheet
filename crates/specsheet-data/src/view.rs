@@ -196,6 +196,8 @@ pub struct TruckOverview {
     pub general: Vec<SlotEntry>,
     /// Linear RGB paint colour of the selected paint job.
     pub paint_color: Option<[f32; 3]>,
+    /// The configuration's price (`Configuration::price`).
+    pub price: i64,
     pub warnings: Vec<String>,
 }
 
@@ -375,6 +377,7 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
         hotspots,
         general,
         paint_color: session.config().paint_color(catalog),
+        price: session.config().price(catalog),
         warnings,
     }
 }
