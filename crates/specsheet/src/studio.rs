@@ -105,6 +105,8 @@ pub struct Studio {
     /// Bumped whenever `placements` or the paint colour change.
     pub truck_generation: u64,
     pub options: Option<SlotOptions>,
+    /// The truck's price when it was loaded, before any change.
+    pub original_price: Option<i64>,
     job: Option<Task<JobOutput>>,
     pub error: Option<String>,
     /// True until the first attempt to open a game has finished.
@@ -290,6 +292,7 @@ fn finish_jobs(mut studio: ResMut<Studio>, mut actions: ResMut<Actions>) {
                 }
                 studio.session = Some(session);
                 studio.refresh();
+                studio.original_price = studio.overview.as_ref().map(|o| o.price);
             }
             Err(error) => studio.error = Some(error),
         },

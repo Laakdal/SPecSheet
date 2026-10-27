@@ -37,13 +37,19 @@ mod ids {
     pub const LIST_TITLE: i64 = 310;
     /// "Select a category", shown until a list is open.
     pub const FIRST_MESSAGE: i64 = 380;
+    /// Price box values in customize mode: original price, extra price,
+    /// new total (rows of the `tc_*` labels).
+    pub const ORIGINAL_PRICE: i64 = 364;
+    pub const EXTRA_PRICE: i64 = 362;
+    pub const NEW_TOTAL: i64 = 360;
     /// Shown only by behaviour not wired up yet: remove button, messages,
     /// conflict marker, paint channels, walk-camera notice and crosshair,
-    /// cart, accessory origin badge, price box, money, unfolded analysis,
-    /// colour picker, control hints, tab-key hints, search and filter.
-    pub const HIDDEN: [i64; 22] = [
-        8005, 600, 620, 410, 333, 587, 355, 390, 391, 385, 11, 6000, 420, 111, 575, 576, 577, 578,
-        401, 402, 403, 404,
+    /// cart, accessory origin badge, buy-mode price labels and the cart and
+    /// checkout buttons, money, unfolded analysis, colour picker, control
+    /// hints, tab-key hints, search and filter.
+    pub const HIDDEN: [i64; 23] = [
+        8005, 600, 620, 410, 333, 587, 355, 390, 391, 386, 210, 11, 6000, 420, 111, 575, 576, 577,
+        578, 401, 402, 403, 404,
     ];
 }
 
@@ -99,6 +105,14 @@ pub struct ScreenState {
     pub tab: Option<Tab>,
     /// Accessory list scroll, in reference units.
     pub scroll: f32,
+}
+
+/// The price box in customize mode: the truck's price when loaded and
+/// now (`Configuration::price`).
+#[derive(Clone, Copy, Debug)]
+pub struct Prices {
+    pub original: i64,
+    pub total: i64,
 }
 
 /// What the user did on the screen this frame.
@@ -215,6 +229,7 @@ pub fn draw(
     assets: &ScreenAssets,
     overview: &TruckOverview,
     options: Option<&SlotOptions>,
+    prices: Prices,
     state: &mut ScreenState,
 ) -> (Vec<Click>, Vec<egui::Rect>) {
     let mut clicks = Vec::new();
@@ -258,12 +273,14 @@ pub fn draw(
                 _ => {
                     // The caption template is `<color value=%0>%1`; the colour
                     // follows the sibling "select a category" message (Design).
-                    let value = if widget.id == ids::LIST_TITLE {
-                        state
+                    let value = match widget.id {
+                        ids::LIST_TITLE => state
                             .tab
-                            .map(|t| format!("@@clr_sel@@|@@{}@@", t.caption_key()))
-                    } else {
-                        widget.value.clone()
+                            .map(|t| format!("@@clr_sel@@|@@{}@@", t.caption_key())),
+                        ids::ORIGINAL_PRICE => Some(price(Some(prices.original))),
+                        ids::EXTRA_PRICE => Some(price(Some(prices.total - prices.original))),
+                        ids::NEW_TOTAL => Some(price(Some(prices.total))),
+                        _ => widget.value.clone(),
                     };
                     widget_markup(assets, widget, value.as_deref(), &mut || {
                         ui.rect_contains_pointer(target)

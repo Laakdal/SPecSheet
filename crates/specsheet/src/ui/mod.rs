@@ -25,7 +25,7 @@ use crate::hotspots::{
 use crate::studio::{Action, Actions, Studio};
 use crate::viewer::{ModelCache, TruckRoot, ViewportInput};
 
-use self::screen::{Click, Mapping, ScreenAssets, ScreenState};
+use self::screen::{Click, Mapping, Prices, ScreenAssets, ScreenState};
 use self::textures::UiTextures;
 
 /// The egui panels and hotspot markers, drawn through their own camera.
@@ -185,6 +185,10 @@ fn ui(
                     assets,
                     overview,
                     studio.options.as_ref(),
+                    Prices {
+                        original: studio.original_price.unwrap_or(overview.price),
+                        total: overview.price,
+                    },
                     &mut state.screen,
                 );
                 blocking = rects;
