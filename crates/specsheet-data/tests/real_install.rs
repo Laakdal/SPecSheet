@@ -404,3 +404,90 @@ fn every_interior_has_a_right_hand_drive_twin() {
     assert_eq!(interiors, 438);
     assert_eq!(paired, 219);
 }
+
+/// Finding F13: every chassis has wheel locators on exactly the axles its
+/// definition declares (`powered_axle[]` has one entry per axle): one left
+/// and one right locator per axle, each of wheel type front (`wheel_f*`,
+/// single tyres) or rear (`wheel_r*`, twin tyres). The assembly places the
+/// matching wheel parts at every such locator, so this covers 6x2, 6x4, 8x4,
+/// tag, pusher and lift axles.
+#[test]
+fn every_chassis_has_one_wheel_pair_per_declared_axle() {
+    use specsheet_core::AccessoryKind;
+    use specsheet_data::model::ModelCache;
+    use specsheet_data::{list_trucks, load_catalog};
+    use specsheet_formats::pmg::Locator;
+
+    /// Left and right locators of one axle differ by up to 0.5 mm along z.
+    const AXLE_TOLERANCE: f32 = 0.05;
+
+    let Some(fs) = game_fs() else { return };
+    let cache = ModelCache::new();
+    let (mut checked, mut multi_axle) = (0, 0);
+    let mut failures = Vec::new();
+    for truck in list_trucks(&fs).expect("trucks") {
+        let (catalog, _) = load_catalog(&fs, &truck.id).expect("catalog");
+        for chassis in catalog
+            .accessories()
+            .filter(|a| a.kind == AccessoryKind::Chassis)
+        {
+            let Some(path) = chassis.model.exterior.as_deref() else {
+                continue;
+            };
+            let document = fs.read_sii(&chassis.def_path).expect("chassis def");
+            let declared = document
+                .units_of_class("accessory_chassis_data")
+                .next()
+                .expect("chassis unit")
+                .array("powered_axle")
+                .len();
+            let model = cache.load(&fs, path).expect("chassis model");
+            let variant = model.variant_index(chassis.model.variant.as_deref());
+            let mut wheels: Vec<&Locator> = model
+                .visible_locators(variant)
+                .filter(|l| l.name.starts_with("wheel_"))
+                .collect();
+            wheels.sort_by(|a, b| a.position[2].total_cmp(&b.position[2]));
+            let mut axles: Vec<Vec<&Locator>> = Vec::new();
+            for wheel in wheels {
+                match axles.last_mut() {
+                    Some(axle)
+                        if wheel.position[2] - axle[axle.len() - 1].position[2]
+                            <= AXLE_TOLERANCE =>
+                    {
+                        axle.push(wheel);
+                    }
+                    _ => axles.push(vec![wheel]),
+                }
+            }
+            let pairs = axles.iter().all(|axle| {
+                axle.len() == 2
+                    && axle.iter().any(|l| l.position[0] < 0.0)
+                    && axle.iter().any(|l| l.position[0] > 0.0)
+                    && axle
+                        .iter()
+                        .all(|l| l.name.starts_with("wheel_f") || l.name.starts_with("wheel_r"))
+            });
+            if axles.len() != declared || !pairs {
+                let names: Vec<Vec<&str>> = axles
+                    .iter()
+                    .map(|axle| axle.iter().map(|l| l.name.as_str()).collect())
+                    .collect();
+                failures.push(format!(
+                    "{}: {declared} axles declared, wheel locators {names:?}",
+                    chassis.id
+                ));
+            }
+            checked += 1;
+            multi_axle += usize::from(declared > 2);
+        }
+    }
+    assert!(checked >= 160, "only {checked} chassis");
+    assert!(multi_axle >= 100, "only {multi_axle} multi-axle chassis");
+    assert!(
+        failures.is_empty(),
+        "{} of {checked} chassis:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
