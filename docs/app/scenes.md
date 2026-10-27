@@ -1,6 +1,15 @@
 # Tuning scenes, lights and camera
 
-The viewer loads the game's own scenes from `/def/desktop/config*.sii` through `specsheet-data::scene` (finding F7). The default garage ("Home at Last") is listed first, and the scene picker lists all 10 scenes found in 1.60. A peer note says these may be hub ("desktop") backgrounds rather than the tuning garage itself; see [../PARITY.md](../PARITY.md).
+The app opens on the game's own truck configuration scene, `/def/truck_config_scene.sii`. That is the `config_path` of the `ui_truck_scene` widget in `/ui/truck_configuration_bcg.sii`, loaded by `specsheet-data::scene::tuning_scene`. It is the first entry of the scene picker ("Truck configuration"):
+
+- **Model and lights:** `desktop_garage` with its lights, read like the hub scenes below.
+- **Orbit camera** (`OrbitSpec`): aim (0, 2.6, −1.465), FOV 50, default azimuth −2.516, elevation −0.068, zoom 1, elevation limits (−0.35, 0), `relative_bounds` 7.5, plus sensitivities.
+  - Hypothesis: azimuth turns from +z towards +x, negative elevation raises the camera, and the distance is zoom × the x bound. That gives a front-left three-quarter view about 7.5 m out.
+  - `viewer::Orbit::from_spec` uses the elevation limits as the pitch range, so the camera stays between the aim's height and about 20° above it.
+  - Non-finite values in the definition fall back to defaults; they never reach `f32::clamp`.
+- **Pins:** the file's per-slot pin data (`pin_group`/`pin_look`/`pin_offset`/`pin_dir`/`pin_dir_uk`/`double_sided`, `interior_only`, `hookups_exterior_only`) is parsed into `TuningScene::pins`. Placement still uses our anchors ([hotspots.md](hotspots.md)); how the game applies these fields is F5's open question.
+
+The hub ("desktop") scenes from `/def/desktop/config*.sii` follow in the picker (finding F7). A peer note says they may be hub backgrounds rather than the tuning garage; see [../PARITY.md](../PARITY.md).
 
 `viewer::apply_scene` applies a scene. Each piece falls back on its own: with no camera the current one is kept, and a scene model that fails to load leaves the plain floor.
 

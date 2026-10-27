@@ -12,14 +12,15 @@ The clickable markers on the truck. How the game itself creates its pins is in [
 
 ## Which slots get a marker (`specsheet-data::view::overview`)
 
-A slot gets a marker when it has at least two options, or when it is an addon slot. All other slots (paint job, engine, interior-only parts…) are listed in the sidebar's "General" group. Each `Hotspot` carries its sidebar category (chassis & cabin, exterior, wheels, interior), the selected part's name, and the `empty` and `group` flags.
+Only accessory slots get a pin; base parts are picked through their fixed tab (F5, see [ui.md](ui.md)). An accessory slot gets a pin when it has at least two options or is an addon slot. Each `Hotspot` carries its tab (exterior or interior accessories), the selected part's name, and the `empty` and `group` flags. Slots without a pin are listed in `TruckOverview::general` with their tab.
 
 ## On screen (`crates/specsheet`)
 
 Every frame, `ui::ui` projects each anchor through the truck's transform and the 3D camera:
 
 - **Far-side culling** (`hotspots::side_facing`): an anchor is hidden when its horizontal direction from the truck centre (1.5 m up) points away from the camera, i.e. the dot product with the camera direction is below −0.15. Anchors within 20 cm of the centre line are always shown. There is no per-pixel depth test yet.
-- **Interior markers** are hidden unless "Interior markers" is ticked.
+- **Only the open tab's pins** are drawn: exterior accessories or interior accessories. Fixed tabs show none.
+- **Panels hide pins:** an anchor that projects under a drawn part of the game screen is dropped.
 - **Clustering** (`hotspots::cluster`): each visible marker joins the first cluster whose centre lies within 22 px, otherwise it starts a new one. A cluster's centre is the mean of its members. Clustering is in screen space, so it adapts as the camera moves.
 
 ### Marker styles
