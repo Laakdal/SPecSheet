@@ -58,7 +58,7 @@ Evidence: `research/evidence/pmg-layout-derivation.txt`. Record sizes come from 
 **Piece** (100 bytes):
 - `u32` index count, vertex count;
 - `u32` at +8: a bit field that varies with the UV set count. Meaning **Unknown**;
-- `u32` UV set count (0–3 seen), material index;
+- `u32` UV set count (0–4 seen across all base archives, `research/evidence/cleanroom-phase1.txt`), material index;
 - bounding sphere (centre + radius) at +20, AABB at +36;
 - `u32` vertex stride at +60 (28, 36, 52, 60, 68 seen);
 - nine `i32` stream offsets: position, normal, uv, colour, colour2, tangent, bone index, bone weight, index. `-1` marks an absent stream.
