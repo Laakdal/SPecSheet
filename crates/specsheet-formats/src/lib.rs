@@ -9,5 +9,6 @@ pub mod pmd;
 pub mod pmg;
 pub mod sii;
 pub mod token;
+pub mod ui_markup;
 
 pub use binary::FormatError;
