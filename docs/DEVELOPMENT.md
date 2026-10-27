@@ -63,7 +63,7 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 | `pick <n>` | select the n-th selectable option (compatible, not selected) of the open slot |
 | `drive left\|right` | LHD/RHD |
 | `scene <index>` | switch scene (0 = default garage) |
-| `interior on\|off` | interior markers |
+| `tab <token>` | open a tab of the game screen: `cabin`, `chassis`, `engine`, `transmission`, `color`, `e_accessories`, `interior`, `i_accessories` |
 | `orbit <yaw°> <pitch°> <distance>` | place the camera around the current target |
 | `sleep <frames>` / `echo <text>` | pause; log `script: <text>` so an external driver can sync |
 | `screenshot <png path>` | save the window (then waits 30 frames) |
