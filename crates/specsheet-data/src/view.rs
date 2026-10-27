@@ -9,6 +9,76 @@ use specsheet_core::{AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckI
 use crate::assembly::Drive;
 use crate::session::{GameSession, SlotOption, TruckSession};
 
+/// A tab of the game's truck configuration screen (finding F5). The tab
+/// row's `value_list` names them; [`Tab::from_token`] reads those names.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Tab {
+    Cabin,
+    Chassis,
+    Engine,
+    Transmission,
+    /// Paint job (`color`).
+    Color,
+    /// Exterior accessories: one pin per slot on the truck.
+    ExteriorAccessories,
+    Interior,
+    /// Interior accessories: pins inside the cab.
+    InteriorAccessories,
+}
+
+impl Tab {
+    /// The tab named by a `value_list` token of the tab row.
+    pub fn from_token(token: &str) -> Option<Self> {
+        Some(match token {
+            "cabin" => Self::Cabin,
+            "chassis" => Self::Chassis,
+            "engine" => Self::Engine,
+            "transmission" => Self::Transmission,
+            "color" => Self::Color,
+            "e_accessories" => Self::ExteriorAccessories,
+            "interior" => Self::Interior,
+            "i_accessories" => Self::InteriorAccessories,
+            _ => return None,
+        })
+    }
+
+    /// Accessory tabs pick a slot through pins; the others show one slot's
+    /// options directly and have no pins (F5).
+    pub fn has_pins(self) -> bool {
+        matches!(self, Self::ExteriorAccessories | Self::InteriorAccessories)
+    }
+
+    /// Localisation key of the list caption (Hypothesis:
+    /// `docs/formats/ui-truck-config.md`, "Captions").
+    pub fn caption_key(self) -> &'static str {
+        match self {
+            Self::Cabin => "cabin_t",
+            Self::Chassis => "chassis_t",
+            Self::Engine => "engine_t",
+            Self::Transmission => "transmission_t",
+            Self::Color => "paint_job_t",
+            Self::ExteriorAccessories => "accessory_t",
+            Self::Interior => "interior_t",
+            Self::InteriorAccessories => "in_accessory",
+        }
+    }
+}
+
+/// The tab a slot belongs to: base parts by kind, every other accessory
+/// under the exterior or interior accessories (F5).
+pub fn tab_of(kind: AccessoryKind, interior: bool) -> Tab {
+    match kind {
+        AccessoryKind::Cabin => Tab::Cabin,
+        AccessoryKind::Chassis => Tab::Chassis,
+        AccessoryKind::Engine => Tab::Engine,
+        AccessoryKind::Transmission => Tab::Transmission,
+        AccessoryKind::PaintJob => Tab::Color,
+        AccessoryKind::Interior => Tab::Interior,
+        _ if interior => Tab::InteriorAccessories,
+        _ => Tab::ExteriorAccessories,
+    }
+}
+
 /// Sidebar group of a hotspot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum HotspotCategory {
@@ -49,6 +119,8 @@ pub struct Hotspot {
     /// Hotspots of one group (e.g. a wheel axle's parts) share a position
     /// and form one marker.
     pub group: Option<String>,
+    /// Always an accessory tab: base parts have no pins.
+    pub tab: Tab,
 }
 
 /// A slot without a marker (paint job, engine, interior-only parts...).
@@ -58,6 +130,7 @@ pub struct SlotEntry {
     pub label: String,
     pub selected: Option<String>,
     pub option_count: usize,
+    pub tab: Tab,
 }
 
 /// Everything a front end shows about the truck being tuned.
@@ -181,8 +254,10 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
             let mut options = catalog.in_slot(&anchor.slot);
             let kind = options.next()?.kind;
             let option_count = 1 + options.count();
-            // Only slots with a visible choice get a marker.
-            if option_count < 2 && kind != AccessoryKind::Addon {
+            // Only slots with a visible choice get a marker, and base parts
+            // are picked through their own tab instead (F5).
+            let tab = tab_of(kind, anchor.interior);
+            if !tab.has_pins() || (option_count < 2 && kind != AccessoryKind::Addon) {
                 return None;
             }
             Some(Hotspot {
@@ -198,6 +273,7 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
                 option_count,
                 empty: anchor.empty,
                 group: anchor.group.clone(),
+                tab,
             })
         })
         .collect();
@@ -210,6 +286,10 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
             label: slot_label(game, &slot),
             selected: selected_name(game, session, &slot),
             option_count: catalog.in_slot(&slot).count(),
+            tab: catalog
+                .in_slot(&slot)
+                .next()
+                .map_or(Tab::ExteriorAccessories, |a| tab_of(a.kind, false)),
             slot,
         })
         .collect();
@@ -280,7 +360,37 @@ fn describe(game: &GameSession, reason: &Incompatibility) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::humanize;
+    use super::*;
+
+    #[test]
+    fn base_parts_use_fixed_tabs_and_accessories_get_pins() {
+        assert_eq!(tab_of(AccessoryKind::Chassis, false), Tab::Chassis);
+        assert_eq!(tab_of(AccessoryKind::PaintJob, false), Tab::Color);
+        assert_eq!(tab_of(AccessoryKind::Interior, true), Tab::Interior);
+        assert_eq!(
+            tab_of(AccessoryKind::Addon, false),
+            Tab::ExteriorAccessories
+        );
+        assert_eq!(tab_of(AccessoryKind::Addon, true), Tab::InteriorAccessories);
+        assert_eq!(
+            tab_of(AccessoryKind::Wheel, false),
+            Tab::ExteriorAccessories
+        );
+        assert!(Tab::ExteriorAccessories.has_pins() && !Tab::Cabin.has_pins());
+        for token in [
+            "cabin",
+            "chassis",
+            "engine",
+            "transmission",
+            "color",
+            "e_accessories",
+            "interior",
+            "i_accessories",
+        ] {
+            assert!(Tab::from_token(token).is_some(), "{token}");
+        }
+        assert_eq!(Tab::from_token("trailer_body"), None);
+    }
 
     #[test]
     fn humanizes_slot_names() {
