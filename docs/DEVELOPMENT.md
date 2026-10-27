@@ -11,13 +11,27 @@
 ## Build and test
 
 ```sh
-cargo test --workspace                       # unit tests, no game needed
-cargo fmt --all --check
+# Library change (no Bevy build): the changed crate plus specsheet-data
+cargo test -p specsheet-core -p specsheet-data
+cargo clippy -p specsheet-core -p specsheet-data --all-targets -- -D warnings
+
+# App or public-API change, or before a multi-crate commit (builds Bevy)
+cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
+
+cargo fmt --all --check
 
 # Integration tests against the real game (they return early if ETS2_DIR is unset):
 ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
   cargo test -p specsheet-data --release --test real_install
+```
+
+**Which crates to check.** The library crates never depend on Bevy. Testing only the crates a change touches, plus their dependents, avoids compiling the roughly 400 Bevy crates. The full table is in `AGENTS.md` under "Done means":
+
+```
+specsheet-archive ─┐
+specsheet-formats ─┼─> specsheet-data ─> specsheet (Bevy app)
+specsheet-core ────┘                  ↗
 ```
 
 ## Run the app

@@ -31,11 +31,33 @@ A standalone ETS2 truck-tuning app, all in Rust: a workspace of library crates p
 ## Done means
 
 A change is done when all of these hold:
-1. `cargo test --workspace` passes.
-2. `ETS2_DIR=<game dir> cargo test -p specsheet-data --release` passes. Without `ETS2_DIR` these tests return early and prove nothing.
-3. `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings` are clean.
+1. Tests pass for the crates you changed and the crates that depend on them; nothing else needs to build:
+
+   | Changed | Run `cargo test` / `cargo clippy --all-targets -- -D warnings` with |
+   |---|---|
+   | `specsheet-archive`, `specsheet-formats` | `-p <crate> -p specsheet-data` |
+   | `specsheet-core` | `-p specsheet-core -p specsheet-data` |
+   | `specsheet-data`, private items only | `-p specsheet-data` |
+   | `specsheet-data` public API, `specsheet-core` public API, or `crates/specsheet` | `--workspace` (builds Bevy) |
+   | Before a commit that touches several of the above | `--workspace` |
+
+2. `ETS2_DIR=<game dir> cargo test -p specsheet-data --release --test real_install` passes whenever a change touches `specsheet-archive`, `specsheet-formats`, `specsheet-core` or `specsheet-data`. Without `ETS2_DIR` these tests return early and prove nothing.
+3. `cargo fmt --all --check` is clean, and clippy is clean for the crates from step 1.
 4. UI and rendering changes are seen working in the running app, not just compiled: a `SPECSHEET_SCRIPT` run that ends in a screenshot you have looked at (see `docs/DEVELOPMENT.md`).
 5. `TASKS.md` is updated, plus `CHANGELOG.md` (Unreleased) for user-visible or format-level changes.
+
+## Commits
+
+- Commit only when the user asks. Push only with the user's explicit approval.
+- Split work into one commit per group:
+  - code per crate, with its tests;
+  - docs;
+  - research evidence;
+  - `TASKS.md` and `CHANGELOG.md`.
+
+  A change that must build together stays one commit, and its docs follow in the next commit. Example: a `specsheet-data` feature becomes "code + test", "docs", "tasks/changelog".
+- Messages are a short plain-English subject (no `feat:`-style prefixes). Commits are authored as Laakdal and signed by the local git config; never pass `--no-gpg-sign`. Add no co-author or tool-attribution trailers.
+- The pre-commit guard must pass; never bypass it with `--no-verify`.
 
 ## Crates own
 
