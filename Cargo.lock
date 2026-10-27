@@ -4777,6 +4777,7 @@ dependencies = [
  "bevy",
  "bevy_egui",
  "dirs",
+ "image",
  "serde",
  "serde_json",
  "specsheet-core",

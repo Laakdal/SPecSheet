@@ -7,6 +7,7 @@
 
 mod assets;
 mod hotspots;
+mod parity;
 mod script;
 mod settings;
 mod studio;
@@ -23,6 +24,17 @@ use crate::ui::UiPlugin;
 use crate::viewer::ViewerPlugin;
 
 fn main() -> AppExit {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("--parity") {
+        return match parity::run(&args[1..]) {
+            Ok(true) => AppExit::Success,
+            Ok(false) => AppExit::error(),
+            Err(error) => {
+                eprintln!("parity: {error}");
+                AppExit::error()
+            }
+        };
+    }
     let script = match ScriptPlugin::from_env() {
         Ok(plugin) => plugin,
         Err(error) => {

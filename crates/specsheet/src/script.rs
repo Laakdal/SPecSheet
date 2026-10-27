@@ -25,7 +25,7 @@ use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;
 use crate::viewer::{ModelCache, Orbit};
 
-const ENV_VAR: &str = "SPECSHEET_SCRIPT";
+pub(crate) const ENV_VAR: &str = "SPECSHEET_SCRIPT";
 
 /// Replays the script named by `SPECSHEET_SCRIPT`; does nothing when the
 /// variable is unset.
@@ -99,7 +99,7 @@ impl Script {
 }
 
 /// Parses a script; errors name the offending line.
-fn parse(source: &str) -> Result<Vec<Step>, String> {
+pub(crate) fn parse(source: &str) -> Result<Vec<Step>, String> {
     let mut steps = Vec::new();
     for (number, line) in source.lines().enumerate() {
         let line = line.split('#').next().unwrap_or_default().trim();
