@@ -207,6 +207,28 @@ Evidence:
 - **"Volvo FH6".** The game's own series labels: `/locale/common.sui` has `series_volvo_fh16 = FH3`, `series_volvo_fh16_2012 = FH4`, `series_volvo_fh_2021 = FH5`, `series_volvo_fh_2024 = FH6`. Truck names are `info[]` keys (`@@brand_volvo@@`, `@@series_volvo_fh_2024@@`) resolved through it.
 - **No side mirrors on the Volvo FH 2024 preset.** The preset (`/def/vehicle/truck_desktop/volvo_fh_2024.sii`) selects `mirror/digital_aero.sii`. Its name is `@@mirror_camera@@` and its model is `/vehicle/truck/volvo_fh_2024/accessory/mirror/digital.pmd`: the camera-mirror option.
 
+### F13: Each chassis has one wheel-locator pair per declared axle, and the locator decides the tyre type (Confirmed)
+Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chassis definitions, and `/def/vehicle/rim_data.sii`.
+
+- **Axles in the definition (Confirmed).**
+  - `accessory_chassis_data` has one entry per axle, front to back, in `powered_axle[]`, `kerb_weight[]` and `residual_travel[]` (all 164 chassis).
+  - `steerable_axle[]` is present on 61 chassis and `liftable_axle[]` on 71.
+  - Example: Scania S `6x2_long_taglift` has `powered = false, true, false` and `liftable = false, false, true`.
+  - No chassis attribute names tyres or axle models per axle.
+- **Wheel locators (Confirmed).**
+  - Group the chassis model's visible `wheel_*` locators by z, within 5 cm. Left and right locators of one axle differ by up to 0.5 mm.
+  - All 164 chassis then have exactly one left/right pair per declared axle: 132 with 3 or 4 axles, 0 mismatches.
+  - Names are `wheel_f…` or `wheel_r…` only. The trailing numbers vary per model and aren't axle indices.
+- **Tyre type (Confirmed).**
+  - The locator letter decides it: `wheel_f*` gets the front (single) wheel parts and `wheel_r*` the rear (twin) parts. This is what `wheel_placements` already does.
+  - No definition flag predicts the letter:
+    - "steerable" matches 160 of 164 chassis. MAN TGX `6x22` and Volvo FH `6x2_m` have a non-steerable, liftable second axle with `f` locators.
+    - "liftable" fails as well: Scania S `6x2_long_taglift`'s liftable tag axle uses `r` (twin).
+  - `rim_data.sii` defines truck wheel types `f`, `r`, `a` and `b`, but no truck model uses `a` or `b`.
+- **Test.** The real-install test `every_chassis_has_one_wheel_pair_per_declared_axle` guards all of the above.
+- **Unknown.**
+  - Whether the tuning screen shows liftable axles raised or lowered. The app shows them lowered. To settle: a reference screenshot (docs/PARITY.md) or REA on `liftable_axle`.
+
 ## Open questions
 
 | Question | Next step |

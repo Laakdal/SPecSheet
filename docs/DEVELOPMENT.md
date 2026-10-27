@@ -117,6 +117,9 @@ cargo run --release -p specsheet-data --example wheel_fit
 cargo run --release -p specsheet-data --example wheel_fit -- fit
 cargo run --release -p specsheet-data --example wheel_fit -- locators
 cargo run --release -p specsheet-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left
+
+# Axles: wheel-locator pairs per axle vs. the chassis' powered/steerable/liftable arrays (F13)
+cargo run --release -p specsheet-data --example axle_survey
 ```
 
 ## Debugging tips

@@ -18,7 +18,7 @@ For each feature, how close we are to in-game tuning. The goal is a 1:1 replica 
 | Repair after a chassis/cabin change | | ✔ D9 | ✔ | |
 | Accessory attachment at locators | | longest-prefix rule | engine rule | 626/626 preset parts resolve (F4); engine looks across model instances (F8) |
 | LHD / RHD | ✔ `variant_uk`, `exterior_model_uk` | | | |
-| Wheels | ✔ left/right model variants; `tire_shift` (F9, rule fits 94/96 disc cases) | side from locator x | axle and lift-axle variants | F8 mentions axle locators |
+| Wheels | ✔ left/right model variants; `tire_shift` (F9, rule fits 94/96 disc cases); one wheel pair per declared axle on all 164 chassis, tyre type from the locator letter (F13) | side from locator x | lift axles raised or lowered in the tuning screen; `wheel_shift` | F8 mentions axle locators |
 | Tuning pins: existence, ids | ✔ F5, F8 | | | Buttons `10000 + n` per accessory slot, `11000 + m` per hookup position |
 | Accessory grouping (tabs) | ✔ F5 | | | Game tabs: cabin, chassis, engine, transmission, color, e_accessories, interior, i_accessories |
 | Tuning pins: placement, which slots | which slots: Hypothesis (F5) | ✔ D7 | placement ✔ | Base parts (cabin, chassis, engine, transmission, paint) use tabs, not pins. Wheel parts share one anchor per axle group and empty slots are flagged (`Anchor::group`, `Anchor::empty`); the app decides how to show them |
