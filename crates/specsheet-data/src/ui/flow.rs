@@ -112,6 +112,16 @@ struct Cursor {
 
 const WHITE: [u8; 4] = [255; 4];
 
+/// Parses `markup` and lays it out in a box of `size`.
+pub fn layout_markup(
+    markup: &str,
+    size: [f32; 2],
+    measure: &mut dyn Measure,
+) -> Result<Vec<Item>, String> {
+    let nodes = specsheet_formats::ui_markup::parse(markup).map_err(|e| e.to_string())?;
+    Ok(layout(&nodes, size, measure))
+}
+
 /// Lays out `nodes` in a box of `size` (reference units).
 pub fn layout(nodes: &[Node], size: [f32; 2], measure: &mut dyn Measure) -> Vec<Item> {
     let frame = [0.0, 0.0, size[0], size[1]];
