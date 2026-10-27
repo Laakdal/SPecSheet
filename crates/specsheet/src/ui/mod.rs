@@ -194,6 +194,10 @@ fn ui(
         for click in clicks {
             match click {
                 Click::Tab(tab) => state.open_tab(tab, overview, &mut actions),
+                Click::Slot(slot) => {
+                    state.screen.scroll = 0.0;
+                    actions.0.push(Action::ShowSlot(Some(slot)));
+                }
                 Click::Select(id) => actions.0.push(Action::Select(id)),
             }
         }

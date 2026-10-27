@@ -13,7 +13,7 @@ use specsheet_data::ui::{
     substitute, KeepAspect, Layout, Rect, Screen, Templates, Widget, REFERENCE_HEIGHT,
     REFERENCE_WIDTH,
 };
-use specsheet_data::view::{OptionView, SlotOptions, Tab, TruckOverview};
+use specsheet_data::view::{tab_slots, OptionView, SlotOptions, Tab, TabSlot, TruckOverview};
 
 use super::textures::UiTextures;
 
@@ -104,6 +104,8 @@ pub struct ScreenState {
 /// What the user did on the screen this frame.
 pub enum Click {
     Tab(Tab),
+    /// A slot picked from an accessory tab's list.
+    Slot(SlotId),
     Select(AccessoryId),
 }
 
@@ -217,22 +219,42 @@ pub fn draw(
 ) -> (Vec<Click>, Vec<egui::Rect>) {
     let mut clicks = Vec::new();
     let mut blocking = Vec::new();
-    let list_open = options.is_some();
+    // The browser shows a slot's options, or an accessory tab's slots
+    // while no slot is open.
+    let slot_list = options
+        .is_none()
+        .then_some(state.tab)
+        .flatten()
+        .filter(|t| t.has_pins());
+    let list_open = options.is_some() || slot_list.is_some();
     for layout in &assets.screen.layouts {
         let mut order: Vec<usize> = (0..layout.widgets.len()).collect();
         order.sort_by_key(|&i| layout.widgets[i].layer);
         for index in order {
             let widget = &layout.widgets[index];
-            if !visible(layout, index, list_open) {
+            if !visible(layout, index, list_open, state.tab.is_some()) {
                 continue;
             }
             let target = cx.mapping.rect(layout.keep_aspect, &widget.rect);
             let size = [widget.rect.width(), widget.rect.height()];
             let painted = match widget.id {
                 ids::TAB_ROW => tab_row(ui, cx, assets, widget, target, state, &mut clicks),
-                ids::ACCESSORY_LIST => options.and_then(|o| {
-                    accessory_list(ui, cx, assets, widget, target, o, state, &mut clicks)
-                }),
+                ids::ACCESSORY_LIST => match (options, slot_list) {
+                    (Some(o), _) => {
+                        accessory_list(ui, cx, assets, widget, target, o, state, &mut clicks)
+                    }
+                    (None, Some(tab)) => slot_tiles(
+                        ui,
+                        cx,
+                        assets,
+                        widget,
+                        target,
+                        &tab_slots(overview, tab),
+                        state,
+                        &mut clicks,
+                    ),
+                    (None, None) => None,
+                },
                 _ => {
                     // The caption template is `<color value=%0>%1`; the colour
                     // follows the sibling "select a category" message (Design).
@@ -256,17 +278,16 @@ pub fn draw(
             }
         }
     }
-    let _ = overview;
     (clicks, blocking)
 }
 
 /// Whether `index` and all its ancestors are shown.
-fn visible(layout: &Layout, index: usize, list_open: bool) -> bool {
+fn visible(layout: &Layout, index: usize, list_open: bool, tab_open: bool) -> bool {
     let mut current = Some(index);
     while let Some(i) = current {
         let widget = &layout.widgets[i];
         let hidden = ids::HIDDEN.contains(&widget.id)
-            || (widget.id == ids::FIRST_MESSAGE && list_open)
+            || (widget.id == ids::FIRST_MESSAGE && (list_open || tab_open))
             || (widget.id == ids::COMPONENTS && !list_open);
         if hidden {
             return false;
@@ -412,18 +433,12 @@ fn accessory_list(
         .look_template
         .as_deref()
         .and_then(|t| assets.templates.button(t))?;
-    let [item_w, item_h] = widget.item_size?;
-    let gap = widget.item_gap.unwrap_or(0.0);
-    let scale = cx.mapping.scale;
-    let pitch = item_h + gap;
-    let content = pitch * options.options.len() as f32;
-    let max_scroll = (content - widget.rect.height()).max(0.0);
     let list = ui.interact(target, Id::new("acclist"), Sense::hover());
     if list.hovered() {
-        let wheel = ui.input(|i| i.smooth_scroll_delta.y);
-        state.scroll -= wheel / scale;
+        state.scroll -= ui.input(|i| i.smooth_scroll_delta.y) / cx.mapping.scale;
     }
-    state.scroll = state.scroll.clamp(0.0, max_scroll);
+    let ([item_w, item_h], pitch) = list_geometry(widget, options.options.len(), state)?;
+    let scale = cx.mapping.scale;
     let painter = cx.painter.with_clip_rect(target);
     let mut list_cx = Context {
         painter: &painter,
@@ -446,6 +461,84 @@ fn accessory_list(
         list_cx.paint(&markup, [item_w, item_h], rect);
         if response.clicked() && option.compatible && !option.selected {
             clicks.push(Click::Select(option.id.clone()));
+        }
+    }
+    Some(target)
+}
+
+/// List geometry shared by option and slot tiles: `(item size, pitch)`
+/// in reference units, scroll clamped to the content.
+fn list_geometry(
+    widget: &Widget,
+    count: usize,
+    state: &mut ScreenState,
+) -> Option<([f32; 2], f32)> {
+    let size = widget.item_size?;
+    let pitch = size[1] + widget.item_gap.unwrap_or(0.0);
+    let max_scroll = (pitch * count as f32 - widget.rect.height()).max(0.0);
+    state.scroll = state.scroll.clamp(0.0, max_scroll);
+    Some((size, pitch))
+}
+
+/// An accessory tab's slots as tiles while no slot is open (Design: the
+/// game reaches every accessory through pins; slots without an anchor yet
+/// would otherwise be unreachable). Arguments of `btn.truck_acc`: slot
+/// name, the fitted part's icon, and its name as the info line.
+#[allow(clippy::too_many_arguments)]
+fn slot_tiles(
+    ui: &mut egui::Ui,
+    cx: &mut Context<'_>,
+    assets: &ScreenAssets,
+    widget: &Widget,
+    target: egui::Rect,
+    slots: &[TabSlot<'_>],
+    state: &mut ScreenState,
+    clicks: &mut Vec<Click>,
+) -> Option<egui::Rect> {
+    let button = widget
+        .look_template
+        .as_deref()
+        .and_then(|t| assets.templates.button(t))?;
+    let list = ui.interact(target, Id::new("slotlist"), Sense::hover());
+    if list.hovered() {
+        state.scroll -= ui.input(|i| i.smooth_scroll_delta.y) / cx.mapping.scale;
+    }
+    let ([item_w, item_h], pitch) = list_geometry(widget, slots.len(), state)?;
+    let scale = cx.mapping.scale;
+    let painter = cx.painter.with_clip_rect(target);
+    let mut list_cx = Context {
+        painter: &painter,
+        game: cx.game,
+        textures: cx.textures,
+        localization: cx.localization,
+        mapping: cx.mapping,
+    };
+    for (i, slot) in slots.iter().enumerate() {
+        let top = i as f32 * pitch - state.scroll;
+        if top + item_h < 0.0 || top > widget.rect.height() {
+            continue;
+        }
+        let rect = egui::Rect::from_min_size(
+            Pos2::new(target.left(), target.top() + top * scale),
+            egui::vec2(item_w * scale, item_h * scale),
+        );
+        let response = ui.interact(rect.intersect(target), Id::new(("slot", i)), Sense::click());
+        let markup = if response.hovered() {
+            &button.selected
+        } else {
+            &button.normal
+        };
+        let args = [
+            slot.label,
+            slot.selected_icon.unwrap_or_default(),
+            slot.selected.unwrap_or_default(),
+            "",
+            HIDDEN_ALPHA,
+            HIDDEN_ALPHA,
+        ];
+        list_cx.paint(&fill(markup, &args), [item_w, item_h], rect);
+        if response.clicked() {
+            clicks.push(Click::Slot(slot.slot.clone()));
         }
     }
     Some(target)
@@ -489,7 +582,8 @@ pub fn tab_slot(overview: &TruckOverview, tab: Tab) -> Option<SlotId> {
     overview
         .general
         .iter()
-        .find(|s| s.tab == tab)
+        .find(|s| s.tab == tab && s.option_count > 1)
+        .or_else(|| overview.general.iter().find(|s| s.tab == tab))
         .map(|s| s.slot.clone())
 }
 
