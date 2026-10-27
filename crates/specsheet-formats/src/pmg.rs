@@ -65,6 +65,7 @@ pub struct Locator {
     /// Rotation quaternion stored `(w, x, y, z)`.
     pub rotation_wxyz: [f32; 4],
     /// Hookup string from the string pool (e.g. a light or effect id).
+    /// Locators without one point at an empty string.
     pub hookup: Option<String>,
 }
 
@@ -101,6 +102,8 @@ struct PieceHeader {
     uv_set_count: usize,
     material: u32,
     aabb: Aabb,
+    /// Bytes per interleaved vertex, as stored in the file.
+    stride: usize,
     position_offset: i32,
     normal_offset: i32,
     uv_offset: i32,
@@ -129,7 +132,7 @@ impl Pmg {
         let locator_count = r.count(LOCATOR_LEN)?;
         let _skeleton_hash = r.u64()?;
         let _center = r.vec3()?;
-        let _diagonal = r.f32()?;
+        let _radius = r.f32()?;
         let aabb = Aabb {
             min: r.vec3()?,
             max: r.vec3()?,
@@ -172,7 +175,7 @@ impl Pmg {
                 if !string_pool.contains(&at) {
                     return Err(r.error(format!("locator `{name}` hookup outside string pool")));
                 }
-                Some(r.c_string_at(at)?)
+                Some(r.c_string_at(at)?).filter(|s| !s.is_empty())
             };
             locators.push(Locator {
                 name,
@@ -227,18 +230,19 @@ fn read_piece_header(r: &mut Reader<'_>) -> Result<PieceHeader, FormatError> {
     let uv_set_count = r.u32()? as usize;
     let material = r.u32()?;
     let _center = r.vec3()?;
-    let _diagonal = r.f32()?;
+    let _radius = r.f32()?;
     let aabb = Aabb {
         min: r.vec3()?,
         max: r.vec3()?,
     };
-    let _skeleton_offset = r.i32()?;
+    let stride = r.u32()? as usize;
     let header = PieceHeader {
         index_count,
         vertex_count,
         uv_set_count,
         material,
         aabb,
+        stride,
         position_offset: r.i32()?,
         normal_offset: r.i32()?,
         uv_offset: r.i32()?,
@@ -275,6 +279,12 @@ fn read_piece(r: &mut Reader<'_>, h: &PieceHeader) -> Result<Piece, FormatError>
         }
         + if present(h.bone_index_offset) { 4 } else { 0 }
         + if present(h.bone_weight_offset) { 4 } else { 0 };
+    if stride != h.stride {
+        return Err(r.error(format!(
+            "vertex stride {} does not match the present streams ({stride} bytes)",
+            h.stride
+        )));
+    }
 
     let stream = |r: &mut Reader<'_>, offset: i32, what: &str| -> Result<usize, FormatError> {
         let offset =
@@ -465,6 +475,27 @@ mod tests {
         );
         assert_eq!(piece.colors, vec![0xff00_00ff; 3]);
         assert_eq!(piece.indices, [0, 1, 2]);
+    }
+
+    /// Byte offsets inside `sample()`.
+    const SAMPLE_PIECE: usize = 0x70 + 24 + 44;
+    const SAMPLE_STRINGS: usize = SAMPLE_PIECE + 100;
+
+    #[test]
+    fn empty_hookup_string_means_no_hookup() {
+        // Locators without a hookup point at an empty string, usually
+        // pool offset 0 (`research/evidence/pmg-layout-derivation.txt`).
+        let mut bytes = sample();
+        bytes[SAMPLE_STRINGS] = 0;
+        let pmg = Pmg::parse(&bytes).expect("parse");
+        assert_eq!(pmg.locators[0].hookup, None);
+    }
+
+    #[test]
+    fn rejects_a_stride_that_disagrees_with_the_streams() {
+        let mut bytes = sample();
+        bytes[SAMPLE_PIECE + 60..SAMPLE_PIECE + 64].copy_from_slice(&40u32.to_le_bytes());
+        assert!(Pmg::parse(&bytes).is_err());
     }
 
     #[test]
