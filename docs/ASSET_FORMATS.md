@@ -5,7 +5,7 @@ What ETS2 1.60.1.7 game files contain, as implemented in `crates/specsheet-archi
 ## Status labels
 
 - **Confirmed:** verified against real game files by our parser, plus a check that would fail if the layout were wrong.
-- **Reference:** taken from community code (sk-zk TruckLib.HashFs / TruckLib.Models / GisDeflate). It agrees with our observations but has not been verified independently.
+- **Reference:** a layout fact taken from community code (sk-zk TruckLib.HashFs / TruckLib.Models, GPL-2.0; GisDeflate, MIT). It agrees with our observations but has not been verified independently. Only facts are taken from these projects, never code (`THIRD_PARTY_NOTICES.md`).
 - **Hypothesis / Unknown:** not yet established.
 
 Evidence files live in `research/evidence/`.

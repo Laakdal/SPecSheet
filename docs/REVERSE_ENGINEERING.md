@@ -19,7 +19,7 @@ Findings about ETS2 that the implementation relies on, with their evidence.
 | REA 6.4.0 (MCP + CLI, `npx rea-agents@6.4.0`) with Ghidra 12.1.4 | Executable analysis | "REA Evidence" |
 | Our own parsers and the research examples (`specsheet-archive/examples/{survey,scs}.rs`, `specsheet-data/examples/{model_info,def_stats,def_grep}.rs`) | Archive and definition content | "Parser observation", reproducible with the commands in [DEVELOPMENT.md](DEVELOPMENT.md) |
 | The game's own `game.log.txt` from a real session | Runtime behaviour | "Runtime log" (passive; we did not run the game) |
-| sk-zk TruckLib.HashFs / TruckLib.Models / GisDeflate (MIT) | Cross-checking our layouts | "Reference", never proof on its own |
+| sk-zk TruckLib.HashFs / TruckLib.Models (GPL-2.0), GisDeflate (MIT) | Cross-checking our layouts | "Reference", never proof on its own. Facts only, never code (see `THIRD_PARTY_NOTICES.md`) |
 
 REA limitations met so far:
 - `inspect_artifact` rejects `.scs` ("unsupported binary format"), so archive evidence comes from our own parsers.
