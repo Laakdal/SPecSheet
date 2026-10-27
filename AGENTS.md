@@ -73,6 +73,26 @@ A change is done when all of these hold:
 
 Crate-level docs live in each `lib.rs` (`//!`). Crates have no README.
 
+## Where things live
+
+Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/tests/real_install.rs`; it needs `ETS2_DIR`.
+
+| Feature | Code | Tests |
+|---|---|---|
+| `.scs` archives, path hashing, layered VFS | `specsheet-archive/src/{hashfs,city,vfs}.rs` | unit tests in those files; every `real_install::*` mount |
+| Packed textures, GDeflate | `specsheet-archive/src/{texture,gdeflate}.rs` | unit tests in those files |
+| SII definitions | `specsheet-formats/src/sii.rs` | unit; `real_install::every_vehicle_definition_parses` |
+| Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
+| Rules, configuration, hookups | `specsheet-core/src/{config,catalog,hookup}.rs` | `specsheet-core/src/tests.rs` |
+| Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
+| Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
+| Slot to locator matching | `specsheet-data/src/slots.rs` | unit |
+| Assembly: base, wheels, hookups, interior, anchors | `specsheet-data/src/assembly.rs`, `assembly/*.rs` | tests in `assembly.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
+| Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |
+| Tuning scenes | `specsheet-data/src/scene.rs` | unit; `real_install::every_tuning_scene_has_a_model_and_a_camera` |
+| Display strings | `specsheet-data/src/localization.rs` | unit |
+| Session (options, select, hookups, drive) | `specsheet-data/src/session.rs` | through `real_install` |
+
 ## Read only when needed
 
 - When touching archive reading, parsers or texture/model conversion, read `docs/ASSET_FORMATS.md` and the `docs/formats/*` page it links for that format.
