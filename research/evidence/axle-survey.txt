@@ -1,0 +1,170 @@
+# Axle survey (finding F13): ETS2 1.60.1.7
+# Command: ETS2_DIR=<game> cargo run --release -p specsheet-data --example axle_survey
+# Columns: chassis id, declared axles (len of powered_axle[]), powered/steerable/liftable per axle (1/0, empty = attribute absent),
+# wheel locator axles front-to-back as <type>x<count> (f = wheel_f*, r = wheel_r*), model path. '!!' marks a count mismatch.
+
+   4x2.daf.2021.chassis             def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_2021/chassis/chs_4x2.pmd
+   4x2_xf.daf.2021.chassis          def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_2021/chassis/chs_xf_4x2.pmd
+   4x2s_xf.daf.2021.chassis         def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_2021/chassis/chs_xf_4x2_short.pmd
+   6x2d.daf.2021.chassis            def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_2021/chassis/chs_6x2s.pmd
+   6x2d_xf.daf.2021.chassis         def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_2021/chassis/chs_xf_6x2s.pmd
+   6x2g.daf.2021.chassis            def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_2021/chassis/chs_6x2g.pmd
+   6x2g_xf.daf.2021.chassis         def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_2021/chassis/chs_xf_6x2g.pmd
+   6x2s.daf.2021.chassis            def_axles=3 powered=010  steer=101  lift=001  wheel_axles=[fx2 rx2 fx2] /vehicle/truck/daf_2021/chassis/chs_6x2n.pmd
+   6x2s_xf.daf.2021.chassis         def_axles=3 powered=010  steer=101  lift=001  wheel_axles=[fx2 rx2 fx2] /vehicle/truck/daf_2021/chassis/chs_xf_6x2n.pmd
+   6x4t.daf.2021.chassis            def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_2021/chassis/chs_6x4t.pmd
+   6x4t_xf.daf.2021.chassis         def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_2021/chassis/chs_xf_6x4t.pmd
+   8x4m.daf.2021.chassis            def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/daf_2021/chassis/chs_8x4m.pmd
+   8x4m_xf.daf.2021.chassis         def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/daf_2021/chassis/chs_xf_8x4m.pmd
+   4x2_day.daf.xd.chassis           def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_xd/chassis/chs_4x2_day.pmd
+   4x2_sl.daf.xd.chassis            def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_xd/chassis/chs_4x2_sl.pmd
+   6x2g_sl.daf.xd.chassis           def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_xd/chassis/chs_6x2g_sl.pmd
+   6x2n_day.daf.xd.chassis          def_axles=3 powered=010  steer=101  lift=001  wheel_axles=[fx2 rx2 fx2] /vehicle/truck/daf_xd/chassis/chs_6x2n_day.pmd
+   6x2n_sl.daf.xd.chassis           def_axles=3 powered=010  steer=101  lift=001  wheel_axles=[fx2 rx2 fx2] /vehicle/truck/daf_xd/chassis/chs_6x2n_sl.pmd
+   6x2s_sl.daf.xd.chassis           def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xd/chassis/chs_6x2s_sl.pmd
+   6x4t_day.daf.xd.chassis          def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xd/chassis/chs_6x4t_day.pmd
+   6x4t_sl.daf.xd.chassis           def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xd/chassis/chs_6x4t_sl.pmd
+   4x2.daf.xf.chassis               def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   4x2_ext.daf.xf.chassis           def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   6x2.daf.xf.chassis               def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   6x2_ml.daf.xf.chassis            def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   6x2a.daf.xf.chassis              def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   6x2a_tl.daf.xf.chassis           def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   6x4.daf.xf.chassis               def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xf/truck.pmd
+   4x2.daf.xf_electric.chassis      def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_xf_electric/chassis/chs_4x2.pmd
+   4x2.daf.xf_euro6.chassis         def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/daf_xf_euro6/truck.pmd
+   6x2.daf.xf_euro6.chassis         def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xf_euro6/truck.pmd
+   6x2_4.daf.xf_euro6.chassis       def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_xf_euro6/truck.pmd
+   6x2_4_ml.daf.xf_euro6.chassis    def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/daf_xf_euro6/truck.pmd
+   6x2_tl.daf.xf_euro6.chassis      def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xf_euro6/truck.pmd
+   6x4.daf.xf_euro6.chassis         def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/daf_xf_euro6/truck.pmd
+   4x2.iveco.hiway.chassis          def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/iveco_hiway/truck.pmd
+   6x2.iveco.hiway.chassis          def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/iveco_hiway/truck.pmd
+   6x2_ml.iveco.hiway.chassis       def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/iveco_hiway/truck.pmd
+   6x2a.iveco.hiway.chassis         def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/iveco_hiway/truck.pmd
+   6x2a_tl.iveco.hiway.chassis      def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/iveco_hiway/truck.pmd
+   6x4.iveco.hiway.chassis          def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/iveco_hiway/truck.pmd
+   4x2.iveco.stralis.chassis        def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/iveco_stralis/truck.pmd
+   6x2.iveco.stralis.chassis        def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/iveco_stralis/truck.pmd
+   6x2_tl.iveco.stralis.chassis     def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/iveco_stralis/truck.pmd
+   6x2a.iveco.stralis.chassis       def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/iveco_stralis/truck.pmd
+   6x2a_ml.iveco.stralis.chassis    def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/iveco_stralis/truck.pmd
+   6x4a.iveco.stralis.chassis       def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/iveco_stralis/truck.pmd
+   4x2.iveco.sway.chassis           def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/iveco_sway/chassis/chs_4x2.pmd
+   6x2.iveco.sway.chassis           def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/iveco_sway/chassis/chs_6x2.pmd
+   4x2.man.tgx.chassis              def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/man_tgx/chassis/chs_4x2.pmd
+   6x2.man.tgx.chassis              def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx/chassis/chs_6x4.pmd
+   6x2_4.man.tgx.chassis            def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/man_tgx/chassis/chs_6x2_4.pmd
+   6x2_4_ml.man.tgx.chassis         def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/man_tgx/chassis/chs_6x2_4.pmd
+   6x2_tl.man.tgx.chassis           def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx/chassis/chs_6x4.pmd
+   6x4.man.tgx.chassis              def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx/chassis/chs_6x4.pmd
+   4x2.man.tgx_2020.chassis         def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/man_tgx_2020/chassis/chs_4x2.pmd
+   6x22.man.tgx_2020.chassis        def_axles=3 powered=001  steer=     lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/man_tgx_2020/chassis/chs_6x22.pmd
+   6x24.man.tgx_2020.chassis        def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/man_tgx_2020/chassis/chs_6x24.pmd
+   6x2_2.man.tgx_2020.chassis       def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx_2020/chassis/chs_6x2_2.pmd
+   6x4.man.tgx_2020.chassis         def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx_2020/chassis/chs_6x4.pmd
+   8x4.man.tgx_2020.chassis         def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/man_tgx_2020/chassis/chs_8x4.pmd
+   4x2.man.tgx_euro6.chassis        def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/man_tgx_euro6/chs_4x2.pmd
+   6x22.man.tgx_euro6.chassis       def_axles=3 powered=001  steer=     lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/man_tgx_euro6/chs_6x22.pmd
+   6x24.man.tgx_euro6.chassis       def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/man_tgx_euro6/chs_6x24.pmd
+   6x2_2.man.tgx_euro6.chassis      def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx_euro6/chs_6x2_2.pmd
+   6x4.man.tgx_euro6.chassis        def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/man_tgx_euro6/chs_6x4.pmd
+   8x4.man.tgx_euro6.chassis        def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/man_tgx_euro6/chs_8x4.pmd
+   4x2a.mercedes.actros.chassis     def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_4x2_a.pmd
+   4x2c.mercedes.actros.chassis     def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_4x2_b_c.pmd
+   6x2_4a.mercedes.actros.chassis   def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x2_4_a.pmd
+   6x2_4a_ml.mercedes.actros.chassis def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x2_4_a.pmd
+   6x2_4bc.mercedes.actros.chassis  def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x2_4_b_c.pmd
+   6x2_4bc_ml.mercedes.actros.chassis def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x2_4_b_c.pmd
+   6x2a.mercedes.actros.chassis     def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x4_a.pmd
+   6x2a_tl.mercedes.actros.chassis  def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x4_a.pmd
+   6x2bc.mercedes.actros.chassis    def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x4_b_c.pmd
+   6x2bc_tl.mercedes.actros.chassis def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x4_b_c.pmd
+   6x4a.mercedes.actros.chassis     def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x4_a.pmd
+   6x4bc.mercedes.actros.chassis    def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2009/chs_6x4_b_c.pmd
+   4x2.mercedes.actros2014.chassis  def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_4x2.pmd
+   6x2.mercedes.actros2014.chassis  def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_6x2.pmd
+   6x2_4.mercedes.actros2014.chassis def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_6x24.pmd
+   6x2_4_ml.mercedes.actros2014.chassis def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_6x24.pmd
+   6x2_tl.mercedes.actros2014.chassis def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_6x2.pmd
+   6x4.mercedes.actros2014.chassis  def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_6x4.pmd
+   8x4.mercedes.actros2014.chassis  def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/mercedes_actros_2014/chs_8x4.pmd
+   4x2.renault.etech_t.chassis      def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/renault_etech_t/chassis/chs_4x2.pmd
+   4x2.renault.magnum.chassis       def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/renault_magnum_2009/truck.pmd
+   6x2.renault.magnum.chassis       def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_magnum_2009/truck.pmd
+   6x2_4.renault.magnum.chassis     def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/renault_magnum_2009/truck.pmd
+   6x2_4_ml.renault.magnum.chassis  def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/renault_magnum_2009/truck.pmd
+   6x2_tl.renault.magnum.chassis    def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_magnum_2009/truck.pmd
+   6x4.renault.magnum.chassis       def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_magnum_2009/truck.pmd
+   4x2.renault.premium.chassis      def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/renault_premium/truck.pmd
+   6x2.renault.premium.chassis      def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_premium/truck.pmd
+   6x2_4.renault.premium.chassis    def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/renault_premium/truck.pmd
+   6x2_4_ml.renault.premium.chassis def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/renault_premium/truck.pmd
+   6x2_tl.renault.premium.chassis   def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_premium/truck.pmd
+   6x4.renault.premium.chassis      def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_premium/truck.pmd
+   4x2.renault.t.chassis            def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/renault_t/chassis/chs_4x2.pmd
+   4x2t.renault.t.chassis           def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/renault_t/chassis/chs_4x2t.pmd
+   6x2.renault.t.chassis            def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_t/chassis/chs_6x2.pmd
+   6x2_4.renault.t.chassis          def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/renault_t/chassis/chs_6x24.pmd
+   6x2_4_ml.renault.t.chassis       def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/renault_t/chassis/chs_6x24.pmd
+   6x2_tl.renault.t.chassis         def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_t/chassis/chs_6x2.pmd
+   6x4.renault.t.chassis            def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/renault_t/chassis/chs_6x4.pmd
+   4x2.scania.r.chassis             def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2.scania.r.chassis             def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2_4_ml.scania.r.chassis        def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2a.scania.r.chassis            def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2a_tl.scania.r.chassis         def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x4_4.scania.r.chassis           def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   8x4.scania.r.chassis             def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/8x4.pmd
+   4x2.scania.r_2016.chassis        def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/scania_2016/chassis/chs_4x2.pmd
+   6x2.scania.r_2016.chassis        def_axles=3 powered=001  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2.pmd
+   6x2_4.scania.r_2016.chassis      def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_4.pmd
+   6x2_4_ml.scania.r_2016.chassis   def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_4.pmd
+   6x2_lng.scania.r_2016.chassis    def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_l.pmd
+   6x2_lng_tl.scania.r_2016.chassis def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_l.pmd
+   6x4_lng.scania.r_2016.chassis    def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x4_l.pmd
+   8x4.scania.r_2016.chassis        def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_r_8x4.pmd
+   4x2.scania.s_2016.chassis        def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/scania_2016/chassis/chs_4x2.pmd
+   6x2.scania.s_2016.chassis        def_axles=3 powered=001  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2.pmd
+   6x2_4.scania.s_2016.chassis      def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_4.pmd
+   6x2_4_ml.scania.s_2016.chassis   def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_4.pmd
+   6x2_lng.scania.s_2016.chassis    def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_l.pmd
+   6x2_lng_tl.scania.s_2016.chassis def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x2_l.pmd
+   6x4_lng.scania.s_2016.chassis    def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_6x4_l.pmd
+   8x4.scania.s_2016.chassis        def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/scania_2016/chassis/chs_s_8x4.pmd
+   4x2.scania.s_2024e.chassis       def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/scania_s_2024e/chassis/chs_4x2.pmd
+   4x2.scania.streamline.chassis    def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2.scania.streamline.chassis    def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2_ml.scania.streamline.chassis def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2a.scania.streamline.chassis   def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x2a_tl.scania.streamline.chassis def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   6x4_4.scania.streamline.chassis  def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/truck.pmd
+   8x4.scania.streamline.chassis    def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/scania_rcab_2009/8x4.pmd
+   4x2.volvo.fh16.chassis           def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/volvo_fh16_2009/chassis/chs_4x2.pmd
+   6x2.volvo.fh16.chassis           def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2009/chassis/chs_6x2.pmd
+   6x2_4a.volvo.fh16.chassis        def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh16_2009/chassis/chs_6x2_4.pmd
+   6x2_4a_ml.volvo.fh16.chassis     def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh16_2009/chassis/chs_6x2_4_middlelift.pmd
+   6x2_tl.volvo.fh16.chassis        def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2009/chassis/chs_6x2_rearlift.pmd
+   6x4a.volvo.fh16.chassis          def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2009/chassis/chs_6x4.pmd
+   4x2.volvo.fh16_2012.chassis      def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_4x2.pmd
+   6x2.volvo.fh16_2012.chassis      def_axles=3 powered=010  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_6x2.pmd
+   6x2_4a.volvo.fh16_2012.chassis   def_axles=3 powered=001  steer=110  lift=     wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_6x2_4.pmd
+   6x2_4a_ml.volvo.fh16_2012.chassis def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_6x2_4.pmd
+   6x2_tl.volvo.fh16_2012.chassis   def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_6x2_2.pmd
+   6x4a.volvo.fh16_2012.chassis     def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_6x4.pmd
+   8x4.volvo.fh16_2012.chassis      def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/volvo_fh16_2012/chassis/chs_8x4.pmd
+   4x2.volvo.fh_2021.chassis        def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_4x2.pmd
+   6x2_4_m.volvo.fh_2021.chassis    def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2_4.pmd
+   6x2_m.volvo.fh_2021.chassis      def_axles=3 powered=001  steer=     lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2_4.pmd
+   6x2_t.volvo.fh_2021.chassis      def_axles=3 powered=010  steer=100  lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2.pmd
+   6x2_ts.volvo.fh_2021.chassis     def_axles=3 powered=010  steer=101  lift=001  wheel_axles=[fx2 rx2 fx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2_2.pmd
+   6x4.volvo.fh_2021.chassis        def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x4.pmd
+   8x4.volvo.fh_2021.chassis        def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_8x4.pmd
+   4x2.volvo.fh_2024.chassis        def_axles=2 powered=01   steer=     lift=     wheel_axles=[fx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_4x2.pmd
+   6x2_4_m.volvo.fh_2024.chassis    def_axles=3 powered=001  steer=110  lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2_4.pmd
+   6x2_m.volvo.fh_2024.chassis      def_axles=3 powered=001  steer=     lift=010  wheel_axles=[fx2 fx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2_4.pmd
+   6x2_t.volvo.fh_2024.chassis      def_axles=3 powered=010  steer=     lift=001  wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2.pmd
+   6x2_ts.volvo.fh_2024.chassis     def_axles=3 powered=010  steer=101  lift=001  wheel_axles=[fx2 rx2 fx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x2_2.pmd
+   6x4.volvo.fh_2024.chassis        def_axles=3 powered=011  steer=     lift=     wheel_axles=[fx2 rx2 rx2] /vehicle/truck/volvo_fh_2021/chassis/chs_6x4.pmd
+   8x4.volvo.fh_2024.chassis        def_axles=4 powered=0011 steer=1100 lift=0100 wheel_axles=[fx2 fx2 rx2 rx2] /vehicle/truck/volvo_fh_2024/chassis/chs_8x4.pmd
+--- 164 chassis, 0 where wheel axles != declared axles
