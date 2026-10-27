@@ -1,0 +1,12 @@
+/target
+node_modules/
+/app/dist/
+*.snapshot
+# Never commit extracted game content.
+/research/extracted/
+/app/src-tauri/gen/
+/app/src-tauri/target/
+# Personal Claude Code settings
+.claude/settings.local.json
+# Screenshots of the app stay local (rendered game content, large).
+/research/screenshots/
