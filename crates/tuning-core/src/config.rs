@@ -38,6 +38,20 @@ pub enum Incompatibility {
     SlotUnavailable { slot: SlotId },
 }
 
+/// Why a hookup cannot go at a host position.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum HookupProblem {
+    /// The host slot is empty.
+    NoHost,
+    /// The hookup is not in the catalog.
+    UnknownHookup,
+    /// The hookup does not list the host slot in `suitable_for[]`.
+    NotSuitable,
+    /// The host accessory's model has no such position.
+    UnknownPosition,
+}
+
 /// A problem with a configuration as a whole.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -52,6 +66,12 @@ pub enum ConfigIssue {
         accessory: AccessoryId,
         reason: Incompatibility,
     },
+    InvalidHookup {
+        host: SlotId,
+        position: String,
+        hookup: AccessoryId,
+        problem: HookupProblem,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -65,6 +85,13 @@ pub enum ConfigError {
     },
     #[error("slot {0} is required and cannot be emptied")]
     RequiredSlot(SlotId),
+    #[error("hookup {hookup:?} cannot go at {host}/{position}: {problem:?}")]
+    Hookup {
+        host: SlotId,
+        position: String,
+        hookup: Option<AccessoryId>,
+        problem: HookupProblem,
+    },
 }
 
 /// What a change did, so callers can refresh only what changed.
@@ -82,6 +109,9 @@ pub struct Configuration {
     /// Body colour chosen for the paint job; `None` uses the paint job's
     /// own `base_color`.
     paint_color: Option<[f32; 3]>,
+    /// Hookups per host slot, keyed by host-model position (`slot_NN`).
+    #[serde(default)]
+    hookups: BTreeMap<SlotId, BTreeMap<String, AccessoryId>>,
 }
 
 impl Configuration {
@@ -90,6 +120,7 @@ impl Configuration {
             truck,
             selections: BTreeMap::new(),
             paint_color: None,
+            hookups: BTreeMap::new(),
         }
     }
 
@@ -103,6 +134,7 @@ impl Configuration {
             truck,
             selections: selections.into_iter().collect(),
             paint_color: None,
+            hookups: BTreeMap::new(),
         }
     }
 
@@ -118,6 +150,85 @@ impl Configuration {
                 .values()
                 .filter_map(|id| catalog.accessory(id))
                 .find_map(|a| a.base_color)
+        })
+    }
+
+    /// Sets hookups without checking any rule (e.g. loading game configs);
+    /// use [`Configuration::validate`] after.
+    pub fn with_hookups(
+        mut self,
+        hookups: impl IntoIterator<Item = (SlotId, String, AccessoryId)>,
+    ) -> Self {
+        for (host, position, hookup) in hookups {
+            self.hookups
+                .entry(host)
+                .or_default()
+                .insert(position, hookup);
+        }
+        self
+    }
+
+    /// Hookups mounted on the accessory in `host`, by position.
+    pub fn hookups(&self, host: &SlotId) -> Option<&BTreeMap<String, AccessoryId>> {
+        self.hookups.get(host)
+    }
+
+    /// Every mounted hookup as `(host slot, position, hookup)`.
+    pub fn all_hookups(&self) -> impl Iterator<Item = (&SlotId, &str, &AccessoryId)> {
+        self.hookups.iter().flat_map(|(host, positions)| {
+            positions
+                .iter()
+                .map(move |(position, id)| (host, position.as_str(), id))
+        })
+    }
+
+    /// Mounts `hookup` at `position` of the accessory in `host`, or empties
+    /// the position when `hookup` is `None`. `positions` are the positions
+    /// the host accessory's model offers (its `slot_NN` locators).
+    pub fn set_hookup(
+        &mut self,
+        catalog: &TruckCatalog,
+        host: &SlotId,
+        position: &str,
+        positions: &[String],
+        hookup: Option<&AccessoryId>,
+    ) -> Result<ChangeSet, ConfigError> {
+        let error = |problem| ConfigError::Hookup {
+            host: host.clone(),
+            position: position.to_owned(),
+            hookup: hookup.cloned(),
+            problem,
+        };
+        if !self.selections.contains_key(host) {
+            return Err(error(HookupProblem::NoHost));
+        }
+        if !positions.iter().any(|p| p == position) {
+            return Err(error(HookupProblem::UnknownPosition));
+        }
+        match hookup {
+            Some(id) => {
+                let found = catalog
+                    .hookup(id)
+                    .ok_or_else(|| error(HookupProblem::UnknownHookup))?;
+                if !found.fits(host) {
+                    return Err(error(HookupProblem::NotSuitable));
+                }
+                self.hookups
+                    .entry(host.clone())
+                    .or_default()
+                    .insert(position.to_owned(), id.clone());
+            }
+            None => {
+                if let Some(mounted) = self.hookups.get_mut(host) {
+                    mounted.remove(position);
+                    if mounted.is_empty() {
+                        self.hookups.remove(host);
+                    }
+                }
+            }
+        }
+        Ok(ChangeSet {
+            changed_slots: [host.clone()].into(),
         })
     }
 
@@ -225,7 +336,9 @@ impl Configuration {
             }
         }
         self.repair(catalog, availability_for, &accessory.slot);
-        Ok(diff(&before, &self.selections))
+        let changes = diff(&before, &self.selections);
+        self.drop_hookups_of(&changes);
+        Ok(changes)
     }
 
     /// Empties `slot`. Fails for required slots.
@@ -241,7 +354,17 @@ impl Configuration {
         let before = self.selections.clone();
         self.selections.remove(slot);
         self.repair(catalog, availability_for, slot);
-        Ok(diff(&before, &self.selections))
+        let changes = diff(&before, &self.selections);
+        self.drop_hookups_of(&changes);
+        Ok(changes)
+    }
+
+    /// Hookups are mounted on a specific host model's positions, so they are
+    /// removed when the host accessory changes or is removed.
+    fn drop_hookups_of(&mut self, changes: &ChangeSet) {
+        for slot in &changes.changed_slots {
+            self.hookups.remove(slot);
+        }
     }
 
     /// Slots that must stay filled: the truck's `require[]` plus the
@@ -356,6 +479,25 @@ impl Configuration {
         for slot in self.required_slots(catalog) {
             if !self.selections.contains_key(&slot) {
                 issues.push(ConfigIssue::MissingRequiredSlot { slot });
+            }
+        }
+        for (host, position, id) in self.all_hookups() {
+            let problem = if !self.selections.contains_key(host) {
+                Some(HookupProblem::NoHost)
+            } else {
+                match catalog.hookup(id) {
+                    None => Some(HookupProblem::UnknownHookup),
+                    Some(hookup) if !hookup.fits(host) => Some(HookupProblem::NotSuitable),
+                    Some(_) => None,
+                }
+            };
+            if let Some(problem) = problem {
+                issues.push(ConfigIssue::InvalidHookup {
+                    host: host.clone(),
+                    position: position.to_owned(),
+                    hookup: id.clone(),
+                    problem,
+                });
             }
         }
         issues

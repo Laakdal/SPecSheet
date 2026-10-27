@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
+use crate::hookup::Hookup;
 use crate::ids::{AccessoryId, SlotId, TruckId};
 
 /// What kind of part an accessory is. Determines how it is assembled.
@@ -112,6 +113,9 @@ pub struct TruckCatalog {
     pub fallbacks: Vec<String>,
     accessories: BTreeMap<AccessoryId, Accessory>,
     by_path: HashMap<String, AccessoryId>,
+    /// Hookups that can be mounted on this truck's accessories.
+    #[serde(default)]
+    hookups: BTreeMap<AccessoryId, Hookup>,
 }
 
 impl TruckCatalog {
@@ -129,6 +133,7 @@ impl TruckCatalog {
             fallbacks,
             accessories: BTreeMap::new(),
             by_path: HashMap::new(),
+            hookups: BTreeMap::new(),
         };
         for accessory in accessories {
             catalog.by_path.insert(
@@ -138,6 +143,23 @@ impl TruckCatalog {
             catalog.accessories.insert(accessory.id.clone(), accessory);
         }
         catalog
+    }
+
+    /// Adds the hookups that can be mounted on this truck's accessories.
+    pub fn with_hookups(mut self, hookups: impl IntoIterator<Item = Hookup>) -> Self {
+        self.hookups
+            .extend(hookups.into_iter().map(|h| (h.id.clone(), h)));
+        self
+    }
+
+    pub fn hookup(&self, id: &AccessoryId) -> Option<&Hookup> {
+        self.hookups.get(id)
+    }
+
+    /// Hookups that fit on the accessory in `host`, in id order.
+    pub fn hookups_for<'a>(&'a self, host: &SlotId) -> impl Iterator<Item = &'a Hookup> + 'a {
+        let host = host.clone();
+        self.hookups.values().filter(move |h| h.fits(&host))
     }
 
     pub fn accessory(&self, id: &AccessoryId) -> Option<&Accessory> {

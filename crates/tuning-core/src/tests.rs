@@ -311,3 +311,160 @@ fn selecting_a_paint_job_clears_the_colour_override() {
         .expect("paint");
     assert_eq!(config.paint_color(&catalog), Some([1.0, 0.0, 0.0]));
 }
+
+fn hookup(id: &str, hosts: &[&str]) -> Hookup {
+    Hookup {
+        id: AccessoryId::from(id),
+        name: id.to_owned(),
+        icon: None,
+        price: None,
+        unlock_level: None,
+        model: Some(format!("/vehicle/truck/upgrade/{id}.pmd")),
+        hosts: hosts.iter().map(|h| SlotId::from(*h)).collect(),
+        interior: false,
+    }
+}
+
+fn hookup_catalog() -> TruckCatalog {
+    let items: Vec<Accessory> = catalog().accessories().cloned().collect();
+    TruckCatalog::new(
+        TruckId::from("t"),
+        Vec::new(),
+        vec![SlotId::from("s_mirror")],
+        Vec::new(),
+        items,
+    )
+    .with_hookups([
+        hookup("light1.addon_hookup", &["r_grill", "f_grill"]),
+        hookup("horn1.addon_hookup", &["f_grill"]),
+    ])
+}
+
+fn positions() -> Vec<String> {
+    vec!["slot_0".to_owned(), "slot_1".to_owned()]
+}
+
+#[test]
+fn hookups_mount_on_suitable_host_positions() {
+    let catalog = hookup_catalog();
+    let mut config = base_config();
+    config
+        .select(&catalog, &all_slots, &"shape1.t.r_grill".into())
+        .expect("grill");
+    let host = SlotId::from("r_grill");
+    config
+        .set_hookup(
+            &catalog,
+            &host,
+            "slot_1",
+            &positions(),
+            Some(&"light1.addon_hookup".into()),
+        )
+        .expect("light fits r_grill");
+    assert_eq!(
+        config.hookups(&host).and_then(|h| h.get("slot_1")),
+        Some(&"light1.addon_hookup".into())
+    );
+    assert!(config.validate(&catalog, &all_slots(&config)).is_empty());
+
+    let err = config
+        .set_hookup(
+            &catalog,
+            &host,
+            "slot_0",
+            &positions(),
+            Some(&"horn1.addon_hookup".into()),
+        )
+        .expect_err("horn1 only fits f_grill");
+    assert!(matches!(
+        err,
+        ConfigError::Hookup {
+            problem: HookupProblem::NotSuitable,
+            ..
+        }
+    ));
+    let err = config
+        .set_hookup(
+            &catalog,
+            &host,
+            "slot_9",
+            &positions(),
+            Some(&"light1.addon_hookup".into()),
+        )
+        .expect_err("no such position");
+    assert!(matches!(
+        err,
+        ConfigError::Hookup {
+            problem: HookupProblem::UnknownPosition,
+            ..
+        }
+    ));
+
+    config
+        .set_hookup(&catalog, &host, "slot_1", &positions(), None)
+        .expect("remove");
+    assert_eq!(config.hookups(&host), None);
+}
+
+#[test]
+fn hookups_need_a_host_and_go_away_with_it() {
+    let catalog = hookup_catalog();
+    let mut config = base_config();
+    let host = SlotId::from("r_grill");
+    let err = config
+        .set_hookup(
+            &catalog,
+            &host,
+            "slot_0",
+            &positions(),
+            Some(&"light1.addon_hookup".into()),
+        )
+        .expect_err("no light bar selected");
+    assert!(matches!(
+        err,
+        ConfigError::Hookup {
+            problem: HookupProblem::NoHost,
+            ..
+        }
+    ));
+
+    config
+        .select(&catalog, &all_slots, &"shape1.t.r_grill".into())
+        .expect("grill");
+    config
+        .set_hookup(
+            &catalog,
+            &host,
+            "slot_0",
+            &positions(),
+            Some(&"light1.addon_hookup".into()),
+        )
+        .expect("mount");
+    // Switching to the low cabin removes the grill (it needs the high cabin),
+    // and with it the hookups mounted on the grill's model.
+    config
+        .select(&catalog, &all_slots, &"low.t.cabin".into())
+        .expect("cabin");
+    assert_eq!(config.selected(&host), None);
+    assert_eq!(config.hookups(&host), None);
+}
+
+#[test]
+fn validation_reports_hookups_on_missing_hosts() {
+    let catalog = hookup_catalog();
+    let config = base_config().with_hookups([(
+        SlotId::from("r_grill"),
+        "slot_0".to_owned(),
+        AccessoryId::from("light1.addon_hookup"),
+    )]);
+    assert!(config
+        .validate(&catalog, &all_slots(&config))
+        .iter()
+        .any(|i| matches!(
+            i,
+            ConfigIssue::InvalidHookup {
+                problem: HookupProblem::NoHost,
+                ..
+            }
+        )));
+}
