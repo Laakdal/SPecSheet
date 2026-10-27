@@ -155,7 +155,8 @@ fn piece_mesh(piece: MeshPiece) -> Result<Mesh, String> {
     if piece.uvs.as_ref().is_some_and(|uvs| uvs.len() != count) {
         return Err("UV count differs from position count".to_owned());
     }
-    if piece.indices.len() % 3 != 0 || piece.indices.iter().any(|&i| i as usize >= count) {
+    if !piece.indices.len().is_multiple_of(3) || piece.indices.iter().any(|&i| i as usize >= count)
+    {
         return Err("index out of range or incomplete triangle".to_owned());
     }
     let mut mesh = Mesh::new(
