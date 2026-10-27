@@ -75,11 +75,16 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
 - **Pin and tab ids (Confirmed, REA static).** `FUN_140fe0fc0` (`ev_47817a8…`, `research/evidence/rea-pin-select.txt`) shows an accessory on the tuning screen. It switches the tab row to the accessory's tab, then activates its pin:
   - accessory pin = button `10000 + n`, where `n` indexes the screen's `acc_info_t` records (one per vehicle and slot token);
   - hookup pin = button `11000 + m`;
-  - the tab ids come from an `.rdata` table: `500 510 520 530 540 550 560 570 571 572`.
+  - the tab ids come from an `.rdata` table sorted by id: `500 510 520 530 540 550 560 570 571 572`. Names come from the `id_list` positions above: 500 chassis, 510 cabin, 520 engine, 530 transmission, 540 interior, 550 color, 560 e_accessories, 570 i_accessories. 571/572 are `trailer_chain`/`trailer_body` in `ui/trailer_configuration_center.sii` (`research/evidence/ui-layout-survey.txt` §K).
 - **Which slots get a pin (Hypothesis, strong).**
   - Slots in a 12-token table filled at run time use a fixed tab button and get no pin. These are presumably cabin, chassis, engine, transmission and paint.
   - Every other accessory gets a pin under `e_accessories` (560). It goes under `i_accessories` (570) instead when its slot is in an interior-slot token list or is `steering_w` (a token stored in the executable).
-- **Unknown:** where pins are positioned on screen, and which code creates the `acc_info_t` records. The best next target is the single caller `FUN_140fbf860`. Projected slot locators (F4) remain the working hypothesis.
+  - **File-backed candidate for the interior list (Hypothesis).** `/def/truck_config_scene.sii` has `interior_only[]` with 17 slot names, all of them truck slot directories. It also has `hookups_exterior_only[]: sunshld` (ui-layout-survey §M).
+- **Pin data (Confirmed contents, Hypothesis use).** `/def/truck_config_scene.sii` is the `config_path` of the scene widget in `ui/truck_configuration_bcg.sii` (`ui_truck_scene`, id 400). It holds 65 parallel entries: `pin_group`, `pin_look`, `pin_offset`, `pin_dir`, `pin_dir_uk`, `double_sided` (§J).
+  - `pin_look` is `custom_acc` 59 times, and `acc_cover`, `acc_hub` and `acc_nuts` twice each.
+  - 60 of 65 `pin_group` values match truck slot directory names. Unmatched: `cabdefl`, `f_fendr_cab`, `hoodlatch`, `m_mudflap`, `markers`.
+  - Most likely this is the per-slot pin offset and direction (with a UK direction) applied to the slot's locator.
+- **Unknown:** how `pin_offset`/`pin_dir` are applied, and which code creates the `acc_info_t` records. The best next target is the single caller `FUN_140fbf860`.
 
 ### F6: Preset configurations use the save-game vehicle structure (Confirmed)
 - `/def/vehicle/truck_desktop/<truck>.sii` holds one `vehicle` unit whose `accessories[]` point to:
@@ -97,6 +102,7 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
 - Ten scene files exist in 1.60 (`config.sii`, `config.hangar.sii`, `config.under_bridge.sii`, …). Each also references:
   - a `scene_cinematic_camera` (`/def/camera/ui/*.sii`). Its `cinematic_camera` lists `orbit_camera` units (with `camera_fov`) and `camera_animation_info` units (`camera_index`, `positions[]`, `aims[]`, `frame_duration`);
   - `part_order[]`, the scene-model parts drawn (the `coll` part is not listed).
+- **Hypothesis:** the tuning screen itself renders `/def/truck_config_scene.sii` (FOV 50, the `config_path` of `ui/truck_configuration_bcg.sii`; see F5), and the `/def/desktop` scenes are hub backgrounds. The executable string `/ui/truck_configuration_bcg.sii` (`0x14223bbb0`) sits beside the `truck_config_hdl_u` strings (`research/evidence/ui-layout-survey.txt`).
 
 ### F8: Executable strings around truck configuration (REA Evidence, static)
 - **REA binary overview** `ev_a558c2ae067820ea6ebd2a3491bad402adfb94658763d5d104b1558d5f34aa56` (Ghidra 12.1.4, about 28 min): 69,598 procedures, 51,977 defined strings. File: `research/evidence/rea-binary-overview.json`.
