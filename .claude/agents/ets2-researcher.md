@@ -15,7 +15,7 @@ The install is read-only: open game files for reading only, and keep extracted g
    2. The game's `game.log.txt` for runtime behaviour.
    3. REA on `eurotrucks2.exe`. A Ghidra run takes about 28 minutes, so batch every pattern you need into one regex per run. Setup, environment variables and output paths are in the "REA on `eurotrucks2.exe`" notes in `CLAUDE.md`.
 
-   Reference code (sk-zk TruckLib, GisDeflate) is a cross-check only. A claim backed only by reference code is a Hypothesis.
+   Reference code (sk-zk TruckLib, GisDeflate) is a cross-check only. A claim backed only by reference code is a Hypothesis. TruckLib and Extractor are GPL-2.0 and this project is MIT: take facts (offsets, magic numbers, layouts) from them, never code.
 3. **Save the evidence.** Write each output you cite to `research/evidence/<topic>.txt`. Put the exact command that produced it at the top of the file, so anyone can rerun it. For REA, copy the cited results out of the REA output directory.
 4. **Label every claim** with the labels defined at the top of `docs/REVERSE_ENGINEERING.md`:
    - **Confirmed:** verified on game files or game output.
