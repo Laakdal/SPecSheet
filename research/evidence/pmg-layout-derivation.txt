@@ -39,7 +39,15 @@ Corrections to what we had (both now in specsheet-formats):
   radius: every vertex lies inside it. The centre is not the AABB centre, and
   the radius is not half the AABB diagonal.
 
-Not determined (always 0 in these samples; no skinned model sampled):
+Archive-wide check of the stride rule: a throwaway example ran the Rust parser
+(with the stride check) over every .pmg in base, base_vehicle, base_map,
+base_share, core and def. 53,917 parsed and 0 failed, including 4,388 skinned
+models (bone count > 0). So the stored stride also equals the sum of the
+present streams when the bone index (4 x u8) and bone weight (4 x u8)
+streams are present.
+
+Not determined (always 0 in the six dumps; skinned models were checked only
+through the stride rule above):
 - PMD 0x0c; PMG 0x0c ("bones") and 0x10; the u64 at 0x18.
 - PMD attribute header +8 (0 for every `visible` attribute).
 - Piece +8: a u32 bit field (0xfffffff0, 0xfffff000, 0xf1fffff0, 0xf2fff110,

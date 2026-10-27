@@ -24,6 +24,9 @@ Method (image record, 0x01):
   pixel_layout knows, across 1x1-block tail mips, non-square sizes and
   6-face cube maps. So the bit fields are confirmed jointly: a wrong mip count,
   format, face count or alignment would break the exact size.
+- Cube flag (bits 12-13): the tally over every texture in these archives is
+  {(cube false, 1 face): 62,191, (cube true, 6 faces): 60}. The flag is set
+  exactly on the six-face textures.
 - Face-major order (all mips of face 0, then face 1) is not testable by size;
   it stays a Hypothesis (the DDS convention).
 - DXGI 67 (R9G9B9E5_SHAREDEXP: skyboxes, HDR brightness UI images) and 75
@@ -74,6 +77,7 @@ Examples:
   model/hedge_rggreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
   model/hedge_ygreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
   model/satellite.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+Textures by (cube flag, face count): {(false, 1): 62191, (true, 6): 60}
 Unusual sampler states or formats (up to 4 paths each):
   mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=61: ["material/deferred/custom/mlaa_weights.tobj"]
   mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=87: ["system/special/stereo.tobj"]

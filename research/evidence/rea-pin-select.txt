@@ -75,8 +75,11 @@ Game data that names these ids
   value_list: "cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interior~~i_accessories"
   id_list:    "510~~500~~520~~530~~550~~560~~540~~570"
 The same file has ui::group accpins, id 9000, with no children.
-Ids 571, 572, 10000+ and 11000+ appear in no file under /ui (all 457 .sii
-files dumped with the `scs` example and grepped).
+No `id:` line under /ui uses 10000+ or 11000+ (all 457 .sii files dumped
+with the `scs` example and grepped). That grep matched only `id:` lines, so
+it missed `id_list` strings. 571 and 572 are in the `id_list` of
+/ui/trailer_configuration_center.sii as trailer_chain and trailer_body
+(research/evidence/ui-layout-survey.txt, section K).
 
 Conclusions
 -----------
@@ -86,13 +89,15 @@ Observed:
   - Selecting an accessory first switches the tab row (id 499) to the right
     tab, then activates its pin.
 Inferred (Hypothesis):
-  - Accessories whose slot is one of the 12 run-time tokens (cabin, chassis,
-    engine, transmission, paint ...) have no pin; they use the fixed tab
-    buttons 500-572.
+  - Accessories whose slot matches one of the run-time tokens (cabin,
+    chassis, engine, transmission, paint ...) have no pin; they use the fixed
+    tab buttons 500-572.
+  - Unknown: the token loop runs over 12 entries, but the id table holds only
+    10 ids (500..572) followed by the floats -1.0 and 10.0. How entries 10 and
+    11 map, or whether they are ever non-zero, is not established.
   - Other accessories live under "e_accessories" (560) unless their slot is an
     interior slot (the token list) or `steering_w`, which go under
     "i_accessories" (570).
-  - 571 and 572 are tab ids with no button in this file (trailer or unused).
 Unknown:
   - Where the pins are positioned on screen and which code creates the
     acc_info_t records (likely the caller FUN_140fbf860 or the writer of the
