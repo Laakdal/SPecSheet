@@ -10,6 +10,10 @@
 //!     }
 //! }
 //! ```
+//!
+//! Older UI materials use the legacy form
+//! `material : "ui" { texture : "icon.tobj" texture_name : "texture" }`;
+//! it parses to the same structure (effect `ui`, one texture).
 
 use crate::binary::FormatError;
 
@@ -67,7 +71,12 @@ impl Material {
     pub fn parse(bytes: &[u8]) -> Result<Self, FormatError> {
         let text = String::from_utf8_lossy(bytes);
         let mut lexer = Lexer::new(&text);
-        lexer.expect_word("effect")?;
+        match lexer.next()? {
+            Some(Tok::Word(w)) if w == "effect" || w == "material" => {}
+            other => {
+                return Err(lexer.error(format!("expected `effect`, found {other:?}")));
+            }
+        }
         lexer.expect(Tok::Colon)?;
         let effect = lexer.string()?;
         lexer.expect(Tok::Open)?;
@@ -79,7 +88,25 @@ impl Material {
                 Some(Tok::Word(key)) => {
                     lexer.expect(Tok::Colon)?;
                     if key == "texture" {
-                        textures.push(texture_block(&mut lexer)?);
+                        let name = lexer.string()?;
+                        if lexer.peek()? == Some(Tok::Open) {
+                            textures.push(texture_block(&mut lexer, name)?);
+                        } else {
+                            // Legacy form: the string is the source; a
+                            // later `texture_name` names the slot.
+                            textures.push(MatTexture {
+                                name: String::new(),
+                                source: Some(name),
+                                attributes: Vec::new(),
+                            });
+                        }
+                    } else if key == "texture_name"
+                        && textures.last().is_some_and(|t| t.name.is_empty())
+                    {
+                        let value = lexer.value()?;
+                        if let Some(texture) = textures.last_mut() {
+                            texture.name = value.as_str().unwrap_or_default().to_owned();
+                        }
                     } else {
                         attributes.push((key, lexer.value()?));
                     }
@@ -106,8 +133,7 @@ impl Material {
     }
 }
 
-fn texture_block(lexer: &mut Lexer<'_>) -> Result<MatTexture, FormatError> {
-    let name = lexer.string()?;
+fn texture_block(lexer: &mut Lexer<'_>, name: String) -> Result<MatTexture, FormatError> {
     lexer.expect(Tok::Open)?;
     let mut texture = MatTexture {
         name,
@@ -141,6 +167,7 @@ enum Tok {
     Close,
 }
 
+#[derive(Clone)]
 struct Lexer<'a> {
     chars: std::iter::Peekable<std::str::CharIndices<'a>>,
     src: &'a str,
@@ -202,6 +229,11 @@ impl<'a> Lexer<'a> {
         }))
     }
 
+    /// The next token without consuming it.
+    fn peek(&mut self) -> Result<Option<Tok>, FormatError> {
+        self.clone().next()
+    }
+
     fn pos(&mut self) -> usize {
         self.chars.peek().map_or(self.src.len(), |&(i, _)| i)
     }
@@ -210,13 +242,6 @@ impl<'a> Lexer<'a> {
         match self.next()? {
             Some(t) if t == expected => Ok(()),
             other => Err(self.error(format!("expected {expected:?}, found {other:?}"))),
-        }
-    }
-
-    fn expect_word(&mut self, word: &str) -> Result<(), FormatError> {
-        match self.next()? {
-            Some(Tok::Word(w)) if w == word => Ok(()),
-            other => Err(self.error(format!("expected `{word}`, found {other:?}"))),
         }
     }
 
@@ -284,8 +309,20 @@ mod tests {
     }
 
     #[test]
+    fn parses_the_legacy_ui_material_form() {
+        let src = br#"material : "ui" {
+    texture : "cab_highline.tobj"
+    texture_name : "texture"
+}"#;
+        let mat = Material::parse(src).expect("parse");
+        assert_eq!(mat.effect, "ui");
+        let texture = mat.texture("texture").expect("texture");
+        assert_eq!(texture.source.as_deref(), Some("cab_highline.tobj"));
+    }
+
+    #[test]
     fn rejects_malformed_material() {
         assert!(Material::parse(b"effect : \"x\" { diffuse : { 1 , 2 }").is_err());
-        assert!(Material::parse(b"material : \"x\" { }").is_err());
+        assert!(Material::parse(b"shader : \"x\" { }").is_err());
     }
 }
