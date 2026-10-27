@@ -4,7 +4,7 @@
 
 | Requirement | Why |
 |---|---|
-| Rust 1.95+ (Bevy 0.19 needs 1.95) and a C compiler (MSVC Build Tools on Windows) | The `gdeflate` crate builds libdeflate |
+| [rustup](https://rustup.rs) and a C compiler (MSVC Build Tools on Windows) | `rust-toolchain.toml` pins Rust 1.95.0 (Bevy 0.19 needs 1.95), and rustup installs it on the first build. The `gdeflate` crate builds libdeflate. |
 | A GPU with DirectX 12 or Vulkan and BC texture compression (every desktop GPU) | Bevy renderer; textures upload BC-compressed |
 | An ETS2 installation | Integration tests and running the app |
 
@@ -133,3 +133,17 @@ The repository must never contain game files. A pre-commit hook enforces this:
   - anything over 5 MiB.
 - **Whole tree:** run `python tools/check_public_tree.py --all`.
 - **Consequence for tests:** build fixtures in code (as the parser tests do), never as checked-in `.sii`/`.pmd` files.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request, on Windows:
+1. The public-tree guard (`--all`).
+2. `cargo fmt --all --check`.
+3. `cargo clippy --workspace --all-targets -- -D warnings`.
+4. `cargo test --workspace`.
+
+Notes:
+- **Real-install tests skip in CI,** because CI has no game files. Run them locally with `ETS2_DIR` set before pushing parser, catalog or assembly changes.
+- **The first run builds Bevy cold** (about 15–25 minutes). Later runs reuse the build cache.
+- **A newer push to the same branch cancels the run in progress,** so a cancelled run is not a failure.
+- **Upgrading Rust:** change `rust-toolchain.toml`. CI and every machine follow it.
