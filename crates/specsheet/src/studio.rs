@@ -16,6 +16,40 @@ use specsheet_data::GameInstall;
 
 use crate::settings::{self, Settings};
 
+/// The app's state and its action flow. Owns the per-frame order every
+/// other plugin slots into.
+pub struct StudioPlugin;
+
+impl Plugin for StudioPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(Studio::starting())
+            .insert_resource(Actions(vec![Action::OpenGame(None)]))
+            .configure_sets(
+                Update,
+                (
+                    FrameSet::FinishJobs,
+                    FrameSet::Script,
+                    FrameSet::ApplyActions,
+                    FrameSet::View,
+                )
+                    .chain(),
+            )
+            .add_systems(Update, finish_jobs.in_set(FrameSet::FinishJobs))
+            .add_systems(Update, apply_actions.in_set(FrameSet::ApplyActions));
+    }
+}
+
+/// Order of the `Update` work in one frame: finished jobs fold into the
+/// state, the dev script queues actions, actions start jobs, then the 3D
+/// view catches up.
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum FrameSet {
+    FinishJobs,
+    Script,
+    ApplyActions,
+    View,
+}
+
 /// Something the user (or the dev script) asked for.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
@@ -104,7 +138,7 @@ impl Studio {
 }
 
 /// Starts the work for queued actions, one job at a time.
-pub fn apply_actions(mut actions: ResMut<Actions>, mut studio: ResMut<Studio>) {
+fn apply_actions(mut actions: ResMut<Actions>, mut studio: ResMut<Studio>) {
     while !studio.busy() && !actions.0.is_empty() {
         let action = actions.0.remove(0);
         apply(&mut studio, action);
@@ -194,7 +228,7 @@ fn open_game(dir: Option<String>, saved: Option<std::path::PathBuf>) -> Result<O
 }
 
 /// Collects finished jobs and folds their results into the state.
-pub fn finish_jobs(mut studio: ResMut<Studio>, mut actions: ResMut<Actions>) {
+fn finish_jobs(mut studio: ResMut<Studio>, mut actions: ResMut<Actions>) {
     let Some(job) = studio.job.as_mut() else {
         return;
     };

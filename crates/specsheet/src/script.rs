@@ -20,11 +20,40 @@ use bevy::render::view::screenshot::{save_to_disk, Screenshot};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_data::assembly::Drive;
 
-use crate::studio::{Action, Actions, Studio};
+use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;
 use crate::viewer::{ModelCache, Orbit};
 
-pub const ENV_VAR: &str = "SPECSHEET_SCRIPT";
+const ENV_VAR: &str = "SPECSHEET_SCRIPT";
+
+/// Replays the script named by `SPECSHEET_SCRIPT`; does nothing when the
+/// variable is unset.
+pub struct ScriptPlugin {
+    steps: Option<Vec<Step>>,
+}
+
+impl ScriptPlugin {
+    /// Reads and parses the script; errors name the variable and the line.
+    pub fn from_env() -> Result<Self, String> {
+        let Some(path) = std::env::var_os(ENV_VAR) else {
+            return Ok(Self { steps: None });
+        };
+        let steps = std::fs::read_to_string(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|source| parse(&source))
+            .map_err(|error| format!("{ENV_VAR}: {error}"))?;
+        Ok(Self { steps: Some(steps) })
+    }
+}
+
+impl Plugin for ScriptPlugin {
+    fn build(&self, app: &mut App) {
+        if let Some(steps) = &self.steps {
+            app.insert_resource(Script::new(steps.clone()))
+                .add_systems(Update, run.in_set(FrameSet::Script));
+        }
+    }
+}
 
 /// Frames the app must stay idle before `wait` finishes, so uploads and
 /// the egui layout settle.
@@ -51,14 +80,14 @@ pub enum Step {
 }
 
 #[derive(Resource, Default)]
-pub struct Script {
+struct Script {
     steps: VecDeque<Step>,
     idle_frames: u32,
     cooldown: u32,
 }
 
 impl Script {
-    pub fn new(steps: Vec<Step>) -> Self {
+    fn new(steps: Vec<Step>) -> Self {
         Self {
             steps: steps.into(),
             ..default()
@@ -67,7 +96,7 @@ impl Script {
 }
 
 /// Parses a script; errors name the offending line.
-pub fn parse(source: &str) -> Result<Vec<Step>, String> {
+fn parse(source: &str) -> Result<Vec<Step>, String> {
     let mut steps = Vec::new();
     for (number, line) in source.lines().enumerate() {
         let line = line.split('#').next().unwrap_or_default().trim();
@@ -121,9 +150,9 @@ pub fn parse(source: &str) -> Result<Vec<Step>, String> {
     Ok(steps)
 }
 
-pub fn run(
+fn run(
     mut commands: Commands,
-    script: Option<ResMut<Script>>,
+    mut script: ResMut<Script>,
     studio: Res<Studio>,
     mut actions: ResMut<Actions>,
     cache: Res<ModelCache>,
@@ -131,9 +160,6 @@ pub fn run(
     mut orbit: Single<&mut Orbit>,
     mut exit: MessageWriter<AppExit>,
 ) {
-    let Some(mut script) = script else {
-        return;
-    };
     let idle = !studio.busy() && !studio.discovering && actions.0.is_empty() && !cache.loading();
     script.idle_frames = if idle { script.idle_frames + 1 } else { 0 };
     if script.cooldown > 0 {

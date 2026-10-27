@@ -15,60 +15,36 @@ mod viewer;
 
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
-use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
+use bevy_egui::EguiPlugin;
 
-use crate::studio::{Action, Actions, Studio};
+use crate::script::ScriptPlugin;
+use crate::studio::StudioPlugin;
+use crate::ui::UiPlugin;
+use crate::viewer::ViewerPlugin;
 
 fn main() -> AppExit {
-    let script = match std::env::var_os(script::ENV_VAR) {
-        Some(path) => match std::fs::read_to_string(&path)
-            .map_err(|e| e.to_string())
-            .and_then(|source| script::parse(&source))
-        {
-            Ok(steps) => Some(script::Script::new(steps)),
-            Err(error) => {
-                eprintln!("{}: {error}", script::ENV_VAR);
-                return AppExit::error();
-            }
-        },
-        None => None,
+    let script = match ScriptPlugin::from_env() {
+        Ok(plugin) => plugin,
+        Err(error) => {
+            eprintln!("{error}");
+            return AppExit::error();
+        }
     };
-
-    let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: "SpecSheet".into(),
-            resolution: WindowResolution::new(1440, 900),
+    App::new()
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "SpecSheet".into(),
+                resolution: WindowResolution::new(1440, 900),
+                ..default()
+            }),
             ..default()
-        }),
-        ..default()
-    }))
-    .add_plugins(EguiPlugin::default())
-    .insert_resource(Studio::starting())
-    .insert_resource(Actions(vec![Action::OpenGame(None)]))
-    .init_resource::<viewer::ModelCache>()
-    .init_resource::<viewer::TruckInstances>()
-    .init_resource::<viewer::SceneState>()
-    .init_resource::<viewer::ViewportInput>()
-    .init_resource::<ui::UiState>()
-    .add_systems(Startup, (viewer::setup, ui::setup))
-    .add_systems(
-        Update,
-        (
-            studio::finish_jobs,
-            script::run,
-            studio::apply_actions,
-            viewer::finish_models,
-            viewer::apply_scene,
-            viewer::sync_truck,
-            viewer::frame_truck,
-            viewer::orbit_camera,
-        )
-            .chain(),
-    )
-    .add_systems(EguiPrimaryContextPass, ui::ui);
-    if let Some(script) = script {
-        app.insert_resource(script);
-    }
-    app.run()
+        }))
+        .add_plugins((
+            EguiPlugin::default(),
+            StudioPlugin,
+            ViewerPlugin,
+            UiPlugin,
+            script,
+        ))
+        .run()
 }

@@ -6,7 +6,9 @@ use bevy::camera::visibility::RenderLayers;
 use bevy::camera::{CameraOutputMode, Viewport};
 use bevy::prelude::*;
 use bevy::render::render_resource::BlendState;
-use bevy_egui::{egui, EguiContexts, EguiGlobalSettings, PrimaryEguiContext};
+use bevy_egui::{
+    egui, EguiContexts, EguiGlobalSettings, EguiPrimaryContextPass, PrimaryEguiContext,
+};
 use egui::{Align2, Color32, Id, LayerId, Order, Pos2, RichText, Sense, Stroke, UiBuilder};
 use specsheet_data::assembly::Drive;
 use specsheet_data::view::{Hotspot, HotspotCategory, OptionView, SlotOptions, TruckOverview};
@@ -16,6 +18,17 @@ use crate::hotspots::{
 };
 use crate::studio::{Action, Actions, Studio};
 use crate::viewer::{ModelCache, TruckRoot, ViewportInput};
+
+/// The egui panels and hotspot markers, drawn through their own camera.
+pub struct UiPlugin;
+
+impl Plugin for UiPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<UiState>()
+            .add_systems(Startup, setup)
+            .add_systems(EguiPrimaryContextPass, ui);
+    }
+}
 
 const BG: Color32 = Color32::from_rgb(0x11, 0x13, 0x17);
 const PANEL: Color32 = Color32::from_rgb(0x1a, 0x1d, 0x23);
@@ -49,7 +62,7 @@ fn marker_color(category: HotspotCategory) -> Color32 {
 
 /// egui draws through its own full-window camera over the 3D view, so the
 /// 3D camera's viewport can shrink to the area between the panels.
-pub fn setup(mut commands: Commands, mut settings: ResMut<EguiGlobalSettings>) {
+fn setup(mut commands: Commands, mut settings: ResMut<EguiGlobalSettings>) {
     settings.auto_create_primary_context = false;
     commands.spawn((
         PrimaryEguiContext,
@@ -81,7 +94,7 @@ fn style(ctx: &egui::Context) {
     ctx.set_visuals(visuals);
 }
 
-pub fn ui(
+fn ui(
     mut contexts: EguiContexts,
     studio: Res<Studio>,
     mut actions: ResMut<Actions>,

@@ -18,7 +18,32 @@ use specsheet_data::assembly::Placement;
 use specsheet_data::scene::Scene;
 
 use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
-use crate::studio::Studio;
+use crate::studio::{FrameSet, Studio};
+
+/// The truck, the scene, lights and the orbit camera.
+pub struct ViewerPlugin;
+
+impl Plugin for ViewerPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ModelCache>()
+            .init_resource::<TruckInstances>()
+            .init_resource::<SceneState>()
+            .init_resource::<ViewportInput>()
+            .add_systems(Startup, setup)
+            .add_systems(
+                Update,
+                (
+                    finish_models,
+                    apply_scene,
+                    sync_truck,
+                    frame_truck,
+                    orbit_camera,
+                )
+                    .chain()
+                    .in_set(FrameSet::View),
+            );
+    }
+}
 
 /// Parent of every truck model; carries the scene's truck pose.
 #[derive(Component)]
@@ -108,7 +133,7 @@ const DEFAULT_AMBIENT: [f32; 3] = [0.29, 0.32, 0.4];
 const MAX_ENVIRONMENT: f32 = 4.0;
 const DEFAULT_ENVIRONMENT: f32 = 2.0;
 
-pub fn setup(
+fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -220,7 +245,7 @@ impl ModelCache {
 }
 
 /// Uploads models whose loading finished.
-pub fn finish_models(
+fn finish_models(
     mut cache: ResMut<ModelCache>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -294,7 +319,7 @@ pub struct TruckInstances {
 }
 
 /// Brings the spawned truck in line with the studio's placements.
-pub fn sync_truck(
+fn sync_truck(
     mut commands: Commands,
     studio: Res<Studio>,
     mut cache: ResMut<ModelCache>,
@@ -400,7 +425,7 @@ pub struct SceneState {
 
 /// Applies the selected game scene: camera, lights, fog, truck pose and the
 /// scene model. Each piece falls back on its own.
-pub fn apply_scene(
+fn apply_scene(
     mut commands: Commands,
     studio: Res<Studio>,
     mut state: ResMut<SceneState>,
@@ -518,7 +543,7 @@ fn apply_lights(
 }
 
 /// Centres the orbit on the truck when no game scene supplies a camera.
-pub fn frame_truck(
+fn frame_truck(
     state: Res<SceneState>,
     instances: Res<TruckInstances>,
     truck: Single<&GlobalTransform, With<TruckRoot>>,
@@ -545,7 +570,7 @@ pub struct ViewportInput {
 }
 
 /// Left drag rotates, right or middle drag pans, the wheel zooms.
-pub fn orbit_camera(
+fn orbit_camera(
     buttons: Res<ButtonInput<MouseButton>>,
     motion: Res<AccumulatedMouseMotion>,
     scroll: Res<AccumulatedMouseScroll>,
