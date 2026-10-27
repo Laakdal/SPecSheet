@@ -37,7 +37,7 @@ The repository contains no third-party source files or assets. This page credits
 
 These were consulted to cross-check format facts that our own tools had observed. The evidence in `research/evidence/` comes from our own tools.
 
-- **TruckLib** (`TruckLib.HashFs`, `TruckLib.Models`, `TruckLib.Sii`) and **Extractor** by sk-zk, under **GPL-2.0**: HashFS, model and SII layouts. SPecSheet is MIT, so its code must not copy or translate code from these projects. Only facts such as field offsets and magic numbers may be taken from them.
+- **TruckLib** (`TruckLib.HashFs`, `TruckLib.Models`, `TruckLib.Sii`) and **Extractor** by sk-zk, under **GPL-2.0**: HashFS, model and SII layouts. SPecSheet is MIT, so its code must not copy or translate code from these projects. Only facts such as field offsets and magic numbers may be taken from them. The model and texture code was rewritten clean-room from our own evidence (D13), and the archive reader follows.
 - **GisDeflate** by sk-zk (MIT): the GDeflate tile-stream header.
 
 ## Euro Truck Simulator 2

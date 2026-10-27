@@ -73,7 +73,8 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] License-safe re-derivation: the PMD/PMG layouts and the texture image/sample records are now cited from our own bytes (`pmg-layout-derivation.txt`, `texture-unpack-derivation.txt`). Corrections: piece +60 is the vertex stride (now checked), and an empty hookup string means no hookup.
 - [ ] DXGI 67 (R9G9B9E5_SHAREDEXP, skyboxes and HDR UI images) is missing from `pixel_layout`, so those textures do not unpack. Needed only if the app renders skyboxes.
 - [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
-- [ ] Clean-room rewrite of `pmd.rs`, `pmg.rs` and `texture.rs` (the user's order, 2026-10-28): a fresh agent implements them from interface stubs, `docs/formats/` and our own byte evidence only (no TruckLib, no old code, no git history of those files), on the local branch `cleanroom`. Acceptance: output identical to the old code for every model and texture in the install (differential fingerprint), then `real_install`, fmt and clippy. Then decision D13 and `THIRD_PARTY_NOTICES.md`. Phase 2 (the user's order): `hashfs.rs` by a second fresh agent, because phase 1's agent read it as a call site.
+- [x] Clean-room rewrite, phase 1 (D13): `pmd.rs`, `pmg.rs` and `texture.rs` rewritten from interface stubs and our own evidence by an agent that never saw TruckLib or the old code. Output identical to the old code for all 278,633 models and textures in the install (`research/evidence/cleanroom-phase1.txt`), plus three resource-exhaustion guards.
+- [ ] Clean-room rewrite, phase 2 (D13, the user's order): `hashfs.rs`. First derive the HashFS v2 layout from annotated hex dumps (`hashfs.md` facts were only functionally confirmed), then implement it with a second fresh agent.
 
 ## Next
 
