@@ -4,10 +4,10 @@ Each entry records the context, the decision and the alternatives considered. Ne
 
 ### D1: Cargo workspace with four library crates plus the app
 - **Context:** the user asked for tuning logic that is testable apart from UI, renderer and archive code.
-- **Decision:** `scs-archive`, `scs-formats`, `tuning-core` and `game-data` as separate crates, plus `app/src-tauri`.
+- **Decision:** `specsheet-archive`, `specsheet-formats`, `specsheet-core` and `specsheet-data` as separate crates, plus `app/src-tauri` (replaced by D11, moved by D12).
 - **Alternatives:**
-  - A single crate with modules. Rejected: nothing would stop `tuning-core` from importing archive code.
-  - Merging `scs-archive` into `scs-formats`. Rejected: the archive needs compression dependencies and file I/O, while the parsers are pure byte functions.
+  - A single crate with modules. Rejected: nothing would stop `specsheet-core` from importing archive code.
+  - Merging `specsheet-archive` into `specsheet-formats`. Rejected: the archive needs compression dependencies and file I/O, while the parsers are pure byte functions.
 
 ### D2: Our own HashFS reader instead of a library
 - No maintained Rust crate reads HashFS v2.
@@ -20,7 +20,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
 
 ### D4: `gdeflate` crate (libdeflate C code) for texture decompression
 - **Alternative:** port GDeflate to Rust (~800 lines). Rejected for now.
-- The crate's safe wrapper does not validate tile sizes against the buffer. We therefore parse and validate the tile stream ourselves before calling it (`scs-archive/src/gdeflate.rs`).
+- The crate's safe wrapper does not validate tile sizes against the buffer. We therefore parse and validate the tile stream ourselves before calling it (`specsheet-archive/src/gdeflate.rs`).
 - **Revisit** if the C build becomes a portability problem.
 
 ### D5: Tauri 2 + React/TypeScript + Three.js (superseded by D11)
@@ -66,17 +66,29 @@ Each entry records the context, the decision and the alternatives considered. Ne
 
 ### D11: All-Rust front end with Bevy 0.19 + bevy_egui 0.42
 - **Context:** the goal became a 1:1 replica of the game's tuning (see ROADMAP Phases 4 and 5). That means recreating the game's shaders, lights and reflections. The user wanted the whole project in Rust: a TypeScript front end "kinda defeats the purpose of all rust".
-- **Decision:** replace the Tauri shell and the React/three.js UI with one Bevy app (`app/specsheet`). The pieces:
-  - The 3D view uses Bevy's renderer on wgpu (DirectX 12/Vulkan). `game-data::render` meshes and BC textures are uploaded directly, with no wire format. That ends D6.
+- **Decision:** replace the Tauri shell and the React/three.js UI with one Bevy app (`crates/specsheet`). The pieces:
+  - The 3D view uses Bevy's renderer on wgpu (DirectX 12/Vulkan). `specsheet-data::render` meshes and BC textures are uploaded directly, with no wire format. That ends D6.
   - The UI (top bar, sidebar, hotspot markers) uses egui.
-  - Labels, marker selection and incompatibility reasons moved from the Tauri adapter into `game-data::view`, so any front end shows the same thing.
+  - Labels, marker selection and incompatibility reasons moved from the Tauri adapter into `specsheet-data::view`, so any front end shows the same thing.
 - **Versions:** Bevy 0.20 needs Rust 1.97.1 and this machine has 1.95. 0.19.1 is the newest release that builds here; upgrading is a separate step.
 - **Alternatives:**
   - Keep Tauri + three.js (D5). Rejected: custom shaders would live in a second language and a WebView, which is the hardest part of matching the game.
   - Leptos/Dioxus inside Tauri: Rust UI, web styling. Rejected: the 3D view would still be WebGL in a WebView.
   - A hand-written wgpu renderer. Rejected: Bevy gives cameras, lights, fog, PBR and custom WGSL materials for free.
-- **Kept open:** a later C++ front end. The core crates stay free of UI and renderer code, so a C interface (cbindgen) over `game-data` remains possible.
+- **Kept open:** a later C++ front end. The core crates stay free of UI and renderer code, so a C interface (cbindgen) over `specsheet-data` remains possible.
 - **Costs accepted:**
   - Styling the UI to match the game takes custom egui drawing.
   - UI changes need a Rust rebuild, where Vite reloaded instantly.
   - App checks use a dev script mode (`SPECSHEET_SCRIPT`) that replays actions and saves screenshots, replacing CDP.
+
+### D12: Project-prefixed crate names, all crates under `crates/`
+- **Context:** the crates were named after the game's file formats (`scs-archive`, `scs-formats`) or generically (`tuning-core`, `game-data`), and the app lived alone in `app/specsheet`.
+- **Decision:** every crate carries the project prefix and lives in `crates/`, with the folder named like the crate, as large Rust workspaces do (ruff, uv, Bevy):
+  - `specsheet`: the Bevy app (binary)
+  - `specsheet-archive` (was `scs-archive`), `specsheet-formats` (was `scs-formats`)
+  - `specsheet-core` (was `tuning-core`), `specsheet-data` (was `game-data`)
+  - The workspace is `members = ["crates/*"]`.
+- **Alternatives:**
+  - `game-archive`/`game-formats`, matching `game-data`. Rejected in favour of one prefix for every crate.
+  - Bare names (`archive`, `formats`). Rejected: `use formats::pmd` doesn't say whose formats.
+- **Costs accepted:** one large rename commit; commands in older evidence files were updated to the new `-p` names.
