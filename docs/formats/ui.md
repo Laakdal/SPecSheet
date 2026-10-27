@@ -94,6 +94,15 @@ Containers also carry `fitting: bool` (Hypothesis: the container sizes itself to
   - `<ret>`, `<br>`, `<nowrap>`.
 
   The full tag grammar is **Unknown**.
+- **Markup layout** (all Hypothesis). These rules make the geometry of `txt.window.bcg_rect4`, `btn.truck_grp` and `btn.truck_acc` add up exactly. They are implemented in `specsheet-data::ui::flow`, and the unit tests reproduce those three templates:
+  - The cursor starts at the widget's top-left, with y pointing down inside the box. Units are reference units, and one texel is one unit.
+  - `<ret>` returns the cursor to the origin; it does not start a new line. In `btn.truck_grp`'s selected state, `…</align><ret><img icon>` draws the icon over the background, not below it. `<br>` starts a new line.
+  - `<offset hshift= vshift=>` is absolute, measured from the margin's left edge and the box top. In `btn.truck_acc`, `<img height=22><ret><offset vshift=22><img height=74>` fills the 96-unit item exactly.
+  - `<img left= right= top= bottom=>` with `pN` values select texels N. Reversed ranges mirror the texture: `left=p16 right=p0` is the mirrored corner. The texel span is the natural size.
+  - `width`/`height` override the natural size. A negative value is the space remaining on the line (or below the cursor) minus N, and `xscale`/`yscale` `stretch|repeat` fill that space. With these rules, `bcg_rect4` comes out as a 4-unit top strip, a middle part and a 16-unit bottom strip that tile the box.
+  - Edges of `<margin>` and `<align>`: a positive value is an absolute coordinate, while zero or negative is an inset from the far edge. Symmetric `<margin left=15 right=-15>` is the most common margin.
+  - `<align hstyle= vstyle=>` lays out its content from the top-left of its own box, which runs from the current line down to the bottom of the widget, then shifts that content as one block.
+  - Unverified until the reference screenshots are compared: the text metrics, `<nowrap>`, `<hbr>`, how `repeat` differs from `stretch`, and how glyph baselines line up.
 - **`@@key@@`** expands from the localisation database ([sii.md](sii.md)). That includes colours.
 - **Colours** are localisation keys in `/locale/ui_colors.sui` (153 `clr_*` keys, included from `/locale/common.sui`). Values are 8 hex digits, read as **AABBGGRR** (Hypothesis): `clr_red` = `FF4C4CFC`, `clr_green` = `FF00DD75` and `clr_blue` = `FFFFB204` decode to the named colour only in that order. Example: `clr_sel` = `FF03B0FA`, an orange accent. Literal `0xC5000000` also appears.
 
