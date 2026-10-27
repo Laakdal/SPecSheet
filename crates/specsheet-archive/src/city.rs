@@ -1,4 +1,5 @@
-//! CityHash64, version 1.0.3.
+//! CityHash64, version 1.0.3: a port of Google's CityHash (MIT, Copyright
+//! (c) 2011 Google, Inc.; notice in `THIRD_PARTY_NOTICES.md`).
 //!
 //! HashFS archives key every entry by `CityHash64(path)`. The game uses the
 //! 1.0.3 revision of the algorithm, which differs from the current v1.1 for
