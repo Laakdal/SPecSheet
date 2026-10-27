@@ -283,13 +283,24 @@ pub fn draw(
 
 /// Whether `index` and all its ancestors are shown.
 fn visible(layout: &Layout, index: usize, list_open: bool, tab_open: bool) -> bool {
+    let hidden_itself = |widget: &Widget| {
+        ids::HIDDEN.contains(&widget.id)
+            || (widget.id == ids::FIRST_MESSAGE && (list_open || tab_open))
+            || (widget.id == ids::COMPONENTS && !list_open)
+    };
     let mut current = Some(index);
     while let Some(i) = current {
         let widget = &layout.widgets[i];
-        let hidden = ids::HIDDEN.contains(&widget.id)
-            || (widget.id == ids::FIRST_MESSAGE && (list_open || tab_open))
-            || (widget.id == ids::COMPONENTS && !list_open);
-        if hidden {
+        // An unaddressed sibling with the same rectangle is the hidden
+        // widget's background (e.g. the money box) and goes with it.
+        let background_of_hidden = widget.id == 0
+            && layout.widgets.iter().any(|other| {
+                other.id != 0
+                    && other.parent == widget.parent
+                    && other.rect == widget.rect
+                    && hidden_itself(other)
+            });
+        if hidden_itself(widget) || background_of_hidden {
             return false;
         }
         current = widget.parent;
@@ -590,6 +601,52 @@ pub fn tab_slot(overview: &TruckOverview, tab: Tab) -> Option<SlotId> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn widget(id: i64, parent: Option<usize>, rect: Rect) -> Widget {
+        Widget {
+            name: format!("w{id}"),
+            class: "ui::text_common".to_owned(),
+            id,
+            parent,
+            rect,
+            layer: 0,
+            look_template: None,
+            value: None,
+            text: None,
+            value_list: Vec::new(),
+            id_list: Vec::new(),
+            item_size: None,
+            item_gap: None,
+        }
+    }
+
+    #[test]
+    fn a_hidden_widget_takes_its_background_along() {
+        let money = Rect {
+            left: 1113.0,
+            right: 1433.0,
+            top: 893.0,
+            bottom: 853.0,
+        };
+        let layout = Layout {
+            path: String::new(),
+            keep_aspect: KeepAspect::Right,
+            widgets: vec![
+                widget(0, None, Rect::default()),
+                widget(ids::HIDDEN[10], Some(0), money),
+                // Unaddressed background with the money's rectangle.
+                widget(0, Some(0), money),
+                // Unaddressed widget elsewhere stays.
+                widget(0, Some(0), Rect { top: 50.0, ..money }),
+            ],
+        };
+        assert!(!visible(&layout, 1, false, false));
+        assert!(
+            !visible(&layout, 2, false, false),
+            "background of a hidden widget"
+        );
+        assert!(visible(&layout, 3, false, false));
+    }
 
     #[test]
     fn maps_reference_space_by_height_and_aspect() {
