@@ -63,6 +63,8 @@ If the game is not found automatically, the app asks for its directory.
 | [CHANGELOG](CHANGELOG.md) | What changed |
 | [TASKS](TASKS.md) | Current progress |
 
-## Legal
+## License
 
-This project is not affiliated with or endorsed by SCS Software. It contains no game assets. Everything shown is loaded at runtime from the user's own licensed installation.
+[MIT](LICENSE), for the project's original work only. Dependencies keep their own licenses.
+
+Euro Truck Simulator 2 is a trademark of SCS Software, and its game files (models, textures, definitions and shaders) belong to SCS Software. This project is not affiliated with or endorsed by SCS Software. It contains no game assets: everything shown is loaded at runtime from the user's own licensed installation and is never redistributed.
