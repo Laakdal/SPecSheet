@@ -47,10 +47,12 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - Switching to scene 3 (Halloween Fields, dark by definition).
   - Volvo FH 2024; interior markers; orbit drag and wheel zoom.
   - Empty-slot markers draw as rings, and wheel groups as one blue numbered marker.
+  - The old Tauri/React app, npm files and their ignore entries are removed (still in history at e360ebc).
+
+- [x] Addon hookups (F11): catalogue, rules, placement, config loading; real-install test on the game's oversize Mercedes config. Exposed through `TruckSession::{hookup_options, set_hookup}` for the app.
 
 ## In progress
 
-- [ ] Delete the old Tauri/React app (`app/src-tauri`, `app/ui`, `app/package*.json`, `tsconfig.json`, `vite.config.ts`, `eslint.config.js`, `app/dist`, `app/node_modules`) and its `.gitignore` entries. It's already out of the workspace. Waiting for the first commit, so it stays in history; ets2-tuning-gui-d3 is coordinating with the user.
 
 - [x] REA trace: the pin-button string is used by `FUN_140fe0fc0` (F8).
 - [ ] REA decompilation of `FUN_140fe0fc0` (pin creation). The first run was stopped by Claude Code when the machine ran low on memory (Ghidra plus other sessions' builds). Re-run it when memory allows, with the CLI command from CLAUDE.md: `rea function <exe> --procedure=0x140fe0fc0`.
@@ -63,7 +65,6 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 2. **Data quirks:**
    - `volvo.fh_2024` is named "Volvo FH6". Check which `info[]` keys get resolved.
    - The Volvo FH 2024 preset shows no side mirrors. Investigate.
-3. **Addon hookups:** accessories on accessories (`/def/vehicle/addon_hookups`, `accessory_*_hookup_data`, `suitable_for[]` = host slot).
 4. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
 5. **Interior:** interior models and an interior camera; `hide_in`.
 6. **Wheels:** rear-axle and lift-axle variants (6x2/8x4), inner twin-tyre bead, `wheel_shift`.
