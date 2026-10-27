@@ -153,6 +153,22 @@ impl Configuration {
         })
     }
 
+    /// The configuration's value: the prices of the selected parts and
+    /// mounted hookups; parts without a price count as free (Hypothesis:
+    /// the game prices a truck as the sum of its parts).
+    pub fn price(&self, catalog: &TruckCatalog) -> i64 {
+        let parts = self
+            .selections
+            .values()
+            .filter_map(|id| catalog.accessory(id))
+            .filter_map(|a| a.price);
+        let hookups = self
+            .all_hookups()
+            .filter_map(|(_, _, id)| catalog.hookup(id))
+            .filter_map(|h| h.price);
+        parts.chain(hookups).fold(0i64, i64::saturating_add)
+    }
+
     /// Sets hookups without checking any rule (e.g. loading game configs);
     /// use [`Configuration::validate`] after.
     pub fn with_hookups(

@@ -468,3 +468,24 @@ fn validation_reports_hookups_on_missing_hosts() {
             }
         )));
 }
+
+#[test]
+fn the_price_sums_selected_parts_and_hookups() {
+    let mut accessories: Vec<Accessory> = catalog().accessories().cloned().collect();
+    for a in &mut accessories {
+        a.price = match a.id.as_str() {
+            "6x2.t.chassis" => Some(30_000),
+            "high.t.cabin" => Some(40_000),
+            // Parts without a price count as free.
+            _ => None,
+        };
+    }
+    let catalog = TruckCatalog::new(
+        TruckId::from("t"),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        accessories,
+    );
+    assert_eq!(base_config().price(&catalog), 70_000);
+}
