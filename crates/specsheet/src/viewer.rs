@@ -101,17 +101,30 @@ impl Orbit {
     /// The truck configuration screen's own camera. The game's elevation is
     /// negative above the aim, so pitch is its negation, and its elevation
     /// limits become the pitch range (Hypothesis, see `OrbitSpec::position`).
+    /// Non-finite values (the data layer already filters them) fall back
+    /// to the viewer defaults rather than reach `clamp`, which panics on NaN.
     pub fn from_spec(spec: &OrbitSpec) -> Self {
-        let distance = (spec.zoom * spec.relative_bounds[0]).max(MIN_DISTANCE);
+        let finite = |v: f32, default: f32| if v.is_finite() { v } else { default };
+        let distance = finite(spec.zoom * spec.relative_bounds[0], MIN_DISTANCE).max(MIN_DISTANCE);
         let [low, high] = spec.elevation_limit;
+        let (min_pitch, max_pitch) = if low.is_finite() && high.is_finite() {
+            ((-high).min(-low), (-high).max(-low))
+        } else {
+            (MIN_PITCH, MAX_PITCH)
+        };
+        let target = Vec3::from(spec.aim);
         let orbit = Self {
-            target: Vec3::from(spec.aim),
-            yaw: spec.azimuth,
-            pitch: -spec.elevation,
+            target: if target.is_finite() {
+                target
+            } else {
+                DEFAULT_TARGET
+            },
+            yaw: finite(spec.azimuth, 0.0),
+            pitch: finite(-spec.elevation, min_pitch),
             distance,
             max_distance: MAX_DISTANCE.max(distance),
-            min_pitch: (-high).min(-low),
-            max_pitch: (-high).max(-low),
+            min_pitch,
+            max_pitch,
         };
         orbit.clamped()
     }
@@ -663,6 +676,25 @@ mod tests {
         let orbit = Orbit::from_spec(&spec);
         assert!(orbit.position().distance(Vec3::from(spec.position())) < 1e-4);
         assert_eq!((orbit.min_pitch, orbit.max_pitch), (0.0, 0.35));
+    }
+
+    #[test]
+    fn non_finite_game_limits_do_not_panic() {
+        let spec = OrbitSpec {
+            aim: [0.0, 2.6, 0.0],
+            fov: 50.0,
+            azimuth: 0.0,
+            elevation: 0.0,
+            zoom: 1.0,
+            elevation_limit: [f32::NAN, f32::NAN],
+            relative_bounds: [f32::INFINITY; 3],
+            aim_y_bounds: [0.0, 1.0],
+            rotation_sensitivity: 1.0,
+            zoom_sensitivity: 1.0,
+        };
+        let orbit = Orbit::from_spec(&spec);
+        assert_eq!((orbit.min_pitch, orbit.max_pitch), (MIN_PITCH, MAX_PITCH));
+        assert!(orbit.position().is_finite());
     }
 
     #[test]
