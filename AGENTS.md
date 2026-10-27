@@ -25,6 +25,7 @@ A standalone ETS2 truck-tuning app, all in Rust: a workspace of library crates p
 - Derive trucks, slots, accessories and hotspot positions from game data. Lists, coordinates and IDs never appear as literals.
 - Build test fixtures in code. The pre-commit guard (`tools/check_public_tree.py`) rejects game files and game-format fixtures; never commit extracted assets.
 - Before relying on a new fact about ETS2, record it with evidence and a label (Confirmed / Hypothesis / Unknown) in the reverse-engineering or format doc. Community code (sk-zk TruckLib, etc.) is a cross-check, never evidence.
+- TruckLib and Extractor (sk-zk) are GPL-2.0 and this project is MIT. Take only facts from them (offsets, magic numbers, layouts), and write the code from our own byte observations. Never copy, port or translate their code.
 - Fix bugs test-first: a failing regression test, then the fix.
 - Refactors replace code. Delete the old path in the same change.
 - Split a module when it grows distinct responsibilities, not by line count. A split is a pure move in its own commit.
