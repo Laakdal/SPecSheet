@@ -19,12 +19,15 @@ Evidence files live in `research/evidence/`.
 | [formats/sii.md](formats/sii.md) | Text SII definitions (`@include`, arrays, tuples) and localisation |
 | [formats/models.md](formats/models.md) | PMD descriptors, PMG geometry and locators, tokens, `.mat` materials |
 | [formats/effects.md](formats/effects.md) | `effect.scs`: `.rfx` effect → shader map, `.vso`/`.fso` shaders |
+| [formats/ui.md](formats/ui.md) | `/ui/` layout SII (widget units, 1440×900 coordinates, templates, markup), SDF `.font`, UI `.mat`, accessory icon paths |
+| [formats/ui-truck-config.md](formats/ui-truck-config.md) | The truck tuning screen (`truck_configuration_*.sii`, filter dialog): widget trees, runtime-filled containers, captions |
 
 ## Not yet implemented
 
 | Format | Status |
 |---|---|
 | `.rfx` / shader parsing | Readable through the VFS; no parser yet |
+| `/ui/` layouts, `.font` | Documented in [formats/ui.md](formats/ui.md); parsed as plain SII, no layout or font model yet |
 | `.pmc` collision | Not needed |
 | `.pma` animation | Not needed for the static preview |
 | HashFS v1, ZIP | Community mods only; mods are not mounted |

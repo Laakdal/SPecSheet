@@ -1,0 +1,1061 @@
+UI layout survey: /ui/truck_configuration_*.sii, truck_config_filters.sii, templates, fonts, icons, locale
+ETS2 1.60.1.7. Produced 2026-10-27. Counts and short excerpts only; no game file is reproduced.
+
+Commands (Git Bash, repo root)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  SCS=<target>/release/examples/scs        # cargo build --release -p specsheet-archive --example scs
+  # 1. extract /ui/ (488 .sii/.sui + credits.txt) and a few locale/font/def files into the gitignored research/extracted/
+  $SCS find ui "" > /tmp/ui.lst
+  while read p; do mkdir -p "research/extracted/$(dirname "$p")"; $SCS cat "$p" > "research/extracted/$p"; done < /tmp/ui.lst
+  for f in locale/common.sui locale/ui_colors.sui locale/en_us/local.sii locale/en_us/localization.sui \
+           locale/en_us/accessories.sui font/normal.font font/glyphs_xb.font font/big_0.mat; do
+    mkdir -p research/extracted/$(dirname $f); $SCS cat $f > research/extracted/$f; done
+  $SCS cat def/truck_config_scene.sii > research/extracted/truck_config_scene.sii
+  # 2. this whole file: bash tools/research/ui_evidence.sh (with ETS2_DIR set it also runs the cargo examples below)
+  #    single steps (tools/research/ui_survey.py; run from research/extracted/ui):
+  python -I ../../../tools/research/ui_survey.py . stats | area | coords [files] | tree <f> | refs <f..> | templates <f..>
+  python -I ../../../tools/research/ui_survey.py ../ui_tc5 stats
+  python -I ../../../tools/research/ui_survey.py . loc ../locale <key | ~key-regex | =value-regex>...
+  # 3. icons (crates/specsheet-data/examples/ui_icon_survey.rs)
+  cargo run --release -p specsheet-data --example ui_icon_survey -- /def/vehicle/truck 3
+  cargo run --release -p specsheet-data --example ui_icon_survey -- /def/vehicle 0
+  cargo run --release -p specsheet-data --example ui_icon_survey -- - 0 <icon or /abs/path.tobj>...
+  cargo run --release -p specsheet-data --example def_stats -- /ui      # our SII parser over every /ui/*.sii
+  # 4. runtime: D:/SCS/Euro Truck Simulator 2/game.log.txt (pack set 1.60.1.7): grep -n "UI reference mode"
+  Tree/value markup below is replaced by <markup>; only ids, classes, rects, attribute names and short tokens are kept.
+
+==========================================================================
+A. Runtime: UI reference resolution
+==========================================================================
+game.log.txt:24   [ufs] Loaded pack set version 1.60.1.7 ...
+game.log.txt:499  00:00:04.887 : Setting UI reference mode to: 1440x900...
+game.log.txt:587  [win] new windowed size: 2560 1440        (actual display mode of this run)
+config.cfg: no UI-scale cvar (grep -i scale|aspect: only r_scale_x/y, r_mirror_scale_*, r_imgui_scale, stereo UI vars)
+
+==========================================================================
+B. Whole /ui/ tree (ui_survey.py . stats / area / coords)
+==========================================================================
+files parsed: 488  units: 10552  classes: 288
+top classes (units, files):
+  ui::text_common  units=2910 files=335
+  ui::text  units=2133 files=238
+  ui::button_common  units=1252 files=200
+  ui::group  units=1082 files=246
+  ui::text_template  units=669 files=23
+  ui::button_template  units=309 files=2
+  ui_blend_window  units=213 files=213
+  ui::window  units=208 files=208
+  ui_text_bar  units=180 files=36
+  screen_desc  units=174 files=31
+  ui::portal  units=115 files=88
+  ui::slider_common  units=108 files=76
+  ui::linear_layout  units=108 files=29
+  ui::list_common  units=105 files=65
+  ui::button_row  units=80 files=70
+  ui::parent_sized_view  units=63 files=7
+  ui::droplist_common  units=60 files=37
+  ui::inputline_common  units=59 files=45
+  ui_gauge  units=54 files=16
+  ui::text_table_common  units=46 files=33
+  ui::tooltip_template_data  units=45 files=1
+  ui::overlay_point  units=41 files=41
+  ui::button  units=31 files=11
+  ui::padding  units=28 files=5
+  ui::table_row_list_common  units=26 files=16
+  ui_vehicle_preview  units=26 files=22
+  ui_job_map  units=15 files=15
+  ui::slider_template  units=14 files=1
+  ui::child_sized_view  units=13 files=3
+  ui::tooltip_template  units=12 files=1
+  ui::link_text  units=11 files=11
+  ui_garage_detail_slot  units=10 files=2
+
+root window attributes (from stats):
+  ui_blend_window   clip_children                         213  [bool:213]  values=truex130,falsex83
+  ui_blend_window   keep_aspect                           213  [token:213]  values=centerx190,rightx12,leftx11
+  ui_blend_window   my_parent                             213  [null:213]
+  ui::window   clip_children                         208  [bool:208]  values=truex169,falsex39
+  ui::window   keep_aspect                           208  [token:208]  values=nonex134,centerx63,leftx6,rightx5
+  ui::window   my_parent                             208  [null:208]
+
+pointer / tab over all units (grep -h '^ *pointer:' -r research/extracted/ui | sort | uniq -c):
+     9024  pointer: -1
+     8980  tab: -1
+       19  tab: 2
+        7  tab: 8
+        4  tab: 7
+        4  tab: 3
+        4  tab: 1
+
+area pattern counts (non-template files):
+  area=1001        leaf        6611   e.g. adviser_chat.sii:_nameless.27d.e030:ui::slider_common c=(288.0, 302.0, 119.0, 31.0) a=(1.0, 0.0, 0.0, 1.0)
+  area==coords     container   2054   e.g. adviser.sii:_nameless.wnd:ui::window c=(0.0, 1440.0, 900.0, 0.0) a=(0.0, 1440.0, 900.0, 0.0)
+  area=other       leaf         160   e.g. bugreport.sii:_nameless._.desc:ui::text_common c=(500.0, 981.0, 618.0, 594.0) a=(None, None, None, None)
+  area==coords     leaf         108   e.g. adviser_gps.sii:_nameless.1ad.b440:ui::text_common c=(1170.0, 1203.0, 391.0, 365.0) a=(1170.0, 1203.0, 391.0, 365.0)
+  area=other       container     45   e.g. adviser_chat_messages.sii:_nameless.wnd:ui::window c=(0.0, 280.0, 78.0, 0.0) a=(0.0, 328.0, 78.0, 0.0)
+  area=1001        container     20   e.g. adviser_gps.sii:_nameless.16d.35c0:ui_map c=(1150.0, 1420.0, 232.0, 42.0) a=(1.0, 0.0, 0.0, 1.0)
+  area=0000        leaf          17   e.g. hq_selection.sii:_nameless._.tooltip:ui::text_common c=(128.0, 390.0, 402.0, 295.0) a=(0.0, 0.0, 0.0, 0.0)
+  area=0110        leaf           7   e.g. company_job_detail.sii:_nameless._.backg:ui::text_common c=(7.0, 1433.0, 850.0, 7.0) a=(0.0, 1.0, 1.0, 0.0)
+  area=0101        leaf           2   e.g. dashboard/daf_xf.sii:_nameless._.odometer:ui::text_common c=(10.0, 340.0, 165.0, 110.0) a=(0.0, 1.0, 0.0, 1.0)
+
+units with a negative coords_* value, by class:
+  ui::group                      28
+  ui::text                       19
+  ui::text_common                18
+  ui_gauge                       5
+  ui_blend_window                5
+  ui::window                     2
+  ui_truck_scene_base            1
+  ui::list_common                1
+
+root (my_parent: null) coords rects:
+  (0.0, 1440.0, 900.0, 0.0) ui_blend_window x152
+  (0.0, 1440.0, 900.0, 0.0) ui::window x68
+  (0.0, 1440.0, 540.0, 0.0) ui::window x13
+  (0.0, 1152.0, 864.0, 0.0) ui::window x13
+  (0.0, 1280.0, 720.0, 0.0) ui::window x12
+  (7.0, 1433.0, 850.0, 80.0) ui_blend_window x11
+  (0.0, 303.0, 64.0, 0.0) ui_blend_window x8
+  (0.0, 902.0, 900.0, 208.0) ui::window x8
+  (0.0, 800.0, 800.0, 0.0) ui::window x7
+  (0.0, 1440.0, 900.0, 0.0) ui_blend_only_window x4
+  (0.0, 490.0, 730.0, 0.0) ui::window x4
+  (7.0, 1433.0, 850.0, 7.0) ui_blend_window x3
+  (0.0, 1600.0, 900.0, 0.0) ui_blend_window x3
+  (0.0, 928.0, 900.0, 321.0) ui::window x3
+  (0.0, 512.0, 640.0, 0.0) ui::window x3
+  (0.0, 256.0, 128.0, 0.0) ui::window x3
+  (0.0, 1400.0, 773.0, 0.0) ui::window x2
+  (0.0, 900.0, 900.0, 695.0) ui::window x2
+  (0.0, 950.0, 900.0, 505.0) ui::window x2
+  (0.0, 256.0, 256.0, 0.0) ui::window x2
+
+units with coords: 9024; coords_t >= coords_b: 9024
+child rect inside parent rect: 7978; outside: 621
+
+==========================================================================
+C. The five tuning-screen files (ui_survey.py ../ui_tc5 stats): class -> attribute count [value kinds]
+   (coords_*/area_*/id/layer/tab/pointer/my_parent omitted: present on every widget unit)
+==========================================================================
+files parsed: 5  units: 138  classes: 20
+
+== ui::text_common  units=59 files=4
+   value                                  59  [string:55,token:4]  values=F1x1,Rx1,Gx1,Bx1
+   look_template                          59  [unit_ref:59]
+   text                                   59  [string:59]
+
+== ui::group  units=22 files=4
+   my_children[]                         102  [unit_ref:102]
+   fitting                                22  [bool:22]  values=falsex18,truex4
+   my_children                            22  [int:22]
+
+== ui::button_common  units=17 files=4
+   value                                  17  [string:15,token:2]  values=normalx1,leavex1
+   value2                                 17  [string:16,token:1]  values=normalx1
+   look_template                          17  [unit_ref:17]
+   n_pml                                  17  [string:17]
+   s_pml                                  17  [string:17]
+   s2_pml                                 17  [string:17]
+   d_pml                                  17  [string:17]
+   p_pml                                  17  [string:17]
+   button_type                            17  [token:17]  values=normalx17
+
+== ui::text  units=5 files=3
+   text                                    5  [string:5]
+
+== ui::list_common  units=5 files=3
+   my_children[]                           7  [unit_ref:7]
+   look_template                           5  [unit_ref:5]
+   use_blend_buttons                       5  [bool:5]  values=falsex5
+   multi_column                            5  [bool:5]  values=falsex5
+   slider_management                       5  [bool:5]  values=falsex3,truex2
+   item_height                             5  [int:5]
+   item_width                              5  [int:5]
+   item_gap                                5  [int:5]
+   max_list_height                         5  [int:5]
+   n_pml                                   5  [string:5]
+   s_pml                                   5  [string:5]
+   p_pml                                   5  [string:5]
+   d_pml                                   5  [string:5]
+   fitting                                 5  [bool:5]  values=falsex5
+   my_children                             5  [int:5]
+
+== ui::slider_common  units=5 files=3
+   value                                   5  [string:5]
+   look_template                           5  [unit_ref:5]
+   n_background                            5  [string:5]
+   s_background                            5  [string:5]
+   d_background                            5  [string:5]
+   s_pml                                   5  [string:5]
+   n_pml                                   5  [string:5]
+   p_pml                                   5  [string:5]
+   d_pml                                   5  [string:5]
+   n_property                              5  [string:5]
+   d_property                              5  [string:5]
+   action_on_drag                          5  [bool:5]  values=truex5
+   tick                                    5  [int:5]
+   margin                                  5  [int:5]
+   dynamic_handle                          5  [bool:5]  values=falsex5
+   minimal_handle_size                     5  [int:5]
+   move_to_point                           5  [bool:5]  values=falsex4,truex1
+   gamepad_s_pml                           4  [string:4]
+   gamepad_n_pml                           4  [string:4]
+   gamepad_p_pml                           4  [string:4]
+   gamepad_d_pml                           4  [string:4]
+
+== ui_blend_window  units=4 files=4
+   my_children[]                          12  [unit_ref:12]
+   blend_x_shift                           4  [int:4]
+   blend_y_shift                           4  [int:4]
+   window_handler                          4  [unit_ref:4]
+   clip_children                           4  [bool:4]  values=falsex3,truex1
+   keep_aspect                             4  [token:4]  values=centerx2,leftx1,rightx1
+   user_string_data                        4  [string:4]
+   first_direction_focus_id                4  [int:4]
+   fitting                                 4  [bool:4]  values=falsex4
+   my_children                             4  [int:4]
+
+== ui::inputline_common  units=4 files=2
+   look_template                           4  [unit_ref:4]
+   cursor                                  4  [string:4]
+   stretch_cursor                          4  [bool:4]  values=falsex4
+   lang_id                                 4  [string:4]
+   n_pml                                   4  [string:4]
+   s_pml                                   4  [string:4]
+   s2_pml                                  4  [string:4]
+   p_pml                                   4  [string:4]
+   d_pml                                   4  [string:4]
+   limit                                   4  [int:4]
+   multiline                               4  [bool:4]  values=falsex4
+   selection_color                         4  [int:4]
+   ime_color                               4  [int:4]
+   allowed_characters                      4  [string:4]
+   show_language_indicator                 4  [bool:4]  values=falsex3,truex1
+   password                                4  [bool:4]  values=falsex4
+   password_character                      4  [token:4]  values=xx4
+   make_uppercase                          4  [bool:4]  values=truex3,falsex1
+   default_text                            4  [string:4]
+
+== ui::button_row  units=3 files=2
+   label_indent                            3  [int:3]
+   row_align                               3  [token:3]  values=centerx2,leftx1
+   min_item_width                          3  [int:3]
+   width_list                              3  [string:3]
+   item_distance                           3  [int:3]
+   value_list                              3  [string:3]
+   id_list                                 3  [string:3]
+   list_delimiter                          3  [string:3]
+   look_template_list                      3  [string:3]
+   look_template                           3  [unit_ref:3]
+   button_type                             3  [token:3]  values=radiox3
+   button_tab_base                         3  [int:3]
+   p_pml_as_reference                      3  [bool:3]  values=falsex3
+   use_blend_buttons                       3  [bool:3]  values=falsex3
+   button_size_type                        3  [token:3]  values=dynamicx3
+   fitting                                 3  [bool:3]  values=falsex3
+   my_children                             3  [int:3]
+
+== truck_config_dispatch_hdl  units=2 files=2
+   window_link                             2  [unit_ref:2]
+
+== ui::text_table_common  units=2 files=2
+   row_height                              2  [int:2]
+   col_widths                              2  [int:2]
+   h_cellspacing                           2  [int:2]
+   v_cellspacing                           2  [int:2]
+   value                                   2  [string:2]
+   look_template                           2  [unit_ref:2]
+   text                                    2  [string:2]
+   indexing_cycle                          1  [int:1]
+   indexing_shift                          1  [int:1]
+
+== ui::droplist_common  units=2 files=1
+   look_template                           2  [unit_ref:2]
+   use_blend_buttons                       2  [bool:2]  values=falsex2
+   list_management                         2  [bool:2]  values=falsex2
+   n_pml                                   2  [string:2]
+   s_pml                                   2  [string:2]
+   p_pml                                   2  [string:2]
+   d_pml                                   2  [string:2]
+   fitting                                 2  [bool:2]  values=falsex2
+   my_children                             2  [int:2]
+   my_children[]                           2  [unit_ref:2]
+
+== ui::window  units=1 files=1
+   clip_children                           1  [bool:1]  values=truex1
+   window_handler                          1  [null:1]
+   keep_aspect                             1  [token:1]  values=nonex1
+   fitting                                 1  [bool:1]  values=falsex1
+   my_children                             1  [int:1]
+   my_children[]                           1  [unit_ref:1]
+
+== ui_truck_scene  units=1 files=1
+   config_path                             1  [string:1]
+
+== truck_config_hdl  units=1 files=1
+   window_link                             1  [unit_ref:1]
+
+== ui::linear_layout  units=1 files=1
+   my_children[]                           4  [unit_ref:4]
+   sizing_mode                             1  [token:1]  values=basicx1
+   background_padding_bottom               1  [int:1]
+   background_padding_top                  1  [int:1]
+   background_padding_right                1  [int:1]
+   background_padding_left                 1  [int:1]
+   background_size_computation_depth       1  [int:1]
+   background_id                           1  [int:1]
+   reverse_order                           1  [bool:1]  values=falsex1
+   outer_padding_y                         1  [int:1]
+   outer_padding_x                         1  [int:1]
+   inner_padding                           1  [int:1]
+   alignment_y                             1  [token:1]  values=centerx1
+   alignment_x                             1  [token:1]  values=centerx1
+   dimension                               1  [token:1]  values=xx1
+   fitting                                 1  [bool:1]  values=falsex1
+   my_children                             1  [int:1]
+
+== ui::overlay_point  units=1 files=1
+   overlay_anchor_type                     1  [token:1]  values=bottomleftx1
+   value                                   1  [string:1]
+   look_template                           1  [unit_ref:1]
+   text                                    1  [string:1]
+
+== ui_color_picker  units=1 files=1
+   hue_width                               1  [int:1]
+   hue_bar_pos                             1  [token:1]  values=topx1
+   hue_cursor                              1  [string:1]
+   sat_cursor                              1  [string:1]
+   padding                                 1  [int:1]
+   fitting                                 1  [bool:1]  values=falsex1
+   my_children                             1  [int:1]
+
+== ui::portal  units=1 files=1
+   child_path                              1  [string:1]
+   hslider_id                              1  [int:1]
+   vslider_id                              1  [int:1]
+   fitting                                 1  [bool:1]  values=falsex1
+   my_children                             1  [int:1]
+   my_children[]                           1  [unit_ref:1]
+
+== accessory_filters_hdl  units=1 files=1
+   window_link                             1  [unit_ref:1]
+
+units with coords: 134; coords_t >= coords_b: 134
+child rect inside parent rect: 98; outside: 31
+
+screen_desc truck.config (ui/desc/truck.sui): ui_script[] truck_config_left|/ui/truck_configuration_left.sii,
+  truck_config_right|/ui/truck_configuration_right.sii, truck_config|/ui/truck_configuration_center.sii; no background: line
+  (truck.service / truck.dealer have background: "/ui/truck_*_bcg.sii").
+screen_desc truck.config.accessory.filters: ui_script[] accessory_filters|/ui/truck_config_filters.sii, overlay: true, modal: true.
+grep -rl "truck_configuration_bcg\|truck_config_scene" research/extracted/ui -> only truck_configuration_bcg.sii itself.
+truck_configuration_bcg.sii: ui_truck_scene config_path "/def/truck_config_scene.sii" (camera_fov 50, camera_aim (0, 2.6, -1.465));
+/def/desktop/config.sii: ui_truck_scene_base_config, camera_fov 45, scene_cinematic_camera (F7).
+
+==========================================================================
+D. Widget trees (ui_survey.py . tree <file>): [id] class name L<layer> tab ptr rect (x l..r, y b..t) (w x h) attrs
+==========================================================================
+--- truck_configuration_bcg.sii
+[0] ui::window 20E5.6610 L0 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  clip_children=true window_handler=null keep_aspect=none
+  [400] ui_truck_scene _.truck L-2 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  config_path="/def/truck_config_scene.sii"
+--- truck_configuration_center.sii
+[0] ui_blend_window 063729d10 L0 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  window_handler=_nameless.0066cfd00 keep_aspect=center
+  [1001] ui::group _.all.components L6 tab=-1 ptr=-1 x1288..1416 y500..628 (128x128)  
+    [1000] ui::group 0066cfd02 L-1 tab=-1 ptr=-1 x-2..1440 y0..900 (1442x900)  
+      [9000] ui::group _.accpins L-1 tab=-1 ptr=-1 x-2..1438 y0..900 (1440x900)  
+      [8005] ui::button_common 0066cfd02a L2 tab=-1 ptr=-1 x773..819 y396..453 (46x57)  look_template=btn.remove_acc button_type=normal
+      [600] ui::group 0066cfd03e L0 tab=-1 ptr=-1 x375..1065 y85..137 (690x52)  
+        [0] ui::text 0066cfd03f L5 tab=-1 ptr=-1 x375..1065 y85..137 (690x52)  text=<markup>
+        [610] ui::text_common 0066cfd040 L6 tab=-1 ptr=-1 x423..1063 y87..135 (640x48)  look_template=txt.normal.left
+      [620] ui::text_common 0066cfd041 L0 tab=-1 ptr=-1 x620..684 y265..329 (64x64)  value=F1 look_template=txt.acc_conflict
+      [410] ui::button_row _.channel.buttons L3 tab=-1 ptr=-1 x557..884 y745..807 (327x62)  row_align=center item_distance=10 list_delimiter="~~" look_template=btn.truck_chnl_s button_type=radio button_size_type=dynamic
+      [0] ui::linear_layout 495.06a0 L3 tab=-1 ptr=-1 x464..976 y824..888 (512x64)  sizing_mode=basic background_padding_right=-54 background_padding_left=-54 background_size_computation_depth=1 background_id=911 inner_padding=10 alignment_y=center alignment_x=center dimension=x
+        [0] ui::group 32b.3a60 L1 tab=-1 ptr=-1 x410..454 y834..878 (44x44)  fitting
+          [576] ui::text_common _.prev_tab.icon L5 tab=-1 ptr=-1 x410..454 y834..878 (44x44)  value=<markup> look_template=txt.ovr_icon
+          [575] ui::text_common _.prev_tab.bcg L4 tab=-1 ptr=-1 x410..454 y834..878 (44x44)  value=<colour|markup> look_template=txt.window.bcg_rect4
+        [499] ui::button_row 512.b510 L3 tab=-1 ptr=-1 x464..976 y824..888 (512x64)  row_align=center value_list="cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interi..." id_list="510~~500~~520~~530~~550~~560~~540~~570" list_delimiter="~~" look_template=btn.truck_grp button_type=radio button_size_type=dynamic
+        [0] ui::group 32b.3ce0 L2 tab=-1 ptr=-1 x986..1030 y834..878 (44x44)  fitting
+          [578] ui::text_common _.next_tab.icon L5 tab=-1 ptr=-1 x986..1030 y834..878 (44x44)  value=<markup> look_template=txt.ovr_icon
+          [577] ui::text_common _.next_tab.bcg L4 tab=-1 ptr=-1 x986..1030 y834..878 (44x44)  value=<colour|markup> look_template=txt.window.bcg_rect4
+        [911] ui::text_common 34d.5650 L2 tab=-1 ptr=-1 x464..976 y824..888 (512x64)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+    [333] ui::text_common _.notification._text L1 tab=-1 ptr=-1 x564..876 y139..203 (312x64)  value="@@notification_walking_camera@@" look_template=txt.blending.notification
+    [587] ui::text 28d.9720 L99 tab=-1 ptr=-1 x718..766 y404..452 (48x48)  text=<markup>
+(non-widget) truck_config_hdl _nameless.0066cfd00 window_link=_nameless.063729d10
+--- truck_configuration_left.sii
+[0] ui_blend_window 063729ea0 L0 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  window_handler=_nameless.06e2a4400 keep_aspect=left
+  [111] ui::overlay_point 2b4.a160 L7 tab=-1 ptr=-1 x356..625 y10..50 (269x40)  overlay_anchor_type=bottomleft value="left|bottom" look_template=txt.overlay.anchor
+  [1000] ui::group _.whole_ui L7 tab=-1 ptr=-1 x7..345 y10..893 (338x883)  fitting
+    [0] ui::group _.screen.title.group L0 tab=-1 ptr=-1 x7..345 y765..893 (338x128)  
+      [10] ui::text_common 06e2a4b10 L3 tab=-1 ptr=-1 x7..345 y840..880 (338x40)  value="@@truck_config_t@@" look_template=txt.title.center
+    [0] ui::group _.left.panel L0 tab=-1 ptr=-1 x7..345 y10..843 (338x833)  
+      [385] ui::group _.shared L0 tab=-1 ptr=-1 x7..345 y25..177 (338x152)  
+        [364] ui::text_common _.cartprice L4 tab=-1 ptr=-1 x197..335 y140..160 (138x20)  value="1500,-" look_template=txt.normal.right
+        [362] ui::text_common _.oneytorefund L4 tab=-1 ptr=-1 x197..335 y113..133 (138x20)  look_template=txt.emph.right
+        [360] ui::text_common _.neytopaycart L4 tab=-1 ptr=-1 x197..335 y86..106 (138x20)  look_template=txt.emph.right
+        [386] ui::group _.buy.mode.texts L4 tab=-1 ptr=-1 x17..300 y80..165 (283x85)  
+          [0] ui::text_common 0066cfd036 L4 tab=-1 ptr=-1 x17..214 y86..106 (197x20)  value="@@total@@" look_template=txt.normal.left
+          [0] ui::text_common 0066cfd037 L4 tab=-1 ptr=-1 x17..222 y113..133 (205x20)  value="@@refund@@:" look_template=txt.normal.left
+          [0] ui::text_common 0066cfd038 L4 tab=-1 ptr=-1 x17..228 y140..160 (211x20)  value="@@price@@:" look_template=txt.normal.left
+        [387] ui::group _.customize.mode.texts L4 tab=-1 ptr=-1 x17..300 y80..165 (283x85)  
+          [0] ui::text_common 0066cfd03a L4 tab=-1 ptr=-1 x17..214 y86..106 (197x20)  value="@@tc_new_total@@" look_template=txt.normal.left
+          [0] ui::text_common 0066cfd03b L4 tab=-1 ptr=-1 x17..222 y113..133 (205x20)  value="@@tc_extra_price@@" look_template=txt.normal.left
+          [0] ui::text_common 0066cfd03c L4 tab=-1 ptr=-1 x17..228 y140..160 (211x20)  value="@@tc_orig_price@@" look_template=txt.normal.left
+        [210] ui::group _.buy.mode.buttons L1 tab=-1 ptr=-1 x17..335 y31..61 (318x30)  
+          [201] ui::button_common _.back L3 tab=-1 ptr=-1 x17..55 y31..61 (38x30)  value=<markup> look_template=btn.normal button_type=normal
+          [200] ui::button_common _.checkout L3 tab=-1 ptr=-1 x69..335 y31..61 (266x30)  value="@@checkout@@" look_template=btn.normal.icon button_type=normal
+      [380] ui::group _.firstmessage L0 tab=-1 ptr=-1 x7..345 y507..621 (338x114)  
+        [381] ui::text_common 0066cfd02d L5 tab=-1 ptr=-1 x7..345 y369..484 (338x115)  value="@@clr_sel@@|@@select_cat@@" look_template=txt.normal.color.center
+      [305] ui::group _.components L0 tab=-1 ptr=-1 x7..345 y174..887 (338x713)  fitting
+        [300] ui::list_common _.acclist L4 tab=-1 ptr=-1 x17..309 y174..775 (292x601)  look_template=btn.truck_acc slider_management=true item_height=96 item_width=292 item_gap=5
+          [0] ui::slider_common 0066cfd020 L4 tab=-1 ptr=-1 x309..343 y174..775 (34x601)  look_template=sld.slider0d action_on_drag=true tick=1 margin=2 minimal_handle_size=32
+        [310] ui::text_common _.title L3 tab=-1 ptr=-1 x7..345 y823..849 (338x26)  look_template=txt.normal.color.center
+        [401] ui::inputline_common _.search.input L5 tab=-1 ptr=-1 x17..259 y783..813 (242x30)  look_template=inp.input_left selection_color=4281954447 ime_color=2701131775 show_language_indicator=true password_character=x default_text="@@search@@..."
+        [403] ui::button_common _.clear.input.button L7 tab=-1 ptr=-1 x237..253 y790..806 (16x16)  look_template=btn.input.clear button_type=normal
+        [404] ui::text_common _.search.bar.tooltip L7 tab=-1 ptr=-1 x164..326 y816..887 (162x71)  value="@@clear_input@@" look_template=txt.ttip_simple
+        [402] ui::button_common _.filter.button.id L8 tab=-1 ptr=-1 x269..309 y783..813 (40x30)  value=normal look_template=btn.truck_config.package.filter button_type=normal
+      [355] ui::group _.cart L0 tab=-1 ptr=-1 x7..334 y34..862 (327x828)  
+        [0] ui::text_common _.cart.1 L4 tab=-1 ptr=-1 x7..345 y823..849 (338x26)  value="@@clr_sel@@|@@basket_t@@" look_template=txt.normal.color.center
+        [350] ui::list_common _.cartlist L4 tab=-1 ptr=-1 x17..309 y212..813 (292x601)  look_template=btn.truck_cart slider_management=true item_height=96 item_width=292 item_gap=5
+          [0] ui::slider_common 0066cfd017 L4 tab=-1 ptr=-1 x309..343 y212..813 (34x601)  look_template=sld.slider0d action_on_drag=true tick=1 margin=2 minimal_handle_size=32
+        [582] ui::button_common _.clear.cart L3 tab=-1 ptr=-1 x17..335 y172..202 (318x30)  value="@@clear_cart@@" look_template=btn.normal button_type=normal
+      [391] ui::text_common _.part.type.text L4 tab=-1 ptr=-1 x368..585 y729..797 (217x68)  look_template=txt.normal.left.top
+      [0] ui::text_common 2f9.94c0 L0 tab=-1 ptr=-1 x7..345 y10..893 (338x883)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+      [390] ui::text_common _.part.type.bcg.text L2 tab=-1 ptr=-1 x355..598 y713..813 (243x100)  look_template=txt.ttip_simple
+(non-widget) truck_config_dispatch_hdl _nameless.06e2a4400 window_link=_nameless.063729ea0
+--- truck_configuration_right.sii
+[0] ui_blend_window 06372bde0 L0 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  window_handler=_nameless.06e127610 clip_children=true keep_aspect=right
+  [1001] ui::group _.all.components L-1 tab=-1 ptr=-1 x1050..1440 y226..900 (390x674)  
+    [1000] ui::group 06374ac20 L-1 tab=-1 ptr=-1 x1050..1440 y227..900 (390x673)  
+      [11] ui::text_common _.money L3 tab=-1 ptr=-1 x1113..1433 y853..893 (320x40)  value="\xe2\x82\xac 22 563,-" look_template=txt.normal.center
+      [6001] ui::group _.truck.analysis.group.0000 L0 tab=-1 ptr=-1 x1113..1433 y239..843 (320x604)  
+        [0] ui::text_common 18a.90a0.0005 L2 tab=-1 ptr=-1 x1133..1413 y811..841 (280x30)  value="@@truck_analysis_t@@" look_template=txt.title.center
+        [6300] ui::button_common 217.9590 L2 tab=-1 ptr=-1 x1257..1289 y786..806 (32x20)  look_template=btn.truck_conf.s_ana button_type=normal
+        [0] ui::text_common 25a.d8f0 L0 tab=-1 ptr=-1 x1113..1433 y779..843 (320x64)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+      [6000] ui::group _.truck.analysis.group L0 tab=-1 ptr=-1 x1113..1433 y239..843 (320x604)  
+        [0] ui::text_common 18a.90a0 L2 tab=-1 ptr=-1 x1133..1413 y811..841 (280x30)  value="@@truck_analysis_t@@" look_template=txt.title.center
+        [6100] ui::text_common 18a.90a0.0000 L2 tab=-1 ptr=-1 x1133..1413 y736..769 (280x33)  value="150|100|50|0xFFFFFFFF|Normal cargo" look_template=txt.conf_bar.big
+        [6101] ui::text_common 18a.90a0.0001 L2 tab=-1 ptr=-1 x1133..1413 y703..736 (280x33)  look_template=txt.conf_bar.big
+        [6102] ui::text_common 18a.90a0.0002 L2 tab=-1 ptr=-1 x1133..1413 y670..703 (280x33)  look_template=txt.conf_bar.big
+        [6103] ui::text_common 18a.90a0.0003 L2 tab=-1 ptr=-1 x1133..1413 y637..670 (280x33)  look_template=txt.conf_bar.big
+        [0] ui::text_common 18a.90a0.0003.0000 L2 tab=-1 ptr=-1 x1133..1413 y574..604 (280x30)  value=<markup> look_template=txt.normal.center
+        [6200] ui::text_common 18a.90a0.0003.0000.0000 L2 tab=-1 ptr=-1 x1133..1413 y545..573 (280x28)  value="0xFFFFFFFF|Power|500 hp" look_template=txt.conf_bar.small
+        [6104] ui::text_common 18a.90a0.0003.0000.0000.0000 L2 tab=-1 ptr=-1 x1133..1413 y604..637 (280x33)  look_template=txt.conf_bar.big
+        [6201] ui::text_common 18a.90a0.0003.0000.0000.0001 L2 tab=-1 ptr=-1 x1133..1413 y514..542 (280x28)  look_template=txt.conf_bar.small
+        [6202] ui::text_common 18a.90a0.0003.0000.0000.0002 L2 tab=-1 ptr=-1 x1133..1413 y483..511 (280x28)  look_template=txt.conf_bar.small
+        [6203] ui::text_common 18a.90a0.0003.0000.0000.0003 L2 tab=-1 ptr=-1 x1133..1413 y452..480 (280x28)  look_template=txt.conf_bar.small
+        [6204] ui::text_common 18a.90a0.0003.0000.0000.0004 L2 tab=-1 ptr=-1 x1133..1413 y421..449 (280x28)  look_template=txt.conf_bar.small
+        [6205] ui::text_common 18a.90a0.0003.0000.0000.0005 L2 tab=-1 ptr=-1 x1133..1413 y390..418 (280x28)  look_template=txt.conf_bar.small
+        [6206] ui::text_common 18a.90a0.0003.0000.0000.0006 L2 tab=-1 ptr=-1 x1133..1413 y359..387 (280x28)  look_template=txt.conf_bar.small
+        [6207] ui::text_common 18a.90a0.0003.0000.0000.0007 L2 tab=-1 ptr=-1 x1133..1413 y328..356 (280x28)  look_template=txt.conf_bar.small
+        [6208] ui::text_common 18a.90a0.0003.0000.0000.0008 L2 tab=-1 ptr=-1 x1133..1413 y297..325 (280x28)  look_template=txt.conf_bar.small
+        [6209] ui::text_common 18a.90a0.0003.0000.0000.0008.0000 L2 tab=-1 ptr=-1 x1133..1413 y266..294 (280x28)  look_template=txt.conf_bar.small
+        [6301] ui::button_common 216.91e0 L2 tab=-1 ptr=-1 x1257..1289 y786..806 (32x20)  value=<markup> look_template=btn.truck_conf.h_ana button_type=normal
+        [7000] ui::text_common 9c.cfc0 L0 tab=-1 ptr=-1 x845..1109 y700..844 (264x144)  look_template=txt.ttip_simple
+        [7001] ui::text_common 18a.b5f0.0004 L0 tab=-1 ptr=-1 x845..1109 y669..813 (264x144)  look_template=txt.ttip_simple
+        [7002] ui::text_common 18a.b5f0.0005 L0 tab=-1 ptr=-1 x845..1109 y634..778 (264x144)  look_template=txt.ttip_simple
+        [7003] ui::text_common 18a.b5f0.0006 L0 tab=-1 ptr=-1 x845..1109 y601..745 (264x144)  look_template=txt.ttip_simple
+        [7004] ui::text_common 18a.b5f0.0007 L0 tab=-1 ptr=-1 x845..1109 y568..712 (264x144)  look_template=txt.ttip_simple
+        [7510] ui::text_common 9c.cfc0.0000 L1 tab=-1 ptr=-1 x769..1108 y656..839 (339x183)  value="@@truck_analysis_info_tooltip@@" look_template=txt.ttip_simple
+        [0] ui::text_common 215.0760 L0 tab=-1 ptr=-1 x1113..1433 y230..843 (320x613)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+        [0] ui::text_table_common 338.0900 L1 tab=-1 ptr=-1 x1133..1413 y257..573 (280x316)  row_height=59 col_widths=280 v_cellspacing=3 indexing_cycle=1 value="@@clr_table_bg_light@@|@@clr_table_bg_dark@@" look_template=txt.table.singlecell.interl
+        [7500] ui::button_common _.help.icon L3 tab=-1 ptr=-1 x1122..1154 y808..840 (32x32)  look_template=btn.help.icon button_type=normal
+      [420] ui::group _.color.picker.group L0 tab=-1 ptr=-1 x1113..1433 y316..843 (320x527)  
+        [430] ui_color_picker _.color.picker L3 tab=-1 ptr=-1 x1133..1413 y535..765 (280x230)  hue_width=27 hue_bar_pos=top hue_cursor="/material/ui/color_picker/hue_cursor.mat" sat_cursor="/material/ui/color_picker/sat_cursor.mat" padding=5
+        [440] ui::button_common _.apply.preset L3 tab=-1 ptr=-1 x1133..1220 y372..414 (87x42)  value=<markup> look_template=btn.generic button_type=normal
+        [445] ui::button_common _.save.color L3 tab=-1 ptr=-1 x1231..1318 y372..414 (87x42)  value=<markup> look_template=btn.generic button_type=normal
+        [410] ui::button_row 16e.4b80 L3 tab=-1 ptr=-1 x1133..1365 y775..823 (232x48)  row_align=left item_distance=10 list_delimiter="~~" look_template=btn.truck_chnl_s button_type=radio button_size_type=dynamic
+        [415] ui::droplist_common 0081036826 L3 tab=-1 ptr=-1 x1383..1413 y793..823 (30x30)  look_template=btn.drop_ao
+          [0] ui::list_common 30a.0760 L5 tab=-1 ptr=-1 x1128..1365 y533..773 (237x240)  look_template=btn.truck_cv4 item_height=54 item_width=228
+            [0] ui::text 1d9.33a0 L4 tab=-1 ptr=-1 x1128..1392 y534..774 (264x240)  text=<markup>
+            [0] ui::slider_common 24b.8fe0 L5 tab=-1 ptr=-1 x1360..1392 y533..773 (32x240)  look_template=sld.slider4 action_on_drag=true tick=1 margin=2 minimal_handle_size=20
+        [460] ui::inputline_common 225.dff0 L5 tab=1 ptr=-1 x1253..1293 y495..525 (40x30)  look_template=inp.small_cbb limit=3 selection_color=4281954447 ime_color=4283453520 password_character=x make_uppercase=true
+        [461] ui::inputline_common 58.8410 L4 tab=2 ptr=-1 x1313..1353 y495..525 (40x30)  look_template=inp.small_cbb limit=3 selection_color=4281954447 ime_color=4283453520 password_character=x make_uppercase=true
+        [462] ui::inputline_common 58.a330 L4 tab=3 ptr=-1 x1373..1413 y495..525 (40x30)  look_template=inp.small_cbb limit=3 selection_color=4281954447 ime_color=4283453520 password_character=x make_uppercase=true
+        [470] ui::text_common 1a6.7bc0 L4 tab=-1 ptr=-1 x1233..1253 y495..525 (20x30)  value=R look_template=txt.small.center_g
+        [471] ui::text_common 1a6.5ad0 L4 tab=-1 ptr=-1 x1293..1313 y495..525 (20x30)  value=G look_template=txt.small.center_g
+        [472] ui::text_common 1a6.7120.0000 L4 tab=-1 ptr=-1 x1353..1373 y495..525 (20x30)  value=B look_template=txt.small.center_g
+        [465] ui::droplist_common 189.d8a0 L4 tab=-1 ptr=-1 x1133..1223 y495..525 (90x30)  look_template=btn.drop_clr
+          [0] ui::list_common 183.2700 L5 tab=-1 ptr=-1 x1134..1191 y416..491 (57x75)  look_template=btn.list_clr item_height=25 item_width=57
+            [0] ui::text 249.d320 L4 tab=-1 ptr=-1 x1133..1200 y436..495 (67x59)  text=<markup>
+        [446] ui::button_common _.save.preset L3 tab=-1 ptr=-1 x1328..1415 y372..414 (87x42)  value=<markup> look_template=btn.generic button_type=normal
+        [450] ui::portal 187.6c70 L3 tab=-1 ptr=-1 x1133..1413 y452..484 (280x32)  child_path="/ui/user_colors_view.sii" hslider_id=451
+          [451] ui::slider_common 167.e1f0 L3 tab=-1 ptr=-1 x1133..1413 y422..448 (280x26)  look_template=sld.slider4dd action_on_drag=true tick=1 move_to_point=true
+        [0] ui::text_common 1bf.2a40 L2 tab=-1 ptr=-1 x1113..1433 y352..843 (320x491)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+        [473] ui::button_common 2f4.b1d0 L7 tab=-1 ptr=-1 x1365..1413 y775..823 (48x48)  value=<markup> look_template=btn.generic button_type=normal
+      [0] ui::text_common 26c.a330 L2 tab=-1 ptr=-1 x1113..1433 y853..893 (320x40)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+    [20] ui::button_common 48a.f780 L6 tab=-1 ptr=-1 x1384..1434 y10..60 (50x50)  value=leave look_template=btn.truck_sw button_type=normal
+(non-widget) truck_config_dispatch_hdl _nameless.06e127610 window_link=_nameless.06372bde0
+--- truck_config_filters.sii
+[0] ui_blend_window wnd L0 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  window_handler=_nameless.0685.6df0 keep_aspect=center
+  [0] ui::text_common _.window L1 tab=-1 ptr=-1 x499..942 y133..771 (443x638)  value="@@clr_bg_main@@" look_template=txt.window.bcg_rect4
+  [10] ui::text_common _.title L2 tab=-1 ptr=-1 x499..942 y740..768 (443x28)  value="@@accessory_filters_t@@" look_template=txt.title.center
+  [20] ui::button_common _.close.button L3 tab=-1 ptr=-1 x898..928 y739..769 (30x30)  look_template=btn.closewin button_type=normal
+  [151] ui::button_common 0711.76e0 L2 tab=-1 ptr=-1 x730..894 y153..183 (164x30)  value="@@remove_all@@" look_template=btn.normal button_type=normal
+  [150] ui::button_common 0711.8a78 L2 tab=-1 ptr=-1 x556..720 y153..183 (164x30)  value="@@add_all@@" look_template=btn.normal button_type=normal
+  [110] ui::list_common _.list L3 tab=-1 ptr=-1 x513..894 y194.234..727 (381x532.766)  look_template=btn.truck_config.package.filter.entry item_height=30 item_width=381 item_gap=3
+    [100] ui::slider_common _.list.slider L2 tab=-1 ptr=-1 x901..927 y199..727 (26x528)  look_template=sld.slider4 action_on_drag=true tick=1 margin=2
+    [0] ui::text_table_common 213.0800 L2 tab=-1 ptr=-1 x556..894 y194..727 (338x533)  row_height=63 col_widths=338 v_cellspacing=3 value="@@clr_table_bg_light@@|@@clr_table_bg_dark@@" look_template=txt.table.singlecell.interl
+  [105] ui::group _.checkbox.group L4 tab=-1 ptr=-1 x512..676 y195..727 (164x532)  
+  [0] ui::text _.background L0 tab=-1 ptr=-1 x0..1440 y0..900 (1440x900)  text=<markup>
+(non-widget) accessory_filters_hdl _nameless.0685.6df0 window_link=_nameless.wnd
+
+==========================================================================
+E. References made directly by the five files (ui_survey.py . refs <5 files>)
+==========================================================================
+
+materials (10 distinct):
+  /material/ui/color_picker/copy_wheel_color.mat x1
+  /material/ui/color_picker/save_color.mat x1
+  /material/ui/color_picker/save_preset.mat x1
+  /material/ui/color_picker/use_preset.mat x1
+  /material/ui/cross.mat x1
+  /material/ui/crosshair.mat x1
+  /material/ui/no_scale/msg_bcg.mat x1
+  /material/ui/truck_config/btn_red.mat x1
+  /material/ui/truck_config/cart.mat x1
+  /material/ui/white.mat x12
+
+fonts (2 distinct):
+  /font/glyphs_xb.font x2
+  /font/normal.font x1
+
+@@keys@@ (31 distinct):
+  accessory_filters_t x1
+  add_all x2
+  basket_t x1
+  checkout x1
+  clear_cart x1
+  clear_input x1
+  clr_bg_main x7
+  clr_inputline_bg_d x1
+  clr_inputline_border_d x1
+  clr_sel x3
+  clr_table_bg_dark x2
+  clr_table_bg_light x2
+  clr_tooltip_bg x1
+  clr_tooltip_border x4
+  clr_txt_d x1
+  current_truck_params x1
+  imv_unf_joy_nav_nxt x1
+  imv_unf_joy_nav_prv x1
+  notification_walking_camera x1
+  price x1
+  refund x1
+  remove_all x2
+  search x1
+  select_cat x1
+  tc_extra_price x1
+  tc_new_total x1
+  tc_orig_price x1
+  total x1
+  truck_analysis_info_tooltip x1
+  truck_analysis_t x2
+  truck_config_t x1
+
+markup tags (7 distinct):
+  align x7
+  color x3
+  font x3
+  img x21
+  margin x2
+  offset x3
+  ret x8
+
+hex colours (2 distinct):
+  0xC5000000 x2
+  0xFFFFFFFF x2
+
+look_template (42 distinct):
+  btn.closewin x1
+  btn.drop_ao x1
+  btn.drop_clr x1
+  btn.generic x4
+  btn.help.icon x1
+  btn.input.clear x1
+  btn.list_clr x1
+  btn.normal x4
+  btn.normal.icon x1
+  btn.remove_acc x1
+  btn.truck_acc x1
+  btn.truck_cart x1
+  btn.truck_chnl_s x2
+  btn.truck_conf.h_ana x1
+  btn.truck_conf.s_ana x1
+  btn.truck_config.package.filter x1
+  btn.truck_config.package.filter.entry x1
+  btn.truck_cv4 x1
+  btn.truck_grp x1
+  btn.truck_sw x1
+  inp.input_left x1
+  inp.small_cbb x3
+  sld.slider0d x2
+  sld.slider4 x2
+  sld.slider4dd x1
+  txt.acc_conflict x1
+  txt.blending.notification x1
+  txt.conf_bar.big x5
+  txt.conf_bar.small x10
+  txt.emph.right x2
+  txt.normal.center x2
+  txt.normal.color.center x3
+  txt.normal.left x7
+  txt.normal.left.top x1
+  txt.normal.right x1
+  txt.overlay.anchor x1
+  txt.ovr_icon x2
+  txt.small.center_g x3
+  txt.table.singlecell.interl x2
+  txt.title.center x4
+  txt.ttip_simple x8
+  txt.window.bcg_rect4 x9
+
+==========================================================================
+F. look_template resolution (ui_survey.py . templates <5 files>): template class, width/height, fonts, materials
+==========================================================================
+template units loaded: 713 (classes: Counter({'ui::button_template': 309, 'ui::text_template': 306, 'ui::tooltip_template_data': 45, 'ui::slider_template': 14, 'ui::tooltip_template': 12, 'ui::inputline_template': 8, 'ui::text_table_template': 7, 'ui::table_row_template': 7, 'ui::property_set_tooltip_template': 3, 'ui::frame_template': 1, 'ui::property_slider_template': 1}))
+
+btn.closewin x1: ui::button_template in template/button.sii width=30 height=30
+   fonts: []
+   mats: ['/material/ui/button/close.mat']
+   colours: ['clr_white_alpha_25']
+
+btn.drop_ao x1: ui::button_template in template/button.sii width=- height=30
+   fonts: []
+   mats: ['/material/ui/button/arrow_v.mat', '/material/ui/button/btn_normal.mat']
+   colours: ['clr_listbox_handle_n', 'clr_listbox_handle_p', 'clr_listbox_handle_s', 'clr_white']
+
+btn.drop_clr x1: ui::button_template in template/button.sii width=- height=30
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/button/arrow_v.mat', '/material/ui/button/btn_normal.mat']
+   colours: ['clr_listbox_d', 'clr_listbox_handle_d', 'clr_listbox_handle_n', 'clr_listbox_handle_p', 'clr_listbox_handle_s', 'clr_listbox_n', 'clr_listbox_p', 'clr_listbox_s', 'clr_white', 'clr_white_alpha_25']
+
+btn.generic x4: ui::button_template in template/button.sii width=- height=-
+   fonts: ['/font/big_bold.font']
+   mats: ['/material/ui/button/btn_normal.mat']
+   colours: ['clr_button_basic_d', 'clr_button_basic_n', 'clr_button_basic_p', 'clr_button_basic_s', 'clr_white', 'clr_white_alpha_25']
+
+btn.help.icon x1: ui::button_template in template/button.sii width=32 height=32
+   fonts: []
+   mats: ['/material/ui/icon/question_n.mat', '/material/ui/icon/question_s.mat']
+   colours: ['clr_white_alpha_25']
+
+btn.input.clear x1: ui::button_template in template/button.sii width=16 height=16
+   fonts: []
+   mats: ['/material/ui/button/input_clear.mat']
+   colours: []
+
+btn.list_clr x1: ui::button_template in template/button.sii width=- height=25
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/white.mat']
+   colours: ['clr_list_item_bg_d', 'clr_list_item_bg_n', 'clr_list_item_bg_p', 'clr_list_item_bg_s', 'clr_sel', 'clr_txt_d', 'clr_white']
+
+btn.normal x4: ui::button_template in template/button.sii width=- height=30
+   fonts: ['/font/big_bold.font']
+   mats: ['/material/ui/button/btn_normal.mat']
+   colours: ['clr_button_basic_d', 'clr_button_basic_n', 'clr_button_basic_p', 'clr_button_basic_s', 'clr_white', 'clr_white_alpha_25']
+
+btn.normal.icon x1: ui::button_template in template/button.sii width=- height=30
+   fonts: ['/font/big_bold.font']
+   mats: ['/material/ui/button/btn_normal.mat']
+   colours: ['clr_button_basic_d', 'clr_button_basic_n', 'clr_button_basic_p', 'clr_button_basic_s', 'clr_white', 'clr_white_alpha_25']
+
+btn.remove_acc x1: ui::button_template in template/button.sii width=46 height=57
+   fonts: []
+   mats: ['/material/ui/button/close.mat', '/material/ui/tooltip/arrow_s_h.mat', '/material/ui/tooltip/corner_s.mat']
+   colours: []
+
+btn.truck_acc x1: ui::button_template in template/button.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/accessory/%1', '/material/ui/lock_big.mat', '/material/ui/truck_config/accessory_%9.mat', '/material/ui/truck_config/cart.mat', '/material/ui/truck_config/new.mat', '/material/ui/truck_config/owned.mat', '/material/ui/white.mat']
+   colours: ['clr_compound_btn_bg_n', 'clr_compound_btn_bg_p', 'clr_compound_btn_bg_s', 'clr_compound_btn_title_n', 'clr_compound_btn_title_p', 'clr_compound_btn_title_s', 'clr_txt', 'clr_white']
+
+btn.truck_cart x1: ui::button_template in template/button.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/accessory/%1', '/material/ui/truck_config/accessory_%9.mat', '/material/ui/truck_config/sell.mat', '/material/ui/white.mat']
+   colours: ['clr_compound_btn_bg_n', 'clr_compound_btn_bg_p', 'clr_compound_btn_bg_s', 'clr_compound_btn_title_n', 'clr_compound_btn_title_p', 'clr_compound_btn_title_s', 'clr_txt', 'clr_white']
+
+btn.truck_chnl_s x2: ui::button_template in template/button.sii width=48 height=53
+   fonts: []
+   mats: ['/material/ui/button/clr_chnl_%0.mat', '/material/ui/white.mat']
+   colours: ['clr_table_bg_p', 'clr_table_bg_s', 'clr_white_alpha_25']
+
+btn.truck_conf.h_ana x1: ui::button_template in template/button.sii width=32 height=20
+   fonts: []
+   mats: ['/material/ui/truck_config/btn_fold.mat']
+   colours: ['clr_button_basic_n', 'clr_button_basic_p', 'clr_button_basic_s']
+
+btn.truck_conf.s_ana x1: ui::button_template in template/button.sii width=32 height=20
+   fonts: []
+   mats: ['/material/ui/truck_config/btn_fold.mat']
+   colours: ['clr_button_basic_n', 'clr_button_basic_p', 'clr_button_basic_s']
+
+btn.truck_config.package.filter x1: ui::button_template in template/button.sii width=40 height=30
+   fonts: []
+   mats: ['/material/ui/button/btn_normal.mat', '/material/ui/truck_config/accessory_filters_%0.mat', '/material/ui/truck_config/accessory_filters_normal.mat']
+   colours: ['clr_button_basic_d', 'clr_button_basic_n', 'clr_button_basic_p', 'clr_button_basic_s', 'clr_white', 'clr_white_alpha_25']
+
+btn.truck_config.package.filter.entry x1: ui::button_template in template/button.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['%0']
+   colours: []
+
+btn.truck_cv4 x1: ui::button_template in template/button.sii width=228 height=54
+   fonts: []
+   mats: ['/material/ui/button/clr_chnl_0.mat', '/material/ui/button/clr_chnl_1.mat', '/material/ui/button/clr_chnl_2.mat', '/material/ui/button/clr_chnl_3.mat', '/material/ui/white.mat']
+   colours: ['clr_button_alt_p', 'clr_button_alt_s']
+
+btn.truck_grp x1: ui::button_template in template/button.sii width=64 height=64
+   fonts: []
+   mats: ['/material/ui/corner_4px.mat', '/material/ui/truck_config/%0.mat', '/material/ui/white.mat']
+   colours: ['clr_config_p', 'clr_config_s', 'clr_white']
+
+btn.truck_sw x1: ui::button_template in template/button.sii width=50 height=50
+   fonts: []
+   mats: ['/material/ui/button/btn_normal.mat', '/material/ui/truck_config/%0.mat']
+   colours: ['clr_config_n', 'clr_config_p', 'clr_config_s', 'clr_white']
+
+inp.input_left x1: ui::inputline_template in template/inputline.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/white.mat']
+   colours: ['clr_inputline_bg_d', 'clr_inputline_bg_n', 'clr_inputline_bg_p', 'clr_inputline_bg_s', 'clr_inputline_border_d', 'clr_inputline_border_n', 'clr_inputline_border_s', 'clr_txt', 'clr_txt_d', 'clr_white']
+
+inp.small_cbb x3: ui::inputline_template in template/inputline.sii width=- height=-
+   fonts: ['/font/normal.font', '/font/small.font']
+   mats: ['/material/ui/white.mat']
+   colours: ['clr_sel']
+
+sld.slider0d x2: ui::slider_template in template/slider.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/slider/slider_bcg_h.mat', '/material/ui/slider/slider_h1.mat', '/material/ui/slider/slider_h2.mat', '/material/ui/slider/slider_h3.mat', '/material/ui/slider/slider_v1.mat', '/material/ui/slider/slider_v2.mat', '/material/ui/slider/slider_v3.mat', '/material/ui/white.mat']
+   colours: []
+
+sld.slider4 x2: ui::slider_template in template/slider.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/slider/slider_h1.mat', '/material/ui/slider/slider_h2.mat', '/material/ui/slider/slider_h3.mat', '/material/ui/slider/slider_v1.mat', '/material/ui/slider/slider_v2.mat', '/material/ui/slider/slider_v3.mat', '/material/ui/white.mat']
+   colours: []
+
+sld.slider4dd x1: ui::slider_template in template/slider.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/slider/slider_h1.mat', '/material/ui/slider/slider_h2.mat', '/material/ui/slider/slider_h3.mat', '/material/ui/slider/slider_v1.mat', '/material/ui/slider/slider_v2.mat', '/material/ui/slider/slider_v3.mat', '/material/ui/white.mat']
+   colours: []
+
+txt.acc_conflict x1: ui::text_template in template/text.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/acc_conflict.mat']
+   colours: []
+
+txt.blending.notification x1: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/tooltip/corner_s.mat']
+   colours: ['clr_sel']
+
+txt.conf_bar.big x5: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/white.mat']
+   colours: ['clr_bg_dark', 'clr_config_bar_current', 'clr_config_bar_gain', 'clr_config_bar_lost', 'clr_table_bg_light']
+
+txt.conf_bar.small x10: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: []
+
+txt.emph.right x2: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: ['clr_sel']
+
+txt.normal.center x2: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: ['clr_txt']
+
+txt.normal.color.center x3: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: []
+
+txt.normal.left x7: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: ['clr_txt']
+
+txt.normal.left.top x1: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: ['clr_txt']
+
+txt.normal.right x1: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: []
+   colours: ['clr_txt']
+
+txt.overlay.anchor x1: ui::text_template in template/text.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/white.mat']
+   colours: ['clr_bg_main', 'clr_green']
+
+txt.ovr_icon x2: ui::text_template in template/text.sii width=- height=-
+   fonts: []
+   mats: []
+   colours: []
+
+txt.small.center_g x3: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/small.font']
+   mats: []
+   colours: ['clr_txt_d']
+
+txt.table.singlecell.interl x2: ui::text_table_template in template/text.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/white.mat']
+   colours: []
+
+txt.title.center x4: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/title_bold.font']
+   mats: []
+   colours: []
+
+txt.ttip_simple x8: ui::text_template in template/text.sii width=- height=-
+   fonts: ['/font/normal.font']
+   mats: ['/material/ui/white.mat']
+   colours: ['clr_tooltip_bg', 'clr_tooltip_border', 'clr_txt']
+
+txt.window.bcg_rect4 x9: ui::text_template in template/text.sii width=- height=-
+   fonts: []
+   mats: ['/material/ui/corner_4px.mat', '/material/ui/white.mat']
+   colours: []
+
+btn.truck_acc (accessory tile, ui/template/button.sii:1101), parameters as used by its n_pml:
+  %0 name, %1 icon (img src=/material/ui/accessory/%1, no extension), %2 optional info, %3 price,
+  %4/%5 alpha of the new.mat / owned.mat badges, %6 locked text (d_pml), %8 extra, %9 origin badge accessory_%9.mat.
+  Layout: 22 px header strip + 74 px body = item_height 96 of _.acclist; icon at hshift 10, vshift 30.
+btn.truck_grp (category tab, button.sii:1172): img src=/material/ui/truck_config/%0.mat, width 64, height 64;
+  %0 comes from button_row value_list "cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interior~~i_accessories".
+txt.normal.color.center (text.sii): "<color value=%0>%1"; used with value "@@clr_sel@@|@@select_cat@@" -> value splits on '|'.
+
+==========================================================================
+G. Fonts and UI textures
+==========================================================================
+font/normal.font header: "# SCS Font (SDF format)"; "metrics assume rendering at a reference resolution of 1024x768";
+  vert_span 20.98, line_spacing 0, default_scale 0.83; 7 "image:" lines (/font/normal_N.mat, w, h, scale x, scale y, SDF padding);
+  glyph rows "xHHHH, atlas x, atlas y, width, height, plane x, plane y, advance, image index".
+font/glyphs_xb.font: same format, default_scale 1.0, 2 images (icon glyphs; prev/next tab use U+E8C3 / U+E8C5).
+font/big_0.mat: effect "ui.font.msdf.rfx", aux[0] {1024, 512, 7.845584, 0}, texture source "/font/normal_0.tobj", clamp, linear, mip none.
+ui_icon_survey -- - 0 <paths>:
+  /material/ui/truck_config/cabin.tobj          64x64 dxgi 88 mips 1   (cabin.mat: effect "ui.sdf.rfx", aux[0] {64, 64, 2, 0})
+  /material/ui/truck_config/e_accessories.tobj  64x64 dxgi 88 mips 1
+  /material/ui/white.tobj                        1x1 dxgi 93 mips 1    (white.mat: effect "ui.rfx")
+  /material/ui/corner_4px.tobj                  16x16 dxgi 91 mips 1
+  /font/normal_0.tobj                         1024x512 dxgi 88 mips 1
+  /font/glyphs_xb_0.tobj                         64x64 dxgi 88 mips 1
+scs ls material/ui/truck_config: cabin chassis engine transmission color e_accessories interior i_accessories lights camera
+  default_view walk_mode fullscreen fullscreen_exit show_vehicles cart sell new owned leave add brand btn_* accessory_* trailer_*
+  (each as .mat + .tobj)
+
+==========================================================================
+H. Accessory icons (ui_icon_survey -- /def/vehicle/truck 3)
+==========================================================================
+root /def/vehicle/truck: 5851 distinct icon values, parse errors 0
+units with an icon attribute, by class:
+  accessory_addon_data: 8620
+  accessory_addon_int_data: 7466
+  accessory_addon_int_ui_data: 65
+  accessory_addon_painted_data: 1322
+  accessory_addon_patch_data: 12098
+  accessory_addon_tank_data: 61
+  accessory_cabin_data: 78
+  accessory_chassis_data: 164
+  accessory_engine_data: 203
+  accessory_head_lights_data: 46
+  accessory_horn_addon_data: 286
+  accessory_interior_data: 438
+  accessory_paint_job_data: 19474
+  accessory_transmission_data: 195
+size example: 256x64 dxgi 91 mips 1: air_freshener
+size example: 256x64 dxgi 91 mips 1: airfreshener_gy
+size example: 256x64 dxgi 91 mips 1: airship_gy
+size example: 512x128 dxgi 91 mips 1: curtain_1.dlc_christmas
+size example: 512x128 dxgi 91 mips 1: curtain_1.dlc_winter
+size example: 64x64 dxgi 91 mips 1: engine/iveco_xcursor13
+size example: 64x64 dxgi 91 mips 1: engine/man_d1556
+size example: 64x64 dxgi 91 mips 1: engine/man_d2066
+source differs: /material/ui/accessory/exhaust/mercedes_actros_2014/6x24_exhaust_03_r.mat -> Some("/material/ui/accessory/exhaust/mercedes_actros_2014/6x24_exhaust_03_l.tobj")
+source differs: /material/ui/accessory/exhaust/mercedes_actros_2014/exhaust_03_r.mat -> Some("/material/ui/accessory/exhaust/mercedes_actros_2014/exhaust_03_l.tobj")
+source differs: /material/ui/accessory/golden_edge.mat -> Some("/material/ui/accessory/paintjob_golden_edge.tobj")
+resolved to /material/ui/accessory/<icon>.mat: 5848 of 5851
+.mat texture source == /material/ui/accessory/<icon>.tobj: 5844 of 5848
+icon values containing '/': 4874; containing '.': 182
+texture read errors: 0
+.mat first lines:
+  effect : "ui.rfx": 5601
+  effect: "ui.rfx": 46
+  material : "ui": 201
+texture size / format histogram:
+  256x64 dxgi 91 mips 1: 5815
+  512x128 dxgi 91 mips 1: 2
+  64x64 dxgi 91 mips 1: 31
+unresolved icons (3):
+  "lamp_led_01" (accessory_head_lights_data) in /def/vehicle/truck/man.tgx_2020/head_light/led.sii
+  "mug_xmas_2020" (accessory_addon_int_data) in /def/vehicle/truck/mercedes.actros/accessory/toystand/cup_xmas_2020.sii
+  "toystand/hss_cap" (accessory_addon_int_data) in /def/vehicle/truck/mercedes.actros/accessory/toystand/hss_cap.sii
+examples (def_grep <class> icon 1 /def/vehicle/truck/scania.s_2016; ui_icon_survey -- - 0 <icon>):
+  accessory_cabin_data     cabin/highline.sii     icon "truck/scania_2016/accessory/cabin/cab_scania_s_2016_highline" -> 256x64 dxgi 91
+  accessory_chassis_data   chassis/4x2.sii        icon "truck/scania_2016/accessory/chassis/chassis_scania_2016_4x2"  -> 256x64 dxgi 91
+  accessory_engine_data    engine/dc13_370.sii    icon "engine_scania_dc13"                                           -> 64x64 dxgi 91
+  accessory_addon_data     accessory/windowtrim/windowtrim_mg_01.sii icon "windowtrim/scania_2016/windowtrim_mg_01"     -> 256x64 dxgi 91
+  accessory_paint_job_data paint_job/770s_met1_a.sii icon "paintjob/scania_770s_red"                                  -> 256x64 dxgi 91
+  each of these .mat: effect "ui.rfx" { texture : "texture" { source : "<basename>.tobj", u/v clamp, mip_filter none } }
+  legacy form: material : "ui" { texture : "<basename>.tobj" texture_name : "texture" }
+ui_icon_survey -- /def/vehicle 0 (incl. trailers): 9006 distinct icon values, 8960 resolve to /material/ui/accessory/<icon>.mat,
+  46 unresolved (43 under trailer_owned).
+
+==========================================================================
+I. Localisation (ui_survey.py . loc ../locale ...)
+==========================================================================
+locale files: ['en_us/local.sii', 'en_us/localization.sui', 'en_us/accessories.sui', 'common.sui', 'ui_colors.sui']; keys loaded: 9970 (9970 distinct)
+truck_config_t                   -> 'VEHICLE CONFIGURATOR'  [en_us/localization.sui]
+select_cat                       -> 'Choose the category of upgrade from the menu above.'  [en_us/localization.sui]
+basket_t                         -> 'ORDER'  [en_us/localization.sui]
+checkout                         -> 'Confirm Order'  [en_us/localization.sui]
+clear_cart                       -> 'Clear Order'  [en_us/localization.sui]
+total                            -> 'Total to pay:'  [en_us/localization.sui]
+refund                           -> 'Refunds'  [en_us/localization.sui]
+price                            -> 'Price'  [en_us/localization.sui]
+tc_new_total                     -> 'New total:'  [en_us/localization.sui]
+tc_extra_price                   -> 'Additional price:'  [en_us/localization.sui]
+tc_orig_price                    -> 'Original price:'  [en_us/localization.sui]
+truck_analysis_t                 -> 'VEHICLE ANALYSIS'  [en_us/localization.sui]
+current_truck_params             -> 'Vehicle Configuration'  [en_us/localization.sui]
+search                           -> 'Search'  [en_us/localization.sui]
+clear_input                      -> 'Clear search text'  [en_us/localization.sui]
+accessory_filters_t              -> 'CONTENT FILTERS'  [en_us/localization.sui]
+add_all                          -> 'Enable all'  [en_us/localization.sui]
+remove_all                       -> 'Disable all'  [en_us/localization.sui]
+notification_walking_camera      -> 'First person camera enabled'  [en_us/localization.sui]
+imv_unf_joy_nav_prv              -> <MISSING>
+imv_unf_joy_nav_nxt              -> <MISSING>
+cabin                            -> 'Cabin'  [en_us/localization.sui]
+chassis                          -> 'Chassis'  [en_us/localization.sui]
+engine                           -> 'Engine'  [en_us/localization.sui]
+transmission                     -> 'Transmission'  [en_us/localization.sui]
+interior                         -> 'Interior'  [en_us/localization.sui]
+color                            -> <MISSING>
+e_accessories                    -> <MISSING>
+i_accessories                    -> <MISSING>
+cabin_t                          -> 'CABIN'  [en_us/localization.sui]
+chassis_t                        -> 'CHASSIS'  [en_us/localization.sui]
+engine_t                         -> 'ENGINE'  [en_us/localization.sui]
+transmission_t                   -> 'TRANSMISSION'  [en_us/localization.sui]
+interior_t                       -> 'INTERIOR'  [en_us/localization.sui]
+accessory_t                      -> 'ACCESSORIES'  [en_us/localization.sui]
+paint_job_t                      -> 'STOCK COLOR'  [en_us/localization.sui]
+accessory                        -> 'Accessories'  [en_us/localization.sui]
+in_accessory                     -> 'Interior Accessories'  [en_us/localization.sui]
+lights                           -> 'Adjust Lights'  [en_us/localization.sui]
+=^Interior Accessories$: 1 keys whose value matches: ['in_accessory']
+~^imv_: 0 keys: []
+
+colour keys (locale/ui_colors.sui, included by locale/common.sui:1079):
+clr_red                          -> 'FF4C4CFC'  [ui_colors.sui]
+clr_green                        -> 'FF00DD75'  [ui_colors.sui]
+clr_blue                         -> 'FFFFB204'  [ui_colors.sui]
+clr_white                        -> 'FFFFFFFF'  [ui_colors.sui]
+clr_sel                          -> 'FF03B0FA'  [ui_colors.sui]
+clr_txt                          -> 'FFECECEC'  [ui_colors.sui]
+clr_bg_main                      -> 'F5191817'  [ui_colors.sui]
+~^clr_: 153 keys: ['clr_adviser_bg', 'cl
+
+==========================================================================
+J. /def/truck_config_scene.sii (config_path of truck_configuration_bcg.sii), counts only
+==========================================================================
+        1 camera_aim:
+        1 camera_aim_y_bounds:
+        1 camera_default_azimuth:
+        1 camera_default_elevation:
+        1 camera_default_zoom:
+        1 camera_elevation_limit:
+        1 camera_fov:
+        1 camera_relative_bounds:
+        1 camera_zoom_sens:
+        1 cube_reflection:
+       65 double_sided[]:
+        1 floor_reflection:
+        1 hookups_exterior_only[]:
+       17 interior_only[]:
+        1 light_ambient:
+        1 light_diffuse:
+        1 light_direction:
+        1 light_specular:
+        1 mouse_rot_sens:
+        3 part_order[]:
+       65 pin_dir[]:
+       65 pin_dir_uk[]:
+       65 pin_group[]:
+       65 pin_look[]:
+       65 pin_offset[]:
+        1 scene_model_anim_path:
+        1 scene_model_animation:
+        1 scene_model_look:
+        1 scene_model_path:
+        1 scene_model_position:
+        1 scene_model_variant:
+        1 truck_position:
+        1 ui_truck_scene_config:
+  pin_look values:
+         2 acc_cover
+         2 acc_hub
+         2 acc_nuts
+        59 custom_acc
+  pin_group values (65): air_tank b_detector beacon cab_door cab_doorstep cabdefl codrv_seat cor_def doorhndl doorstep doortrim exhaust_l exhaust_r f_fender_cab f_fender_chs f_fendr_cab f_fendr_chs f_light_mid f_light_bmp f_light_chs f_light_top f_fender f_turn_light flag_l flag_r hl_guard mir_guard s_guard hoodlatch intlight_bck l_horn m_mudflap markers mirror r_bumper r_chs_cover r_deflector r_fender r_fendr_top r_grill r_horn r_light r_mudflap s_badge s_deflector s_mirror s_panel s_reflector s_strip sideskirt sideskrt_bar tank windowtrim f_tire r_tire f_rim r_rim f_disc r_disc f_hub r_hub f_cover r_cover f_nuts r_nuts 
+  interior_only (17): carpet codrv_seat cup_holder curtain_f intlight_bgr l_pillow set_cuphold set_dashbrd set_glass set_lglass toyac toybed toybig toyhang toypanel toyseat toystand 
+  hookups_exterior_only: sunshld
+  example entry: pin_group beacon / pin_look custom_acc / pin_offset (0, 0.3, 0) / pin_dir (0, 0, 0) / pin_dir_uk (0, 0, 0) / double_sided false
+
+==========================================================================
+K. Tab ids and pin ids (cross-check of F5; grep over research/extracted/ui)
+==========================================================================
+grep -n "id_list\|value_list" truck_configuration_*.sii trailer_configuration_center.sii :
+  truck_configuration_center.sii:329: value_list: "cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interior~~i_accessories"
+  truck_configuration_center.sii:330: id_list: "510~~500~~520~~530~~550~~560~~540~~570"
+  trailer_configuration_center.sii:329: value_list: "trailer_chain~~trailer_body~~trailer_chassis~~trailer_color~~trailer_e_accessories"
+  trailer_configuration_center.sii:330: id_list: "571~~572~~500~~550~~560"
+grep -n "^ id: [0-9]\{5,\}" truck_configuration_*.sii truck_config_filters.sii (ids >= 10000):
+  0 matches
+
+==========================================================================
+L. Our SII parser over /ui/ (cargo run --release -p specsheet-data --example def_stats -- /ui)
+==========================================================================
+  classes reported: 289 (lines without indent, incl. the exit line)
+  def_stats /ui exit 0
+
+==========================================================================
+M. Do pin_group / interior_only values name slots? (truck_config_scene.sii vs slot directories)
+   slot dirs = names after /accessory/ in `scs find def/vehicle/truck /accessory/`, plus /def/vehicle/<dir> (wheel slots)
+==========================================================================
+  pin_group matching a slot dir: 60 of 65
+  unmatched: cabdefl f_fendr_cab hoodlatch m_mudflap markers 
+  interior_only matching a slot dir: 17 of 17
+
+==========================================================================
+N. Executable string (existing REA evidence, research/evidence/rea-search-tuning-strings.txt:297-300)
+==========================================================================
+  0x14223bbb0 /ui/truck_configuration_bcg.sii
+  0x14223c7b0 ?on_wshow@truck_config_hdl_u@prism@@UEAAXXZ
+  0x14223c850 truck_config_hdl
+  0x14223c8b8 truck_config_hdl_u
+  grep -c 'pin_group|interior_only|truck_config_scene' rea-search-tuning-strings.txt: 0 (not in that regex)
+
+O. imv_unf_* keys in every en_us locale file and the shared ones (grep -c imv_unf after scs cat):
+  locale/en_us/local.sii: 0
+  locale/en_us/localization.sui: 0
+  locale/en_us/accessories.sui: 0
+  locale/en_us/academy.sui: 0
+  locale/en_us/loading_screens.sui: 0
+  locale/en_us/local.override.sii: 0
+  locale/en_us/local.steam.sii: 0
+  locale/en_us/mails.sii: 0
+  locale/en_us/paintjobs.sui: 0
+  locale/en_us/photoalbum.sui: 0
+  locale/en_us/tutorial_hints.sui: 0
+  locale/common.sui: 0
+  locale/ui_colors.sui: 0
+  locale/fuel_price_strings.sui: 0
+  /ui/ files using @@imv_unf_*@@: 5
