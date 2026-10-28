@@ -125,14 +125,21 @@ fn path_at(text: &str) -> &str {
     path.split('#').next().unwrap_or(path)
 }
 
-fn push(out: &mut Vec<String>, path: &str) {
-    let path = path.trim_end_matches(['.', '/']);
+/// `path` without a leading slash or trailing dots and slashes, if it is a
+/// plausible game path: not empty, at most 512 bytes, and no empty, `.` or
+/// `..` part.
+pub fn clean(path: &str) -> Option<&str> {
+    let path = path.trim_start_matches('/').trim_end_matches(['.', '/']);
     let sane = !path.is_empty()
         && path.len() <= MAX_PATH
         && !path
             .split('/')
             .any(|part| part.is_empty() || part == "." || part == "..");
-    if sane {
+    sane.then_some(path)
+}
+
+fn push(out: &mut Vec<String>, path: &str) {
+    if let Some(path) = clean(path) {
         out.push(path.to_owned());
     }
 }
@@ -218,6 +225,17 @@ vehicle_accessory : .x
         );
         // Outside a .mat, a bare quoted name is not a path.
         assert!(referenced_paths("def/x.sii", mat).is_empty());
+    }
+
+    #[test]
+    fn clean_trims_and_rejects_unsafe_paths() {
+        assert_eq!(clean("/def/a.sii"), Some("def/a.sii"));
+        assert_eq!(clean("def/a/"), Some("def/a"));
+        for bad in ["", "/", "a//b", "a/./b", "a/../b", "../a"] {
+            assert_eq!(clean(bad), None, "{bad:?}");
+        }
+        assert_eq!(clean(&"a".repeat(MAX_PATH)).map(str::len), Some(MAX_PATH));
+        assert_eq!(clean(&"a".repeat(MAX_PATH + 1)), None);
     }
 
     #[test]
