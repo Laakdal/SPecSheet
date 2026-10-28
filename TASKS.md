@@ -101,6 +101,9 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 10. **App shell (D16):** the `specsheet-theme` token crate with contrast tests, then the home, trucks, configurations, mods, parity, settings and about screens per [docs/app/design-system.md](docs/app/design-system.md). After the 1:1 tuning screen.
 11. **Docs per feature:** move each tuning feature's findings, rules and status into one `docs/features/<feature>.md` (wheels, interior, hookups, pins, scenes, paint). Shrink REVERSE_ENGINEERING.md to an index of F-numbers that link to them. Do it after the paint branch and the mod session's F14/D15 land.
+12. **Restructure (D17)** in a coordinated window, one step at a time, with every check passing after each:
+    - Phase A, safe now: `xtask` with `check` and `layers` (CI switches to `cargo xtask check`), `deny.toml`, `missing_docs` on the library crates.
+    - Phase B, after the paint and `dif.spec` materials: create the foundation `specsheet-core` and rename the domain crate to `specsheet-truck`; split out `assembly`, `session` and `gameui`; move the materials into `render`; move the tools into `research`; split `catalog.rs` and `config.rs`.
 
 ## Blockers and notes
 

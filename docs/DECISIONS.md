@@ -118,3 +118,24 @@ Each entry records the context, the decision and the alternatives considered. Ne
 - **Alternatives:**
   - A separate GPUI launcher like Horizon's. Rejected: a second app and UI framework for screens egui can draw.
   - Copying Horizon's look. Rejected: only the method is taken; SPecSheet has its own accent, wordmark and font choice.
+
+### D17: Crates by responsibility, with checked layers and shared foundations
+- **Context:** `specsheet-data` grew to about 8,500 lines with four jobs (loading, assembly, the game-UI layout engine, app-facing state), and every session edits it. Shader code is about to grow inside the app crate. Basic types are duplicated (`Aabb` in formats, `Transform` in data, colour conversion in core and the app). Research tools are spread over three crates' examples.
+- **Decision:** the target structure in [ARCHITECTURE.md](ARCHITECTURE.md#target-structure-d17):
+  - a foundation `specsheet-core` (ids, maths, colour, units);
+  - the tuning domain renamed `specsheet-truck`;
+  - `specsheet-data` split into `-data`, `-assembly`, `-session` and `-gameui`;
+  - `specsheet-render` out of the app, and `specsheet-research` for the tools;
+  - an `xtask` crate with a layer check.
+  It is done in one coordinated pass after the paint and `dif.spec` materials land; until then new code follows the target boundaries where it can.
+- **Engineering practices adopted with it:**
+  - `cargo xtask check` (the "Done means" list) and `cargo xtask layers`, which CI also runs;
+  - `cargo-deny` for licences and advisories;
+  - `#![warn(missing_docs)]` on library crates;
+  - `#[non_exhaustive]` on enums that grow with game versions;
+  - fuzzing the parsers that read untrusted mod and save files;
+  - versioned settings and configuration files;
+  - benchmarks for parsing and assembly.
+- **Alternatives:**
+  - Generic tuning vs truck-specific crates. Rejected: almost all of the tuning logic is generic, and trailers are not planned.
+  - Splitting by file count. Rejected (D12).

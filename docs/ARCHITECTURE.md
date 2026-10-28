@@ -32,6 +32,41 @@ Boundaries that must hold:
 - The UI never decides compatibility. It renders what `specsheet-data::view` reports (`compatible` flags, reasons).
 - Nothing writes into the game directory. Archives are opened read-only.
 
+## Target structure (D17)
+
+Where the crates are heading. Code moves there in one coordinated pass, after the paint and `dif.spec` materials land (TASKS.md). Each crate has one responsibility, and the arrows only point down.
+
+```
+crates/
+  specsheet/            app: screens and wiring (Bevy, egui)
+  specsheet-render/     materials, WGSL shaders, mesh and texture upload (Bevy)
+  specsheet-theme/      design tokens for the app's own screens (D16), no dependencies
+  specsheet-session/    what is being edited: session, view (labels, markers, prices)
+  specsheet-assembly/   the built truck: placements, wheels, interior, cockpit, hookups, anchors
+  specsheet-gameui/     the game's UI files laid out (independent of trucks)
+  specsheet-truck/      the tuning domain: catalog, configuration, rules, paint jobs, hookups (was specsheet-core)
+  specsheet-data/       loading game data: install, catalog/, models, scenes, paint
+  specsheet-formats/    byte parsers: SII, BSII, ScsC, PMD/PMG, MAT
+  specsheet-archive/    archives: HashFS v2/v1, ZIP, packed textures, VFS
+  specsheet-core/       foundation: ids, maths (Vec3, Transform, Aabb), colour, units; no domain logic
+  specsheet-research/   the research tools now spread over three crates' examples/
+xtask/                  repository tasks: check, layers, guard, real, parity, version-port
+```
+
+| Question | Crate |
+|---|---|
+| Which trucks and parts exist? | `specsheet-data` |
+| What is selected, and is it allowed? | `specsheet-truck` (pure, no game files) |
+| Where does each part go in 3D? | `specsheet-assembly` |
+| What does it look like? | `specsheet-render` and the app |
+
+Rules that keep it maintainable:
+- **Layers are checked.** `cargo xtask layers` fails when a crate depends on a crate above it.
+- **Bevy stays at the top.** Only `specsheet-render` and the app depend on Bevy, so a Bevy upgrade never touches the game logic.
+- **Basic types live once,** in `specsheet-core`. Today `Aabb`, `Transform` and the colour conversions are spread over three crates.
+- **Crates split by responsibility, not size.** A new crate needs a real boundary (D12, the AGENTS.md module rule).
+- **Within crates,** a module grows into `module.rs` plus `module/` when it gets distinct parts. Candidates now: `specsheet-data/src/catalog.rs` (1,017 lines) and the truck crate's `config.rs` (rules, selection, hookups, paint overrides, price).
+
 ## Data flow
 
 1. **Startup.** `GameInstall::discover()` (env `ETS2_DIR` or Steam libraries) → `mount()` opens about 110 archives (≈0.7 s) into a `Vfs`.
