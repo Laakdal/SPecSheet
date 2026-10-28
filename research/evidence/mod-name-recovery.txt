@@ -183,3 +183,92 @@ No .sii in the package names the sky textures, and no game path or other
 mod in the folder does either. Hypothesis: the package needs a separate
 definitions mod (its Spanish readme lists "Compatible: ... JBX Settings
 RC") to change the sky.
+Packing order (entries sorted by data offset; one-off example, deleted):
+the packer wrote files folder by folder, names sorted within a folder, so
+an unnamed entry's named neighbours show its folder and where its name
+sorts. Not a name, but it narrows a guess, which the hash then checks.
+- The two named model/skybox/{sun,skycloud}/none.dds are 3 bytes, "# @",
+  the same as the 70 unnamed tiny files: placeholder textures (Confirmed
+  by content). None of the 70 is at a 1.60 game path.
+- The 8 replaced dlc/ files are each 64 bytes of the same hex text as the
+  4 unnamed 64-char files. Two of those, sorted just before their .pmd,
+  are dlc/dead_end_dlc.dds and dlc/direction_blocker_dlc.dds
+  (hash-verified; no rule names them yet).
+- The 15 Internet Shortcuts each sit first in a texture folder, so each
+  credit folder (environment-textures, hdrmaps, hdri-skies-360, ...) holds
+  one, sorted before the jbx_* files (an upper-case name: Hypothesis).
+
+
+8. Comparison with Extractor, and facts for new rules
+-----------------------------------------------------
+Extractor (sk-zk, GPL-2.0) release 2026-07-29, win-x64 zip, SHA-256
+d493dc7d1834854effe12b80f6598cd1a8d5e754b069d7321f8802f72d64b2f7 (as
+published by GitHub), run with --deep --list --dry-run -q on each of the 22
+v1 packages; nothing extracted. Only its printed paths are used, each
+checked against the package by hash. Its --list prints files only, so the
+counts below are files (directory entries excluded on our side).
+  files named                 ours (game + ZIP candidates)  160,589
+                              Extractor                     160,726
+                              both                          158,616
+                              only ours                       1,973 (MAN TG3 1,926, NG Sound 47)
+                              only Extractor                  2,110 (MAN TG3 2,108, skybox 2)
+In 17 of 22 packages both name exactly the same files. Extractor's 2,110:
+  695  /automat/<xx>/<hash>.mat materials (MAN TG3)
+ 1409  .dds textures whose paths use ? * < > : # (MAN TG3), named inside
+       .tobj files; our scanner keeps only [A-Za-z0-9_-./] and drops them
+    6  .pmd/.pmg (skybox dlc/direction_blocker_curve.{pmd,pmg}, 4 in MAN TG3),
+       not paths of the 1.60 install (probably from Extractor's own list)
+Facts checked on our own data before use:
+- automat: every one of the game's 65,473 automat/<xx>/<name>.mat files is
+  named by the CityHash64 of its content, as 16 lower-case hex digits, in
+  a folder of the first two (65,473 of 65,473; one-off example).
+- standalone .tobj (24,981 in the mod folder's v1 and ZIP packages): magic
+  01 0a b1 70; from 0x28, records of u64 length + path bytes run to the end
+  of the file in 24,979: one record in 24,970, six in 9 (cube maps); 2 have
+  an invalid length. Paths start with '/'.
+- map sectors: the game's map/europe has 1,101 sectors named
+  sec<x:+0000><z:+0000> (x -24..19, z -31..21) with .base .aux .data .desc
+  (.snd 1,100). Every v1 package here is named as completely by us as by
+  Extractor, so sector guessing names nothing here: not implemented (not
+  observed).
+- unreadable entries: 0 in all 22 v1 and all ZIP packages; Extractor printed
+  no decoys. Junk and decoy handling: not observed, not implemented.
+- 3nK: 2 entries, both in MAN TG3 ("3nK" 01 00 ...). XOR against the
+  expected "SiiNunit" start gives no repeating key, and the MIT reference
+  (sii-decode-rs) has no 3nK. Unknown; needs the exe (REA).
+- encrypted (ScsC) or binary (BSII) SII: 0 in mods.
+
+
+9. New rules: results, and content types
+----------------------------------------
+Rules added from section 8 (each test-first): .tobj texture paths read as
+length records; automat/<xx>/<hash>.mat from each unnamed entry's content;
+packing-order neighbours (section 7) with the package's own extensions;
+v1 packages as candidates for each other (example flag --others, which
+replaces --zips and also scans the v1 packages of the folder).
+22 v1 packages, mod_names --others "<home>/mod":
+  named from the packages alone   142,029 (was 139,921)
+  named with all candidates       169,777 of 171,094 (was 167,657)
+  Add-On MAN TG3                    6,445 of 7,558 (was 4,341): +695
+                                    automat, +1,409 .dds from .tobj records
+  skybox                              250 (was 234): +2 dlc/*.dds by packing
+                                    order, +14 files in model/skybox named
+                                    by paths in another v1 package
+  every other package             unchanged
+Content types of unnamed entries (specsheet_formats::sniff) use signatures
+seen on the named files of the folder's ZIP packages (one-off example that
+printed the four most common first-8-byte heads per extension):
+  "DDS "                 .dds: one head, 3,314 of 3,314
+  01 0a b1 70            .tobj: one head, 3,275 of 3,275
+  15 67 6d 50 ("\x15gmP") .pmg: all four top heads (770 of 1,509)
+  ff d8 ff               .jpg: all four top heads (20 of 32)
+  89 "PNG" 0d 0a 1a 0a   .png: one head, 9 of 9
+  "SiiNunit" (BOM ok)    .sii: 63,638 of 63,659 in the top heads (others:
+                         unit text without the header, e.g. "accessory")
+  "material" / "effect"  .mat: 4,366 of 4,883, and 517 more after a
+                         newline (leading whitespace is skipped)
+  "source="              .soundref: 2, and 141 after a BOM (skipped)
+  "RIFF", "FEV " at 8    .bank: RIFF in all four top heads of 25; FEV seen
+                         at offset 8 in NG Sound's 2 banks
+.pmd/.pma/.pmc start with a small u32 version (4/5/6) only; too weak to
+label, so those stay .bin. A label never names a file.
