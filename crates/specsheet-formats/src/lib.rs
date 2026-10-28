@@ -12,6 +12,7 @@ pub mod pmd;
 pub mod pmg;
 pub mod scsc;
 pub mod sii;
+pub mod sniff;
 pub mod token;
 pub mod ui_markup;
 
