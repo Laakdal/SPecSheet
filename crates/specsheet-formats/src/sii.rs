@@ -351,7 +351,14 @@ impl<'a> Parser<'a> {
                     let value = match self.next()? {
                         Some(Token::Word(w)) => Value::Token(w.to_owned()),
                         Some(Token::Str(s)) => Value::String(s),
-                        Some(Token::Tuple(items)) => Value::Tuple(items),
+                        Some(Token::Tuple(mut items)) => {
+                            // A placement continues with its rotation on the
+                            // same line: `(x, y, z) (w; x, y, z)`.
+                            if self.tuple_follows_on_line() {
+                                items.extend(self.tuple()?);
+                            }
+                            Value::Tuple(items)
+                        }
                         _ => return Err(self.error(format!("missing value for `{key}`"))),
                     };
                     let (key, slot) =
@@ -465,24 +472,51 @@ impl<'a> Parser<'a> {
 
     fn string(&mut self) -> Result<String, SiiError> {
         self.bump(); // opening quote
-        let mut out = String::new();
+                     // Bytes, because `\xNN` escapes are single bytes of a UTF-8 sequence.
+        let mut out = Vec::new();
+        let mut utf8 = [0u8; 4];
         loop {
             match self.bump() {
-                Some('"') => return Ok(out),
+                Some('"') => return Ok(String::from_utf8_lossy(&out).into_owned()),
                 Some('\\') => match self.bump() {
-                    Some('n') => out.push('\n'),
-                    Some('r') => out.push('\r'),
-                    Some('t') => out.push('\t'),
-                    Some(other) => out.push(other),
+                    Some('n') => out.push(b'\n'),
+                    Some('r') => out.push(b'\r'),
+                    Some('t') => out.push(b'\t'),
+                    Some('x') => match self.hex_byte() {
+                        Some(byte) => out.push(byte),
+                        None => out.push(b'x'),
+                    },
+                    Some(other) => out.extend(other.encode_utf8(&mut utf8).as_bytes()),
                     None => break,
                 },
-                Some(c) => out.push(c),
+                Some(c) => out.extend(c.encode_utf8(&mut utf8).as_bytes()),
                 None => break,
             }
         }
         Err(self.error("unterminated string"))
     }
 
+    /// Two hex digits after `\x`; consumes them only when both are valid.
+    fn hex_byte(&mut self) -> Option<u8> {
+        let digits = self.src.get(self.pos..self.pos + 2)?;
+        // `from_str_radix` alone would also accept a sign (`\x+f`).
+        if !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return None;
+        }
+        let byte = u8::from_str_radix(digits, 16).ok()?;
+        self.pos += 2;
+        Some(byte)
+    }
+
+    /// Skips spaces and tabs; true when a `(` follows before the line ends.
+    fn tuple_follows_on_line(&mut self) -> bool {
+        while self.peek_char().is_some_and(|c| c == ' ' || c == '\t') {
+            self.bump();
+        }
+        self.peek_char() == Some('(')
+    }
+
+    /// `(a, b, c)`. A `;` separates like `,` (a quaternion's `(w; x, y, z)`).
     fn tuple(&mut self) -> Result<Vec<String>, SiiError> {
         self.bump(); // '('
         let mut items = Vec::new();
@@ -493,11 +527,12 @@ impl<'a> Parser<'a> {
                     self.bump();
                     return Ok(items);
                 }
-                Some(',') => {
+                Some(',' | ';') => {
                     self.bump();
                 }
                 Some(_) => {
                     let word = self.word();
+                    let word = word.strip_suffix(';').unwrap_or(word);
                     if word.is_empty() {
                         return Err(self.error("unexpected character in tuple"));
                     }
@@ -601,6 +636,47 @@ accessory_cabin_data : normal.scania.s_2016.cabin
         let err =
             parse("/def/bad.sii", b"SiiNunit\n{\nclass : name {\n key 5\n}\n}").expect_err("bad");
         assert!(matches!(err, SiiError::Syntax { line: 4, .. }), "{err:?}");
+    }
+
+    #[test]
+    fn decodes_hex_byte_escapes_as_utf8() {
+        // Profiles and UI layouts store non-ASCII text as `\xNN` bytes of
+        // its UTF-8 encoding (`/ui/truck_configuration_right.sii`: "\xe2\x82\xac").
+        let src = "SiiNunit\n{\nuser_profile : p {\n a[]: \"Ver \\xe3\\x83\\x88.\"\n b[]: \"\\xzz\"\n c[]: \"\\x+f\"\n d[]: \"\\xe2\\x82\\xac 1\"\n}\n}\n";
+        let doc = parse("/profile.sii", src.as_bytes()).expect("parse");
+        assert_eq!(doc.units[0].array_str("a"), ["Ver \u{30c8}."]);
+        assert_eq!(doc.units[0].array_str("b"), ["xzz"]);
+        assert_eq!(doc.units[0].array_str("c"), ["x+f"]);
+        assert_eq!(doc.units[0].array_str("d"), ["\u{20ac} 1"]);
+    }
+
+    #[test]
+    fn parses_placements_as_one_seven_item_tuple() {
+        // Saves write a position and a rotation quaternion `(w; x, y, z)`.
+        let src = "SiiNunit\n{\nplayer : p {\n a: (&3f800000, 2, 3) (&3f01261f; 0, 0, 0)\n b: (1, 2, 3) (1 ; 0, 0, 0)\n c: (4, 5)\n d: 6\n}\n}\n";
+        let doc = parse("/game.sii", src.as_bytes()).expect("parse");
+        let unit = &doc.units[0];
+        assert_eq!(
+            unit.get("a").and_then(Value::as_floats),
+            Some(vec![
+                1.0,
+                2.0,
+                3.0,
+                f32::from_bits(0x3f01_261f),
+                0.0,
+                0.0,
+                0.0
+            ])
+        );
+        assert_eq!(
+            unit.get("b").and_then(Value::as_floats),
+            Some(vec![1.0, 2.0, 3.0, 1.0, 0.0, 0.0, 0.0])
+        );
+        assert_eq!(
+            unit.get("c").and_then(Value::as_floats),
+            Some(vec![4.0, 5.0])
+        );
+        assert_eq!(unit.get_i64("d"), Some(6));
     }
 
     #[test]
