@@ -1,0 +1,11 @@
+[package]
+name = "specsheet-theme"
+version = "0.1.0"
+description = "Design tokens for SPecSheet's own screens (D16): colour roles, type scale, spacing. No dependencies."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

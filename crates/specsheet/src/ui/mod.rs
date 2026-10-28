@@ -6,6 +6,7 @@
 
 mod screen;
 mod textures;
+mod theme;
 
 use bevy::camera::visibility::RenderLayers;
 use bevy::camera::CameraOutputMode;
@@ -26,6 +27,7 @@ use crate::viewer::{ModelCache, TruckRoot, ViewportInput};
 
 use self::screen::{Click, Mapping, Prices, ScreenAssets, ScreenState};
 use self::textures::UiTextures;
+use self::theme::{color, PALETTE};
 
 /// The egui panels and hotspot markers, drawn through their own camera.
 pub struct UiPlugin;
@@ -38,15 +40,15 @@ impl Plugin for UiPlugin {
     }
 }
 
-const BG: Color32 = Color32::from_rgb(0x11, 0x13, 0x17);
-const PANEL: Color32 = Color32::from_rgb(0x1a, 0x1d, 0x23);
-const RAISED: Color32 = Color32::from_rgb(0x22, 0x26, 0x2e);
-const LINE: Color32 = Color32::from_rgb(0x2e, 0x33, 0x3d);
-const TEXT: Color32 = Color32::from_rgb(0xe8, 0xea, 0xee);
-const MUTED: Color32 = Color32::from_rgb(0x8d, 0x94, 0xa1);
-const ACCENT: Color32 = Color32::from_rgb(0xf5, 0xa6, 0x23);
-const DANGER: Color32 = Color32::from_rgb(0xef, 0x6b, 0x6b);
-const MARKER_SIZE: f32 = 16.0;
+const BG: Color32 = color(PALETTE.page);
+const PANEL: Color32 = color(PALETTE.plate_soft);
+const RAISED: Color32 = color(PALETTE.surface);
+const LINE: Color32 = color(PALETTE.rule);
+const TEXT: Color32 = color(PALETTE.ink);
+const MUTED: Color32 = color(PALETTE.muted);
+const ACCENT: Color32 = color(PALETTE.accent);
+const DANGER: Color32 = color(PALETTE.danger);
+const MARKER_SIZE: f32 = specsheet_theme::PIN_SIZE;
 /// Reference units one wheel notch scrolls a list: about half a tile.
 const WHEEL_LINE: f32 = 50.0;
 /// The game screen this app reproduces (`/ui/desc/truck.sui`).
@@ -80,10 +82,10 @@ impl UiState {
 
 fn marker_color(category: HotspotCategory) -> Color32 {
     match category {
-        HotspotCategory::Base => Color32::from_rgb(0x8b, 0xd1, 0x7c),
+        HotspotCategory::Base => color(PALETTE.pin_base),
         HotspotCategory::Addon => ACCENT,
-        HotspotCategory::Wheel => Color32::from_rgb(0x5f, 0xb3, 0xf9),
-        HotspotCategory::Interior => Color32::from_rgb(0xc9, 0xa2, 0xf5),
+        HotspotCategory::Wheel => color(PALETTE.pin_wheel),
+        HotspotCategory::Interior => color(PALETTE.pin_interior),
     }
 }
 

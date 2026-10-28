@@ -4853,6 +4853,7 @@ dependencies = [
  "specsheet-data",
  "specsheet-gameui",
  "specsheet-session",
+ "specsheet-theme",
  "specsheet-truck",
 ]
 
@@ -4938,6 +4939,10 @@ dependencies = [
  "specsheet-gameui",
  "specsheet-truck",
 ]
+
+[[package]]
+name = "specsheet-theme"
+version = "0.1.0"
 
 [[package]]
 name = "specsheet-truck"
