@@ -66,13 +66,69 @@ pub struct RecoveredNames {
 }
 
 /// Names the entries of `archive`, trying `candidates` first (see the
-/// module docs). Unreadable entries are skipped, never fatal.
+/// module docs), and variants of found names by `swaps`. Unreadable entries
+/// are skipped, never fatal.
 pub fn recover_v1_names(
     archive: &HashFsV1Archive,
     candidates: impl IntoIterator<Item = String>,
+    swaps: &WordSwaps,
 ) -> RecoveredNames {
     let by_hash = archive.entries().map(|e| (e.hash, e)).collect();
-    recover(&V1 { archive, by_hash }, candidates)
+    recover_with(&V1 { archive, by_hash }, candidates, LIMITS, swaps)
+}
+
+/// Word swaps between file names, learned from a set of paths (normally the
+/// game's, [`game_paths`]): two files in one folder, with one extension,
+/// whose names differ in exactly one `_`-separated word, as `blinker_on`
+/// and `blinker_off`. A swap seen in at least [`MIN_SWAP_COUNT`] such
+/// pairs is kept (13,462 in the 1.60 game, `research/evidence/
+/// mod-name-recovery.txt` section 10).
+#[derive(Clone, Debug, Default)]
+pub struct WordSwaps {
+    /// Word → the words it is swapped with.
+    to: HashMap<String, Vec<String>>,
+}
+
+/// Swaps seen fewer times than this are not used.
+pub const MIN_SWAP_COUNT: usize = 20;
+/// Folders with more files than this are skipped when learning, to bound
+/// the pairwise comparison.
+const MAX_LEARN_FOLDER: usize = 200;
+
+/// Learns [`WordSwaps`] from `paths`.
+pub fn learn_word_swaps(paths: &[String]) -> WordSwaps {
+    let mut folders: HashMap<(&str, &str), Vec<Vec<&str>>> = HashMap::new();
+    for path in paths {
+        let (dir, file) = path.rsplit_once('/').unwrap_or(("", path));
+        if let Some((stem, ext)) = file.split_once('.') {
+            folders
+                .entry((dir, ext))
+                .or_default()
+                .push(stem.split('_').collect());
+        }
+    }
+    let mut counts: HashMap<(&str, &str), usize> = HashMap::new();
+    for stems in folders.values().filter(|s| s.len() <= MAX_LEARN_FOLDER) {
+        for (i, a) in stems.iter().enumerate() {
+            for b in stems[i + 1..].iter().filter(|b| b.len() == a.len()) {
+                let mut differ = (0..a.len()).filter(|&k| a[k] != b[k]);
+                if let (Some(k), None) = (differ.next(), differ.next()) {
+                    *counts.entry((a[k], b[k])).or_default() += 1;
+                    *counts.entry((b[k], a[k])).or_default() += 1;
+                }
+            }
+        }
+    }
+    let mut to: HashMap<String, Vec<String>> = HashMap::new();
+    for ((from, into), n) in counts {
+        if n >= MIN_SWAP_COUNT {
+            to.entry(from.to_owned()).or_default().push(into.to_owned());
+        }
+    }
+    for words in to.values_mut() {
+        words.sort();
+    }
+    WordSwaps { to }
 }
 
 /// Every file and directory path of the mounted game, without a leading
@@ -219,14 +275,16 @@ impl Search {
     }
 }
 
+#[cfg(test)]
 fn recover(package: &impl Package, candidates: impl IntoIterator<Item = String>) -> RecoveredNames {
-    recover_with(package, candidates, LIMITS)
+    recover_with(package, candidates, LIMITS, &WordSwaps::default())
 }
 
 fn recover_with(
     package: &impl Package,
     candidates: impl IntoIterator<Item = String>,
     limits: Limits,
+    swaps: &WordSwaps,
 ) -> RecoveredNames {
     let mut search = Search::new(limits);
     search.extend(["manifest.sii", "versions.sii"]);
@@ -254,6 +312,7 @@ fn recover_with(
         drain(package, &mut search, &mut names);
         if names.len() == before {
             neighbour_guesses(package, &names, &mut search);
+            swap_guesses(&names, swaps, &mut search);
             drain(package, &mut search, &mut names);
         }
         if names.len() == before {
@@ -364,6 +423,34 @@ fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>, sear
                     return;
                 }
                 search.push(&format!("{}.{ext}", &neighbour[..dot]));
+            }
+        }
+    }
+}
+
+/// Variants of the found names by [`WordSwaps`], in the same folder.
+fn swap_guesses(names: &BTreeMap<u64, String>, swaps: &WordSwaps, search: &mut Search) {
+    for path in names.values() {
+        let (dir, file) = path
+            .rsplit_once('/')
+            .map_or(("", path.as_str()), |(d, f)| (d, f));
+        let Some((stem, ext)) = file.split_once('.') else {
+            continue;
+        };
+        let words: Vec<&str> = stem.split('_').collect();
+        for (k, word) in words.iter().enumerate() {
+            for into in swaps.to.get(*word).into_iter().flatten() {
+                if search.is_full() {
+                    return;
+                }
+                let mut variant = words.clone();
+                variant[k] = into;
+                let name = format!("{}.{ext}", variant.join("_"));
+                search.push(&if dir.is_empty() {
+                    name
+                } else {
+                    format!("{dir}/{name}")
+                });
             }
         }
     }
@@ -640,6 +727,39 @@ mod tests {
     }
 
     #[test]
+    fn learns_word_swaps_from_folders_and_applies_them() {
+        // 20 folders each hold an on/off pair: the swap is learned.
+        let mut paths = Vec::new();
+        for i in 0..MIN_SWAP_COUNT {
+            paths.push(format!("d{i}/lamp_on.soundref"));
+            paths.push(format!("d{i}/lamp_off.soundref"));
+        }
+        // Seen once only: not learned.
+        paths.push("x/left_a.sii".to_owned());
+        paths.push("x/left_b.sii".to_owned());
+        let swaps = learn_word_swaps(&paths);
+        assert_eq!(
+            swaps.to.get("on").map(Vec::as_slice),
+            Some(&["off".to_owned()][..])
+        );
+        assert!(!swaps.to.contains_key("a"));
+
+        let package = Fake::default()
+            .file("f/blinker_on.soundref", b"")
+            .file("f/blinker_off.soundref", b"");
+        let result = recover_with(
+            &package,
+            ["f/blinker_on.soundref".to_owned()],
+            LIMITS,
+            &swaps,
+        );
+        assert_eq!(
+            named(&result),
+            ["f/blinker_off.soundref", "f/blinker_on.soundref"]
+        );
+    }
+
+    #[test]
     fn names_automat_materials_by_their_content() {
         let content = b"material : \"eut2.dif\" {\n texture : \"/x.tobj\"\n}\n";
         let digest = format!("{:016x}", specsheet_archive::city_hash_64(content));
@@ -728,7 +848,7 @@ mod tests {
             scan_bytes: 450,
             ..LIMITS
         };
-        let result = recover_with(&package, Vec::new(), limits);
+        let result = recover_with(&package, Vec::new(), limits, &WordSwaps::default());
         assert_eq!(result.unnamed.len(), 20);
         assert!(
             package.bytes_read.get() <= 450,

@@ -3,52 +3,27 @@
 //! mounted game as candidates. With `--others <dir>`, every other package in
 //! `<dir>` adds candidates: a ZIP's file names, and the paths that a ZIP's or
 //! a v1 package's files mention (a v1 package may hold the models that
-//! another package's definitions use). With `--paths <file>`, each line of
-//! `<file>` is a candidate too. Packages are only read.
+//! another package's definitions use); the scan is cached per package in
+//! `%LOCALAPPDATA%\dev.specsheet.app\mod-scan` unless `--no-cache`. With
+//! `--paths <file>`, each line of `<file>` is a candidate too. Word swaps
+//! learned from the game's file names (`learn_word_swaps`) add variants of
+//! found names. Packages are only read.
 //!
 //! Usage (ETS2_DIR set, or the install is discovered):
-//!   cargo run --release -p specsheet-research --example mod_names -- [--list] [--others <dir>] [--paths <file>] <package.scs> ...
+//!   cargo run --release -p specsheet-research --example mod_names -- [--list] [--others <dir>] [--no-cache] [--paths <file>] <package.scs> ...
 
 use std::collections::{BTreeMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use specsheet_archive::{HashFsV1Archive, ZipArchive};
-use specsheet_data::mod_names::{game_paths, recover_v1_names};
+use specsheet_archive::HashFsV1Archive;
+use specsheet_data::mod_names::{game_paths, learn_word_swaps, recover_v1_names, WordSwaps};
+use specsheet_data::mod_scan::folder_candidates;
 use specsheet_data::GameInstall;
-use specsheet_formats::paths::referenced_paths;
 
-/// Small text-like files whose paths are worth scanning.
-const SCANNED: &[&str] = &[".sii", ".sui", ".mat", ".tobj", ".pmd", ".soundref"];
-/// v1 entries larger than this are not scanned (as in `mod_names`).
-const MAX_SCAN: u32 = 1 << 20;
-
-/// Candidates from every package in `dir` (the named packages' own
-/// references are found anyway, so they need not be skipped).
-fn other_packages(dir: &str) -> std::io::Result<Vec<String>> {
-    let mut out = Vec::new();
-    for entry in std::fs::read_dir(dir)? {
-        let path = entry?.path();
-        if let Ok(zip) = ZipArchive::open(&path) {
-            for file in zip.files() {
-                out.push(file.to_owned());
-                if SCANNED.iter().any(|ext| file.ends_with(ext)) {
-                    if let Ok(bytes) = zip.read(file) {
-                        out.extend(referenced_paths(file, &bytes));
-                    }
-                }
-            }
-        } else if let Ok(v1) = HashFsV1Archive::open(&path) {
-            for entry in v1.entries() {
-                if entry.is_directory() || entry.size > MAX_SCAN {
-                    continue;
-                }
-                if let Ok(bytes) = v1.read_entry(entry) {
-                    out.extend(referenced_paths("", &bytes));
-                }
-            }
-        }
-    }
-    Ok(out)
+/// Where the scan of `--others` is cached: the app's local data folder.
+fn cache_dir() -> Option<PathBuf> {
+    let local = std::env::var_os("LOCALAPPDATA")?;
+    Some(Path::new(&local).join("dev.specsheet.app").join("mod-scan"))
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -64,13 +39,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let list = flag("--list", false).is_some();
     let others = flag("--others", true);
+    let no_cache = flag("--no-cache", false).is_some();
     let extra = flag("--paths", true);
     let packages = args;
 
     let mut extra_paths = Vec::new();
     if let Some(dir) = &others {
-        extra_paths.extend(other_packages(dir)?);
-        println!("candidates from other packages: {}", extra_paths.len());
+        let start = std::time::Instant::now();
+        let cache = if no_cache { None } else { cache_dir() };
+        let scan = folder_candidates(Path::new(dir), cache.as_deref())?;
+        println!(
+            "candidates from other packages: {} ({} packages read, {} from cache, {:?})",
+            scan.paths.len(),
+            scan.scanned,
+            scan.cached,
+            start.elapsed()
+        );
+        extra_paths.extend(scan.paths);
     }
     if let Some(file) = &extra {
         let text = std::fs::read_to_string(file)?;
@@ -87,6 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = std::time::Instant::now();
     let mut game = game_paths(&vfs);
     let game_set: HashSet<String> = game.iter().cloned().collect();
+    let swaps = learn_word_swaps(&game);
     println!("game paths: {} ({:?})", game.len(), start.elapsed());
     game.extend(extra_paths);
 
@@ -99,8 +85,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             }
         };
-        let alone = recover_v1_names(&archive, Vec::new());
-        let with_game = recover_v1_names(&archive, game.iter().cloned());
+        let alone = recover_v1_names(&archive, Vec::new(), &WordSwaps::default());
+        let with_game = recover_v1_names(&archive, game.iter().cloned(), &swaps);
         let overrides = with_game
             .names
             .values()
