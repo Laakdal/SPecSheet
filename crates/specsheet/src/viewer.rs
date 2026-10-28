@@ -20,8 +20,11 @@ use specsheet_assembly::Placement;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
-use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
-use crate::render::{GameLight, GameLighting, Paint, PaintMaterials, TruckPaintMaterial};
+use crate::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
+use crate::render::{
+    DifSpecMaterial, DifSpecMaterials, GameLight, GameLighting, GameTextures, MaterialContext,
+    Paint, PaintMaterials, TruckPaintMaterial,
+};
 use crate::studio::{FrameSet, Studio};
 
 /// The truck, the scene, lights and the orbit camera.
@@ -674,8 +677,11 @@ fn sync_truck(
 #[derive(bevy::ecs::system::SystemParam)]
 struct PieceMaterials<'w> {
     paints: ResMut<'w, PaintMaterials>,
+    dif_specs: ResMut<'w, DifSpecMaterials>,
+    textures: ResMut<'w, GameTextures>,
     standard: Res<'w, Assets<StandardMaterial>>,
-    materials: ResMut<'w, Assets<TruckPaintMaterial>>,
+    paint_materials: ResMut<'w, Assets<TruckPaintMaterial>>,
+    dif_spec_materials: ResMut<'w, Assets<DifSpecMaterial>>,
     lighting: ResMut<'w, GameLighting>,
     buffers: ResMut<'w, Assets<ShaderBuffer>>,
 }
@@ -695,34 +701,54 @@ impl PieceMaterials<'_> {
         model: &GpuModel,
         paint: &Paint<'_>,
     ) {
-        for ((mesh, material), painted) in model.pieces.iter().zip(&model.painted) {
-            let Some(painted) = painted else {
-                commands.spawn((
-                    Mesh3d(mesh.clone()),
-                    MeshMaterial3d(material.clone()),
-                    ChildOf(parent),
-                ));
-                continue;
-            };
-            let mesh = painted
-                .alternate_mesh
-                .as_ref()
-                .filter(|_| paint.alternate_uvset())
-                .unwrap_or(mesh);
-            let material = self.paints.get(
-                studio.game.as_ref(),
-                &self.standard,
-                &mut self.materials,
-                &self.lighting.buffer,
-                material,
-                &painted.surface,
-                paint,
-            );
-            commands.spawn((
-                Mesh3d(mesh.clone()),
-                MeshMaterial3d(material),
-                ChildOf(parent),
-            ));
+        let mut cx = MaterialContext {
+            game: studio.game.as_ref(),
+            standard: &self.standard,
+            textures: &mut self.textures,
+            light: &self.lighting.buffer,
+        };
+        for ((mesh, material), game) in model.pieces.iter().zip(&model.game) {
+            match game {
+                None => {
+                    commands.spawn((
+                        Mesh3d(mesh.clone()),
+                        MeshMaterial3d(material.clone()),
+                        ChildOf(parent),
+                    ));
+                }
+                Some(GamePiece::Paint(painted)) => {
+                    let mesh = painted
+                        .alternate_mesh
+                        .as_ref()
+                        .filter(|_| paint.alternate_uvset())
+                        .unwrap_or(mesh);
+                    let material = self.paints.get(
+                        &mut cx,
+                        &mut self.paint_materials,
+                        material,
+                        &painted.surface,
+                        paint,
+                    );
+                    commands.spawn((
+                        Mesh3d(mesh.clone()),
+                        MeshMaterial3d(material),
+                        ChildOf(parent),
+                    ));
+                }
+                Some(GamePiece::DifSpec(surface)) => {
+                    let material = self.dif_specs.get(
+                        &mut cx,
+                        &mut self.dif_spec_materials,
+                        material,
+                        surface,
+                    );
+                    commands.spawn((
+                        Mesh3d(mesh.clone()),
+                        MeshMaterial3d(material),
+                        ChildOf(parent),
+                    ));
+                }
+            }
         }
     }
 }

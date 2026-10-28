@@ -19,7 +19,7 @@ use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_egui::EguiPlugin;
 
-use crate::render::{GameLightingPlugin, TruckPaintPlugin};
+use crate::render::GameMaterialsPlugin;
 use crate::script::ScriptPlugin;
 use crate::studio::StudioPlugin;
 use crate::ui::UiPlugin;
@@ -57,8 +57,7 @@ fn main() -> AppExit {
             EguiPlugin::default(),
             StudioPlugin,
             ViewerPlugin,
-            GameLightingPlugin,
-            TruckPaintPlugin,
+            GameMaterialsPlugin,
             UiPlugin,
             script,
         ))

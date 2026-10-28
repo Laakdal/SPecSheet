@@ -21,7 +21,7 @@ use specsheet_data::render::{
 };
 use specsheet_session::GameSession;
 
-use crate::render::PaintSurface;
+use crate::render::{DifSpecSurface, PaintSurface};
 
 /// One model as the viewer requests it. `parts` limits the model to the
 /// named parts (empty: all), as scene models do.
@@ -76,16 +76,23 @@ pub fn load_model(game: &GameSession, key: &ModelKey) -> Result<ModelPayload, St
 
 /// A model uploaded to the GPU; instances share its meshes and materials.
 pub struct GpuModel {
+    /// Each piece's mesh and its `.mat`'s `StandardMaterial` stand-in.
     pub pieces: Vec<(Handle<Mesh>, Handle<StandardMaterial>)>,
-    /// Per piece: for a `truckpaint` material, what its `.mat` gives the
-    /// paint; such pieces take the paint of the placement they belong to.
-    pub painted: Vec<Option<PaintPiece>>,
+    /// Per piece: the clean-room material it takes instead of the stand-in.
+    pub game: Vec<Option<GamePiece>>,
     /// The reflection cube (`texture_reflection`) of every reflective
     /// material, once per material; the viewer uses the most common one as
-    /// its environment map.
+    /// the environment map that lights the stand-ins.
     pub reflections: Vec<String>,
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
+}
+
+/// A piece drawn by a clean-room game material (`crate::render`).
+pub enum GamePiece {
+    /// Truck paint, which takes the paint of the placement it belongs to.
+    Paint(PaintPiece),
+    DifSpec(DifSpecSurface),
 }
 
 /// A `truckpaint` piece of a [`GpuModel`].
@@ -139,33 +146,43 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         })
         .collect();
     let mut pieces = Vec::new();
-    let mut painted = Vec::new();
+    let mut game = Vec::new();
     for (index, piece) in mesh.pieces.into_iter().enumerate() {
-        let Some(material) = materials.get(piece.material) else {
+        let (Some(material), Some(info)) = (
+            materials.get(piece.material),
+            mesh.materials.get(piece.material),
+        ) else {
             warnings.push(format!("{}: piece {index} has no material", mesh.path));
             continue;
         };
-        let surface = mesh
-            .materials
-            .get(piece.material)
-            .and_then(PaintSurface::of);
-        let alternate = match (&surface, &piece.alternate_paint_uvs) {
+        let paint = PaintSurface::of(info);
+        let dif_spec = DifSpecSurface::of(info);
+        let attributes = MeshAttributes {
+            paint_uv: paint.is_some(),
+            colors: paint.is_some() || dif_spec.is_some(),
+        };
+        let alternate = match (&paint, &piece.alternate_paint_uvs) {
             (Some(_), Some(uvs)) => Some(MeshPiece {
                 paint_uvs: Some(uvs.clone()),
                 ..piece.clone()
             }),
             _ => None,
         };
-        match piece_mesh(piece, surface.is_some()).and_then(|m| {
-            let alternate = alternate.map(|p| piece_mesh(p, true)).transpose()?;
+        match piece_mesh(piece, attributes).and_then(|m| {
+            let alternate = alternate.map(|p| piece_mesh(p, attributes)).transpose()?;
             Ok((m, alternate))
         }) {
             Ok((m, alternate)) => {
                 pieces.push((stores.meshes.add(m), material.clone()));
-                painted.push(surface.map(|surface| PaintPiece {
-                    surface,
-                    alternate_mesh: alternate.map(|m| stores.meshes.add(m)),
-                }));
+                let alternate_mesh = alternate.map(|m| stores.meshes.add(m));
+                game.push(match (paint, dif_spec) {
+                    (Some(surface), _) => Some(GamePiece::Paint(PaintPiece {
+                        surface,
+                        alternate_mesh,
+                    })),
+                    (None, Some(surface)) => Some(GamePiece::DifSpec(surface)),
+                    (None, None) => None,
+                });
             }
             Err(error) => warnings.push(format!("{}: piece {index}: {error}", mesh.path)),
         }
@@ -173,12 +190,15 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
     let reflections = mesh
         .materials
         .iter()
-        .filter(|info| reflective_surface(info).is_some())
+        .filter(|info| {
+            reflective_surface(info).is_some()
+                || DifSpecSurface::of(info).is_some_and(|s| s.reflection().is_some())
+        })
         .filter_map(|info| info.reflection_texture.clone())
         .collect();
     let model = GpuModel {
         pieces,
-        painted,
+        game,
         reflections,
         aabb_min: Vec3::from(mesh.aabb_min),
         aabb_max: Vec3::from(mesh.aabb_max),
@@ -186,11 +206,19 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
     (Arc::new(model), warnings)
 }
 
-/// The GPU mesh of `piece`. Paint pieces also carry their paint UV set as
-/// `UV_1` and their vertex colours, doubled: the paint multiplies by twice
-/// the colour, so 0.5 is neutral (truckpaint-lighting.md §2). Other
-/// materials do not use them yet.
-fn piece_mesh(piece: MeshPiece, painted: bool) -> Result<Mesh, String> {
+/// Which optional attributes a piece's mesh carries.
+#[derive(Clone, Copy, Debug, Default)]
+struct MeshAttributes {
+    /// The paint UV set as `UV_1` (truck paint).
+    paint_uv: bool,
+    /// The vertex colours, doubled: the game materials multiply by twice
+    /// the colour, so 0.5 is neutral (dif-spec.md §3.2). The stand-ins do
+    /// not use them.
+    colors: bool,
+}
+
+/// The GPU mesh of `piece`.
+fn piece_mesh(piece: MeshPiece, attributes: MeshAttributes) -> Result<Mesh, String> {
     let count = piece.positions.len();
     if piece.normals.len() != count {
         return Err("normal count differs from position count".to_owned());
@@ -217,10 +245,10 @@ fn piece_mesh(piece: MeshPiece, painted: bool) -> Result<Mesh, String> {
     if let Some(uvs) = piece.uvs {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
     }
-    if let Some(uvs) = piece.paint_uvs.filter(|_| painted) {
+    if let Some(uvs) = piece.paint_uvs.filter(|_| attributes.paint_uv) {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
     }
-    if let Some(colors) = piece.colors.filter(|_| painted) {
+    if let Some(colors) = piece.colors.filter(|_| attributes.colors) {
         let doubled: Vec<[f32; 4]> = colors
             .into_iter()
             .map(|[r, g, b, a]| [2.0 * r, 2.0 * g, 2.0 * b, a])
@@ -242,14 +270,17 @@ const DECAL_DEPTH_BIAS: f32 = 8.0;
 /// Below this perceptual roughness Bevy's specular highlights alias.
 const MIN_ROUGHNESS: f32 = 0.089;
 
-/// Base colour and metalness of a reflecting material (an `env` effect with
-/// an `env_factor`). The game adds the environment reflection on top of a
+/// Base colour and metalness of a reflecting material drawn by its
+/// stand-in (an `env` effect with an `env_factor` outside the `dif.spec`
+/// family, e.g. `baked.spec.add.env`). The game adds the environment
+/// reflection on top of a
 /// dark diffuse; chrome is diffuse 0.21 with a factor of 0.98
 /// (`research/evidence/material-survey.txt`). Here the factor's luminance
 /// becomes metalness, and the base colour blends from the diffuse towards
 /// the factor's colour by the same amount, so chrome reads as bright metal.
 fn reflective_surface(info: &MaterialInfo) -> Option<([f32; 3], f32)> {
     if info.paintable
+        || DifSpecSurface::of(info).is_some()
         || info.emissive
         || matches!(info.blend, BlendMode::Blend | BlendMode::Additive)
     {
@@ -676,6 +707,11 @@ mod tests {
         assert!(texture_image(empty, true).is_err(), "no surfaces");
     }
 
+    const ALL_ATTRIBUTES: MeshAttributes = MeshAttributes {
+        paint_uv: true,
+        colors: true,
+    };
+
     #[test]
     fn rejects_meshes_with_mismatched_attributes() {
         let piece = |indices: Vec<u32>, normals: usize| MeshPiece {
@@ -688,20 +724,20 @@ mod tests {
             colors: None,
             indices,
         };
-        assert!(piece_mesh(piece(vec![0, 1, 2], 3), false).is_ok());
-        assert!(piece_mesh(piece(vec![0, 1, 3], 3), false).is_err());
-        assert!(piece_mesh(piece(vec![0, 1], 3), false).is_err());
-        assert!(piece_mesh(piece(vec![0, 1, 2], 2), false).is_err());
+        assert!(piece_mesh(piece(vec![0, 1, 2], 3), MeshAttributes::default()).is_ok());
+        assert!(piece_mesh(piece(vec![0, 1, 3], 3), MeshAttributes::default()).is_err());
+        assert!(piece_mesh(piece(vec![0, 1], 3), MeshAttributes::default()).is_err());
+        assert!(piece_mesh(piece(vec![0, 1, 2], 2), MeshAttributes::default()).is_err());
         let short_colours = MeshPiece {
             colors: Some(vec![[0.5; 4]; 2]),
             ..piece(vec![0, 1, 2], 3)
         };
-        assert!(piece_mesh(short_colours, true).is_err());
+        assert!(piece_mesh(short_colours, ALL_ATTRIBUTES).is_err());
         let short_paint_uvs = MeshPiece {
             paint_uvs: Some(vec![[0.0; 2]; 2]),
             ..piece(vec![0, 1, 2], 3)
         };
-        assert!(piece_mesh(short_paint_uvs, true).is_err());
+        assert!(piece_mesh(short_paint_uvs, ALL_ATTRIBUTES).is_err());
     }
 
     #[test]
@@ -736,7 +772,7 @@ mod tests {
         // A typical chrome (`research/evidence/material-survey.txt`).
         let chrome_info = MaterialInfo {
             path: String::new(),
-            effect: "eut2.dif.spec.weight.add.env.rfx".to_owned(),
+            effect: "eut2.baked.spec.add.env.rfx".to_owned(),
             blend: BlendMode::Opaque,
             diffuse: [0.214041; 3],
             base_texture: None,
@@ -769,10 +805,21 @@ mod tests {
             &MaterialInfo {
                 effect: "eut2.glass.rfx".to_owned(),
                 blend: BlendMode::Blend,
-                ..chrome_info
+                ..chrome_info.clone()
             },
             None,
         );
         assert_eq!(glass.metallic, 0.1);
+
+        // The dif.spec family draws its own reflection; its stand-in keeps
+        // the plain diffuse.
+        let dif_spec = material(
+            &MaterialInfo {
+                effect: "eut2.dif.spec.weight.add.env.rfx".to_owned(),
+                ..chrome_info
+            },
+            None,
+        );
+        assert_eq!(dif_spec.metallic, 0.1);
     }
 }

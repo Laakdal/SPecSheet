@@ -5,24 +5,18 @@
 //! (`game_lighting.wgsl`) with the `.mat`'s own reflection cube.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use bevy::asset::embedded_asset;
 use bevy::pbr::{ExtendedMaterial, MaterialExtension, MaterialPlugin};
 use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderType};
-use bevy::render::renderer::RenderDevice;
-use bevy::render::settings::WgpuFeatures;
 use bevy::render::storage::ShaderBuffer;
 use bevy::shader::ShaderRef;
-use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_data::paint::{Mask, PiecePaint};
-use specsheet_data::render::{
-    load_cube_texture, load_texture, CubeTextureData, MaterialInfo, TextureData,
-};
-use specsheet_session::GameSession;
+use specsheet_data::render::MaterialInfo;
 
-use crate::assets;
+use super::textures::Target;
+use super::MaterialContext;
 
 /// A `truckpaint` piece's material: the `.mat`'s stand-in (base texture,
 /// diffuse, vertex colour) plus the paint.
@@ -36,8 +30,7 @@ impl Plugin for TruckPaintPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "truckpaint.wgsl");
         app.add_plugins(MaterialPlugin::<TruckPaintMaterial>::default())
-            .init_resource::<PaintMaterials>()
-            .add_systems(Update, finish_paint_textures);
+            .init_resource::<PaintMaterials>();
     }
 }
 
@@ -265,45 +258,46 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
     uniform
 }
 
-/// The textures a paint can bind.
+/// The textures a paint binds besides the `.mat`'s base texture.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Binding {
+pub enum PaintBinding {
     Mask,
     FlakeNoise,
     Reflection,
 }
 
-enum Loaded {
-    Flat(TextureData),
-    Cube(CubeTextureData),
+impl TruckPaint {
+    /// Binds a loaded texture and sets its flag.
+    pub fn bind(&mut self, binding: PaintBinding, image: Handle<Image>) {
+        match binding {
+            PaintBinding::Mask => {
+                self.mask = Some(image);
+                self.paint.flags |= MASK_TEXTURE;
+            }
+            PaintBinding::FlakeNoise => {
+                self.flake_noise = Some(image);
+                self.paint.flags |= FLAKE_TEXTURE;
+            }
+            PaintBinding::Reflection => {
+                self.reflection = Some(image);
+                self.paint.flags |= REFLECTION_TEXTURE;
+            }
+        }
+    }
 }
 
-enum TextureState {
-    Loading(Task<Result<Loaded, String>>),
-    Ready(Handle<Image>),
-    Failed,
-}
-
-/// Paint materials, shared by every piece with the same `.mat` and paint,
-/// and the mask, flake and reflection textures they bind. A texture that is
-/// loading or failed leaves its binding empty and its flag clear, so the
-/// piece draws without it.
+/// Paint materials, shared by every piece with the same `.mat` and paint.
 #[derive(Resource, Default)]
 pub struct PaintMaterials {
     materials: HashMap<(AssetId<StandardMaterial>, String), Handle<TruckPaintMaterial>>,
-    textures: HashMap<String, TextureState>,
-    waiting: Vec<(Handle<TruckPaintMaterial>, String, Binding)>,
 }
 
 impl PaintMaterials {
     /// The material for `base` (the `.mat`'s stand-in) under `paint`.
-    #[allow(clippy::too_many_arguments)]
     pub fn get(
         &mut self,
-        game: Option<&Arc<GameSession>>,
-        standard: &Assets<StandardMaterial>,
+        cx: &mut MaterialContext<'_>,
         materials: &mut Assets<TruckPaintMaterial>,
-        light: &Handle<ShaderBuffer>,
         base: &Handle<StandardMaterial>,
         surface: &PaintSurface,
         paint: &Paint<'_>,
@@ -312,118 +306,35 @@ impl PaintMaterials {
         if let Some(handle) = self.materials.get(&key) {
             return handle.clone();
         }
+        let uniform = paint_uniform(surface, paint);
         let handle = materials.add(ExtendedMaterial {
-            base: standard.get(base).cloned().unwrap_or_default(),
+            base: cx.standard.get(base).cloned().unwrap_or_default(),
             extension: TruckPaint {
-                paint: paint_uniform(surface, paint),
-                light: light.clone(),
+                paint: uniform,
+                light: cx.light.clone(),
                 ..default()
             },
         });
+        let mut request = |path: &str, binding| {
+            cx.textures
+                .request(cx.game, path, Target::Paint(handle.clone(), binding));
+        };
         if let Some(cube) = &surface.reflection {
-            self.request(game, &handle, cube, Binding::Reflection);
+            request(cube, PaintBinding::Reflection);
         }
         if let Paint::Job(job) = paint {
-            let flags = paint_uniform(surface, paint).flags;
             if let Some(Mask::Texture(path)) = &job.mask {
-                if flags & (COLORMASK | AIRBRUSH) != 0 {
-                    self.request(game, &handle, path, Binding::Mask);
+                if uniform.flags & (COLORMASK | AIRBRUSH) != 0 {
+                    request(path, PaintBinding::Mask);
                 }
             }
-            if flags & FLIPFLAKE != 0 {
-                self.request(game, &handle, &job.flake.noise, Binding::FlakeNoise);
+            if uniform.flags & FLIPFLAKE != 0 {
+                request(&job.flake.noise, PaintBinding::FlakeNoise);
             }
         }
         self.materials.insert(key, handle.clone());
         handle
     }
-
-    fn request(
-        &mut self,
-        game: Option<&Arc<GameSession>>,
-        material: &Handle<TruckPaintMaterial>,
-        path: &str,
-        binding: Binding,
-    ) {
-        if !self.textures.contains_key(path) {
-            let Some(game) = game.cloned() else {
-                return;
-            };
-            let task_path = path.to_owned();
-            let task = AsyncComputeTaskPool::get().spawn(async move {
-                let loaded = if binding == Binding::Reflection {
-                    load_cube_texture(game.fs(), &task_path).map(Loaded::Cube)
-                } else {
-                    load_texture(game.fs(), &task_path).map(Loaded::Flat)
-                };
-                loaded.map_err(|e| e.to_string())
-            });
-            self.textures
-                .insert(path.to_owned(), TextureState::Loading(task));
-        }
-        self.waiting
-            .push((material.clone(), path.to_owned(), binding));
-    }
-}
-
-/// Uploads finished paint textures and binds them to the materials
-/// waiting for them.
-fn finish_paint_textures(
-    mut paints: ResMut<PaintMaterials>,
-    mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<TruckPaintMaterial>>,
-    device: Option<Res<RenderDevice>>,
-) {
-    if paints.waiting.is_empty() {
-        return;
-    }
-    let bc_supported =
-        device.is_some_and(|d| d.features().contains(WgpuFeatures::TEXTURE_COMPRESSION_BC));
-    let paints = &mut *paints;
-    for (path, state) in &mut paints.textures {
-        let TextureState::Loading(task) = state else {
-            continue;
-        };
-        let Some(result) = check_ready(task) else {
-            continue;
-        };
-        let image = result.and_then(|loaded| match loaded {
-            Loaded::Flat(data) => assets::texture_image(data, bc_supported),
-            Loaded::Cube(data) => assets::cube_image(data, bc_supported),
-        });
-        *state = match image {
-            Ok(image) => TextureState::Ready(images.add(image)),
-            Err(error) => {
-                warn!("paint texture {path}: {error}");
-                TextureState::Failed
-            }
-        };
-    }
-    paints.waiting.retain(|(material, path, binding)| {
-        let image = match paints.textures.get(path) {
-            Some(TextureState::Loading(_)) => return true,
-            Some(TextureState::Ready(image)) => image.clone(),
-            Some(TextureState::Failed) | None => return false,
-        };
-        if let Some(mut material) = materials.get_mut(material) {
-            let paint = &mut material.extension;
-            match binding {
-                Binding::Mask => {
-                    paint.mask = Some(image);
-                    paint.paint.flags |= MASK_TEXTURE;
-                }
-                Binding::FlakeNoise => {
-                    paint.flake_noise = Some(image);
-                    paint.paint.flags |= FLAKE_TEXTURE;
-                }
-                Binding::Reflection => {
-                    paint.reflection = Some(image);
-                    paint.paint.flags |= REFLECTION_TEXTURE;
-                }
-            }
-        }
-        false
-    });
 }
 
 #[cfg(test)]
