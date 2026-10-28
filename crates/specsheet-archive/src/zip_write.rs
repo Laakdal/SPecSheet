@@ -39,6 +39,7 @@ pub struct ZipWriter {
 }
 
 impl ZipWriter {
+    /// An empty package.
     pub fn new() -> Self {
         Self::default()
     }
@@ -48,6 +49,7 @@ impl ZipWriter {
         self.names.len()
     }
 
+    /// Whether no file has been added.
     pub fn is_empty(&self) -> bool {
         self.names.is_empty()
     }

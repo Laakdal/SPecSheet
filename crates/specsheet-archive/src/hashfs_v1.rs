@@ -59,18 +59,25 @@ const MAX_ENTRY_SIZE: u32 = 1 << 31;
 /// One indexed entry of a v1 archive.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct EntryV1 {
+    /// Path hash (salted when the archive has a salt).
     pub hash: u64,
+    /// Absolute byte offset of the stored data.
     pub offset: u64,
+    /// Entry flags: directory, zlib-compressed.
     pub flags: u32,
+    /// Bytes after decompression.
     pub size: u32,
+    /// Bytes stored in the archive.
     pub stored_size: u32,
 }
 
 impl EntryV1 {
+    /// Whether the entry is a directory listing.
     pub fn is_directory(&self) -> bool {
         self.flags & FLAG_DIRECTORY != 0
     }
 
+    /// Whether the stored bytes are zlib-compressed.
     pub fn is_compressed(&self) -> bool {
         self.flags & FLAG_ZLIB != 0
     }
@@ -112,6 +119,7 @@ impl HashFsV1Archive {
         Ok(archive)
     }
 
+    /// The archive file this was opened from.
     pub fn path(&self) -> &Path {
         &self.path
     }
@@ -126,6 +134,7 @@ impl HashFsV1Archive {
         self.by_hash.len()
     }
 
+    /// Whether the archive has no entry.
     pub fn is_empty(&self) -> bool {
         self.by_hash.is_empty()
     }
@@ -145,6 +154,7 @@ impl HashFsV1Archive {
         }
     }
 
+    /// The entry of a game path, if the archive has it.
     pub fn entry(&self, path: &str) -> Option<&EntryV1> {
         self.by_hash.get(&self.hash_path(path))
     }

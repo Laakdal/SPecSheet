@@ -15,6 +15,7 @@ pub struct Vfs {
 }
 
 impl Vfs {
+    /// An empty file system.
     pub fn new() -> Self {
         Self::default()
     }
@@ -24,6 +25,7 @@ impl Vfs {
         self.archives.push(archive);
     }
 
+    /// The mounted archives, first mounted first.
     pub fn archives(&self) -> &[Archive] {
         &self.archives
     }
@@ -37,6 +39,7 @@ impl Vfs {
         })
     }
 
+    /// Whether any archive holds the file `path`.
     pub fn exists(&self, path: &str) -> bool {
         self.locate(path).is_some()
     }

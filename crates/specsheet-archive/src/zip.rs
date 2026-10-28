@@ -82,6 +82,7 @@ impl ZipArchive {
         Ok(archive)
     }
 
+    /// The package file this was opened from.
     pub fn path(&self) -> &Path {
         &self.path
     }
@@ -91,6 +92,7 @@ impl ZipArchive {
         self.files.len()
     }
 
+    /// Whether the package has no file.
     pub fn is_empty(&self) -> bool {
         self.files.is_empty()
     }
@@ -106,6 +108,7 @@ impl ZipArchive {
         self.files.keys().map(String::as_str)
     }
 
+    /// Whether the package holds the file `path` (leading slash optional).
     pub fn contains(&self, path: &str) -> bool {
         self.files.contains_key(path.trim_start_matches('/'))
     }

@@ -6,12 +6,17 @@
 /// Image record: dimensions and layout of the packed surface data.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ImageMeta {
+    /// Width of mip 0 in pixels.
     pub width: u32,
+    /// Height of mip 0 in pixels.
     pub height: u32,
+    /// Number of mip levels.
     pub mip_count: u32,
     /// `DXGI_FORMAT` value of the surfaces.
     pub dxgi_format: u32,
+    /// A cube map (six faces).
     pub is_cube: bool,
+    /// Number of faces: 1, or 6 for a cube.
     pub face_count: u32,
     /// Row alignment in bytes.
     pub pitch_alignment: u32,
@@ -47,12 +52,19 @@ impl ImageMeta {
 /// Texture addressing mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AddressMode {
+    /// Wrap around.
     Repeat,
+    /// Clamp (legacy mode).
     Clamp,
+    /// Clamp to the edge texel.
     ClampToEdge,
+    /// Clamp to the border colour.
     ClampToBorder,
+    /// Mirror on every repeat.
     Mirror,
+    /// Mirror once, then clamp.
     MirrorClamp,
+    /// Mirror once, then clamp to the edge texel.
     MirrorClampToEdge,
 }
 
@@ -77,9 +89,13 @@ impl AddressMode {
 /// Sample record: the texture's sampler state.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SampleMeta {
+    /// Linear magnification filter (else nearest).
     pub mag_linear: bool,
+    /// Linear minification filter (else nearest).
     pub min_linear: bool,
+    /// Addressing along u.
     pub address_u: AddressMode,
+    /// Addressing along v.
     pub address_v: AddressMode,
 }
 
@@ -99,20 +115,26 @@ impl SampleMeta {
 /// surface bytes, still padded. [`PackedTexture::unpack`] removes the padding.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PackedTexture {
+    /// Surface layout.
     pub image: ImageMeta,
+    /// Sampler state.
     pub sample: SampleMeta,
+    /// Every surface, decompressed, with the archive's padding.
     pub surfaces: Vec<u8>,
 }
 
 /// One mip level of one face, tightly packed (no row or mip padding).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Surface {
+    /// Cube face index (0 for 2D textures).
     pub face: u32,
+    /// Mip level (0 is the largest).
     pub mip: u32,
     /// Width of this mip level in pixels (never below 1).
     pub width: u32,
     /// Height of this mip level in pixels (never below 1).
     pub height: u32,
+    /// The pixels, row after row without padding.
     pub data: Vec<u8>,
 }
 
@@ -120,9 +142,15 @@ pub struct Surface {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PixelLayout {
     /// Block-compressed: 4x4-pixel blocks of `bytes` bytes each.
-    Block { bytes: u32 },
+    Block {
+        /// Bytes per block.
+        bytes: u32,
+    },
     /// Uncompressed: `bytes_per_pixel` bytes per pixel.
-    Linear { bytes_per_pixel: u32 },
+    Linear {
+        /// Bytes per pixel.
+        bytes_per_pixel: u32,
+    },
 }
 
 /// Layout of a DXGI format that appears in the game's archives (see

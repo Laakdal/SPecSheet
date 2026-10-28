@@ -5,6 +5,8 @@
 //! packages in memory. All size and offset fields read from
 //! disk are validated before use, since game files are treated as untrusted.
 
+#![warn(missing_docs)]
+
 mod city;
 mod error;
 mod gdeflate;

@@ -35,15 +35,21 @@ pub enum Content {
     /// keyed by the `.tobj` path. `image` and `sample` come from the entry's
     /// metadata records (decoded with `ImageMeta::decode` / `SampleMeta::decode`).
     Texture {
+        /// Image layout: size, format, mipmaps, faces.
         image: ImageMeta,
+        /// Sampler settings of the `.tobj`.
         sample: SampleMeta,
+        /// The packed pixel data.
         blob: Blob,
     },
 }
 
+/// Whether an entry is a file or a directory listing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EntryKind {
+    /// A file.
     File,
+    /// A directory; its content is the encoded listing.
     Directory,
 }
 
@@ -52,7 +58,9 @@ pub enum EntryKind {
 pub struct Entry {
     /// `hash_path` of the entry's game path.
     pub hash: u64,
+    /// File or directory.
     pub kind: EntryKind,
+    /// Where its bytes are.
     pub content: Content,
 }
 
@@ -60,7 +68,9 @@ pub struct Entry {
 /// directory names carry no marker (no leading `/`).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct DirListing {
+    /// File names.
     pub files: Vec<String>,
+    /// Subdirectory names.
     pub directories: Vec<String>,
 }
 
@@ -68,7 +78,9 @@ pub struct DirListing {
 /// metadata record type). Recorded instead of failing the whole archive.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SkippedEntry {
+    /// The entry's path hash.
     pub hash: u64,
+    /// Why it was skipped.
     pub reason: String,
 }
 
@@ -161,6 +173,7 @@ impl Archive {
         self.entries.len()
     }
 
+    /// Whether the archive indexes no entry.
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
