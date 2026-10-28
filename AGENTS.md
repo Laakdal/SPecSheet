@@ -111,10 +111,10 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | Profiles and saves: ScsC, binary SII | `specsheet-formats/src/{scsc,bsii}.rs` | unit; examples `profile_mods`, `save_check` |
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
 | UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
-| Rules, configuration, hookups | `specsheet-truck/src/{config,catalog,hookup}.rs` | `specsheet-truck/src/tests.rs` |
+| Rules, configuration, hookups | `specsheet-truck/src/{config,catalog,hookup}.rs`, `config/{paint,hookups}.rs` | `specsheet-truck/src/tests.rs` |
 | Paint jobs: masks, colours, flake/flip, per-part paint | `specsheet-truck/src/paint.rs`; loading in `specsheet-data/src/{catalog,paint}.rs` | `specsheet-truck/src/tests.rs`; unit; `real_install::{every_paint_job_parses, paint_job_parts_resolve_by_unit_token, every_paint_mask_exists_or_is_a_constant}` |
 | Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
-| Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
+| Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` (loading), `catalog/{accessory,paint,hookup,preset}.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
 | Slot to locator matching | `specsheet-assembly/src/slots.rs` | unit |
 | Assembly: base, wheels, hookups, interior | `specsheet-assembly/src/*.rs` | tests in `lib.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
 | Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |

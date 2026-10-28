@@ -152,7 +152,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
   It is done in staged passes, each a pure move that builds and passes the checks on its own:
   - **2026-10-28 (done):** `xtask` (`check`, `layers`, also in CI); `specsheet-core` → `specsheet-truck`; `specsheet-data` → `-data`, `-assembly`, `-gameui`, `-session`; the examples → `specsheet-research`. No compatibility re-exports: every user was moved.
   - **2026-10-28, part 2 (done):** the foundation `specsheet-core` (ids, `Aabb`, `Transform`, one sRGB conversion instead of four); `specsheet-theme`; `specsheet-render` with the materials and GPU upload, after `dif.spec` landed; `xtask` `guard`, `real`, `parity`, `version-port`.
-  - **Still open:** module splits of `catalog.rs` and `config.rs`.
+  - **2026-10-29 (done):** module splits of `specsheet-data`'s `catalog` and `specsheet-truck`'s `config`.
 - **Engineering practices adopted with it:**
   - `cargo xtask check` (the "Done means" list) and `cargo xtask layers`, which CI also runs;
   - `cargo-deny` for licences and advisories;

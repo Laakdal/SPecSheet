@@ -46,7 +46,7 @@ Boundaries that must hold:
 Where the crates are heading, in staged passes (D17). Each crate has one responsibility, and the arrows only point down.
 
 - **Done (2026-10-28):** every crate in the tree below exists. `xtask` has `check`, `layers`, `guard`, `real`, `parity` and `version-port`.
-- **Still open:** splitting `specsheet-data/src/catalog.rs` and `specsheet-truck/src/config.rs` into modules; bundling the theme's fonts.
+- **Still open:** bundling the theme's fonts.
 
 ```
 crates/
@@ -77,7 +77,7 @@ Rules that keep it maintainable:
 - **Bevy stays at the top.** Only `specsheet-render` and the app depend on Bevy, so a Bevy upgrade never touches the game logic.
 - **Basic types live once,** in `specsheet-core`. Today `Aabb`, `Transform` and the colour conversions are spread over three crates.
 - **Crates split by responsibility, not size.** A new crate needs a real boundary (D12, the AGENTS.md module rule).
-- **Within crates,** a module grows into `module.rs` plus `module/` when it gets distinct parts. Candidates now: `specsheet-data/src/catalog.rs` (1,017 lines) and the truck crate's `config.rs` (rules, selection, hookups, paint overrides, price).
+- **Within crates,** a module grows into `module.rs` plus `module/` when it gets distinct parts, e.g. `specsheet-data`'s `catalog` (accessories, paint, hookups, presets) and the truck crate's `config` (paint overrides, hookups).
 
 ## Data flow
 
