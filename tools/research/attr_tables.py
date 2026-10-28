@@ -55,7 +55,8 @@ def c_string(va):
 
 def entry(off):
     cls, field, typ, zero, name = struct.unpack_from("<QQQQQ", data, off)
-    if zero != 0 or field > 0x100000 or typ > 0x1000:
+    # A field offset of -1 marks an attribute without a plain stored field.
+    if zero != 0 or (field > 0x100000 and field != 0xFFFF_FFFF_FFFF_FFFF) or typ > 0x1000:
         return None
     text = c_string(name)
     if not text or not text.isprintable():
@@ -91,7 +92,8 @@ for key in keys:
                         print(f"== table at file 0x{first:x} (va 0x{off_to_va(first):x}), class ptr 0x{cls:x}, found via '{key}'")
                         o = first
                         while (e := entry(o)):
-                            print(f"   +0x{e[1]:04x}  type {e[2]:3}  {e[3]}")
+                            where = "    -1" if e[1] == 0xFFFF_FFFF_FFFF_FFFF else f"+0x{e[1]:04x}"
+                            print(f"   {where}  type {e[2]:3}  {e[3]}")
                             o += 40
                 p += 1
         pos += 1
