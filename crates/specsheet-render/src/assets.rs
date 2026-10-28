@@ -571,6 +571,7 @@ fn gpu_format(format: TextureFormat, srgb: bool) -> GpuFormat {
         (TextureFormat::Rgba8, false) => GpuFormat::Rgba8Unorm,
         (TextureFormat::Rgba8, true) => GpuFormat::Rgba8UnormSrgb,
         (TextureFormat::R8, _) => GpuFormat::R8Unorm,
+        (TextureFormat::Rgb9e5, _) => GpuFormat::Rgb9e5Ufloat,
     }
 }
 
@@ -715,6 +716,8 @@ mod tests {
             paint_uvs: None,
             alternate_paint_uvs: None,
             colors: None,
+            normal_uvs: None,
+            tangents: None,
             indices,
         };
         assert!(piece_mesh(piece(vec![0, 1, 2], 3), MeshAttributes::default()).is_ok());
@@ -750,6 +753,9 @@ mod tests {
             fresnel: None,
             reflection_texture: None,
             additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
         };
         let glass = material(&info("eut2.glass", BlendMode::Blend), None);
         assert_eq!(glass.alpha_mode, AlphaMode::Blend);
@@ -778,6 +784,9 @@ mod tests {
             fresnel: Some([1.0, 1.0]),
             reflection_texture: None,
             additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
         };
         let chrome = material(&chrome_info, None);
         assert!((chrome.metallic - 0.977).abs() < 1e-3);

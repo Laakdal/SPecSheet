@@ -209,6 +209,9 @@ mod tests {
             fresnel: None,
             reflection_texture: Some("/material/environment/vehicle_reflection.tobj".to_owned()),
             additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
         }
     }
 

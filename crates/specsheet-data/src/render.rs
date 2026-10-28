@@ -58,6 +58,15 @@ pub struct MaterialInfo {
     /// Weight of the scene's additional ambient colour
     /// (`additional_ambient`; dif-spec.md §3.1).
     pub additional_ambient: Option<f32>,
+    /// `.tobj` path of the tangent-space normal map (`texture_nmap`), for the
+    /// `tsnmap`, `tsnmapuv` and `tsnmapuv2` flavors.
+    pub normal_texture: Option<String>,
+    /// `.tobj` path of the detail normal map of `tsnmapuv2`
+    /// (`texture_nmap_detail`).
+    pub normal_detail_texture: Option<String>,
+    /// `.tobj` path of the baked shading (`texture_mult`) of the `mult`
+    /// bases and the scene shaders.
+    pub mult_texture: Option<String>,
 }
 
 impl MaterialInfo {
@@ -77,6 +86,9 @@ impl MaterialInfo {
             fresnel: None,
             reflection_texture: None,
             additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
         }
     }
 
@@ -120,6 +132,9 @@ impl MaterialInfo {
             fresnel: floats("fresnel").and_then(|v| <[f32; 2]>::try_from(v.get(..2)?).ok()),
             reflection_texture: texture("texture_reflection"),
             additional_ambient: floats("additional_ambient").and_then(|v| v.first().copied()),
+            normal_texture: texture("texture_nmap"),
+            normal_detail_texture: texture("texture_nmap_detail"),
+            mult_texture: texture("texture_mult"),
         }
     }
 }
@@ -142,6 +157,15 @@ pub struct MeshPiece {
     /// the lowest byte red (Hypothesis: truck paint pieces are grey, so the
     /// order is untested; `paint_uv_survey`).
     pub colors: Option<Vec<[f32; 4]>>,
+    /// The UV set the piece routes to UV slot 6, "UV Normal", which the
+    /// `tsnmapuv` flavors sample their normal map with. Only those pieces
+    /// route slot 6 (Confirmed); that the normal map reads it is a
+    /// Hypothesis (`research/evidence/pmg-uv-routing.txt`).
+    pub normal_uvs: Option<Vec<[f32; 2]>>,
+    /// Tangents as stored, `(x, y, z, w)` with `w = ±1` the handedness, if
+    /// the piece has a tangent stream. Reversing the winding (see `indices`)
+    /// leaves them unchanged.
+    pub tangents: Option<Vec<[f32; 4]>>,
     pub indices: Vec<u32>,
 }
 
@@ -153,6 +177,9 @@ pub struct MeshData {
     pub aabb_min: [f32; 3],
     pub aabb_max: [f32; 3],
 }
+
+/// The UV slot of the "UV Normal" stream (`docs/formats/models.md`, piece +8).
+const NORMAL_UV_SLOT: usize = 6;
 
 /// The PMG UV set, counted from 0, that truck paint samples on a mesh with
 /// `sets` UV sets: set 1, or set 2 for `alternate_uvset` paint jobs
@@ -224,6 +251,10 @@ pub fn build_mesh(
                 paint_uvs: paint_set.and_then(|set| piece.uv_sets.get(set).cloned()),
                 alternate_paint_uvs: alternate_set.and_then(|set| piece.uv_sets.get(set).cloned()),
                 colors: vertex_colors(&piece.colors),
+                normal_uvs: piece
+                    .uv_set_for_slot(NORMAL_UV_SLOT)
+                    .and_then(|set| piece.uv_sets.get(set).cloned()),
+                tangents: piece.tangents.clone(),
                 indices,
             });
         }
@@ -266,6 +297,9 @@ pub enum TextureFormat {
     Bc5,
     Rgba8,
     R8,
+    /// R9G9B9E5_SHAREDEXP: linear HDR, three 9-bit mantissas sharing a
+    /// 5-bit exponent (skyboxes, HDR UI images).
+    Rgb9e5,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -362,6 +396,7 @@ fn convert_faces(
         87 | 88 => (TextureFormat::Rgba8, false, true),
         90..=93 => (TextureFormat::Rgba8, dxgi == 91 || dxgi == 93, true),
         60..=64 => (TextureFormat::R8, false, false),
+        67 => (TextureFormat::Rgb9e5, false, false),
         other => return Err(format_error(format!("unsupported DXGI format {other}"))),
     };
     let x_channel_is_opaque = matches!(dxgi, 88 | 92 | 93);
@@ -399,7 +434,9 @@ pub fn texture_block_bytes(format: TextureFormat) -> (u32, PixelLayout) {
         TextureFormat::Bc2 | TextureFormat::Bc3 | TextureFormat::Bc5 => {
             (16, PixelLayout::Block { bytes: 16 })
         }
-        TextureFormat::Rgba8 => (4, PixelLayout::Linear { bytes_per_pixel: 4 }),
+        TextureFormat::Rgba8 | TextureFormat::Rgb9e5 => {
+            (4, PixelLayout::Linear { bytes_per_pixel: 4 })
+        }
         TextureFormat::R8 => (1, PixelLayout::Linear { bytes_per_pixel: 1 }),
     }
 }
@@ -496,6 +533,45 @@ mod tests {
         // A 2D load of a cube keeps face 0, as before.
         let flat = convert_texture("/c.tobj", &packed(6)).expect("2d");
         assert!(flat.mips[0].data.iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn carries_normal_map_and_baked_shading_paths() {
+        let source = r#"effect : "eut2.dif.spec.add.env.tsnmapuv.rfx" {
+            texture : "texture_base" { source : "metal.tobj" }
+            texture : "texture_nmap" { source : "/vehicle/truck/x/metal_n.tobj" }
+            texture : "texture_nmap_detail" { source : "grain_n.tobj" }
+            texture : "texture_mult" { source : "ao.tobj" }
+        }"#;
+        let mat = Material::parse(source.as_bytes()).expect("parse");
+        let m = MaterialInfo::from_material("/vehicle/truck/x/metal.mat", &mat);
+        assert_eq!(
+            m.normal_texture.as_deref(),
+            Some("/vehicle/truck/x/metal_n.tobj")
+        );
+        assert_eq!(
+            m.normal_detail_texture.as_deref(),
+            Some("/vehicle/truck/x/grain_n.tobj")
+        );
+        assert_eq!(m.mult_texture.as_deref(), Some("/vehicle/truck/x/ao.tobj"));
+        let plain = material("eut2.dif.rfx");
+        assert_eq!(
+            (
+                plain.normal_texture,
+                plain.normal_detail_texture,
+                plain.mult_texture
+            ),
+            (None, None, None)
+        );
+    }
+
+    #[test]
+    fn hdr_cubes_upload_as_rgb9e5_bytes_unchanged() {
+        let mut hdr = packed(6);
+        hdr.image.dxgi_format = 67;
+        let cube = convert_cube("/sky.tobj", &hdr).expect("rgb9e5 cube");
+        assert_eq!((cube.format, cube.srgb), (TextureFormat::Rgb9e5, false));
+        assert!(cube.faces[5][0].data.iter().all(|&b| b == 5));
     }
 
     #[test]

@@ -475,6 +475,9 @@ mod tests {
             fresnel: Some([0.3, 0.9]),
             reflection_texture: None,
             additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
         };
         let s = PaintSurface::of(&info).expect("paint");
         assert_eq!((s.fresnel, s.shininess), (0.3, DEFAULT_SHININESS));
