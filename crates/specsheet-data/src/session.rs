@@ -17,7 +17,7 @@ use crate::fs::GameFs;
 use crate::install::GameInstall;
 use crate::localization::Localization;
 use crate::model::ModelCache;
-use crate::scene::{list_scenes, Scene};
+use crate::scene::{list_scenes, tuning_scene, PinSpec, Scene};
 
 const LANGUAGE: &str = "en_us";
 
@@ -28,6 +28,8 @@ pub struct GameSession {
     fs: GameFs,
     models: ModelCache,
     localization: Localization,
+    /// The tuning screen's pin table (F5); empty when it fails to load.
+    pins: Vec<PinSpec>,
     trucks: Vec<TruckSummary>,
     catalogs: Mutex<HashMap<TruckId, Arc<TruckCatalog>>>,
     /// Archives that failed to open (reported, not fatal).
@@ -41,11 +43,13 @@ impl GameSession {
         let fs = GameFs::new(vfs);
         let localization = Localization::load(&fs, LANGUAGE).unwrap_or_default();
         let trucks = list_trucks(&fs)?;
+        let pins = tuning_scene(&fs).map(|t| t.pins).unwrap_or_default();
         Ok(Self {
             install,
             fs,
             models: ModelCache::new(),
             localization,
+            pins,
             trucks,
             catalogs: Mutex::new(HashMap::new()),
             mount_failures: failures
@@ -73,6 +77,11 @@ impl GameSession {
 
     pub fn trucks(&self) -> &[TruckSummary] {
         &self.trucks
+    }
+
+    /// The tuning screen's pin table (`/def/truck_config_scene.sii`).
+    pub fn pin_table(&self) -> &[PinSpec] {
+        &self.pins
     }
 
     /// The game's tuning scenes, default garage first.

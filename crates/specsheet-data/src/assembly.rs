@@ -1,4 +1,5 @@
-//! Assembles a configured truck into model placements and hotspot anchors.
+//! Assembles a configured truck into model placements, hotspot anchors and
+//! pin bases.
 //!
 //! * Chassis and cabin models share one coordinate space and are placed at
 //!   the origin (finding F4).
@@ -12,6 +13,8 @@
 //! * The selected interior's light exterior-view model (`ext_model`) is
 //!   placed at the cabin's `ext_interior` locator, so the cab is not hollow
 //!   when seen through the windows (`research/evidence/interior-survey.txt`).
+//! * Pin bases: each exterior slot's first matching locator and every wheel
+//!   position, from which [`crate::pins`] builds the game's pins (F5).
 
 mod anchors;
 mod base;
@@ -35,6 +38,7 @@ pub use transform::Transform;
 
 use crate::fs::GameFs;
 use crate::model::ModelCache;
+use crate::pins::{self, PinBases};
 use crate::slots::locators_by_slot;
 use anchors::{anchors, placed_boxes};
 use base::{addon_slots, base_layout};
@@ -67,6 +71,8 @@ pub struct Assembly {
     pub hookup_positions: BTreeMap<SlotId, Vec<HookupPosition>>,
     pub availability: SlotAvailability,
     pub anchors: Vec<Anchor>,
+    /// Where the exterior pins start from (F5).
+    pub pin_bases: PinBases,
     /// Non-fatal problems (missing models, unmatched slots).
     pub warnings: Vec<String>,
 }
@@ -188,15 +194,8 @@ pub fn assemble(
     let slot_boxes = placed_boxes(fs, cache, &placed);
     let mut all_slots = by_slot.clone();
     all_slots.extend(cockpit_by_slot);
-    assembly.anchors = anchors(
-        catalog,
-        &all_slots,
-        &slot_boxes,
-        &base_boxes,
-        cabin_box,
-        &front,
-        &rear,
-    );
+    assembly.anchors = anchors(&all_slots, &slot_boxes, &base_boxes, cabin_box);
+    assembly.pin_bases = pins::bases(&addon_slots, &base_locators, &front, &rear);
     assembly
 }
 

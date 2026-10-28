@@ -20,9 +20,7 @@ use specsheet_data::assembly::Drive;
 use specsheet_data::ui::{load_screen, load_templates};
 use specsheet_data::view::{Hotspot, HotspotCategory, Tab, TruckOverview};
 
-use crate::hotspots::{
-    cluster, side_facing, Cluster, Projected, CLUSTER_RADIUS, TRUCK_CENTER_HEIGHT,
-};
+use crate::hotspots::{opacity, open_after_click, shown};
 use crate::studio::{Action, Actions, Studio};
 use crate::viewer::{ModelCache, TruckRoot, ViewportInput};
 
@@ -51,15 +49,15 @@ const DANGER: Color32 = Color32::from_rgb(0xef, 0x6b, 0x6b);
 const MARKER_SIZE: f32 = 16.0;
 /// Reference units one wheel notch scrolls a list: about half a tile.
 const WHEEL_LINE: f32 = 50.0;
-const GROUP_SIZE: f32 = 20.0;
 /// The game screen this app reproduces (`/ui/desc/truck.sui`).
 const SCREEN: &str = "truck.config";
 
 #[derive(Resource, Default)]
 pub struct UiState {
     game_dir: String,
-    /// Key of the cluster whose slot list is open.
-    open_cluster: Option<String>,
+    /// The open pin (index into the overview's hotspots): a wheel's disc
+    /// pin, whose hub, cover and nut pins show while it is open.
+    open_pin: Option<usize>,
     styled: bool,
     /// The game screen's layouts, loaded once a game is open.
     assets: Option<Result<ScreenAssets, String>>,
@@ -73,7 +71,7 @@ impl UiState {
     pub fn open_tab(&mut self, tab: Tab, overview: &TruckOverview, actions: &mut Actions) {
         self.screen.tab = Some(tab);
         self.screen.scroll = 0.0;
-        self.open_cluster = None;
+        self.open_pin = None;
         actions
             .0
             .push(Action::ShowSlot(screen::tab_slot(overview, tab)));
@@ -221,33 +219,46 @@ fn ui(
                 state.screen.tab,
                 Some(Tab::Interior | Tab::InteriorAccessories)
             );
-        // Pins: only on the open accessory tab (F5).
-        let truck_center = truck.transform_point(Vec3::Y * TRUCK_CENTER_HEIGHT);
-        let eye = camera_transform.translation();
+        // Pins: only on the open accessory tab, each fading as it turns
+        // away from the camera (F5).
+        let view_axis = *camera_transform.back();
         let tab = state.screen.tab.filter(|t| t.has_pins());
-        let projected: Vec<Projected> = overview
-            .hotspots
-            .iter()
-            .enumerate()
-            .filter(|(_, h)| Some(h.tab) == tab)
-            .filter_map(|(index, hotspot)| {
-                let world = truck.transform_point(Vec3::from(hotspot.position));
-                // From inside the cab every side faces the camera.
-                if !input.interior_view && !side_facing(world, truck_center, eye) {
-                    return None;
-                }
-                let p = camera.world_to_viewport(camera_transform, world).ok()?;
-                let pos = window.min + egui::vec2(p.x, p.y);
-                let free = window.contains(pos) && !blocking.iter().any(|r| r.contains(pos));
-                free.then_some(Projected {
-                    index,
-                    position: Vec2::new(pos.x, pos.y),
-                })
-            })
-            .collect();
+        let open = state
+            .open_pin
+            .filter(|&i| overview.hotspots.get(i).is_some_and(|h| h.expands));
+        state.open_pin = open;
         let active = studio.options.as_ref().map(|o| &o.slot);
-        for group in cluster(&projected, CLUSTER_RADIUS) {
-            marker(&ctx, overview, &group, active, state, &mut actions);
+        for (index, hotspot) in overview.hotspots.iter().enumerate() {
+            if Some(hotspot.tab) != tab || !shown(hotspot.link, open) {
+                continue;
+            }
+            let facing = hotspot
+                .facing
+                .map(|f| truck.affine().transform_vector3(Vec3::from(f)));
+            // From inside the cab every pin faces the camera.
+            let alpha = if input.interior_view {
+                1.0
+            } else {
+                opacity(facing, view_axis)
+            };
+            if alpha <= 0.0 {
+                continue;
+            }
+            let world = truck.transform_point(Vec3::from(hotspot.position));
+            let Ok(p) = camera.world_to_viewport(camera_transform, world) else {
+                continue;
+            };
+            let pos = window.min + egui::vec2(p.x, p.y);
+            if window.contains(pos) && !blocking.iter().any(|r| r.contains(pos)) {
+                let pin = Pin {
+                    index,
+                    hotspot,
+                    center: pos,
+                    alpha,
+                    active: Some(&hotspot.slot) == active,
+                };
+                marker(&ctx, &pin, state, &mut actions);
+            }
         }
     } else if let (Some(Err(error)), Some(_)) = (&state.assets, &studio.game) {
         egui::Area::new(Id::new("screen-error"))
@@ -268,9 +279,6 @@ fn ui(
                 .layer_id_at(pos)
                 .is_none_or(|layer| layer.order == Order::Background)
     });
-    if input.hovered && ctx.input(|i| i.pointer.primary_pressed()) {
-        state.open_cluster = None;
-    }
     Ok(())
 }
 
@@ -381,115 +389,57 @@ fn locate(ctx: &egui::Context, studio: &Studio, state: &mut UiState, actions: &m
         });
 }
 
-/// One marker: a dot for a single slot, a numbered dot that opens a slot
-/// list for a cluster.
-fn marker(
-    ctx: &egui::Context,
-    overview: &TruckOverview,
-    group: &Cluster,
-    active: Option<&specsheet_core::SlotId>,
-    state: &mut UiState,
-    actions: &mut Actions,
-) {
-    let mut members: Vec<&Hotspot> = group
-        .members
-        .iter()
-        .filter_map(|&i| overview.hotspots.get(i))
-        .collect();
-    members.sort_by(|a, b| a.label.cmp(&b.label));
-    let Some(first) = members.first() else {
-        return;
-    };
-    let key = members
-        .iter()
-        .map(|h| h.slot.as_str())
-        .collect::<Vec<_>>()
-        .join("+");
-    let single = members.len() == 1;
-    let is_active = members.iter().any(|h| Some(&h.slot) == active);
-    let size = if single { MARKER_SIZE } else { GROUP_SIZE };
-    let center = Pos2::new(group.position.x, group.position.y);
-    let area = egui::Area::new(Id::new(("marker", &key)))
-        .fixed_pos(center - egui::vec2(size, size) / 2.0)
+/// A pin on screen.
+struct Pin<'a> {
+    /// Index into the overview's hotspots.
+    index: usize,
+    hotspot: &'a Hotspot,
+    center: Pos2,
+    /// 0 to 1: pins fade as they turn away from the camera.
+    alpha: f32,
+    /// The pin's slot is open in the sidebar.
+    active: bool,
+}
+
+/// One pin: a dot in its category colour, opening its slot when clicked.
+fn marker(ctx: &egui::Context, pin: &Pin, state: &mut UiState, actions: &mut Actions) {
+    let hotspot = pin.hotspot;
+    let size = MARKER_SIZE;
+    let response = egui::Area::new(Id::new(("pin", pin.index)))
+        .fixed_pos(pin.center - egui::vec2(size, size) / 2.0)
         .order(Order::Middle)
         .show(ctx, |ui| {
             let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::click());
             let painter = ui.painter();
-            // A group (one wheel axle) takes its members' colour; a mixed
-            // cluster is white.
-            let grouped = members
-                .iter()
-                .all(|h| h.group.is_some() && h.group == first.group);
-            let fill = if single || grouped {
-                marker_color(first.category)
-            } else {
-                Color32::WHITE
-            };
+            let fade = |c: Color32| c.gamma_multiply(pin.alpha);
+            let fill = marker_color(hotspot.category);
             let radius = size / 2.0 * if response.hovered() { 1.15 } else { 1.0 };
-            painter.circle_filled(rect.center(), radius + 4.0, fill.linear_multiply(0.2));
-            if members.iter().all(|h| h.empty) {
-                // Empty slots sit on bare locators, away from any part: a ring.
+            painter.circle_filled(rect.center(), radius + 4.0, fade(fill.linear_multiply(0.2)));
+            if hotspot.empty {
+                // Nothing fitted yet: a ring (ours, not the game's look).
                 painter.circle(
                     rect.center(),
                     radius,
-                    BG.linear_multiply(0.6),
-                    Stroke::new(2.5, fill),
+                    fade(BG.linear_multiply(0.6)),
+                    Stroke::new(2.5, fade(fill)),
                 );
             } else {
                 painter.circle(
                     rect.center(),
                     radius,
-                    fill,
-                    Stroke::new(2.0, Color32::WHITE),
+                    fade(fill),
+                    Stroke::new(2.0, fade(Color32::WHITE)),
                 );
             }
-            if is_active {
-                painter.circle_stroke(rect.center(), radius + 5.0, Stroke::new(2.0, ACCENT));
-            }
-            if !single {
-                painter.text(
-                    rect.center(),
-                    Align2::CENTER_CENTER,
-                    members.len().to_string(),
-                    egui::FontId::proportional(11.0),
-                    Color32::from_rgb(0x11, 0x11, 0x11),
-                );
+            if pin.active {
+                painter.circle_stroke(rect.center(), radius + 5.0, Stroke::new(2.0, fade(ACCENT)));
             }
             response
-        });
-    let response = if single {
-        area.inner.on_hover_text(&first.label)
-    } else {
-        area.inner
-    };
+        })
+        .inner
+        .on_hover_text(&hotspot.label);
     if response.clicked() {
-        if single {
-            state.open_cluster = None;
-            actions.0.push(Action::ShowSlot(Some(first.slot.clone())));
-        } else if state.open_cluster.as_deref() == Some(key.as_str()) {
-            state.open_cluster = None;
-        } else {
-            state.open_cluster = Some(key.clone());
-        }
+        state.open_pin = open_after_click(pin.index, hotspot.expands, hotspot.link, state.open_pin);
+        actions.0.push(Action::ShowSlot(Some(hotspot.slot.clone())));
     }
-    if single || state.open_cluster.as_deref() != Some(key.as_str()) {
-        return;
-    }
-    egui::Area::new(Id::new(("cluster-menu", &key)))
-        .fixed_pos(center + egui::vec2(size, -size / 2.0))
-        .order(Order::Foreground)
-        .show(ctx, |ui| {
-            egui::Frame::popup(ui.style()).show(ui, |ui| {
-                for hotspot in &members {
-                    let text = match &hotspot.selected {
-                        Some(selected) => format!("{}  ·  {selected}", hotspot.label),
-                        None => hotspot.label.clone(),
-                    };
-                    if ui.selectable_label(false, text).clicked() {
-                        state.open_cluster = None;
-                        actions.0.push(Action::ShowSlot(Some(hotspot.slot.clone())));
-                    }
-                }
-            });
-        });
 }

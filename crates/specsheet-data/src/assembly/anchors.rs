@@ -2,11 +2,11 @@
 
 use std::collections::BTreeMap;
 
-use specsheet_core::{AccessoryKind, SlotId, TruckCatalog};
+use specsheet_core::SlotId;
 use specsheet_formats::pmg::{Aabb, Locator};
 
 use super::transform::transform_aabb;
-use super::{Placement, FRONT_WHEELS, REAR_WHEELS};
+use super::Placement;
 use crate::fs::GameFs;
 use crate::model::ModelCache;
 
@@ -20,10 +20,6 @@ pub struct Anchor {
     /// Nothing is placed in the slot; the anchor sits at its bare locators,
     /// which can lie away from any visible geometry (e.g. below a bumper).
     pub empty: bool,
-    /// Anchors sharing a group (e.g. every front wheel part) have the same
-    /// position and form one marker. The key is the locator prefix the
-    /// group's parts attach to (`wheel_f`, `wheel_r`).
-    pub group: Option<String>,
 }
 
 /// World-space bounding box of every slot's placed models.
@@ -58,17 +54,14 @@ const INTERIOR_MARGIN: f32 = 0.05;
 /// * a slot is "interior" when its models (or locators) lie inside the
 ///   cabin box;
 /// * an anchor is "empty" when no model is placed in its slot;
-/// * wheel slots anchor at the left wheels of their axle group and share
-///   the group (`wheel_f` / `wheel_r`); base slots anchor at their model
-///   centre.
+/// * base slots anchor at their model centre.
+///
+/// Wheel parts have no anchor: their pins come from [`crate::pins`].
 pub(super) fn anchors(
-    catalog: &TruckCatalog,
     by_slot: &BTreeMap<SlotId, Vec<&Locator>>,
     slot_boxes: &BTreeMap<SlotId, Aabb>,
     base_boxes: &[(Aabb, &specsheet_core::Accessory)],
     cabin_box: Option<Aabb>,
-    front: &[&Locator],
-    rear: &[&Locator],
 ) -> Vec<Anchor> {
     let cabin_inner = cabin_box.map(|cabin| cabin.shrunk(INTERIOR_MARGIN));
     let inside = |p: [f32; 3]| cabin_inner.is_some_and(|c| c.contains_point(p));
@@ -88,7 +81,6 @@ pub(super) fn anchors(
                     position,
                     interior,
                     empty: false,
-                    group: None,
                 }
             }
             None => {
@@ -98,7 +90,6 @@ pub(super) fn anchors(
                     position,
                     interior: inside(position),
                     empty: true,
-                    group: None,
                 }
             }
         })
@@ -109,36 +100,7 @@ pub(super) fn anchors(
             position: aabb.center(),
             interior: false,
             empty: false,
-            group: None,
         });
-    }
-    let mut wheel_slots: Vec<SlotId> = catalog
-        .accessories()
-        .filter(|a| a.kind == AccessoryKind::Wheel)
-        .map(|a| a.slot.clone())
-        .collect();
-    wheel_slots.sort();
-    wheel_slots.dedup();
-    for slot in wheel_slots {
-        let (group, locators) = if slot.as_str().starts_with("f_") {
-            (FRONT_WHEELS, front)
-        } else {
-            (REAR_WHEELS, rear)
-        };
-        let left: Vec<[f32; 3]> = locators
-            .iter()
-            .map(|l| l.position)
-            .filter(|p| p[0] < 0.0)
-            .collect();
-        if !left.is_empty() {
-            anchors.push(Anchor {
-                empty: !slot_boxes.contains_key(&slot),
-                slot,
-                position: mean(left.into_iter()),
-                interior: false,
-                group: Some(group.to_owned()),
-            });
-        }
     }
     anchors
 }

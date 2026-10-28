@@ -2,7 +2,7 @@
 //! slots get a marker, and plain-language verdicts. Front ends render these
 //! as they are and hold no tuning rules (see `docs/ARCHITECTURE.md`).
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use specsheet_core::{
     Accessory, AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId, DEFAULT_BASE_COLOR,
@@ -10,6 +10,7 @@ use specsheet_core::{
 };
 
 use crate::assembly::Drive;
+use crate::pins;
 use crate::session::{GameSession, SlotOption, TruckSession};
 
 /// A tab of the game's truck configuration screen (finding F5). The tab
@@ -111,8 +112,17 @@ impl HotspotCategory {
 pub struct Hotspot {
     pub slot: SlotId,
     pub label: String,
-    /// Truck-space anchor (x right, y up, -z forward).
+    /// Truck-space position (x right, y up, -z forward).
     pub position: [f32; 3],
+    /// The unit vector the pin faces; it fades as it turns from the camera
+    /// ([`pins::opacity`]). `None` for interior pins, which always show.
+    pub facing: Option<[f32; 3]>,
+    /// The pin (index into [`TruckOverview::hotspots`]) this one belongs to:
+    /// it shows only while that pin is open (a wheel's hub, cover and nuts
+    /// follow its disc, F5).
+    pub link: Option<usize>,
+    /// Opening this pin shows the pins linked to it.
+    pub expands: bool,
     pub category: HotspotCategory,
     /// Display name of the selected accessory.
     pub selected: Option<String>,
@@ -121,9 +131,6 @@ pub struct Hotspot {
     pub option_count: usize,
     /// Nothing is placed in the slot; the anchor sits on bare locators.
     pub empty: bool,
-    /// Hotspots of one group (e.g. a wheel axle's parts) share a position
-    /// and form one marker.
-    pub group: Option<String>,
     /// Always an accessory tab: base parts have no pins.
     pub tab: Tab,
 }
@@ -365,37 +372,82 @@ fn category(kind: AccessoryKind) -> HotspotCategory {
 pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
     let catalog = session.catalog();
     let assembly = session.assembly();
-    let hotspots: Vec<Hotspot> = assembly
-        .anchors
-        .iter()
-        .filter_map(|anchor| {
-            let mut options = catalog.in_slot(&anchor.slot);
-            let kind = options.next()?.kind;
-            let option_count = 1 + options.count();
-            // Only slots with a visible choice get a marker, and base parts
-            // are picked through their own tab instead (F5).
-            let tab = tab_of(kind, anchor.interior);
-            if !tab.has_pins() || (option_count < 2 && kind != AccessoryKind::Addon) {
-                return None;
+    // Which slots get a pin: accessory tabs only (base parts are picked
+    // through their own tab, F5), and among them every addon and wheel slot
+    // with an option, plus any other slot with a choice.
+    let pinned = |slot: &SlotId, interior: bool| {
+        let mut options = catalog.in_slot(slot);
+        let kind = options.next()?.kind;
+        let option_count = 1 + options.count();
+        let tab = tab_of(kind, interior);
+        let chosen =
+            matches!(kind, AccessoryKind::Addon | AccessoryKind::Wheel) || option_count > 1;
+        (tab.has_pins() && chosen).then_some((kind, option_count, tab))
+    };
+    let anchors: HashMap<&SlotId, _> = assembly.anchors.iter().map(|a| (&a.slot, a)).collect();
+    let placed: HashSet<&SlotId> = assembly.placements.iter().map(|p| &p.slot).collect();
+    let hotspot =
+        |slot: &SlotId, position, facing, kind, option_count, tab, interior: bool| Hotspot {
+            slot: slot.clone(),
+            label: slot_label(game, slot),
+            position,
+            facing,
+            link: None,
+            expands: false,
+            category: if interior {
+                HotspotCategory::Interior
+            } else {
+                category(kind)
+            },
+            selected: selected_name(game, session, slot),
+            selected_icon: selected_icon(session, slot),
+            option_count,
+            empty: !placed.contains(slot),
+            tab,
+        };
+    // Exterior pins are the game's (F5); a slot whose parts sit inside the
+    // cab keeps its anchor as an interior pin instead.
+    let exterior = pins::pins(game.pin_table(), &assembly.pin_bases, session.drive());
+    let mut kept: Vec<Option<usize>> = Vec::with_capacity(exterior.len());
+    let mut hotspots: Vec<Hotspot> = Vec::new();
+    for pin in &exterior {
+        let inside = anchors.get(&pin.slot).is_some_and(|a| a.interior);
+        let shown = pinned(&pin.slot, false).filter(|_| !inside);
+        // A linked pin follows its target out when the target is dropped.
+        let link = pin.link.map(|i| kept.get(i).copied().flatten());
+        let index = match (shown, link) {
+            (Some(_), Some(None)) | (None, _) => None,
+            (Some((kind, option_count, tab)), link) => {
+                let mut h = hotspot(
+                    &pin.slot,
+                    pin.position,
+                    Some(pin.facing),
+                    kind,
+                    option_count,
+                    tab,
+                    false,
+                );
+                h.link = link.flatten();
+                h.expands = pin.expands;
+                hotspots.push(h);
+                Some(hotspots.len() - 1)
             }
-            Some(Hotspot {
-                slot: anchor.slot.clone(),
-                label: slot_label(game, &anchor.slot),
-                position: anchor.position,
-                category: if anchor.interior {
-                    HotspotCategory::Interior
-                } else {
-                    category(kind)
-                },
-                selected: selected_name(game, session, &anchor.slot),
-                selected_icon: selected_icon(session, &anchor.slot),
+        };
+        kept.push(index);
+    }
+    for anchor in assembly.anchors.iter().filter(|a| a.interior) {
+        if let Some((kind, option_count, tab)) = pinned(&anchor.slot, true) {
+            hotspots.push(hotspot(
+                &anchor.slot,
+                anchor.position,
+                None,
+                kind,
                 option_count,
-                empty: anchor.empty,
-                group: anchor.group.clone(),
                 tab,
-            })
-        })
-        .collect();
+                true,
+            ));
+        }
+    }
     let marked: HashSet<&SlotId> = hotspots.iter().map(|h| &h.slot).collect();
     let general = catalog
         .slots()

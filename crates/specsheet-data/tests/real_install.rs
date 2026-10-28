@@ -117,6 +117,9 @@ fn every_preset_validates_and_assembles_without_warnings() {
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();
+    let pin_table = specsheet_data::scene::tuning_scene(&fs)
+        .expect("tuning scene")
+        .pins;
     let mut failures = Vec::new();
     for truck in list_trucks(&fs).expect("trucks") {
         let (catalog, warnings) = load_catalog(&fs, &truck.id).expect("catalog");
@@ -156,19 +159,19 @@ fn every_preset_validates_and_assembles_without_warnings() {
                 }
                 Some(_) => {}
             }
-            // Wheel anchors form one marker per axle group.
-            for anchor in assembly.anchors.iter().filter(|a| {
-                catalog
-                    .in_slot(&a.slot)
-                    .next()
-                    .is_some_and(|x| x.kind == specsheet_core::AccessoryKind::Wheel)
-            }) {
-                if anchor.group.is_none() {
-                    failures.push(format!(
-                        "{}: wheel slot {} has no group",
-                        truck.id, anchor.slot
-                    ));
-                }
+            // Every wheel gets its own tyre pin (F5): the pin table's tyre
+            // entries are double-sided, so both sides of every axle.
+            let pins = specsheet_data::pins::pins(&pin_table, &assembly.pin_bases, drive);
+            let wheels: usize = assembly.pin_bases.wheels.iter().map(|(_, w)| w.len()).sum();
+            let tyres = pins
+                .iter()
+                .filter(|p| p.slot.as_str().ends_with("_tire"))
+                .count();
+            if wheels == 0 || tyres != wheels {
+                failures.push(format!(
+                    "{} {drive:?}: {tyres} tyre pins for {wheels} wheels",
+                    truck.id
+                ));
             }
         }
     }

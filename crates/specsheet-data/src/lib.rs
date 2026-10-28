@@ -10,6 +10,7 @@ mod install;
 pub mod localization;
 pub mod model;
 pub mod paint;
+pub mod pins;
 pub mod render;
 pub mod scene;
 pub mod session;
