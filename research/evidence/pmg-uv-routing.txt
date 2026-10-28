@@ -386,3 +386,25 @@ piece 0: 0xf2fff110 (0:0 1:1 2:1 6:2) 3 sets {"truckpaint.tsnmapuv"}
   set 0: u 0.220..0.779  v 0.535..0.792
   set 1: u 0.220..0.779  v 0.535..0.792
   set 2: u 0.009..0.011  v 0.993..0.996
+
+Screen test (2026-10-29): paint UVs from the routing vs the fixed rule
+-----------------------------------------------------------------------
+Script: truck daf.2021, cabin xf.daf.2021.cabin, drive right, interior
+xf_arg_uk.daf.2021.interior, door win_xf_a.daf.2021.cab_door (exterior
+model win_xf_uk.pmd, a 0xf2fff110 piece), paint job
+cougar_01_c.daf.2021.paint_job ("Golden Edge": airbrush + alternate_uvset,
+suitable for the XF cab). Same release build except
+specsheet_data::render::paint_uv_sets; screenshots kept outside the repo.
+
+- Fixed rule (mask on set 1, alternate on set 2): the cab, roof and door
+  show no livery at all; the paint reads plain black.
+- Routing (mask on the set routed to UV slot 1, alternate on slot 2): the
+  gold outline runs continuously over the cab front, roof edge, side panels
+  and around the UK door's window.
+- Differences are confined to painted parts (default view 10,022 px, left
+  6,965 px, right 6,070 px changed; nothing else).
+Verdict: H4 confirmed on screen for `alternate_uvset`: truckpaint reads its
+alternate mask through UV slot 2, and the piece's routing picks the set.
+Open: the headlight-surround corner pieces show red/white stripes with the
+routing (black with the fixed rule). Whether the game shows them is to be
+checked against an in-game screenshot.
