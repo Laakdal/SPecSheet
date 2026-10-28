@@ -11,6 +11,7 @@ mod fs;
 mod install;
 pub mod localization;
 pub mod mod_names;
+pub mod mod_scan;
 pub mod model;
 pub mod paint;
 pub mod render;
