@@ -12,7 +12,7 @@ pub mod slots;
 pub use catalog::{Accessory, AccessoryKind, ModelRef, TruckCatalog, WheelPart};
 pub use config::{
     ChangeSet, ConfigError, ConfigIssue, Configuration, HookupProblem, Incompatibility,
-    SlotAvailability,
+    PaintOverride, SlotAvailability,
 };
 pub use hookup::Hookup;
 pub use ids::{AccessoryId, SlotId, TruckId};

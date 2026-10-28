@@ -11,12 +11,16 @@
 //! * Addons with an exterior model need a matching locator on the
 //!   assembled base models ([`SlotAvailability`]); interior-only addons are
 //!   not checked against exterior locators.
+//! * Paint (F15): selecting a paint job clears every colour override
+//!   (Design); a change that makes the paint job unsuitable (a new cabin)
+//!   moves to the member of its family (same `name`) that suits the new
+//!   configuration and keeps the overrides (Design).
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::catalog::{Accessory, TruckCatalog};
+use crate::catalog::{Accessory, AccessoryKind, TruckCatalog};
 use crate::ids::{AccessoryId, SlotId, TruckId};
 
 /// Which addon slots the current base models can host. Computed outside the
@@ -101,14 +105,41 @@ pub struct ChangeSet {
     pub changed_slots: BTreeSet<SlotId>,
 }
 
+/// Colour overrides a configuration carries for its paint job: the six
+/// colours presets and saves store in `vehicle_paint_job_accessory` (F15).
+/// `None` uses the paint job's own value.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct PaintOverride {
+    /// `base_color`.
+    #[serde(default)]
+    pub base: Option<[f32; 3]>,
+    /// `mask_r_color`, `mask_g_color`, `mask_b_color`.
+    #[serde(default)]
+    pub mask: [Option<[f32; 3]>; 3],
+    /// `flake_color`.
+    #[serde(default)]
+    pub flake: Option<[f32; 3]>,
+    /// `flip_color`.
+    #[serde(default)]
+    pub flip: Option<[f32; 3]>,
+}
+
+impl PaintOverride {
+    /// No colour is overridden.
+    pub fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 /// The selected accessory for every filled slot of one truck.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Configuration {
     truck: TruckId,
     selections: BTreeMap<SlotId, AccessoryId>,
-    /// Body colour chosen for the paint job; `None` uses the paint job's
-    /// own `base_color`.
-    paint_color: Option<[f32; 3]>,
+    /// Colours chosen for the paint job; `None` fields use the paint
+    /// job's own values.
+    #[serde(default)]
+    paint: PaintOverride,
     /// Hookups per host slot, keyed by host-model position (`slot_NN`).
     #[serde(default)]
     hookups: BTreeMap<SlotId, BTreeMap<String, AccessoryId>>,
@@ -119,7 +150,7 @@ impl Configuration {
         Self {
             truck,
             selections: BTreeMap::new(),
-            paint_color: None,
+            paint: PaintOverride::default(),
             hookups: BTreeMap::new(),
         }
     }
@@ -133,24 +164,61 @@ impl Configuration {
         Self {
             truck,
             selections: selections.into_iter().collect(),
-            paint_color: None,
+            paint: PaintOverride::default(),
             hookups: BTreeMap::new(),
         }
     }
 
+    /// Sets the base colour override (`None` uses the paint job's).
     pub fn set_paint_color(&mut self, color: Option<[f32; 3]>) {
-        self.paint_color = color;
+        self.paint.base = color;
     }
 
     /// The effective body colour: the override, else the selected paint
     /// job's `base_color`.
     pub fn paint_color(&self, catalog: &TruckCatalog) -> Option<[f32; 3]> {
-        self.paint_color.or_else(|| {
+        self.paint.base.or_else(|| {
             self.selections
                 .values()
                 .filter_map(|id| catalog.accessory(id))
                 .find_map(|a| a.base_color)
         })
+    }
+
+    /// Every colour override of the paint job.
+    pub fn paint_override(&self) -> &PaintOverride {
+        &self.paint
+    }
+
+    /// Replaces every colour override at once (e.g. from a preset).
+    pub fn set_paint_override(&mut self, paint: PaintOverride) {
+        self.paint = paint;
+    }
+
+    /// Sets the override of mask colour `channel` (0 red, 1 green, 2 blue).
+    /// Other channels are ignored.
+    pub fn set_mask_color(&mut self, channel: usize, color: Option<[f32; 3]>) {
+        if let Some(slot) = self.paint.mask.get_mut(channel) {
+            *slot = color;
+        }
+    }
+
+    /// Sets the flake colour override.
+    pub fn set_flake_color(&mut self, color: Option<[f32; 3]>) {
+        self.paint.flake = color;
+    }
+
+    /// Sets the flip colour override.
+    pub fn set_flip_color(&mut self, color: Option<[f32; 3]>) {
+        self.paint.flip = color;
+    }
+
+    /// The selected paint job, if any.
+    pub fn paint_job<'a>(&self, catalog: &'a TruckCatalog) -> Option<&'a Accessory> {
+        self.selections
+            .values()
+            .filter_map(|id| catalog.accessory(id))
+            .find(|a| a.kind == AccessoryKind::PaintJob)
     }
 
     /// The configuration's value: the prices of the selected parts and
@@ -331,9 +399,9 @@ impl Configuration {
 
         let before = self.selections.clone();
         self.selections.insert(accessory.slot.clone(), id.clone());
-        if accessory.kind == crate::catalog::AccessoryKind::PaintJob {
-            // A new paint job brings its own colour.
-            self.paint_color = None;
+        if accessory.kind == AccessoryKind::PaintJob {
+            // A new paint job brings its own colours (Design).
+            self.paint = PaintOverride::default();
         }
         for default in &accessory.defaults {
             if let Some(default) = catalog.by_def_path(default) {
@@ -346,8 +414,12 @@ impl Configuration {
                             .is_ok()
                     });
                 if !keep_current && default.slot != accessory.slot {
-                    self.selections
-                        .insert(default.slot.clone(), default.id.clone());
+                    // A paint job the change made unsuitable keeps its
+                    // design when a family member fits instead.
+                    let replacement = self
+                        .paint_job_sibling(catalog, &availability_for(self), &default.slot)
+                        .unwrap_or_else(|| default.id.clone());
+                    self.selections.insert(default.slot.clone(), replacement);
                 }
             }
         }
@@ -426,7 +498,10 @@ impl Configuration {
                 .map(|(slot, _)| slot.clone())
                 .collect();
             for slot in broken {
-                self.selections.remove(&slot);
+                match self.paint_job_sibling(catalog, &availability, &slot) {
+                    Some(sibling) => self.selections.insert(slot, sibling),
+                    None => self.selections.remove(&slot),
+                };
                 changed = true;
             }
 
@@ -443,6 +518,28 @@ impl Configuration {
                 return;
             }
         }
+    }
+
+    /// When `slot` holds a paint job, the first other paint job of the same
+    /// family that fits the current configuration. A family is the paint
+    /// jobs sharing a `name`: one design cut for different cabins
+    /// (`770s_met_a`, `_b`, `_c`; Design).
+    fn paint_job_sibling(
+        &self,
+        catalog: &TruckCatalog,
+        availability: &SlotAvailability,
+        slot: &SlotId,
+    ) -> Option<AccessoryId> {
+        let current = catalog.accessory(self.selections.get(slot)?)?;
+        if current.kind != AccessoryKind::PaintJob {
+            return None;
+        }
+        catalog
+            .in_slot(slot)
+            .filter(|a| a.kind == AccessoryKind::PaintJob)
+            .filter(|a| a.id != current.id && a.name == current.name)
+            .find(|a| self.check(catalog, availability, a).is_ok())
+            .map(|a| a.id.clone())
     }
 
     /// First compatible accessory for `slot`: truck fallbacks, then the
