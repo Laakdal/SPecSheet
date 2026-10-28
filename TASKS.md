@@ -113,7 +113,8 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
 0. **Priority (user, 2026-10-29): environment, shaders, textures, then the rest.** In dependency order, with owners:
    1. **Environment** (de):
-      - the vehicle-reflection slot, uncommitted and waiting for the user's go;
+      - [x] the vehicle-reflection slot: the tuning scene's `cube_reflection` fills it with our grey stand-in, `ui_vehicle_reflection.tobj` (docs/app/materials.md); paint no longer mirrors the forest cube;
+      - render the garage's own reflection cube in Bevy, to replace that stand-in;
       - the tonemap from `shader-specs/tonemap.md`, then the pre-exposure (0.0973) A/B;
       - real-time shadows from the scene's main light;
       - the scene fields still unused: `light_specular`, `floor_reflection`, `cube_reflection`.
@@ -128,9 +129,9 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - specs by d3's agent: `dif.spec.mult.dif.spec`, `showroom_v2`, `baked`;
       - REA, one run while no build runs: the reflection cube's x/z mirroring and how `pre_exposure` is applied.
    4. **Other:** bloom, and `fakeshadow`/`shadowonly`.
-1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
+1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure, then normal maps and `texture_mult`.
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
-   - the game's lighting: the shared module (`specsheet-render/src/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). Next: the reflection strength and cube (the engine's vehicle_reflection slot, F17 §4, with 71), normal maps (needs tangents), then the output scale against the game's tone mapping (F16, spec in progress);
+   - the game's lighting: the shared module (`specsheet-render/src/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). The vehicle_reflection slot is filled by the scene (done). Next: normal maps (needs tangents), then the output scale against the game's tone mapping (F16, spec in progress);
    - align with the game's paint application (F17, done by REA): locked colours win (done, a9cc0b2); effect flags from the paint job and UV sets 1/2 (done); the engine defaults for missing paint values (done). Still open: the UV set used when a model lacks it, and two caller paths;
    - the `paint_job` slot UI and the colour picker.
 3. **Interior:** interior models and an interior camera; `hide_in`.
