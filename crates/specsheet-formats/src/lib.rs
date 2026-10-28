@@ -6,6 +6,7 @@
 mod binary;
 pub mod bsii;
 pub mod mat;
+pub mod mod_manifest;
 pub mod pmd;
 pub mod pmg;
 pub mod scsc;
