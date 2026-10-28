@@ -54,10 +54,16 @@ pub fn load_model(game: &GameSession, key: &ModelKey) -> Result<ModelPayload, St
         key.variant.as_deref(),
         &key.parts,
     );
-    let mut paths: Vec<&String> = mesh
+    let surfaces: Vec<DifSpecSurface> = mesh
         .materials
         .iter()
-        .filter_map(|m| m.base_texture.as_ref())
+        .filter_map(DifSpecSurface::of)
+        .collect();
+    let mut paths: Vec<&str> = mesh
+        .materials
+        .iter()
+        .filter_map(|m| m.base_texture.as_deref())
+        .chain(surfaces.iter().flat_map(DifSpecSurface::normal_map_paths))
         .collect();
     paths.sort();
     paths.dedup();
@@ -65,7 +71,7 @@ pub fn load_model(game: &GameSession, key: &ModelKey) -> Result<ModelPayload, St
         .into_iter()
         .map(|path| {
             let texture = load_texture(game.fs(), path).map_err(|e| e.to_string());
-            (path.clone(), texture)
+            (path.to_owned(), texture)
         })
         .collect();
     Ok(ModelPayload {
@@ -157,10 +163,19 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
             continue;
         };
         let paint = PaintSurface::of(info);
-        let dif_spec = DifSpecSurface::of(info);
+        let dif_spec = DifSpecSurface::of(info).map(|mut surface| {
+            surface.resolve_normal_maps(|path| stores.textures.get(path).cloned().flatten());
+            surface
+        });
         let attributes = MeshAttributes {
             paint_uv: paint.is_some(),
             colors: paint.is_some() || dif_spec.is_some(),
+            tangents: dif_spec
+                .as_ref()
+                .is_some_and(DifSpecSurface::needs_tangents),
+            normal_uv: dif_spec
+                .as_ref()
+                .is_some_and(DifSpecSurface::needs_normal_uvs),
         };
         let alternate = match (&paint, &piece.alternate_paint_uvs) {
             (Some(_), Some(uvs)) => Some(MeshPiece {
@@ -216,6 +231,12 @@ struct MeshAttributes {
     /// the colour, so 0.5 is neutral (dif-spec.md §3.2). The stand-ins do
     /// not use them.
     colors: bool,
+    /// The stored tangents (`dif.spec` normal maps, dif-spec.md §3.2).
+    tangents: bool,
+    /// The "UV Normal" stream (UV slot 6) as `UV_1`, which the `tsnmapuv`
+    /// flavours sample their normal map with (dif-spec.md §5.2). `UV_1` is
+    /// free on `dif.spec` pieces: only paint uses it.
+    normal_uv: bool,
 }
 
 /// The GPU mesh of `piece`.
@@ -233,6 +254,16 @@ fn piece_mesh(piece: MeshPiece, attributes: MeshAttributes) -> Result<Mesh, Stri
     {
         return Err("UV count differs from position count".to_owned());
     }
+    // Only the streams this mesh carries are checked, so a bad stream the
+    // piece's material does not use cannot drop the piece.
+    let tangents = piece.tangents.filter(|_| attributes.tangents);
+    if tangents.as_ref().is_some_and(|t| t.len() != count) {
+        return Err("tangent count differs from position count".to_owned());
+    }
+    let normal_uvs = piece.normal_uvs.filter(|_| attributes.normal_uv);
+    if normal_uvs.as_ref().is_some_and(|uvs| uvs.len() != count) {
+        return Err("normal UV count differs from position count".to_owned());
+    }
     if !piece.indices.len().is_multiple_of(3) || piece.indices.iter().any(|&i| i as usize >= count)
     {
         return Err("index out of range or incomplete triangle".to_owned());
@@ -248,6 +279,11 @@ fn piece_mesh(piece: MeshPiece, attributes: MeshAttributes) -> Result<Mesh, Stri
     }
     if let Some(uvs) = piece.paint_uvs.filter(|_| attributes.paint_uv) {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
+    } else if let Some(uvs) = normal_uvs {
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
+    }
+    if let Some(tangents) = tangents {
+        mesh.insert_attribute(Mesh::ATTRIBUTE_TANGENT, tangents);
     }
     if let Some(colors) = piece.colors.filter(|_| attributes.colors) {
         let doubled: Vec<[f32; 4]> = colors
@@ -704,7 +740,56 @@ mod tests {
     const ALL_ATTRIBUTES: MeshAttributes = MeshAttributes {
         paint_uv: true,
         colors: true,
+        tangents: true,
+        normal_uv: true,
     };
+
+    fn triangle() -> MeshPiece {
+        MeshPiece {
+            material: 0,
+            positions: vec![[0.0; 3]; 3],
+            normals: vec![[0.0, 1.0, 0.0]; 3],
+            uvs: Some(vec![[0.0; 2]; 3]),
+            paint_uvs: None,
+            alternate_paint_uvs: None,
+            colors: None,
+            normal_uvs: Some(vec![[0.5; 2]; 3]),
+            tangents: Some(vec![[1.0, 0.0, 0.0, -1.0]; 3]),
+            indices: vec![0, 1, 2],
+        }
+    }
+
+    #[test]
+    fn normal_mapped_pieces_carry_tangents_and_the_normal_uvs() {
+        let normal_mapped = MeshAttributes {
+            colors: true,
+            tangents: true,
+            normal_uv: true,
+            ..MeshAttributes::default()
+        };
+        let mesh = piece_mesh(triangle(), normal_mapped).expect("valid piece");
+        assert!(mesh.contains_attribute(Mesh::ATTRIBUTE_TANGENT));
+        assert!(mesh.contains_attribute(Mesh::ATTRIBUTE_UV_1));
+
+        // Without a normal map the mesh is what it was before.
+        let plain = piece_mesh(triangle(), MeshAttributes::default()).expect("valid piece");
+        assert!(!plain.contains_attribute(Mesh::ATTRIBUTE_TANGENT));
+        assert!(!plain.contains_attribute(Mesh::ATTRIBUTE_UV_1));
+
+        // A short stream fails only when the mesh carries it.
+        let short_tangents = MeshPiece {
+            tangents: Some(vec![[1.0, 0.0, 0.0, 1.0]; 2]),
+            ..triangle()
+        };
+        assert!(piece_mesh(short_tangents.clone(), normal_mapped).is_err());
+        assert!(piece_mesh(short_tangents, MeshAttributes::default()).is_ok());
+        let short_normal_uvs = MeshPiece {
+            normal_uvs: Some(vec![[0.0; 2]; 4]),
+            ..triangle()
+        };
+        assert!(piece_mesh(short_normal_uvs.clone(), normal_mapped).is_err());
+        assert!(piece_mesh(short_normal_uvs, MeshAttributes::default()).is_ok());
+    }
 
     #[test]
     fn rejects_meshes_with_mismatched_attributes() {
