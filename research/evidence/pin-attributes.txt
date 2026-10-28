@@ -257,3 +257,25 @@ use_non_wheel_pin_data_from_model default, and interior base points (static, ETS
   interior pins end in truck space only if the builder's chain offset carries
   the eye-point placement. Otherwise they sit around the truck origin.
   Unknown: what the chain offset holds for the interior pass.
+
+Interior pin locators: which model carries them (data, model_info example)
+Scania S 2016, interior a_blk_drk.scania.s_2016.interior: model
+/vehicle/truck/scania_2016/interior/model.pmd, ext_model .../interior/external/stock.pmd.
+- model.pmd (the full cockpit) carries every interior-slot locator, in its own
+  space. steering_w at (-0.0007, -0.372, -0.555), i.e. at x = 0. The cab-centre
+  ones sit at x = +0.6827: curtain_f, frntglss_mid, set_glass, toybed, toyhang,
+  intlight_bck, toybig. Also flag_l/flag_r at -0.406/+1.771, toyac, toyseat,
+  toystand, l_pillow, intlight_bgr. So the origin is the driver's eye: the
+  steering wheel is straight ahead, the cab centre 0.683 m to the right.
+- stock.pmd (the exterior-view interior) carries no interior-slot locators.
+- The cabin cab_s_high.pmd carries ext_interior and interior_s at
+  (-0.683, 2.705, -1.862) and interior_s1 at (+0.683, 2.705, -1.862) (the
+  right-hand-drive eye), plus driver locators at (-/+0.7, 1.557, -2.409).
+Consequence: an interior pin lands in the cab only as
+  cabin eye point (ext_interior / interior_s, or interior_s1 for RHD)
+  + cockpit locator (+ pin_offset).
+Adding the cockpit locator to the bare vehicle position puts it about 2.7 m
+low and 1.9 m forward of where it belongs. So the "vehicle" transform the
+builder adds in the interior pass most likely includes the cockpit's
+placement at the eye point (Hypothesis: the interior is its own placed object
+whose transform the virtual call returns). Not settled by code.
