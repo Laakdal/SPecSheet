@@ -23,6 +23,11 @@ use serde::{Deserialize, Serialize};
 use crate::catalog::{Accessory, AccessoryKind, TruckCatalog};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 
+mod hookups;
+mod paint;
+
+pub use paint::PaintOverride;
+
 /// Which addon slots the current base models can host. Computed outside the
 /// core (it needs model geometry); base/non-visual slots are always available.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -105,32 +110,6 @@ pub struct ChangeSet {
     pub changed_slots: BTreeSet<SlotId>,
 }
 
-/// Colour overrides a configuration carries for its paint job: the six
-/// colours presets and saves store in `vehicle_paint_job_accessory` (F15).
-/// `None` uses the paint job's own value.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PaintOverride {
-    /// `base_color`.
-    #[serde(default)]
-    pub base: Option<[f32; 3]>,
-    /// `mask_r_color`, `mask_g_color`, `mask_b_color`.
-    #[serde(default)]
-    pub mask: [Option<[f32; 3]>; 3],
-    /// `flake_color`.
-    #[serde(default)]
-    pub flake: Option<[f32; 3]>,
-    /// `flip_color`.
-    #[serde(default)]
-    pub flip: Option<[f32; 3]>,
-}
-
-impl PaintOverride {
-    /// No colour is overridden.
-    pub fn is_empty(&self) -> bool {
-        *self == Self::default()
-    }
-}
-
 /// The selected accessory for every filled slot of one truck.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Configuration {
@@ -169,58 +148,6 @@ impl Configuration {
         }
     }
 
-    /// Sets the base colour override (`None` uses the paint job's).
-    pub fn set_paint_color(&mut self, color: Option<[f32; 3]>) {
-        self.paint.base = color;
-    }
-
-    /// The effective body colour: the override, else the selected paint
-    /// job's `base_color`.
-    pub fn paint_color(&self, catalog: &TruckCatalog) -> Option<[f32; 3]> {
-        self.paint.base.or_else(|| {
-            self.selections
-                .values()
-                .filter_map(|id| catalog.accessory(id))
-                .find_map(|a| a.base_color)
-        })
-    }
-
-    /// Every colour override of the paint job.
-    pub fn paint_override(&self) -> &PaintOverride {
-        &self.paint
-    }
-
-    /// Replaces every colour override at once (e.g. from a preset).
-    pub fn set_paint_override(&mut self, paint: PaintOverride) {
-        self.paint = paint;
-    }
-
-    /// Sets the override of mask colour `channel` (0 red, 1 green, 2 blue).
-    /// Other channels are ignored.
-    pub fn set_mask_color(&mut self, channel: usize, color: Option<[f32; 3]>) {
-        if let Some(slot) = self.paint.mask.get_mut(channel) {
-            *slot = color;
-        }
-    }
-
-    /// Sets the flake colour override.
-    pub fn set_flake_color(&mut self, color: Option<[f32; 3]>) {
-        self.paint.flake = color;
-    }
-
-    /// Sets the flip colour override.
-    pub fn set_flip_color(&mut self, color: Option<[f32; 3]>) {
-        self.paint.flip = color;
-    }
-
-    /// The selected paint job, if any.
-    pub fn paint_job<'a>(&self, catalog: &'a TruckCatalog) -> Option<&'a Accessory> {
-        self.selections
-            .values()
-            .filter_map(|id| catalog.accessory(id))
-            .find(|a| a.kind == AccessoryKind::PaintJob)
-    }
-
     /// The configuration's value: the prices of the selected parts and
     /// mounted hookups; parts without a price count as free (Hypothesis:
     /// the game prices a truck as the sum of its parts).
@@ -235,85 +162,6 @@ impl Configuration {
             .filter_map(|(_, _, id)| catalog.hookup(id))
             .filter_map(|h| h.price);
         parts.chain(hookups).fold(0i64, i64::saturating_add)
-    }
-
-    /// Sets hookups without checking any rule (e.g. loading game configs);
-    /// use [`Configuration::validate`] after.
-    pub fn with_hookups(
-        mut self,
-        hookups: impl IntoIterator<Item = (SlotId, String, AccessoryId)>,
-    ) -> Self {
-        for (host, position, hookup) in hookups {
-            self.hookups
-                .entry(host)
-                .or_default()
-                .insert(position, hookup);
-        }
-        self
-    }
-
-    /// Hookups mounted on the accessory in `host`, by position.
-    pub fn hookups(&self, host: &SlotId) -> Option<&BTreeMap<String, AccessoryId>> {
-        self.hookups.get(host)
-    }
-
-    /// Every mounted hookup as `(host slot, position, hookup)`.
-    pub fn all_hookups(&self) -> impl Iterator<Item = (&SlotId, &str, &AccessoryId)> {
-        self.hookups.iter().flat_map(|(host, positions)| {
-            positions
-                .iter()
-                .map(move |(position, id)| (host, position.as_str(), id))
-        })
-    }
-
-    /// Mounts `hookup` at `position` of the accessory in `host`, or empties
-    /// the position when `hookup` is `None`. `positions` are the positions
-    /// the host accessory's model offers (its `slot_NN` locators).
-    pub fn set_hookup(
-        &mut self,
-        catalog: &TruckCatalog,
-        host: &SlotId,
-        position: &str,
-        positions: &[String],
-        hookup: Option<&AccessoryId>,
-    ) -> Result<ChangeSet, ConfigError> {
-        let error = |problem| ConfigError::Hookup {
-            host: host.clone(),
-            position: position.to_owned(),
-            hookup: hookup.cloned(),
-            problem,
-        };
-        if !self.selections.contains_key(host) {
-            return Err(error(HookupProblem::NoHost));
-        }
-        if !positions.iter().any(|p| p == position) {
-            return Err(error(HookupProblem::UnknownPosition));
-        }
-        match hookup {
-            Some(id) => {
-                let found = catalog
-                    .hookup(id)
-                    .ok_or_else(|| error(HookupProblem::UnknownHookup))?;
-                if !found.fits(host) {
-                    return Err(error(HookupProblem::NotSuitable));
-                }
-                self.hookups
-                    .entry(host.clone())
-                    .or_default()
-                    .insert(position.to_owned(), id.clone());
-            }
-            None => {
-                if let Some(mounted) = self.hookups.get_mut(host) {
-                    mounted.remove(position);
-                    if mounted.is_empty() {
-                        self.hookups.remove(host);
-                    }
-                }
-            }
-        }
-        Ok(ChangeSet {
-            changed_slots: [host.clone()].into(),
-        })
     }
 
     pub fn truck(&self) -> &TruckId {
