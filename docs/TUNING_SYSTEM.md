@@ -60,7 +60,7 @@ Validation: example `catalog_info` validates every truck's game preset (`/def/ve
 - the selected accessory per slot;
 - a `PaintOverride`: optional base, mask r/g/b, flake and flip colours, loaded from the preset's `vehicle_paint_job_accessory` (all six keys); `None` uses the paint job's value. `paint_color()`/`set_paint_color()` read and set the base colour.
 
-`specsheet_data::paint::piece_paint` merges the selected paint job, its per-part unit for a placed accessory and the overrides into a `PiecePaint` for the renderer (F15).
+`specsheet_data::paint::piece_paint` merges the selected paint job, its per-part unit for a placed accessory and the overrides into a `PiecePaint` for the renderer (F15). Values nobody sets take the game's defaults (F17).
 
 The app starts every truck from its game preset.
 
@@ -81,6 +81,5 @@ A base-model locator belongs to the longest slot name it starts with (`mirror_s`
 
 - `overrides[]`.
 - `hide_in`.
-- Rendering paint-job masks, flakes and flip: the data is loaded and resolved (`piece_paint`), but the app applies only the base colour.
 - Interior camera (only the exterior-view interior model is shown; right-hand drive shows the interior's UK twin, F10).
-- Engine, transmission, head lights, interior and paint job are selectable from the sidebar's "General" group (slots without a 3D marker), but only the paint job's base colour has a visual effect.
+- Engine, transmission, head lights, interior and paint job are selectable from the sidebar's "General" group (slots without a 3D marker). The paint job renders in full (masks, liveries, flip, flakes; `docs/app/materials.md`).

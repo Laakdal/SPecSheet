@@ -59,7 +59,7 @@ This is an approximation, not the game's shaders.
   - flip: the facing/averted blend of P and the flip colour.
 - **Albedo** = base texture × `.mat` diffuse × paint colour × 2 × vertex colour.
 - **Constant masks** (`shared_RRGGBBAA`) enter as linear RGB with linear alpha.
-- **Flakes:** the noise at `(u·s, v·s·r)` changes only the highlight's colour and its power (`τ`, coverage `c`). Under Bevy's lighting no sparkle is visible yet (770 Deep Red, close view). Check it again once the spec's Blinn-Phong highlight replaces PBR. Test case: Under Wraps on the MAN TGX Euro 6 has no mask; its gift-wrap pattern comes from its own flake noise (`tile_christ3.tobj`), and we show none of it.
+- **Flakes:** the noise at `(u·s, v·s·r)` changes only the highlight's colour and its power (`τ`, coverage `c`). Test case: Under Wraps on the MAN TGX Euro 6 has no mask; its gift-wrap pattern comes from its own flake noise (`tile_christ3.tobj`). The pattern shows in the highlights since missing paint values take the game's defaults: before, a job without `flake_density` got density 0, so no flakes were drawn.
 - **Mask factor:** the colour mask's alpha and the base alpha scale the specular and the reflection.
 
 **Settled by our data** (`research/evidence/paint-vertex-streams.txt`, example `paint_uv_survey`, 7,740 truck models):
@@ -76,17 +76,25 @@ This is an approximation, not the game's shaders.
 - **`flipflake` (Confirmed, REA):** the paint job's flag alone.
 - **`flipflakeuv`:** not implemented. What selects it is Unknown, and the flakes use the mask's UV.
 
+**Missing paint values** take the game's defaults (F17, `specsheet_core::DEFAULT_*`), applied in `specsheet_data::paint::piece_paint`:
+- base white;
+- mask colours red, green and blue;
+- flip red, strength 0.27;
+- flake green, density 1, shininess 50, clear-coat roll-off 2.2, UV scale 32, v-ratio 1.
+
+The game copies these into the material unscaled.
+
 **Ours, in place of the spec's Unknowns** (constants at the top of `truckpaint.rs`):
 
 | Input | Value | Spec item |
 |---|---|---|
 | φ (`flip_strength`) | clamped to 0–1 | truckpaint.md §7: values reach 2.7 |
 | ρ (`flake_density`) | clamped to 0–1 | §7: values reach 2 |
-| r (`flake_vratio`) | 1 when 0 or missing | §7 |
+| r (`flake_vratio`) | 1 when 0 | §7 |
 | λ, flake light | 1; the sun's direction | §7 |
 | F0 | the `.mat`'s first `fresnel` value, else 0.2 | lighting §8 |
 | `specular`, `shininess` absent | 1, 130 (the old roughness 0.35) | — |
-| no paint colour | 0.6 grey | — |
+| no paint job and no colour | 0.6 grey | — |
 
 **Not the game's yet: the lighting.** The paint feeds Bevy's PBR lighting, like every other material, so the truck stays lit by one model. The mapping:
 - metallic 0;
