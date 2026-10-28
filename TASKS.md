@@ -81,7 +81,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
-1. **Materials:** chrome and metal render nearly black. Use `env_factor`/`shininess`/reflection hints from `.mat`.
+1. **Materials:** chrome now renders as metal from `env_factor`/`shininess` (docs/app/materials.md). Next: use the game's reflection cubes (`texture_reflection`, e.g. `vehicle_reflection.tobj`, 6 faces) as the environment map instead of the grey gradient, which needs cube-face upload and a change in `viewer.rs` (agree it with the app owner first). Then normal maps.
 2. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
 3. **Interior:** interior models and an interior camera; `hide_in`.
 4. **Wheels:** whether the tuning screen shows lift axles raised or lowered (reference screenshot or REA), the inner twin-tyre bead, `wheel_shift`. Axle variants are done (F13).
