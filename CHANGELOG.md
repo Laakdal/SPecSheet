@@ -34,6 +34,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Name:** the app is now called **SpecSheet** (tagline "SpecSheet: ETS2 Save Edit"). The window title, top-bar brand, installer product name and app identifier (`dev.specsheet.app`) are updated. Settings saved under the old identifier are not migrated, so the game directory is detected again on first launch.
 
 ### Added
+- **Normal maps:** plastic, metal and chrome parts that have a normal map now show its relief, such as the studs on the Scania S step plates and the grille mesh.
 - **HDR textures load:** the game's R9G9B9E5 textures (194 sky panoramas and 3 HDR images of the brightness options) now unpack and upload, ready for skyboxes.
 - **Reflections:** the truck's reflection cube from the game (e.g. `fuzzy_reflection.tobj`) replaces the grey gradient as the environment map, so chrome and paint reflect the game's own environment.
 - **Paint-job data:** every paint job now loads its mask, mask colours, airbrush/alternate-UV/flip-flake flags, flake and flip parameters and per-part masks; presets keep all six paint colours, a cabin change keeps the paint job's design, and `specsheet_data::paint::piece_paint` gives the effective paint of each placed part (not rendered yet).

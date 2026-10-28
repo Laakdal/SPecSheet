@@ -123,7 +123,9 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - [x] `MaterialInfo` carries `normal_texture`, `normal_detail_texture` and `mult_texture`; `MeshPiece` carries `tangents` and `normal_uvs` (the set routed to UV slot 6). de wires them to the GPU; BC5 already uploads natively.
       - [x] PMG piece +8 is the UV slot routing (`pmg-uv-routing.txt`, 611,638 pieces).
       - [ ] Paint UVs from the routing: slot 1 for the mask, slot 2 for `altuv`, with `paint_uv_set` as the fallback. The mask agrees with today's rule in 96 % of pieces, `altuv` in only 2,423 of 4,986 (e.g. `0xf2fff110`, 2,153 pieces). Needs a screen test of an `alternate_uvset` job on such a piece (DAF 2021 `cab_door/win_xf_uk.pmd`) before switching.
-      - [ ] `texture_mult` waits for 71's spec of `dif.spec.mult.dif.spec` and the scene shaders.
+      - [x] Normal maps drawn for `dif.spec` (`tsnmap`, `tsnmapuv`, `tsnmapuv2`), seen on the Scania S step plates. Truckpaint's normal maps are next.
+      - [x] Specs for `dif.spec.mult.dif.spec`, `baked` and `showroom_v2` (d3's spec agent), and for glass, lamp, `dif.lum`, unlit and the shadow helpers (71). `MeshPiece::mult_uvs` carries UV slot 1 for `texture_mult`.
+      - [ ] WGSL for the `mult` base (the tuning garage's look), then glass, lamp and the rest, each from its spec.
    3. **Shaders** (D13: 71 writes the specs and never the WGSL; de writes the WGSL from the specs only):
       - [x] specs by 71: `glass`, `lamp`, `dif.lum`, `unlit.*`, and `decalshadow`/`light.tex`/`fakeshadow`/`shadowonly`/`none` (`docs/app/shader-specs/`). `tsnmap`/`tsnmapuv` were already in `dif-spec.md` and `truckpaint*.md`; added: UV slot *n* is vertex attribute 8 + *n*, and truckpaint `asafew.a`/`shadow`. The engine inputs they leave open (`texture_reflection_modulator`, lamp colours and contrast, material luminosity) are in each spec's last table, with stand-ins;
       - specs by d3's agent: `dif.spec.mult.dif.spec`, `showroom_v2`, `baked`;
