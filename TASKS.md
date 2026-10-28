@@ -122,7 +122,9 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - [x] DXGI 67 (R9G9B9E5_SHAREDEXP) unpacks and uploads (`hdr-textures.txt`).
       - [x] `MaterialInfo` carries `normal_texture`, `normal_detail_texture` and `mult_texture`; `MeshPiece` carries `tangents` and `normal_uvs` (the set routed to UV slot 6). de wires them to the GPU; BC5 already uploads natively.
       - [x] PMG piece +8 is the UV slot routing (`pmg-uv-routing.txt`, 611,638 pieces).
-      - [ ] Paint UVs from the routing: slot 1 for the mask, slot 2 for `altuv`, with `paint_uv_set` as the fallback. The mask agrees with today's rule in 96 % of pieces, `altuv` in only 2,423 of 4,986 (e.g. `0xf2fff110`, 2,153 pieces). Needs a screen test of an `alternate_uvset` job on such a piece (DAF 2021 `cab_door/win_xf_uk.pmd`) before switching.
+      - [x] Paint UVs from the routing: slot 1 for the mask, slot 2 for `altuv`, `paint_uv_set` as the fallback. Screen test on the DAF 2021 XF with Golden Edge (`pmg-uv-routing.txt`): the livery appears only with the routing.
+      - [ ] Check the DAF 2021 headlight-surround corners (red/white stripes with Golden Edge) against an in-game screenshot.
+      - [ ] The garage floor shows a white speckle with the mult material; find out whether it's the normal map, the reflection or aliasing.
       - [x] Normal maps drawn for `dif.spec` (`tsnmap`, `tsnmapuv`, `tsnmapuv2`), seen on the Scania S step plates. Truckpaint's normal maps are next.
       - [x] Specs for `dif.spec.mult.dif.spec`, `baked` and `showroom_v2` (d3's spec agent), and for glass, lamp, `dif.lum`, unlit and the shadow helpers (71). `MeshPiece::mult_uvs` carries UV slot 1 for `texture_mult`.
       - [ ] WGSL for the `mult` base (the tuning garage's look), then glass, lamp and the rest, each from its spec.

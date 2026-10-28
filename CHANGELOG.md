@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Changed
+- **Alternate-UV paint jobs land where the game puts them on every truck:** paint now reads each model's own UV routing, so liveries such as Golden Edge on the DAF 2021 XF show on the cab and doors.
 - **Paint jobs render like the game's:** two-tone colour masks, airbrush liveries (logos, stripes, the 770 designs) and metallic flip colours that shift with the viewing angle. Each part takes its own paint, and the game's baked shading on painted panels is applied, so paint looks darker than before. The lighting is still an approximation. Metallic flakes are wired in but not visible yet.
 - **Metallic flakes show:** paint jobs that leave out a flake or flip value now take the game's defaults instead of zero, so flake patterns appear in the highlights (e.g. Under Wraps' gift wrap on the MAN TGX Euro 6). Missing mask colours default to red, green and blue as in the game.
 - **Paint-job thumbnails for plain colours:** stock colours without an icon (the RAL colours) show a swatch of their colour, and metallic ones a layered swatch with the flip and flake colours, as in the game.
@@ -34,6 +35,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Name:** the app is now called **SpecSheet** (tagline "SpecSheet: ETS2 Save Edit"). The window title, top-bar brand, installer product name and app identifier (`dev.specsheet.app`) are updated. Settings saved under the old identifier are not migrated, so the game directory is detected again on first launch.
 
 ### Added
+- **Garage shading:** the tuning garage now shows the game's baked shadows and depth instead of a flat white hall.
 - **Normal maps:** plastic, metal and chrome parts that have a normal map now show its relief, such as the studs on the Scania S step plates and the grille mesh.
 - **HDR textures load:** the game's R9G9B9E5 textures (194 sky panoramas and 3 HDR images of the brightness options) now unpack and upload, ready for skyboxes.
 - **Reflections:** the truck's reflection cube from the game (e.g. `fuzzy_reflection.tobj`) replaces the grey gradient as the environment map, so chrome and paint reflect the game's own environment.
