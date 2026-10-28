@@ -109,7 +109,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
    - `%2`/`%8`/`%9` of the accessory tile.
    Check all of it against reference screenshots in `research/parity/`.
 6. **REA (next batch):** `FUN_140fbf860` turned out to be the input handler (F5). Next: one combined string search (`~/rea-ets2/next-search-regex.txt`, plus the `pin_offset`/`pin_dir`/`pin_group` keys) for pin placement, camera conventions, exposure/tonemap, lift axles, paint-effect selection and `ui_vehicle_reflection`; then decompile what it points to, and the caller of `0x1421c2f90` (locator lookup). Each Ghidra run takes about 30–45 min and 2 GB; coordinate with peers first.
-7. **Markers:** anchor empty slots on their first compatible option, put a wheel group on the camera-side wheel, and add a depth test (see docs/app/hotspots.md "Known gaps").
+7. **Pins:** the exterior pins follow the game (F5, docs/app/hotspots.md). Still to do: see them in a release screenshot; the game's pin graphics (`btn.custom_accn`/`s`, `acc_hub`/`acc_cover`/`acc_nuts`); interior pins the game's way; the per-truck pin table; re-check the badge and Renault T `s_panel` pins in game.
 8. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `crates/specsheet/icon.png`.
 9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 10. **App shell (D16):** the `specsheet-theme` token crate with contrast tests, then the home, trucks, configurations, mods, parity, settings and about screens per [docs/app/design-system.md](docs/app/design-system.md). After the 1:1 tuning screen.
