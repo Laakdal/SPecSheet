@@ -26,7 +26,7 @@ How the app draws game materials. The effect files themselves are described in [
 Glass, decals and lamps keep their own rules; paint and `dif.spec` have their own materials.
 
 - Colours in `.mat` (`diffuse`, `env_factor`) and paint jobs (`base_color`) are linear RGB, and are used as such. Paint values such as Coffee Brown (0.034, 0.023, 0.014) only make sense as linear. Textures flagged `_SRGB` are uploaded as `*UnormSrgb` formats.
-- `MaterialInfo` also carries `specular`, `fresnel` and `additional_ambient` for the game materials. Per `.mat`, the stand-in uploads only `texture_base`; the game materials also load the `.mat`'s reflection cube (`render::GameTextures`). Normal maps and `texture_mult` (baked AO) are ignored; paint masks and flake noise come from the paint job.
+- `MaterialInfo` also carries `specular`, `fresnel` and `additional_ambient` for the game materials. Per `.mat`, the stand-in uploads only `texture_base`; the game materials also load the `.mat`'s reflection cube (`render::GameTextures`). `dif.spec` also loads its normal maps (`texture_nmap`, `texture_nmap_detail`); `texture_mult` (baked AO) is not drawn yet; paint masks and flake noise come from the paint job.
 - Other stand-ins use metallic 0.1 and roughness 0.6.
 
 **Environment map (the game's reflection cube).**
@@ -57,7 +57,10 @@ The stand-ins are an approximation, not the game's shaders.
 - **Reflection (§5.5), `add.env` and `nofresnel`:** the `.mat`'s own `texture_reflection` × `env_factor` (× 2 × vertex colour with `weight`) × base alpha × fresnel × `sat(light_environment)`. The fresnel is linear, `sat(fb + fs·(1 − N·E))` from `fresnel` (bias, scale); `nofresnel` uses 1.
 - **Blending (§6):** `a` discards below 0.05; `over` blends with the lit colour and the base alpha; `decal` keeps the stand-in's depth bias.
 - **Defaults** for absent attributes, from the game's material-input table (§3.1): `specular` 1, `shininess` 4, `env_factor` 1, `fresnel` (0.2, 0.9), `additional_ambient` 0.
-- **Not drawn yet:** normal maps (`tsnmap`, `tsnmapuv`, `tsnmapuv2`; they need tangents), `oclu` (its texture on UV1 is ignored), and the `asafew` mask stretch.
+- **Normal (§5.2), `tsnmap`, `tsnmapuv`, `tsnmapuv2`:** the BC5 map decoded per §4 and framed by the stored tangents, `B = (N × T)·w`. `tsnmap` samples UV0; `tsnmapuv` samples the UV set the piece routes to UV slot 6 (`MeshPiece::normal_uvs`, uploaded as `ATTRIBUTE_UV_1`); `tsnmapuv2` adds the detail map on UV0, with the main map framed by screen-space derivatives (§5.2.3). The factor `fn` scales only the albedo. A piece without tangents, the needed UVs or the texture keeps the vertex normal and `fn = 1`. `asafew` effects get no normal map (§1).
+  - Ours: the bitangent is built per fragment from the interpolated N and T, not per vertex as §3.2 says (a per-vertex frame needs a custom vertex shader for every `dif.spec` piece).
+  - Seen working: the Scania S step plates show their studs only with the maps on; in the default view only the grille and wheels change.
+- **Not drawn yet:** `oclu` (its texture on UV1 is ignored) and the `asafew` mask stretch.
 
 Ours, each a Hypothesis:
 - g, the cube brightness: 1. (ms, mb), the specular-mask remap: (1, 0).
@@ -162,7 +165,7 @@ The game's shaders are readable GLSL inside `effect.scs` ([../formats/effects.md
 
 Order:
 1. `truckpaint`: the surface and the game's lighting are done (above).
-2. `dif.spec` on the shared lighting module, with per-material cube sampling: done (above). Next for both: normal maps (tangents), then the output scale and ambient against the game's tone mapping.
+2. `dif.spec` on the shared lighting module, with per-material cube sampling: done (above), with its normal maps. Next: truckpaint's normal maps, then the output scale and ambient against the game's tone mapping.
 3. Glass.
 4. Lamp.
 
