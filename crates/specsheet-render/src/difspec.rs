@@ -45,6 +45,9 @@ const DEFAULT_SPECULAR: [f32; 3] = [1.0; 3];
 const DEFAULT_SHININESS: f32 = 4.0;
 const DEFAULT_ENV_FACTOR: [f32; 3] = [1.0; 3];
 const DEFAULT_FRESNEL: [f32; 2] = [0.2, 0.9];
+/// The engine clamps the `.mat` colours `specular` and `env_factor` to
+/// [0, this] per component when it applies a material (F18).
+const MAT_COLOUR_MAX: f32 = 5.0;
 // Engine inputs without a `.mat` attribute (§3.3): ours, listed in
 // materials.md.
 /// g, the reflection cube's brightness (H: 1).
@@ -356,13 +359,14 @@ impl DifSpecSurface {
             0
         };
         flags |= normal_flavour;
-        let specular = info.specular.unwrap_or(DEFAULT_SPECULAR);
-        let factor = info.env_factor.unwrap_or(DEFAULT_ENV_FACTOR);
+        let specular = mat_colour(info.specular.unwrap_or(DEFAULT_SPECULAR));
+        // Ke: the engine uploads env_factor ⊙ specular (F18, dif-spec §3.1).
+        let factor = mat_colour(info.env_factor.unwrap_or(DEFAULT_ENV_FACTOR)) * specular;
         let [bias, scale] = info.fresnel.unwrap_or(DEFAULT_FRESNEL);
         Some(Self {
             uniform: DifSpecUniform {
-                specular: Vec3::from(specular).extend(info.shininess.unwrap_or(DEFAULT_SHININESS)),
-                environment: Vec3::from(factor).extend(info.additional_ambient.unwrap_or(0.0)),
+                specular: specular.extend(info.shininess.unwrap_or(DEFAULT_SHININESS)),
+                environment: factor.extend(info.additional_ambient.unwrap_or(0.0)),
                 fresnel: Vec4::new(bias, scale, MASK_REMAP[0], MASK_REMAP[1]),
                 reflection: Vec4::new(CUBE_BRIGHTNESS, 0.0, 0.0, 0.0),
                 flags,
@@ -452,6 +456,11 @@ impl DifSpecMaterials {
     }
 }
 
+/// A `.mat` colour as the engine applies it: clamped to [0, 5] (F18).
+fn mat_colour(colour: [f32; 3]) -> Vec3 {
+    Vec3::from(colour).clamp(Vec3::ZERO, Vec3::splat(MAT_COLOUR_MAX))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -524,6 +533,37 @@ mod tests {
         let flat =
             DifSpecSurface::of(&info("eut2.dif.spec.add.env.nofresnel.rfx")).expect("dif.spec");
         assert_eq!(flat.uniform.flags, ENV | NOFRESNEL);
+    }
+
+    #[test]
+    fn the_reflection_tint_is_env_factor_times_specular_clamped_like_the_engine() {
+        // F18 / dif-spec §3.1: the engine uploads Ke = env_factor ⊙ specular,
+        // each clamped to [0, 5] when the `.mat` is applied.
+        let tinted = MaterialInfo {
+            specular: Some([0.5, 1.0, 2.0]),
+            env_factor: Some([2.0, 24.0, -1.0]),
+            ..info("eut2.dif.spec.add.env.rfx")
+        };
+        let surface = DifSpecSurface::of(&tinted).expect("dif.spec");
+        assert_eq!(
+            surface.uniform.environment.truncate(),
+            Vec3::new(1.0, 5.0, 0.0)
+        );
+        assert_eq!(
+            surface.uniform.specular.truncate(),
+            Vec3::new(0.5, 1.0, 2.0),
+            "specular itself is within range"
+        );
+        let hot = MaterialInfo {
+            specular: Some([7.0; 3]),
+            ..info("eut2.dif.spec.add.env.rfx")
+        };
+        let hot = DifSpecSurface::of(&hot).expect("dif.spec");
+        assert_eq!(hot.uniform.specular.truncate(), Vec3::splat(MAT_COLOUR_MAX));
+        assert_eq!(
+            hot.uniform.environment.truncate(),
+            Vec3::splat(MAT_COLOUR_MAX)
+        );
     }
 
     fn normal_mapped(effect: &str) -> MaterialInfo {
