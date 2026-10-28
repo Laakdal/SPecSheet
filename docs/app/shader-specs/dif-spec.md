@@ -99,7 +99,7 @@ Every vector below is in eye (view) space. World space works the same, except fo
   - UV slot 1: `oclu`.
   - **UV slot 6**, which the game's vertex-stream table labels "UV Normal": the `tsnmapuv` normal map. Its exporter default is the first UV layer.
 
-  Which stored PMG UV set feeds each slot is U. (H) The piece field at +8, marked Unknown in [models.md](../../formats/models.md), is that routing.
+  In the vertex stage, UV slot *n* is vertex attribute 8 + *n*: slot 0 is attribute 8, slot 1 is attribute 9, slot 6 is attribute 14 (C, `research/evidence/shader-spec-glass-lamp-lum.txt`). Which stored PMG UV set feeds each slot comes from the piece's routing field at +8 ([models.md](../../formats/models.md)): nibble *n* names the set for slot *n* (H, strong: the field routes slot 6 exactly for `tsnmapuv` effects and slot 1 exactly for `oclu`, `mult`, `lamp` and `truckpaint`).
 - Each UV slot also gets an engine-side scale and bias for compressed UVs. (H) PMG UVs are floats, so this is the identity.
 
 ### 3.3 Per scene and engine (not in `.mat`)
@@ -324,7 +324,7 @@ Whether the tuning scene substitutes `showroom_cube` or `ui_vehicle_reflection` 
 
 ## 10. Open questions and hypotheses
 
-- **U:** which PMG UV set feeds the UV Normal slot (`tsnmapuv`) and UV1 (`oclu`). The likely carrier is the piece field at +8.
+- **H:** the PMG UV set behind each UV slot is the piece's routing nibble for that slot (§3.2, [models.md](../../formats/models.md)). Slot *n* = vertex attribute 8 + *n* is C.
 - **H:** the engine's specular-mask remap is (1, 0) normally and the `asafew` stretch otherwise. It could be settled from the executable.
 - **H:** `M` is the eye-to-world rotation, and `g` is a per-cube brightness, 1 by default. Both are engine-set; the executable could settle them. The x/z mirroring of the cube against wgpu is U.
 - **U:** which path, deferred or forward, renders opaque trucks in the tuning screen. This decides whether §7.4's ambient shaping is part of the target look.

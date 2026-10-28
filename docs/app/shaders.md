@@ -63,7 +63,11 @@ These use only `.mat` parameters, textures and Bevy's renderer:
 |---|---|---|
 | `truckpaint` | Done: [shader-specs/truckpaint.md](shader-specs/truckpaint.md), [truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) | Surface done, under Bevy's lighting ([materials.md](materials.md#truck-paint-eut2truckpaint)) |
 | `dif.spec` | Done: [shader-specs/dif-spec.md](shader-specs/dif-spec.md), with the lighting model and the deferred path | Next: one shared lighting module for `dif.spec` and `truckpaint`, with per-material cube sampling (§5.5) |
-| `glass`, `lamp`, the rest | Not started | — |
+| `glass` (+ `tsnmap`, `tsnmapuv`) | Done: [shader-specs/glass.md](shader-specs/glass.md): a multiply pass (tint² × (1 − opacity)), then an additive surface pass with a Schlick reflection | Not started |
+| `lamp` (+ `add.env`, `tsnmap(uv)`) | Done: [shader-specs/lamp.md](shader-specs/lamp.md): `dif.spec.add.env` plus a masked glow from the engine's lamp colours (zero with the lights off) | Not started |
+| `dif.lum` (+ `lvcol`, `decal.over`) | Done: [shader-specs/dif-lum.md](shader-specs/dif-lum.md): lit surface plus emission weighted by base alpha | Not started |
+| `unlit.tex`, `unlit.vcol.tex` | Done: [shader-specs/unlit.md](shader-specs/unlit.md) | Not started |
+| `decalshadow`, `light.tex`, `fakeshadow`, `shadowonly`, `none` | Done: [shader-specs/shadows-and-fake-lights.md](shader-specs/shadows-and-fake-lights.md): `decalshadow` is black with base red as opacity; `light.tex` writes the deferred light buffer; the rest are never drawn in colour | Not started |
 
 1. **Specs.** A spec agent reads the game's shader for one base and its flavors, and writes the maths in prose and equations to `shader-specs/<base>.md`, citing the wiki for behaviour. No code is copied or quoted.
 2. **WGSL.** A different agent, which has never seen the game's shaders, writes one Bevy material per base, with the flavors as switches (shader defs), from the spec only.

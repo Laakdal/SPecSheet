@@ -60,7 +60,7 @@ Skinned, `shadow` and `asafew.a` variants exist but were not read (§7).
 UV routing (C, from the vertex stages):
 - **UVp** (paint UV) is mesh UV set 1. With `altuv` it is set 2.
 - **UVf** (flake UV) equals UVp. With `flipflakeuv` it is set 2. In `airbrush.flipflakeuv` the mask stays on set 1 and the flakes use set 2.
-- **UVn** comes from a separate vertex input, the 7th texture-coordinate attribute. Which PMG UV set feeds it is U.
+- **UVn** is UV slot 6, the "UV Normal" stream (vertex attribute 14; [dif-spec.md](dif-spec.md) §3.2). The PMG set behind it is the piece's routing nibble 6 (H, [models.md](../../formats/models.md)).
 - (H) "UV set *n*" means the PMG's *n*-th UV set, counted from 0.
 - **Transforms.** In the vertex stage each UV set gets an engine-set scale and bias (C).
   - The PMG stores UVs as plain `f32` pairs (`docs/formats/models.md`, `pmg.rs`). So (H) that scale and bias is identity for our data, and we apply no transform.
@@ -146,10 +146,10 @@ The flakes change **only the specular colour and the specular power** of the sun
   - Next step: one REA regex run on `eurotrucks2.exe` over `flake_setup|flip_color|flake_light|flake_vratio|flip_strength|texture_reflection_modulator|paintjob_base_color`, then read the code that fills these uniforms.
 - The source of the flake light `X_fl, λ`: the sun, a camera light or a fixed light. The same REA run settles it.
 - When `flipflakeuv` is chosen instead of `flipflake`. Same REA run.
-- The PMG UV set behind `tsnmapuv`'s coordinate. Next step: compare the UV sets of a `tsnmapuv` model against its normal map in our PMG reader.
+- The PMG UV set behind `tsnmapuv`'s coordinate: now H, the piece's routing nibble 6 (§2).
 - Whether `D_blk` in the plain variant is `base_color` or `base_color ⊙ .mat diffuse`. Settled by the REA run, or by a parity screenshot of a plain-colour cab.
 - What the engine feeds a paint UV the mesh lacks (§2, "Missing UV set"). Next step: a parity screenshot of a Scania S masked cab against our render with the mask sampled at UV0. Or add the binding of UV sets to vertex inputs to the REA regex above.
-- The variants not read: `skinned` (135), `shadow` (132) and `asafew.a` (132). `asafew.a` is used on real trucks: the Volvo FH 2024 has a `tsnmapuv.asafew.a` paint material. (H) It is the alpha-tested form of the same maths, and `shadow` and `skinned` change only the pass setup or the vertex skinning. Next step: a second spec pass over one `asafew.a` effect and one `shadow` effect, diffed against the variants above.
+- **Read since (C):** `asafew.a` is the same maths with a discard when `B.a · c.a < 0.05`, in the forward and G-buffer passes (`truckpaint.tsnmapuv.asafew.a` diffed against `truckpaint.tsnmapuv`). `shadow` adds only a shadow-map depth pass; its colour passes are the plain ones. `skinned` (135) is not read (H: vertex skinning only). Sources: `research/evidence/shader-spec-glass-lamp-lum.txt`.
 
 ## 8. Implementation notes
 
