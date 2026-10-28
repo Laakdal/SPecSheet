@@ -23,6 +23,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Name:** the app is now called **SpecSheet** (tagline "SpecSheet: ETS2 Save Edit"). The window title, top-bar brand, installer product name and app identifier (`dev.specsheet.app`) are updated. Settings saved under the old identifier are not migrated, so the game directory is detected again on first launch.
 
 ### Added
+- **Reflections:** the truck's reflection cube from the game (e.g. `fuzzy_reflection.tobj`) replaces the grey gradient as the environment map, so chrome and paint reflect the game's own environment.
 - Addon hookups (accessories on accessories: aux lights, beacons, horns, small lights): catalogue, configuration rules, placement on the host's `slot_NN` positions, and loading from game configs (`load_vehicle_config`).
 - **Archives:** read-only HashFS v2 (`.scs`) reader.
   - CityHash64 v1.0.3 path hashing.
