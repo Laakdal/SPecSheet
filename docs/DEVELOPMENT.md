@@ -158,7 +158,7 @@ cargo run --release -p specsheet-research --example save_check -- "<home>/profil
 cargo run --release -p specsheet-research --example mod_names -- [--list] [--others "<home>/mod"] [--paths <file>] "<home>/mod/<package>.scs" ...
 
 # Mod extraction (D19): write a v1 or ZIP package's files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites
-cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--others "<home>/mod"] "<home>/mod/<package>.scs" <absolute destination>
+cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--others "<home>/mod"] "<home>/mod/<package>.scs" <absolute destination>
 
 # Mod writer: a test package (manifest + description, no game files) as <dir>/specsheet_test.scs; refuses if it exists
 cargo run --release -p specsheet-research --example mod_write -- <dir>

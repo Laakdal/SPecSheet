@@ -187,6 +187,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - Names from an archive are hostile input. A name that Windows cannot hold (reserved device names such as `CON` or `COM1` with any extension, a trailing dot or space, `<>:"|?*`, control characters, a part over 255 bytes) or that collides with another ignoring case is written under a safe name, and every such rename is listed in a mapping file at the destination root. References inside extracted files are not rewritten.
   - Entries without a recovered name (`specsheet-data::mod_names`) go to `_unnamed/<hash>.<extension from content>`; entries that cannot be read are listed in `_unreadable.txt`, so they are never mistaken for real files.
   - One entry is read and written at a time. A dry run prints the file count and total size first.
+  - An extraction is refused before anything is written when the declared sizes add up to more than a limit (64 GiB by default, set by the user), and stops if the bytes read pass it: entries that share data can declare far more than the archive holds. An entry is still held in memory whole (at most 2 GiB for ZIP); streaming it to disk needs a reader API we do not have yet.
   - The code is our own. From Extractor we take facts only (which paths exist, which naming rules hold), each confirmed on our own install before use (`research/evidence/`), as for TruckLib.
   - Extracted files never enter this repository; the pre-commit guard already rejects game files.
 - **Alternatives:**
