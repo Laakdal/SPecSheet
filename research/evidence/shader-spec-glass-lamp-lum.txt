@@ -120,3 +120,22 @@ Not read: lamp.anim*, dif.lum.spec*, unlit *.awhite*, light.tex.ls{bounce,direct
 Wiki pages used (paraphrased in the specs, not copied)
   https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Supported_shaders
   https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Materials/Lamp_system
+
+UV slots read by truckpaint (vertex objects of the forward pass)
+  eut2.truckpaint.airbrush          1d8e4844e3597d3aecddaf5dcc926495  attributes 8 (slot 0), 9 (slot 1)
+  eut2.truckpaint.airbrush.altuv    1b60b98c3732d205a6424da07e7b2be6  attributes 8 (slot 0), 10 (slot 2)
+  eut2.truckpaint.flipflakeuv       320e66c6f480b068cf5ac47ce3cd1cc4  attributes 8, 9, 10
+  (eut2.truckpaint.airbrush.flipflakeuv uses the same vertex object as flipflakeuv)
+
+luminance_output of the unlit and dif.lum materials in the garage scenes
+  Models: /model/ui/**/*.pmd (model_info, then scs cat of each .mat). 15 of their unlit
+  and dif.lum materials sampled, at least one per scene and effect:
+    luminance_output  materials  effects
+    -1                13         unlit.tex, unlit.tex.add, unlit.vcol.tex.over,
+                                 unlit.vcol.tex.decal.over, dif.lum, dif.lum.over,
+                                 dif.lum.add, dif.lum.lvcol
+     0                 2         dif.lum, dif.lum.add
+    10                 1         dif.lum.spec.lvcol
+   100                 1         unlit.vcol.tex.over (diffuse 0,0,0)
+  luminance_night is 0 in all 15. The -1 materials include the unlit background domes of
+  the halloween, northern-lights and xmas scenes, which are visible in the game.
