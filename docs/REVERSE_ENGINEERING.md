@@ -338,10 +338,14 @@ Facts only (D13); the format side is in [formats/paint.md](formats/paint.md).
 
   Each colour is sRGB-encoded, ×255 truncated, and written as `FF`+BB+GG+RR ([formats/paint.md](formats/paint.md#thumbnails-f17)).
 - **No builder call.** One caller (`0x1408cea60`) calls the builder only when the job has a mask, `flipflake`, `airbrush` or a base override; otherwise it calls `0x1408d0ea0` (Hypothesis: restores plain truckpaint). How a plain-colour job's colour reaches the shader is **Unknown**.
+- **UV sets (peer screen tests, consistent with the above).**
+  - The paint mask uses PMG UV set 1, and `altuv` uses set 2, counted from 0. Decided on the Actros 2014 Gigaspace with `bg_sml_m4_a` (airbrush, `alternate_uvset`; the cab paint piece has 3 UV sets): only set 2 puts the livery on the door.
+  - An earlier MAN TGX Euro 6 result that seemed to need the `.mat`'s own `altuv` was a coincidence: on those cabs both readings give the same set. The MAN cab is not in Altamira's `acc_list`, so it takes the job's main mask.
+- **No rescale.** The builder copies the record's colours and `flip_strength` into the constants unchanged. `flip_strength` therefore reaches the shader raw: up to 2.7 in the data.
 - **Unknown.**
   - Two of the five callers (`0x14068e680`, `0x1408d2740`) compute the `altuv`/`flipflakeuv` flags from other values.
-  - Peer data: on the MAN TGX Euro 6, Altamira draws correctly only with the cab `.mat`'s own `altuv` honoured, although the job sets no `alternate_uvset`. It is unresolved whether the cab is listed in the per-part file or one of those paths applies.
-  - How the shader combines the constants (D13: needs a clean-room spec).
+  - Which UV set is sampled when the model lacks the one named above (1-set and 2-set cabs).
+  - How the shader combines the constants, and whether it clamps `flip_strength` (D13: needs a clean-room spec).
 
 ## Open questions
 
