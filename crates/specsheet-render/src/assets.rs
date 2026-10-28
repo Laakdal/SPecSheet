@@ -754,6 +754,7 @@ mod tests {
             alternate_paint_uvs: None,
             colors: None,
             normal_uvs: Some(vec![[0.5; 2]; 3]),
+            mult_uvs: None,
             tangents: Some(vec![[1.0, 0.0, 0.0, -1.0]; 3]),
             indices: vec![0, 1, 2],
         }
@@ -802,6 +803,7 @@ mod tests {
             alternate_paint_uvs: None,
             colors: None,
             normal_uvs: None,
+            mult_uvs: None,
             tangents: None,
             indices,
         };

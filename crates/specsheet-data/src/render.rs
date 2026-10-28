@@ -162,6 +162,10 @@ pub struct MeshPiece {
     /// route slot 6 (Confirmed); that the normal map reads it is a
     /// Hypothesis (`research/evidence/pmg-uv-routing.txt`).
     pub normal_uvs: Option<Vec<[f32; 2]>>,
+    /// The UV set the piece routes to UV slot 1, which `texture_mult` (the
+    /// `mult` bases' baked occlusion) samples
+    /// (`docs/app/shader-specs/dif-spec-mult.md`).
+    pub mult_uvs: Option<Vec<[f32; 2]>>,
     /// Tangents as stored, `(x, y, z, w)` with `w = ±1` the handedness, if
     /// the piece has a tangent stream. Reversing the winding (see `indices`)
     /// leaves them unchanged.
@@ -180,6 +184,8 @@ pub struct MeshData {
 
 /// The UV slot of the "UV Normal" stream (`docs/formats/models.md`, piece +8).
 const NORMAL_UV_SLOT: usize = 6;
+/// The UV slot `texture_mult` samples.
+const MULT_UV_SLOT: usize = 1;
 
 /// The PMG UV set, counted from 0, that truck paint samples on a mesh with
 /// `sets` UV sets: set 1, or set 2 for `alternate_uvset` paint jobs
@@ -243,6 +249,11 @@ pub fn build_mesh(
             let sets = if painted { piece.uv_sets.len() } else { 0 };
             let paint_set = paint_uv_set(sets, false);
             let alternate_set = paint_uv_set(sets, true).filter(|&set| Some(set) != paint_set);
+            let slot_uvs = |slot| {
+                piece
+                    .uv_set_for_slot(slot)
+                    .and_then(|set| piece.uv_sets.get(set).cloned())
+            };
             pieces.push(MeshPiece {
                 material,
                 positions: piece.positions.clone(),
@@ -251,9 +262,8 @@ pub fn build_mesh(
                 paint_uvs: paint_set.and_then(|set| piece.uv_sets.get(set).cloned()),
                 alternate_paint_uvs: alternate_set.and_then(|set| piece.uv_sets.get(set).cloned()),
                 colors: vertex_colors(&piece.colors),
-                normal_uvs: piece
-                    .uv_set_for_slot(NORMAL_UV_SLOT)
-                    .and_then(|set| piece.uv_sets.get(set).cloned()),
+                normal_uvs: slot_uvs(NORMAL_UV_SLOT),
+                mult_uvs: slot_uvs(MULT_UV_SLOT),
                 tangents: piece.tangents.clone(),
                 indices,
             });
