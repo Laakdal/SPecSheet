@@ -27,6 +27,10 @@ const UNREADABLE: &str = "_unreadable.txt";
 const UNNAMED: &str = "_unnamed";
 /// Longest name part Windows file systems hold.
 const MAX_PART: usize = 255;
+/// Default limit on the bytes one extraction writes, against archives whose
+/// entries share data to declare far more than the file holds. The largest
+/// package on the test install unpacks to about 8.7 GB.
+pub const DEFAULT_MAX_BYTES: u64 = 64 << 30;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ExtractError {
@@ -34,6 +38,8 @@ pub enum ExtractError {
     Protected { dest: PathBuf, protected: PathBuf },
     #[error("destination {0} is not empty; choose an empty folder or skip existing files")]
     NotEmpty(PathBuf),
+    #[error("the archive would write {total} bytes, over the limit of {limit}")]
+    TooLarge { total: u64, limit: u64 },
     #[error("destination {0} must be an absolute path without `..`")]
     BadDestination(PathBuf),
     #[error("I/O error on {path}: {source}")]
@@ -55,12 +61,25 @@ pub enum Archive<'a> {
     Zip(&'a ZipArchive),
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct ExtractOptions {
     /// Count and plan only; write nothing.
     pub dry_run: bool,
     /// Accept a non-empty destination and leave files that exist alone.
     pub skip_existing: bool,
+    /// Refuse before writing when the declared sizes add up to more, and
+    /// stop if the bytes read do.
+    pub max_bytes: u64,
+}
+
+impl Default for ExtractOptions {
+    fn default() -> Self {
+        Self {
+            dry_run: false,
+            skip_existing: false,
+            max_bytes: DEFAULT_MAX_BYTES,
+        }
+    }
 }
 
 /// What an extraction did (or, in a dry run, would do).
@@ -176,6 +195,15 @@ fn run(
         return Err(ExtractError::NotEmpty(root));
     }
     let mut items = source.items();
+    let declared = items
+        .iter()
+        .fold(0u64, |sum, item| sum.saturating_add(item.size));
+    if declared > options.max_bytes {
+        return Err(ExtractError::TooLarge {
+            total: declared,
+            limit: options.max_bytes,
+        });
+    }
     items.sort_by(|a, b| a.path.cmp(&b.path).then(a.key.cmp(&b.key)));
     let mut layout = Layout::default();
     for reserved in [RENAMED, UNREADABLE] {
@@ -219,6 +247,14 @@ fn run(
             done.bytes += item.size;
             continue;
         };
+        // Declared sizes may understate what an entry unpacks to.
+        let total = done.bytes.saturating_add(bytes.len() as u64);
+        if total > options.max_bytes {
+            return Err(ExtractError::TooLarge {
+                total,
+                limit: options.max_bytes,
+            });
+        }
         let target = rel.split('/').fold(root.clone(), |p, part| p.join(part));
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent).map_err(io(parent))?;
@@ -638,6 +674,29 @@ mod tests {
             Err(ExtractError::BadDestination(_))
         ));
         assert!(fs::read_dir(&game).unwrap().next().is_none());
+    }
+
+    #[test]
+    fn refuses_an_archive_over_the_size_limit_before_writing() {
+        let dir = TempDir::new("limit");
+        let dest = dir.0.join("out");
+        let source = Fake(vec![
+            (Some("a.bin"), Some(b"0123456789")),
+            (Some("b.bin"), Some(b"0123456789")),
+        ]);
+        let options = ExtractOptions {
+            max_bytes: 15,
+            ..Default::default()
+        };
+        let result = run(&source, &dest, &[], options);
+        assert!(matches!(
+            result,
+            Err(ExtractError::TooLarge {
+                total: 20,
+                limit: 15
+            })
+        ));
+        assert!(!dest.exists());
     }
 
     #[test]

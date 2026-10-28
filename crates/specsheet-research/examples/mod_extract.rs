@@ -4,10 +4,11 @@
 //! and, with `--others <dir>`, the paths that the other packages in `<dir>`
 //! mention. The destination must be absolute and may not overlap the game
 //! install, the ETS2 home folder, the folder holding the package, or this
-//! repository. Nothing is overwritten.
+//! repository. Nothing is overwritten, and an archive that would write
+//! more than `--max-gb` (default 64 GiB) is refused.
 //!
 //! Usage (ETS2_DIR set, or the install is discovered):
-//!   cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--others <dir>] <package> <destination>
+//!   cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--others <dir>] <package> <destination>
 
 use std::path::{Path, PathBuf};
 
@@ -56,13 +57,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             String::new()
         })
     };
-    let options = ExtractOptions {
+    let mut options = ExtractOptions {
         dry_run: flag("--dry-run", false).is_some(),
         skip_existing: flag("--skip-existing", false).is_some(),
+        ..ExtractOptions::default()
     };
+    if let Some(gb) = flag("--max-gb", true) {
+        options.max_bytes = gb.parse::<u64>()?.saturating_mul(1 << 30);
+    }
     let others = flag("--others", true);
     let [package, dest] = <[String; 2]>::try_from(args).map_err(|_| {
-        "usage: mod_extract [--dry-run] [--skip-existing] [--others <dir>] <package> <destination>"
+        "usage: mod_extract [--dry-run] [--skip-existing] [--max-gb <n>] [--others <dir>] <package> <destination>"
     })?;
     let package = PathBuf::from(package);
 
