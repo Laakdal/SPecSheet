@@ -9,9 +9,9 @@ use specsheet_truck::{
     DEFAULT_FLAKE_COLOR, DEFAULT_FLIP_COLOR,
 };
 
-use crate::assembly::Drive;
-use crate::pins;
-use crate::session::{GameSession, SlotOption, TruckSession};
+use crate::{GameSession, SlotOption, TruckSession};
+use specsheet_assembly::pins;
+use specsheet_assembly::Drive;
 
 /// A tab of the game's truck configuration screen (finding F5). The tab
 /// row's `value_list` names them; [`Tab::from_token`] reads those names.

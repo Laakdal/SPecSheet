@@ -12,6 +12,9 @@ specsheet-archive = { path = "../specsheet-archive" }
 specsheet-formats = { path = "../specsheet-formats" }
 specsheet-truck = { path = "../specsheet-truck" }
 specsheet-data = { path = "../specsheet-data" }
+specsheet-assembly = { path = "../specsheet-assembly" }
+specsheet-gameui = { path = "../specsheet-gameui" }
+specsheet-session = { path = "../specsheet-session" }
 
 [lints]
 workspace = true

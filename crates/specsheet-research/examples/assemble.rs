@@ -4,7 +4,7 @@
 
 use std::collections::BTreeSet;
 
-use specsheet_data::assembly::{assemble, Drive};
+use specsheet_assembly::{assemble, Drive};
 use specsheet_data::model::ModelCache;
 use specsheet_data::render::{build_mesh, load_texture};
 use specsheet_data::{load_catalog, load_preset, GameFs, GameInstall};

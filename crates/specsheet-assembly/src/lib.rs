@@ -24,6 +24,9 @@ mod interior;
 mod transform;
 mod wheels;
 
+pub mod pins;
+pub mod slots;
+
 use std::collections::BTreeMap;
 
 use specsheet_formats::pmg::Locator;
@@ -36,15 +39,15 @@ pub use base::slot_availability;
 pub use hookups::HookupPosition;
 pub use transform::Transform;
 
-use crate::fs::GameFs;
-use crate::model::ModelCache;
-use crate::pins::{self, PinBases};
+use crate::pins::PinBases;
 use crate::slots::locators_by_slot;
 use anchors::{anchors, placed_boxes};
 use base::{addon_slots, base_layout};
 use cockpit::{cockpit_locators, cockpit_slots, interior_part_placements, interior_slots};
 use hookups::hookup_placements;
 use interior::interior_placements;
+use specsheet_data::model::ModelCache;
+use specsheet_data::GameFs;
 use wheels::wheel_placements;
 
 /// One model instance of the assembled truck.

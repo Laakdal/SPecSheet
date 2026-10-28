@@ -7,8 +7,8 @@ use specsheet_formats::pmg::Locator;
 use specsheet_truck::{Configuration, SlotId, TruckCatalog};
 
 use super::{Placement, Transform};
-use crate::fs::GameFs;
-use crate::model::ModelCache;
+use specsheet_data::model::ModelCache;
+use specsheet_data::GameFs;
 
 /// Prefix of the hookup position locators on host accessory models.
 const HOOKUP_LOCATOR: &str = "slot_";

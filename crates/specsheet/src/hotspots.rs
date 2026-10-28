@@ -1,7 +1,7 @@
 //! Pins over the 3D view, drawn the game's way (finding F5,
 //! `research/evidence/pin-attributes.txt`):
 //! * each pin fades with the angle between its facing and the camera's view
-//!   axis ([`specsheet_data::pins::opacity`]);
+//!   axis ([`specsheet_assembly::pins::opacity`]);
 //! * a wheel's hub, cover and nut pins show only while that wheel's disc
 //!   pin is open;
 //! * nearby pins never merge and there is no depth test against the truck.
@@ -13,7 +13,7 @@ use bevy::math::Vec3;
 /// towards the camera.
 pub fn opacity(facing: Option<Vec3>, view_axis: Vec3) -> f32 {
     facing.map_or(1.0, |f| {
-        specsheet_data::pins::opacity(f.to_array(), view_axis.to_array())
+        specsheet_assembly::pins::opacity(f.to_array(), view_axis.to_array())
     })
 }
 

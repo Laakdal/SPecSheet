@@ -17,6 +17,9 @@ const LAYERS: &[(&str, u8)] = &[
     ("specsheet-formats", 0),
     ("specsheet-truck", 0),
     ("specsheet-data", 1),
+    ("specsheet-gameui", 2),
+    ("specsheet-assembly", 2),
+    ("specsheet-session", 3),
     ("specsheet-research", 8),
     ("specsheet", 9),
     ("xtask", 0),
@@ -90,7 +93,7 @@ fn check(root: &Path, real: bool) -> Result<(), String> {
 }
 
 /// The crate that holds `tests/real_install.rs`.
-const REAL_INSTALL_CRATE: &str = "specsheet-data";
+const REAL_INSTALL_CRATE: &str = "specsheet-session";
 
 fn run(root: &Path, program: &str, args: &[&str]) -> Result<(), String> {
     println!("xtask: {program} {}", args.join(" "));

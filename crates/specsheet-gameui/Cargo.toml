@@ -1,0 +1,15 @@
+[package]
+name = "specsheet-gameui"
+version = "0.1.0"
+description = "The game's UI files laid out: screens, templates, colours and the markup flow, independent of trucks."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+specsheet-data = { path = "../specsheet-data" }
+specsheet-formats = { path = "../specsheet-formats" }
+
+[lints]
+workspace = true

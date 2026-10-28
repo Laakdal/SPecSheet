@@ -19,7 +19,7 @@ use specsheet_data::render::{
     build_mesh, load_texture, texture_block_bytes, BlendMode, CubeTextureData, MaterialInfo,
     MeshData, MeshPiece, MipLevel, TextureData, TextureFormat,
 };
-use specsheet_data::session::GameSession;
+use specsheet_session::GameSession;
 
 use crate::render::PaintSurface;
 

@@ -110,7 +110,7 @@ fn every_truck_model_parses() {
 
 #[test]
 fn every_preset_validates_and_assembles_without_warnings() {
-    use specsheet_data::assembly::{assemble, Drive};
+    use specsheet_assembly::{assemble, Drive};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{list_trucks, load_catalog, load_preset};
     use specsheet_truck::SlotId;
@@ -161,7 +161,7 @@ fn every_preset_validates_and_assembles_without_warnings() {
             }
             // Every wheel gets its own tyre pin (F5): the pin table's tyre
             // entries are double-sided, so both sides of every axle.
-            let pins = specsheet_data::pins::pins(&pin_table, &assembly.pin_bases, drive);
+            let pins = specsheet_assembly::pins::pins(&pin_table, &assembly.pin_bases, drive);
             let wheels: usize = assembly.pin_bases.wheels.iter().map(|(_, w)| w.len()).sum();
             let tyres = pins
                 .iter()
@@ -196,7 +196,7 @@ fn the_truck_configuration_screen_has_a_scene_orbit_and_pins() {
 
 #[test]
 fn the_truck_configuration_screen_layouts_and_templates_load() {
-    use specsheet_data::ui;
+    use specsheet_gameui as ui;
     let Some(fs) = game_fs() else { return };
     let screen = ui::load_screen(&fs, "truck.config").expect("screen");
     assert!(!screen.layouts.is_empty());
@@ -221,8 +221,8 @@ fn the_truck_configuration_screen_layouts_and_templates_load() {
 
 #[test]
 fn every_ui_template_parses_and_the_tuning_screen_lays_out() {
-    use specsheet_data::ui::{self, flow};
     use specsheet_formats::ui_markup;
+    use specsheet_gameui::{self as ui, flow};
     let Some(fs) = game_fs() else { return };
     let (templates, _) = ui::load_templates(&fs).expect("templates");
     let mut failures: Vec<String> = templates
@@ -315,7 +315,8 @@ fn every_ui_template_parses_and_the_tuning_screen_lays_out() {
 
 #[test]
 fn every_accessory_icon_material_names_an_existing_texture() {
-    use specsheet_data::{list_trucks, load_catalog, ui};
+    use specsheet_data::{list_trucks, load_catalog};
+    use specsheet_gameui as ui;
     let Some(fs) = game_fs() else { return };
     let mut icons = std::collections::BTreeSet::new();
     for truck in list_trucks(&fs).expect("trucks") {
@@ -372,7 +373,7 @@ fn every_tuning_scene_has_a_model_and_a_camera() {
 /// `tire_shift`.
 #[test]
 fn every_preset_wheel_sits_in_its_tyre() {
-    use specsheet_data::assembly::{assemble, Drive, Placement};
+    use specsheet_assembly::{assemble, Drive, Placement};
     use specsheet_data::model::{Model, ModelCache};
     use specsheet_data::{list_trucks, load_catalog, load_preset};
     use specsheet_truck::WheelPart;
@@ -487,7 +488,7 @@ fn every_preset_wheel_sits_in_its_tyre() {
 
 #[test]
 fn configured_hookups_sit_on_their_host_model() {
-    use specsheet_data::assembly::{assemble, Drive};
+    use specsheet_assembly::{assemble, Drive};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{load_catalog, load_vehicle_config};
     use specsheet_truck::{SlotId, TruckId};
@@ -661,9 +662,9 @@ fn every_chassis_has_one_wheel_pair_per_declared_axle() {
 
 #[test]
 fn every_slot_with_a_choice_is_reachable_on_the_tuning_screen() {
-    use specsheet_data::assembly::Drive;
-    use specsheet_data::session::GameSession;
-    use specsheet_data::view;
+    use specsheet_assembly::Drive;
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
     if std::env::var_os("ETS2_DIR").is_none() {
         return;
     }
@@ -707,9 +708,9 @@ fn every_slot_with_a_choice_is_reachable_on_the_tuning_screen() {
 
 #[test]
 fn choosing_an_interior_chooses_the_drive_side() {
-    use specsheet_data::assembly::Drive;
-    use specsheet_data::session::GameSession;
-    use specsheet_data::view;
+    use specsheet_assembly::Drive;
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
     use specsheet_truck::AccessoryKind;
     if std::env::var_os("ETS2_DIR").is_none() {
         return;
@@ -750,9 +751,9 @@ fn choosing_an_interior_chooses_the_drive_side() {
 
 #[test]
 fn every_preset_has_a_cockpit_at_the_eye_point() {
-    use specsheet_data::assembly::Drive;
-    use specsheet_data::session::GameSession;
-    use specsheet_data::view;
+    use specsheet_assembly::Drive;
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
     if std::env::var_os("ETS2_DIR").is_none() {
         return;
     }
@@ -1010,7 +1011,7 @@ fn every_desktop_preset_loads_its_paint_colours() {
 
 #[test]
 fn a_cabin_change_keeps_the_paint_job_design() {
-    use specsheet_data::assembly::{slot_availability, Drive};
+    use specsheet_assembly::{slot_availability, Drive};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{load_catalog, load_preset};
     use specsheet_truck::{AccessoryId, Configuration, TruckId};

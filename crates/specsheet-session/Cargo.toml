@@ -1,0 +1,20 @@
+[package]
+name = "specsheet-session"
+version = "0.1.0"
+description = "What is being edited: the game and truck sessions (options, selection, hookups, drive) and the display views."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+specsheet-assembly = { path = "../specsheet-assembly" }
+specsheet-data = { path = "../specsheet-data" }
+specsheet-truck = { path = "../specsheet-truck" }
+
+[dev-dependencies]
+specsheet-formats = { path = "../specsheet-formats" }
+specsheet-gameui = { path = "../specsheet-gameui" }
+
+[lints]
+workspace = true

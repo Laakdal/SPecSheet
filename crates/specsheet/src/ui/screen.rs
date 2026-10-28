@@ -6,13 +6,13 @@
 
 use bevy_egui::egui::{self, Align2, Color32, FontId, Id, Pos2, Sense};
 use specsheet_data::localization::Localization;
-use specsheet_data::session::GameSession;
-use specsheet_data::ui::flow::{self, Font, Item, Measure};
-use specsheet_data::ui::{
+use specsheet_gameui::flow::{self, Font, Item, Measure};
+use specsheet_gameui::{
     substitute, KeepAspect, Layout, Rect, Screen, Templates, Widget, REFERENCE_HEIGHT,
     REFERENCE_WIDTH,
 };
-use specsheet_data::view::{tab_slots, OptionView, SlotOptions, Tab, TabSlot, TruckOverview};
+use specsheet_session::view::{tab_slots, OptionView, SlotOptions, Tab, TabSlot, TruckOverview};
+use specsheet_session::GameSession;
 use specsheet_truck::{AccessoryId, SlotId};
 
 use super::textures::UiTextures;
@@ -660,7 +660,7 @@ fn slot_tiles(
 /// `btn.truck_acc` arguments: name, icon, info, price, new badge alpha,
 /// owned badge alpha, (disabled) reason; `%8`/`%9` are not filled yet.
 fn tile_markup(
-    button: &specsheet_data::ui::ButtonTemplate,
+    button: &specsheet_gameui::ButtonTemplate,
     option: &OptionView,
     hovered: bool,
 ) -> String {

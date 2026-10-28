@@ -6,10 +6,10 @@
 
 use std::collections::BTreeMap;
 
-use specsheet_data::assembly::Drive;
-use specsheet_data::session::GameSession;
-use specsheet_data::view::{self, HotspotCategory};
+use specsheet_assembly::Drive;
 use specsheet_data::GameInstall;
+use specsheet_session::view::{self, HotspotCategory};
+use specsheet_session::GameSession;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let game = GameSession::open(GameInstall::discover()?)?;

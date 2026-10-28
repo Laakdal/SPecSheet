@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use specsheet_formats::mat::Material;
 use specsheet_formats::sii::{resolve_relative, SiiDocument, Unit};
 
-use crate::error::{GameDataError, Result};
-use crate::fs::GameFs;
+use specsheet_data::GameFs;
+use specsheet_data::{GameDataError, Result};
 
 /// Screen descriptions (`screen_desc` units, with includes).
 const SCREEN_DESC: &str = "/ui/!desc.sii";

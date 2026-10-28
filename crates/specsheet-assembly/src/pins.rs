@@ -18,8 +18,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use specsheet_formats::pmg::Locator;
 use specsheet_truck::SlotId;
 
-use crate::assembly::Drive;
-use crate::scene::PinSpec;
+use crate::Drive;
+use specsheet_data::scene::PinSpec;
 
 /// Wheel pin types in the order the game builds them. Rims and complete
 /// wheels (`f_wheel`, `r_wheel`) never get a pin.

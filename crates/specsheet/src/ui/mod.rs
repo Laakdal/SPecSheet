@@ -16,9 +16,9 @@ use bevy_egui::{
     egui, EguiContexts, EguiGlobalSettings, EguiPrimaryContextPass, PrimaryEguiContext,
 };
 use egui::{Align2, Color32, Id, Order, Pos2, RichText, Sense, Stroke};
-use specsheet_data::assembly::Drive;
-use specsheet_data::ui::{load_screen, load_templates};
-use specsheet_data::view::{Hotspot, HotspotCategory, Tab, TruckOverview};
+use specsheet_assembly::Drive;
+use specsheet_gameui::{load_screen, load_templates};
+use specsheet_session::view::{Hotspot, HotspotCategory, Tab, TruckOverview};
 
 use crate::hotspots::{opacity, open_after_click, shown};
 use crate::studio::{Action, Actions, Studio};

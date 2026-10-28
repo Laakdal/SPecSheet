@@ -7,9 +7,9 @@ use specsheet_formats::pmg::{Aabb, Locator};
 use specsheet_truck::{Configuration, SlotAvailability, SlotId, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
-use crate::fs::GameFs;
-use crate::model::ModelCache;
 use crate::slots::locators_by_slot;
+use specsheet_data::model::ModelCache;
+use specsheet_data::GameFs;
 
 /// Base models (chassis, cabin) of a configuration: their placements,
 /// visible locators and bounding boxes.

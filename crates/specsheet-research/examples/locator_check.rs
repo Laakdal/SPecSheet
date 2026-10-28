@@ -3,8 +3,8 @@
 
 use std::collections::BTreeSet;
 
+use specsheet_assembly::slots::locators_by_slot;
 use specsheet_data::model::ModelCache;
-use specsheet_data::slots::locators_by_slot;
 use specsheet_data::{list_trucks, load_catalog, load_preset, GameFs, GameInstall};
 use specsheet_truck::{AccessoryKind, SlotId};
 
@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .filter(|l| {
                 !exterior_slots
                     .iter()
-                    .any(|s| specsheet_data::slots::matches_slot(s.as_str(), &l.name))
+                    .any(|s| specsheet_assembly::slots::matches_slot(s.as_str(), &l.name))
             })
             .map(|l| l.name.as_str())
             .collect();

@@ -1,6 +1,8 @@
 //! Application-facing orchestration: one mounted installation
-//! ([`GameSession`]) and the truck currently being tuned ([`TruckSession`]).
-//! UI layers translate these into their own transport types.
+//! ([`GameSession`]) and the truck currently being tuned ([`TruckSession`]),
+//! plus presentation-neutral display data in [`view`] (labels, tabs, pins,
+//! incompatibility reasons). UI layers translate these into their own
+//! transport types.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -10,14 +12,16 @@ use specsheet_truck::{
     Incompatibility, SlotId, TruckCatalog, TruckId,
 };
 
-use crate::assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
-use crate::catalog::{list_trucks, load_catalog, load_preset, LoadWarning, TruckSummary};
-use crate::error::Result;
-use crate::fs::GameFs;
-use crate::install::GameInstall;
-use crate::localization::Localization;
-use crate::model::ModelCache;
-use crate::scene::{list_scenes, tuning_scene, PinSpec, Scene};
+use specsheet_assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
+use specsheet_data::localization::Localization;
+use specsheet_data::model::ModelCache;
+use specsheet_data::scene::{list_scenes, tuning_scene, PinSpec, Scene};
+use specsheet_data::GameFs;
+use specsheet_data::GameInstall;
+use specsheet_data::Result;
+use specsheet_data::{list_trucks, load_catalog, load_preset, LoadWarning, TruckSummary};
+
+pub mod view;
 
 const LANGUAGE: &str = "en_us";
 

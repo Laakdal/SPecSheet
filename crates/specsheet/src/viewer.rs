@@ -16,7 +16,7 @@ use bevy::render::settings::WgpuFeatures;
 use bevy::render::storage::ShaderBuffer;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
-use specsheet_data::assembly::Placement;
+use specsheet_assembly::Placement;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 

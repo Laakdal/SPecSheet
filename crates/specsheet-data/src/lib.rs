@@ -1,8 +1,9 @@
 //! Game data layer: finds the ETS2 installation, mounts its archives and
 //! turns game files into the domain types of `specsheet-truck` and into
-//! renderer-independent meshes. Never writes to the installation.
+//! renderer-independent meshes. Never writes to the installation. Assembly,
+//! the game's UI files and the tuning session build on it in their own
+//! crates (`specsheet-assembly`, `specsheet-gameui`, `specsheet-session`).
 
-pub mod assembly;
 mod catalog;
 mod error;
 mod fs;
@@ -11,13 +12,8 @@ pub mod localization;
 pub mod mod_names;
 pub mod model;
 pub mod paint;
-pub mod pins;
 pub mod render;
 pub mod scene;
-pub mod session;
-pub mod slots;
-pub mod ui;
-pub mod view;
 
 pub use catalog::{
     list_trucks, load_catalog, load_preset, load_vehicle_config, LoadWarning, TruckSummary,

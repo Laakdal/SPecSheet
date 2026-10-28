@@ -20,7 +20,7 @@ use specsheet_data::paint::{Mask, PiecePaint};
 use specsheet_data::render::{
     load_cube_texture, load_texture, CubeTextureData, MaterialInfo, TextureData,
 };
-use specsheet_data::session::GameSession;
+use specsheet_session::GameSession;
 
 use crate::assets;
 

@@ -7,8 +7,8 @@ use std::collections::HashMap;
 
 use bevy_egui::egui;
 use specsheet_data::render::{load_texture, TextureData, TextureFormat};
-use specsheet_data::session::GameSession;
-use specsheet_data::ui::load_ui_material;
+use specsheet_gameui::load_ui_material;
+use specsheet_session::GameSession;
 
 pub struct UiTexture {
     pub id: egui::TextureId,

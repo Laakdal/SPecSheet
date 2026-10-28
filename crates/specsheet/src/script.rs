@@ -17,8 +17,8 @@ use std::path::PathBuf;
 
 use bevy::prelude::*;
 use bevy::render::view::screenshot::{save_to_disk, Screenshot};
-use specsheet_data::assembly::Drive;
-use specsheet_data::view::Tab;
+use specsheet_assembly::Drive;
+use specsheet_session::view::Tab;
 use specsheet_truck::{AccessoryId, SlotId, TruckId};
 
 use crate::studio::{Action, Actions, FrameSet, Studio};

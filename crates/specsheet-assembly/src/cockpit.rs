@@ -10,9 +10,9 @@ use specsheet_formats::pmg::Locator;
 use specsheet_truck::{Accessory, AccessoryKind, SlotId, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
-use crate::fs::GameFs;
-use crate::model::ModelCache;
 use crate::slots::locators_by_slot;
+use specsheet_data::model::ModelCache;
+use specsheet_data::GameFs;
 
 /// The cockpit's visible locators, moved into truck space.
 pub(super) fn cockpit_locators(

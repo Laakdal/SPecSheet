@@ -7,8 +7,8 @@ use specsheet_truck::SlotId;
 
 use super::transform::transform_aabb;
 use super::Placement;
-use crate::fs::GameFs;
-use crate::model::ModelCache;
+use specsheet_data::model::ModelCache;
+use specsheet_data::GameFs;
 
 /// Where a slot's clickable marker sits, in truck space.
 #[derive(Clone, Debug, PartialEq)]

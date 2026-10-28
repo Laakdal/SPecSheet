@@ -4848,7 +4848,10 @@ dependencies = [
  "image",
  "serde",
  "serde_json",
+ "specsheet-assembly",
  "specsheet-data",
+ "specsheet-gameui",
+ "specsheet-session",
  "specsheet-truck",
 ]
 
@@ -4859,6 +4862,15 @@ dependencies = [
  "flate2",
  "gdeflate",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "specsheet-assembly"
+version = "0.1.0"
+dependencies = [
+ "specsheet-data",
+ "specsheet-formats",
+ "specsheet-truck",
 ]
 
 [[package]]
@@ -4882,12 +4894,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "specsheet-gameui"
+version = "0.1.0"
+dependencies = [
+ "specsheet-data",
+ "specsheet-formats",
+]
+
+[[package]]
 name = "specsheet-research"
 version = "0.1.0"
 dependencies = [
  "specsheet-archive",
+ "specsheet-assembly",
  "specsheet-data",
  "specsheet-formats",
+ "specsheet-gameui",
+ "specsheet-session",
+ "specsheet-truck",
+]
+
+[[package]]
+name = "specsheet-session"
+version = "0.1.0"
+dependencies = [
+ "specsheet-assembly",
+ "specsheet-data",
+ "specsheet-formats",
+ "specsheet-gameui",
  "specsheet-truck",
 ]
 
