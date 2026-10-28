@@ -14,6 +14,7 @@ use bevy::prelude::*;
 use bevy::render::renderer::RenderDevice;
 use bevy::render::settings::WgpuFeatures;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
+use bevy::window::PrimaryWindow;
 use specsheet_data::assembly::Placement;
 use specsheet_data::scene::{OrbitSpec, Scene};
 
@@ -72,7 +73,14 @@ pub struct Orbit {
     pub max_distance: f32,
     pub min_pitch: f32,
     pub max_pitch: f32,
+    /// Box the target may be panned within.
+    pub target_min: Vec3,
+    pub target_max: Vec3,
 }
+
+/// How far a panned target may move from a scene camera's aim when the
+/// scene sets no bounds.
+const DEFAULT_PAN_REACH: f32 = 10.0;
 
 const MIN_DISTANCE: f32 = 2.5;
 const MAX_DISTANCE: f32 = 25.0;
@@ -94,6 +102,8 @@ impl Orbit {
             max_distance: MAX_DISTANCE.max(distance),
             min_pitch: MIN_PITCH,
             max_pitch: MAX_PITCH,
+            target_min: target - Vec3::splat(DEFAULT_PAN_REACH),
+            target_max: target + Vec3::splat(DEFAULT_PAN_REACH),
         };
         orbit.clamped()
     }
@@ -113,12 +123,29 @@ impl Orbit {
             (MIN_PITCH, MAX_PITCH)
         };
         let target = Vec3::from(spec.aim);
+        let target = if target.is_finite() {
+            target
+        } else {
+            DEFAULT_TARGET
+        };
+        // The target stays within `camera_relative_bounds` around the aim,
+        // and its height within `camera_aim_y_bounds` (Hypothesis).
+        let reach = Vec3::from(spec.relative_bounds);
+        let reach = if reach.is_finite() {
+            reach.abs()
+        } else {
+            Vec3::splat(DEFAULT_PAN_REACH)
+        };
+        let [y_low, y_high] = spec.aim_y_bounds;
+        let (y_min, y_max) = if y_low.is_finite() && y_high.is_finite() {
+            (y_low.min(y_high), y_low.max(y_high))
+        } else {
+            (target.y - reach.y, target.y + reach.y)
+        };
         let orbit = Self {
-            target: if target.is_finite() {
-                target
-            } else {
-                DEFAULT_TARGET
-            },
+            target_min: Vec3::new(target.x - reach.x, y_min.min(target.y), target.z - reach.z),
+            target_max: Vec3::new(target.x + reach.x, y_max.max(target.y), target.z + reach.z),
+            target,
             yaw: finite(spec.azimuth, 0.0),
             pitch: finite(-spec.elevation, min_pitch),
             distance,
@@ -130,6 +157,7 @@ impl Orbit {
     }
 
     fn clamped(mut self) -> Self {
+        self.target = self.target.clamp(self.target_min, self.target_max);
         self.pitch = self.pitch.clamp(self.min_pitch, self.max_pitch);
         self.distance = self.distance.clamp(MIN_DISTANCE, self.max_distance);
         self
@@ -472,6 +500,7 @@ fn apply_scene(
     mut truck: Single<&mut Transform, (With<TruckRoot>, Without<Sun>)>,
     mut floor: Single<&mut Visibility, With<FallbackFloor>>,
     scene_root: Single<Entity, With<SceneRoot>>,
+    mut input: ResMut<ViewportInput>,
 ) {
     let (camera_entity, mut orbit, mut projection) = camera.into_inner();
     if state.generation != studio.scene_generation {
@@ -486,6 +515,7 @@ fn apply_scene(
                 Some(spec) => Orbit::from_spec(spec),
                 None => Orbit::from_pose(Vec3::from(pose.position), Vec3::from(pose.aim)),
             };
+            input.home = Some(*orbit);
             if let Projection::Perspective(perspective) = &mut *projection {
                 perspective.fov = pose.fov.to_radians();
             }
@@ -606,25 +636,45 @@ pub struct ViewportInput {
     /// The pointer is over the 3D view and no marker or panel.
     pub hovered: bool,
     dragging: bool,
+    /// Cursor position last frame, for drag deltas.
+    last_cursor: Option<Vec2>,
+    /// The scene's default view, restored with Home.
+    home: Option<Orbit>,
 }
 
-/// Left drag rotates, right or middle drag pans, the wheel zooms.
+/// Left drag rotates, right or middle drag pans, the wheel zooms, Home
+/// restores the scene's view. Drags follow the cursor inside the window, so
+/// a release the window never sees (outside it, or after losing focus) can
+/// not leave the camera following the mouse.
 fn orbit_camera(
     buttons: Res<ButtonInput<MouseButton>>,
-    motion: Res<AccumulatedMouseMotion>,
+    keys: Res<ButtonInput<KeyCode>>,
     scroll: Res<AccumulatedMouseScroll>,
+    window: Single<&Window, With<PrimaryWindow>>,
     mut input: ResMut<ViewportInput>,
     camera: Single<(&mut Orbit, &mut Transform, &Projection)>,
 ) {
     let (mut orbit, mut transform, projection) = camera.into_inner();
     let pressed = [MouseButton::Left, MouseButton::Right, MouseButton::Middle];
-    if buttons.any_just_pressed(pressed) && input.hovered {
+    let cursor = window.cursor_position().filter(|_| window.focused);
+    if buttons.any_just_pressed(pressed) && input.hovered && cursor.is_some() {
         input.dragging = true;
     }
-    if !buttons.any_pressed(pressed) {
+    if !buttons.any_pressed(pressed) || cursor.is_none() {
         input.dragging = false;
     }
+    let delta = match (input.dragging, cursor, input.last_cursor) {
+        (true, Some(now), Some(before)) => now - before,
+        _ => Vec2::ZERO,
+    };
+    input.last_cursor = cursor;
     let mut next = *orbit;
+    if keys.just_pressed(KeyCode::Home) {
+        if let Some(home) = input.home {
+            next = home;
+        }
+    }
+    let motion = AccumulatedMouseMotion { delta };
     if input.dragging && motion.delta != Vec2::ZERO {
         if buttons.pressed(MouseButton::Left) {
             next.yaw -= motion.delta.x * ROTATE_SPEED;
@@ -676,6 +726,29 @@ mod tests {
         let orbit = Orbit::from_spec(&spec);
         assert!(orbit.position().distance(Vec3::from(spec.position())) < 1e-4);
         assert_eq!((orbit.min_pitch, orbit.max_pitch), (0.0, 0.35));
+    }
+
+    #[test]
+    fn panning_stays_within_the_scene_bounds() {
+        let spec = OrbitSpec {
+            aim: [0.0, 2.6, -1.465],
+            fov: 50.0,
+            azimuth: -2.516,
+            elevation: -0.068,
+            zoom: 1.0,
+            elevation_limit: [-0.35, 0.0],
+            relative_bounds: [7.5; 3],
+            aim_y_bounds: [-8.0, 10.0],
+            rotation_sensitivity: 0.2,
+            zoom_sensitivity: 0.2,
+        };
+        let mut orbit = Orbit::from_spec(&spec);
+        orbit.target = Vec3::new(1000.0, -1000.0, 1000.0);
+        let orbit = orbit.clamped();
+        assert_eq!(orbit.target, Vec3::new(7.5, -8.0, -1.465 + 7.5));
+        let mut free = Orbit::from_pose(Vec3::new(0.0, 3.0, -8.0), Vec3::ZERO);
+        free.target = Vec3::splat(1.0e6);
+        assert_eq!(free.clamped().target, Vec3::splat(DEFAULT_PAN_REACH));
     }
 
     #[test]
