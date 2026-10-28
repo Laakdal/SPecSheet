@@ -52,7 +52,8 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - pins per wheel part and per wheel, with hub, cover and nuts shown through their disc pin;
   - a fade by facing instead of the far-side cut;
   - no clustering, since the game has none.
-  - **Still ours:** interior pins keep the bounding-box anchors, and the marker look (dots, the hollow ring for empty slots) is ours.
+  - **Interior pins** follow the game's interior pass too (cockpit locator + `pin_offset`; the added transform is a Hypothesis), and the bounding-box anchors are gone.
+  - **Still ours:** the marker look (dots, the hollow ring for empty slots).
 
 ### D8: Only base game and DLC archives are mounted (partly superseded by D15)
 - Mods (`Documents/Euro Truck Simulator 2/mod`) use HashFS v1 and ZIP, and change data arbitrarily.

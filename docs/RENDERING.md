@@ -6,13 +6,13 @@ How the app turns game data into the 3D tuning view. What the game files contain
 - [app/shaders.md](app/shaders.md): which game shaders the trucks use, why the look isn't 1:1 yet, and the status of each clean-room material.
 - [app/shader-specs/](app/shader-specs/): the clean-room specs (D13) the WGSL is written from: `truckpaint`, `truckpaint-lighting`, `dif-spec`.
 - [app/scenes.md](app/scenes.md): the `/def/desktop` scenes, camera, lights, fog and orbit controls.
-- [app/hotspots.md](app/hotspots.md): marker anchors, far-side culling, clustering, empty slots and wheel groups.
+- [app/hotspots.md](app/hotspots.md): the game's pins (exterior, wheel and interior), their fade by facing, and the disc-linked wheel pins.
 - [app/ui.md](app/ui.md): the egui layout, sidebar and controls.
 
 ## Pipeline
 
 ```
-specsheet-assembly::assemble   →  placements (model, look, variant, transform) + anchors
+specsheet-assembly::assemble   →  placements (model, look, variant, transform) + pin bases
 specsheet-data::render::build_mesh   →  MeshData (visible parts, CCW indices, material info)
 specsheet-data::render::load_texture →  TextureData (unpacked mips, BGRA→RGBA)
 specsheet-session::view::overview       →  hotspots, slot list, paint colour, warnings

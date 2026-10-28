@@ -87,7 +87,7 @@ A change is done when all of these hold:
 | `specsheet-formats` | byte parsers: SII, PMD, PMG, MAT, tokens; the `manifest.sii` writer | touches archives or paths |
 | `specsheet-truck` | catalog, rules, configuration state | does I/O or reads formats |
 | `specsheet-data` | install discovery, mounting, catalog loading, models, scenes, render data, paint, localisation | assembles trucks or knows about UI or GPU APIs |
-| `specsheet-assembly` | the built truck: placements, wheels, interior, cockpit, hookups, anchors, the game's pins | loads catalogs or keeps session state |
+| `specsheet-assembly` | the built truck: placements, wheels, interior, cockpit, hookups, the game's exterior and interior pins | loads catalogs or keeps session state |
 | `specsheet-gameui` | the game's UI files: screens, templates, colours, UI materials, the markup layout | knows about trucks |
 | `specsheet-session` | `GameSession`/`TruckSession` orchestration, `view` display data | draws anything |
 | `specsheet-research` | research tools (`examples/`) that produce `research/evidence/` | is used by other crates |
@@ -115,13 +115,13 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
 | Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
 | Slot to locator matching | `specsheet-assembly/src/slots.rs` | unit |
-| Assembly: base, wheels, hookups, interior, anchors | `specsheet-assembly/src/*.rs` | tests in `lib.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
+| Assembly: base, wheels, hookups, interior | `specsheet-assembly/src/*.rs` | tests in `lib.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
 | Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |
 | Tuning scenes: the truck configuration scene (orbit, pin data) and the hub scenes | `specsheet-data/src/scene.rs` | unit; `real_install::{the_truck_configuration_screen_has_a_scene_orbit_and_pins, every_tuning_scene_has_a_model_and_a_camera}` |
 | UI screens, templates, colours, UI materials; markup layout | `specsheet-gameui/src/{lib,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
 | Display strings | `specsheet-data/src/localization.rs` | unit |
 | Session (options, select, hookups, drive) | `specsheet-session/src/lib.rs` | through `real_install` |
-| Exterior pins the game's way: base locator, offset, facing, mirrored and wheel pins | `specsheet-assembly/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
+| Pins the game's way: base locator, offset, facing, mirrored, wheel and interior (cockpit) pins | `specsheet-assembly/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
 | Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-session/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
 | App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
 | Meshes, materials, textures to GPU (with upload checks) | `specsheet-render/src/assets.rs` | unit |

@@ -25,7 +25,7 @@ Measured on every preset (`research/evidence/pin-survey.txt`): the pins land on 
 
 Only accessory slots get a pin; base parts are picked through their fixed tab (F5, see [ui.md](ui.md)).
 - An exterior slot is pinned when it is an addon or wheel slot with at least one option, or another slot with at least two. The game drops only slots with no options.
-- Slots whose parts sit inside the cabin box shrunk by 5 cm keep their anchor as an interior pin (below).
+- The exterior pass skips the scene's `interior_only` slots (17 in 1.60), as the game does.
 
 Each `Hotspot` carries:
 - its tab;
@@ -38,7 +38,11 @@ Slots without a pin are listed in `TruckOverview::general` with their tab.
 
 ## Interior pins (`specsheet-assembly`)
 
-Interior slots still use our anchors: the centre of the placed models' bounding box, or the bare locators while empty. Interior-only accessories (steering wheel, curtains, toys…) attach to locators on the interior's full cockpit, moved into truck space (F10). How the game places interior pins is not decoded yet: it searches the interior model's locators, and the space it ends up in is Unknown.
+The game's interior pass, with the same rules as the exterior slots (`pins::interior_pins`):
+- **Base point:** the first locator of the selected interior's full cockpit whose name starts with the slot name. Only that model carries the interior slots' locators, and they are head-relative (F10), so the cockpit's placement at the eye point (`ext_interior`, or the UK eye for right-hand drive) puts them in the cab. The exe adds a per-vehicle translation whose content the decompile doesn't settle, so this is a **Hypothesis** consistent with the data (`research/evidence/pin-attributes.txt`).
+- **Position, facing, mirroring:** base + `pin_offset`, `pin_dir`, and `double_sided` twins, as for the exterior.
+- **Which slots:** every accessory slot whose name matches a cockpit locator, so `flag_l`/`flag_r` get interior pins too. The interior pass has no wheel pins.
+- **Tab:** interior accessories.
 
 ## On screen (`crates/specsheet`)
 
@@ -66,6 +70,6 @@ The game draws its pins with its own button templates (`btn.custom_accn`, `btn.c
 ## Known gaps
 
 - Pin graphics are ours, not the game's button templates. The game also pulses a 64 px ring on some pins (Hypothesis: newly available parts).
-- Interior pins use our anchors, not the game's interior placement.
+- Interior pins follow the game's interior pass, but the transform it adds is a Hypothesis (above); mirroring without a table entry relative to the interior object is not reproduced.
 - The per-truck pin table and `use_non_wheel_pin_data_from_model` are not read.
 - Badge slots and the Renault T's `s_panel` can take another slot's locator by the first-prefix rule (`pin-survey.txt`); to check in game.

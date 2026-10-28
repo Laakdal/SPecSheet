@@ -11,7 +11,7 @@ layer 9   crates/specsheet      the app: viewer, pins, the game screen, jobs, de
 layer 8   specsheet-research    research tools (examples/), beside the app
 layer 5   specsheet-render      game materials (clean-room WGSL), game lighting, checked GPU upload (Bevy)
 layer 4   specsheet-session     GameSession / TruckSession orchestration, view (display data)
-layer 3   specsheet-assembly    the built truck: placements, wheels, interior, hookups, anchors, pins
+layer 3   specsheet-assembly    the built truck: placements, wheels, interior, hookups, pins
           specsheet-gameui      the game's UI files laid out
 layer 2   specsheet-data        install, mounting, catalogs, models, scenes, render data, paint
 layer 1   specsheet-truck       pure tuning domain: catalog, rules, configuration, paint jobs
@@ -29,7 +29,7 @@ layer 0   specsheet-core        foundation: ids, maths (Aabb, Transform), sRGB c
 | `specsheet-formats` | Byte-level parsers for SII, BSII, ScsC, PMD, PMG, MAT; the `manifest.sii` writer; a scanner for paths files mention. No I/O | std, thiserror, flate2, aes, cbc |
 | `specsheet-truck` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation, paint jobs. No I/O, no game formats | specsheet-core, serde |
 | `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; models, scenes, render-ready meshes and textures, paint per part | layers 0–1 |
-| `specsheet-assembly` | Assembles a configuration into placements; slot availability from model locators; hotspot anchors; the game's exterior pins | layers 0–2 |
+| `specsheet-assembly` | Assembles a configuration into placements; slot availability from model locators; the game's pin bases (exterior, wheels, interior) | layers 0–2 |
 | `specsheet-gameui` | The game's UI screens, templates, colours and markup layout | layers 0–2 |
 | `specsheet-session` | The game and truck sessions (options, selection, hookups, drive); `view` turns a session into display data (labels, pins, verdict reasons) | layers 0–3 |
 | `specsheet-render` | Game materials on Bevy: clean-room WGSL shaders, the game's lighting, checked mesh and texture upload | layers 0–4, bevy |
@@ -54,7 +54,7 @@ crates/
   specsheet-render/     materials, WGSL shaders, mesh and texture upload (Bevy)
   specsheet-theme/      design tokens for the app's own screens (D16), no dependencies
   specsheet-session/    what is being edited: session, view (labels, markers, prices)
-  specsheet-assembly/   the built truck: placements, wheels, interior, cockpit, hookups, anchors
+  specsheet-assembly/   the built truck: placements, wheels, interior, cockpit, hookups, pins
   specsheet-gameui/     the game's UI files laid out (independent of trucks)
   specsheet-truck/      the tuning domain: catalog, configuration, rules, paint jobs, hookups (was specsheet-core)
   specsheet-data/       loading game data: install, catalog/, models, scenes, paint
@@ -87,7 +87,7 @@ Rules that keep it maintainable:
 4. **Initial configuration.** `/def/vehicle/truck_desktop/<truck>.sii` preset; repaired by the core rules.
 5. **Assembly.**
    - The chassis and cabin models (with their variant and look) form the base.
-   - The base's visible locators define `SlotAvailability` and hotspot anchors.
+   - The base's visible locators define `SlotAvailability` and the exterior pin bases; the cockpit's locators give the interior pin bases.
    - Each selected addon's model is placed at its slot's locator(s).
 6. **Rendering.** `specsheet-data::render` converts PMG pieces to vertex arrays and resolves materials to textures (`.mat` → `.tobj` → packed texture). The app validates them and uploads them as Bevy meshes, `StandardMaterial`s and BC-compressed images.
 7. **Interaction.**
