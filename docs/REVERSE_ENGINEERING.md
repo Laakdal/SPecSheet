@@ -254,7 +254,7 @@ Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chass
 - **Unknown.**
   - Whether the tuning screen shows liftable axles raised or lowered. The app shows them lowered. To settle: a reference screenshot (docs/PARITY.md) or REA on `liftable_axle`.
 
-### F14: How the game finds, gates and mounts mods (Confirmed sequence, Unknown priority)
+### F14: How the game finds, gates and mounts mods (Confirmed sequence and priority mechanism; the winning lookup is a Hypothesis)
 Evidence: `research/evidence/mod-loader-survey.txt` (game log, `eurotrucks2.exe` strings, the example `mod_probe` over 55 local packages, 77 Workshop items). Formats are in [formats/mods.md](formats/mods.md).
 
 - **Discovery (Confirmed).**
@@ -270,9 +270,11 @@ Evidence: `research/evidence/mod-loader-survey.txt` (game log, `eurotrucks2.exe`
   - Nothing is mounted until a profile is selected.
   - Then the game logs "Active N mods (local, workshop)" and mounts each active mod, in that order, into a separate mod pool. Base and DLC stay in the scs and core pools.
 - **Unknown.**
-  - Which of two mods wins for the same path: the first or the last in the active list.
   - How the mod pool ranks against the scs pool.
-  - Next step: REA `function` on the code referencing `0x142112188` (`[mods] Active %Iu mods`) and `0x1420bcaa8` (`[ufs] disabling pool lookup`). The string addresses come from `research/evidence/rea-search-mod-loader.txt`.
+- **Priority (Confirmed mechanism, `research/evidence/mod-priority-static.txt`, static disassembly).**
+  - Mods mount in active-list order with rising priorities, starting at 1001.
+  - The file system keeps its mounted devices sorted by priority, highest first.
+  - **Hypothesis (strong):** a lookup takes the first device that has the path, so for a path two mods share, the mod **later** in `active_mods[]` wins. The lookup walk itself was not read.
 - **Profile list (Confirmed, since resolved).** The active list is `active_mods[]` in the `ScsC`-encrypted `profile.sii`, read with `scsc::sii_text`. Index 0 is mounted first ([formats/profiles.md](formats/profiles.md)).
 
 ### F15: Paint jobs: one unit, a token-named per-part file, masks cut per cabin (Confirmed data, Hypothesis on unlisted parts)
@@ -380,7 +382,7 @@ Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: stri
 
 | Question | Next step |
 |---|---|
-| Mod priority (first or last active mod wins; mod pool vs scs pool) | REA: the function logging `[mods] Active %Iu mods` and the `[ufs]` pool lookup (F14) |
+| Mod pool vs scs pool; the lookup walk that confirms the later mod wins | Static: the readers of the sorted device list (`0x140155610` registers it, F14) |
 | Exact slot-to-locator matching rule (suffixes `_s`, `_sl`, digits) | REA: decompile the caller of `0x1421c2f90` (F8) |
 | How pins are positioned, and which slot tokens use fixed tabs instead | REA: string search for `pin_offset`/`pin_dir`/`pin_group`, decompile the reader; and the writer of the token table `0x14350cc00` |
 | DLC mount priority | Runtime log does not show it; low impact (DLCs rarely override base files) |

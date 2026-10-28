@@ -114,7 +114,7 @@ Plain SII, one `mod_package : <unit name>` unit. The unit name is dot-prefixed (
 - Packages are mounted only when a profile is selected, into a separate **mod pool** (Confirmed, log).
 - The active list is stored per profile (`active_mods`). Its order is the mount order: the log prints "Active N mods" and then mounts each mod in that same order (Confirmed for all 57 active mods).
 - The list is `active_mods[]` in `profile.sii`, entries `"<package name>|<display name>"`, index 0 mounted first (Confirmed; [profiles.md](profiles.md)).
-- Which mod wins when two store the same path, and how the mod pool ranks against the scs pool: Unknown (REA question in F14).
+- Which mod wins when two store the same path: the later one in `active_mods[]` (Hypothesis, strong; F14 has the mechanism). How the mod pool ranks against the scs pool: Unknown.
 - `/home/mods_info.sii` is game-written plain SII: `info[]` holds `"<package name>|<number>"` for every known package (Confirmed). What the number means is Unknown.
 
 ## Writing a mod package
