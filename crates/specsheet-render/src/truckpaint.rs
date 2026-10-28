@@ -48,10 +48,12 @@ const MAX_FLAKE_DENSITY: f32 = 1.0;
 /// `flake_vratio` 0 would collapse the noise's v scale (§7), so 0 means an
 /// unstretched noise.
 const ZERO_VRATIO: f32 = 1.0;
-/// F0 when a `.mat` has no `fresnel`: the bias of the seen pair {0.2, 0.9}.
-/// Which of the pair the effect reads is Unknown (lighting §8); we take the
-/// first.
-const DEFAULT_FRESNEL: f32 = 0.2;
+/// F0 of every truckpaint effect: its `.rfx` flags select this constant
+/// (F18, `research/evidence/exposure-tonemap-data.txt` §9).
+const TRUCKPAINT_F0: f32 = 0.035;
+/// A `.mat` `fresnel` whose second value is this replaces the constant F0
+/// with its first value, clamped to [0, 1] (F18).
+const FRESNEL_OVERRIDE: f32 = -1.0;
 /// `.mat` `specular` and `shininess` when absent: the game's material-input
 /// table defaults (dif-spec.md §3.1; Hypothesis for truckpaint).
 const DEFAULT_SPECULAR: [f32; 3] = [1.0; 3];
@@ -140,10 +142,18 @@ impl PaintSurface {
         Some(Self {
             specular: info.specular.unwrap_or(DEFAULT_SPECULAR),
             shininess: info.shininess.unwrap_or(DEFAULT_SHININESS),
-            fresnel: info.fresnel.map_or(DEFAULT_FRESNEL, |f| f[0]),
+            fresnel: paint_f0(info.fresnel),
             additional_ambient: info.additional_ambient.unwrap_or(0.0),
             reflection: info.reflection_texture.clone(),
         })
+    }
+}
+
+/// The engine's F0 for a truckpaint `.mat` `fresnel` pair (F18).
+fn paint_f0(fresnel: Option<[f32; 2]>) -> f32 {
+    match fresnel {
+        Some([first, second]) if second == FRESNEL_OVERRIDE => first.clamp(0.0, 1.0),
+        _ => TRUCKPAINT_F0,
     }
 }
 
@@ -458,9 +468,8 @@ mod tests {
         assert_eq!(u.flake_setup, Vec4::new(8.0, 60.0, 3.0, ZERO_VRATIO));
     }
 
-    #[test]
-    fn only_truckpaint_materials_have_a_paint_surface() {
-        let mut info = MaterialInfo {
+    fn paint_info() -> MaterialInfo {
+        MaterialInfo {
             path: String::new(),
             effect: "eut2.truckpaint.tsnmapuv.airbrush.altuv.rfx".to_owned(),
             blend: specsheet_data::render::BlendMode::Opaque,
@@ -472,16 +481,39 @@ mod tests {
             specular: None,
             shininess: None,
             env_factor: None,
-            fresnel: Some([0.3, 0.9]),
+            fresnel: None,
             reflection_texture: None,
             additional_ambient: None,
             normal_texture: None,
             normal_detail_texture: None,
             mult_texture: None,
-        };
+        }
+    }
+
+    #[test]
+    fn only_truckpaint_materials_have_a_paint_surface() {
+        let mut info = paint_info();
         let s = PaintSurface::of(&info).expect("paint");
-        assert_eq!((s.fresnel, s.shininess), (0.3, DEFAULT_SHININESS));
+        assert_eq!(s.shininess, DEFAULT_SHININESS);
         info.paintable = false;
         assert_eq!(PaintSurface::of(&info), None);
+    }
+
+    #[test]
+    fn paint_f0_is_the_effect_constant_unless_the_mat_overrides_it() {
+        // F18: truckpaint's effect flags select F0 = 0.035; only a `.mat`
+        // `fresnel` whose second value is -1 replaces it by the clamped first.
+        let f0 = |fresnel: Option<[f32; 2]>| {
+            let info = MaterialInfo {
+                fresnel,
+                ..paint_info()
+            };
+            PaintSurface::of(&info).expect("paint").fresnel
+        };
+        assert_eq!(f0(None), 0.035);
+        assert_eq!(f0(Some([0.2, 0.9])), 0.035, "the usual pair is ignored");
+        assert_eq!(f0(Some([0.3, -1.0])), 0.3);
+        assert_eq!(f0(Some([1.5, -1.0])), 1.0);
+        assert_eq!(f0(Some([-0.5, -1.0])), 0.0);
     }
 }
