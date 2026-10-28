@@ -36,6 +36,7 @@ The game's handler shows, hides and fills widgets in code that has not been trac
 
 The eight tabs follow finding F5 (`specsheet-data::view::Tab`, `tab_of`):
 - **Fixed tabs:** cabin, chassis, engine, transmission, colour (paint job) and interior. They have no pins; opening one lists its slot's options at once.
+- **Drive side (F10).** The interior tab lists the game's UK interiors (", UK") beside the EU ones. Choosing one with `left_hand_traffic: true` makes the truck right-hand drive, and choosing an EU one makes it left-hand drive. The drive toggle in the SpecSheet window swaps the selected interior for its twin.
 - **Exterior and interior accessories:** every other accessory goes under one of these two, by whether its anchor is inside the cab. Opening one shows the pins for that tab only ([hotspots.md](hotspots.md)); clicking a pin lists that slot's options.
 - **Slot list (Design, a deviation).** While no slot is open, an accessory tab also lists all of its slots in `[300]` as `btn.truck_acc` tiles: the slot name, the fitted part's icon, and its name as the info line. Clicking a tile opens the slot, and clicking the tab icon again returns to the list.
   - The game shows "select a category" here and reaches every accessory through pins. Our pins miss slots without an anchor yet, mostly cab-interior slots whose locators are on the cockpit model, plus a few flags and the rear window. Without the list those slots would be unreachable.
@@ -55,6 +56,8 @@ The list `[300]` is filled with `btn.truck_acc` tiles: 292 × 96 items with a 5-
 | `%6` | the reason, for incompatible options, which use the template's disabled state (lock icon) |
 
 `%2`, `%8` and `%9` are not filled yet. `%9` names `truck_config/accessory_%9.mat`, which then doesn't resolve.
+
+The list's `ui::slider_common` child is drawn from its `ui::slider_template` (`sld.slider0d`): a 2-unit track, plus a handle of `minimal_handle_size` that follows the scroll and can be dragged. It is hidden when the list fits. The mouse wheel scrolls the list by 50 units per notch. The wheel is read from Bevy's input, as the 3D camera reads it, because egui's scroll delta stays empty for this screen.
 
 Hovering a tile uses the selected state. Clicking a compatible tile selects the part, and the truck re-assembles in the background.
 

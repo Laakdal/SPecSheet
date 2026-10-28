@@ -45,4 +45,7 @@ Without a scene camera, the orbit target follows the centre of the truck's bound
 - **Right or middle drag** pans: one pixel of drag moves the target by about one pixel on screen.
 - **The wheel** zooms by 10 % per notch.
 - **Limits:** pitch stays between 0.005π and just under π/2, so the camera never goes below the floor. Distance stays between 2.5 m and 25 m, or the scene camera's distance if that is farther.
-- A drag only starts when the press lands on the 3D view, not on a panel or marker (`ViewportInput`, set by the UI each frame). Orbit input reads Bevy's raw mouse motion.
+- A drag only starts when the press lands on the 3D view, not on a panel or marker (`ViewportInput`, set by the UI each frame).
+- **Cursor, not raw motion.** Drags follow the cursor inside the window. They end when the window loses focus or the cursor leaves it, so a button release the window never sees cannot leave the camera following the mouse. (Raw motion did, and could fling the camera off into the dark.)
+- **Bounds.** The orbit target stays within `camera_relative_bounds` around the aim, with its height within `camera_aim_y_bounds` (Hypothesis). Scenes without bounds allow 10 m around their aim.
+- **Home** restores the scene's view.
