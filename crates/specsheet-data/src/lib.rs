@@ -8,6 +8,7 @@ mod error;
 mod fs;
 mod install;
 pub mod localization;
+pub mod mod_names;
 pub mod model;
 pub mod paint;
 pub mod pins;
