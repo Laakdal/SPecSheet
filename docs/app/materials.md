@@ -93,15 +93,23 @@ The game copies these into the material unscaled.
 | r (`flake_vratio`) | 1 when 0 | §7 |
 | λ, flake light | 1; the sun's direction | §7 |
 | F0 | the `.mat`'s first `fresnel` value, else 0.2 | lighting §8 |
+| μ, `texture_reflection_modulator` | 1 | lighting §4 |
+| (a_w, b_w), alpha to specular weight | (1, 0) | lighting §4 |
 | `specular`, `shininess` absent | 1, 130 (the old roughness 0.35) | — |
 | no paint job and no colour | 0.6 grey | — |
 
-**Not the game's yet: the lighting.** The paint feeds Bevy's PBR lighting, like every other material, so the truck stays lit by one model. The mapping:
-- metallic 0;
-- F0 = the fresnel value × the specular colour's ratio to the `.mat`'s × base alpha × mask factor;
-- perceptual roughness from the Blinn-Phong power, as for chrome.
+**Lighting: the game's forward model** ([truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) §4–5), from the shared module `render/game_lighting.wgsl`, which `dif.spec` will use too:
+- ambient plus the sun's diffuse, unnormalised Blinn-Phong specular with the `sat(10·N·L)` gate, and the `.mat`'s `additional_ambient` (the scene gives no additional ambient colour, so that term is 0);
+- the reflection from the `.mat`'s own `texture_reflection` cube, with Schlick's fresnel, scaled by `sat(light_environment)`;
+- no normal maps yet (`tsnmap`/`tsnmapuv` need tangents); the normal-map factor is 1.
 
-The spec's own lighting (ambient, unnormalised Blinn-Phong with the terminator gate, Schlick cube reflection, normal maps) replaces it together with dif.spec's, in one shared WGSL module ([shader-specs/dif-spec.md](shader-specs/dif-spec.md)).
+The scene's light reaches every game material through one shared storage buffer (`render::GameLighting`), filled from the scene's `light_direction`, `light_diffuse`, `light_specular` (else the diffuse colour), `light_ambient` and `light_environment` (Aenv, Hypothesis), or the viewer's defaults.
+
+Ours, each a Hypothesis:
+- **Output scale 1.** The game's linear HDR goes straight into Bevy's ACES tonemapper. The game's eye adaptation and tone mapping are Unknown (F16). At 1, the MAN TGX Euro 6's white Driving Academy cab matches the unpainted parts beside it, which still use Bevy's lighting; at 1/π it drew grey.
+- **Cube direction.** The reflected vector in world space, with z flipped as Bevy samples its environment cubes, which keeps the orientation the viewer's reflections had. The game's x/z mirroring is Unknown; if reflections look left/right flipped, suspect that.
+
+Seen working: Under Wraps now reads dark crimson like its thumbnail (brown under Bevy's lighting), with the forest cube of `vehicle_reflection.tobj` upright on the cab. Until `dif.spec` is ported, paint and its unpainted neighbours use different lighting models.
 
 ## Texture upload
 
@@ -128,8 +136,8 @@ R16G16 (two car-paint normal maps) is unsupported.
 The game's shaders are readable GLSL inside `effect.scs` ([../formats/effects.md](../formats/effects.md); survey in `research/evidence/effect-shaders-survey.txt`). We write our own WGSL Bevy materials clean-room (D13): a spec agent writes the maths to `docs/app/shader-specs/<effect>.md`, and a different agent writes the WGSL from it without seeing the shaders.
 
 Order:
-1. `truckpaint`: the surface is done (above).
-2. `dif.spec`, with the shared game lighting model for both. This includes per-material cube sampling (dif-spec §5.5), which replaces `ReflectionCube` for those materials.
+1. `truckpaint`: the surface and the game's lighting are done (above).
+2. `dif.spec` on the shared lighting module, with per-material cube sampling (dif-spec §5.5), which replaces `ReflectionCube` and `reflective_surface` for those materials.
 3. Glass.
 4. Lamp.
 
