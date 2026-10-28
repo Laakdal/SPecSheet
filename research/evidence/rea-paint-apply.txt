@@ -92,3 +92,27 @@ shader constant
                      c1 = (flake_color, flake_density)
                      c2 = (flip_color, flip_strength)
                      c3 = (base, 0)
+
+Paint-list thumbnails: FUN_1408d05b0 (static disassembly, Confirmed)
+-------------------------------------------------------------------
+Argument: the paint job (accessory_paint_job_data). The text it builds is the
+thumbnail markup.
+- If the paint job has an icon (string at +0x38, non-empty): "%s.mat" with
+  that icon; colours are not used.
+- Else if flipflake (+0x288): three colours from the paint job itself (not
+  the saved truck colours): base (+0x22c), flip (+0x238) and flake (+0x248),
+  formatted into the layered markup
+  "...clr_0.mat color=%s><offset hshift=-256><img src=/material/ui/clr_1.mat
+  color=%s><offset hshift=-256><img src=/material/ui/clr_2.mat color=%s>
+  <offset hshift=-256><img src=/material/ui/clr_3.mat"
+  so clr_0 = base, clr_1 = flip, clr_2 = flake, and clr_3 is drawn without a
+  colour (overlay).
+- Else: one colour, base (+0x22c), in "color_icon.mat color=%s".
+Colour to text (FUN_1408d0290, then the caller):
+- per channel, linear to sRGB: c < 0 -> 0; c = min(c, 1); c <= 0.0031308 ->
+  12.92 c; else 1.055 c^(1/2.4) - 0.055 (exponent constant 0.416667);
+- times 255, truncated toward zero (cvttss2si), not rounded;
+- printed with "FF%02X%02X%02X" in the order blue, green, red: the colour text
+  is "FF" + BB + GG + RR.
+An absent base_color therefore shows the block default (1,1,1) as white
+(FFFFFFFF), via the defaults above (Hypothesis for the paint job instance).
