@@ -1,12 +1,14 @@
 //! Builds `specsheet_core` catalogs from `/def/vehicle/truck/<truck>/` and the
 //! preset configurations from `/def/vehicle/truck_desktop/` (findings F3,
-//! F6 in `docs/REVERSE_ENGINEERING.md`).
+//! F6, F15 in `docs/REVERSE_ENGINEERING.md`).
+
+use std::collections::HashMap;
 
 use specsheet_core::{
-    slots, Accessory, AccessoryId, AccessoryKind, Configuration, Hookup, ModelRef, SlotId,
-    TruckCatalog, TruckId, WheelPart,
+    slots, Accessory, AccessoryId, AccessoryKind, Configuration, Flake, Flip, Hookup, ModelRef,
+    PaintJob, PaintLocks, PaintOverride, PartPaint, SlotId, TruckCatalog, TruckId, WheelPart,
 };
-use specsheet_formats::sii::{SiiDocument, Unit};
+use specsheet_formats::sii::{SiiDocument, Unit, Value};
 
 use crate::error::{GameDataError, Result};
 use crate::fs::GameFs;
@@ -19,6 +21,8 @@ const HOOKUP_DIR: &str = "/def/vehicle";
 const HOOKUP_STORAGE: &str = "addon_hookup_storage";
 /// Directory holding addon slots: `accessory/<slot>/<item>.sii`.
 const ADDON_DIR: &str = "accessory";
+/// Per-part paint files: `paint_job/accessory/<paint job token>.sii` (F15).
+const PAINT_PARTS_DIR: &str = "paint_job/accessory";
 /// Shared wheel part groups under `/def/vehicle/<group>/`, used by every
 /// truck (`t_wheel` is for trailers and therefore excluded).
 const WHEEL_GROUPS: &[&str] = &[
@@ -117,6 +121,9 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
             }
         }
     }
+    // Per-part paint units by the file stem they are stored under.
+    let mut paint_parts: HashMap<String, Vec<RawPart>> = HashMap::new();
+    let paint_parts_dir = format!("{root}/{PAINT_PARTS_DIR}");
     let mut stack = vec![root.clone()];
     while let Some(dir) = stack.pop() {
         let listing = fs.list_dir(&dir)?;
@@ -124,9 +131,20 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
         let Some(slot) = slot_for_dir(&root, &dir) else {
             continue;
         };
+        let parts_dir = dir.eq_ignore_ascii_case(&paint_parts_dir);
         for file in listing.files.iter().filter(|f| f.ends_with(".sii")) {
             let path = format!("{dir}/{file}");
             match fs.read_sii(&path) {
+                Ok(doc) if parts_dir => {
+                    let stem = file.trim_end_matches(".sii").to_ascii_lowercase();
+                    paint_parts
+                        .entry(stem)
+                        .or_default()
+                        .extend(doc.units.iter().filter_map(raw_part));
+                }
+                // The rarer per-accessory files
+                // (`accessory/<slot>/paint_job/*.sii`) hold only
+                // `simple_paint_job_data` and fall out here (F15).
                 Ok(doc) => accessories.extend(
                     doc.units
                         .iter()
@@ -141,6 +159,7 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
     }
 
     pair_uk_interiors(&mut accessories);
+    attach_paint_parts(&mut accessories, truck, &paint_parts);
     let catalog = TruckCatalog::new(truck.clone(), info, required_slots, fallbacks, accessories);
     // Only hookups that fit one of this truck's slots are relevant.
     let slots = catalog.slots();
@@ -158,8 +177,6 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
 /// word (`uk_a.sii`, `a_uk.sii`, `standard_uk_low.sii` for `standard_low`).
 /// This pairs all 219 interiors of 1.60 one-to-one.
 fn pair_uk_interiors(accessories: &mut [Accessory]) {
-    use std::collections::HashMap;
-
     let key = |path: &str| -> Option<(String, Vec<String>)> {
         let (dir, file) = path.rsplit_once('/')?;
         let stem = file.strip_suffix(".sii")?;
@@ -208,6 +225,159 @@ fn pair_uk_interiors(accessories: &mut [Accessory]) {
         if let Some(eu) = back.get(&accessory.id) {
             accessory.drive_twin = Some(eu.clone());
         }
+    }
+}
+
+/// One `simple_paint_job_data` unit before its `acc_list[]` is resolved.
+#[derive(Clone, Debug, Default, PartialEq)]
+struct RawPart {
+    acc_list: Vec<String>,
+    mask: Option<String>,
+    flake_uvscale: Option<f32>,
+    flake_vratio: Option<f32>,
+}
+
+fn raw_part(unit: &Unit) -> Option<RawPart> {
+    (unit.class == "simple_paint_job_data").then(|| RawPart {
+        acc_list: owned(unit.array_str("acc_list")),
+        mask: unit.get_str("paint_job_mask").map(str::to_owned),
+        flake_uvscale: unit.get_f32("flake_uvscale"),
+        flake_vratio: unit.get_f32("flake_vratio"),
+    })
+}
+
+/// Gives every paint job the per-part units of its file. The file is named
+/// after the first token of the paint job's unit name, not after its own
+/// definition file (`color0m.sii` holds `col0m_s_s_a.<truck>.paint_job`,
+/// whose parts are in `accessory/col0m_s_s_a.sii`; F15). An `acc_list[]`
+/// entry `<slot>.<accessory>` names the unit `<accessory>.<truck>.<slot>`.
+fn attach_paint_parts(
+    accessories: &mut [Accessory],
+    truck: &TruckId,
+    parts: &HashMap<String, Vec<RawPart>>,
+) {
+    if parts.is_empty() {
+        return;
+    }
+    let slots: HashMap<AccessoryId, SlotId> = accessories
+        .iter()
+        .map(|a| (a.id.clone(), a.slot.clone()))
+        .collect();
+    let resolve = |entry: &str| -> Option<(SlotId, AccessoryId)> {
+        let (slot, item) = entry.split_once('.')?;
+        let id = AccessoryId::new(format!("{item}.{truck}.{slot}"));
+        let slot = slots.get(&id)?.clone();
+        Some((slot, id))
+    };
+    for accessory in accessories.iter_mut() {
+        let token = accessory
+            .id
+            .as_str()
+            .split('.')
+            .next()
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let (Some(paint), Some(raw)) = (accessory.paint.as_mut(), parts.get(&token)) else {
+            continue;
+        };
+        paint.parts = raw
+            .iter()
+            .map(|raw| {
+                let mut part = PartPaint {
+                    mask: raw.mask.clone(),
+                    flake_uvscale: raw.flake_uvscale,
+                    flake_vratio: raw.flake_vratio,
+                    ..PartPaint::default()
+                };
+                for entry in &raw.acc_list {
+                    match resolve(entry) {
+                        Some(found) => part.accessories.push(found),
+                        None => part.unresolved.push(entry.clone()),
+                    }
+                }
+                part
+            })
+            .collect();
+    }
+}
+
+/// The attributes of an `accessory_paint_job_data` unit (F15).
+fn paint_job_from_unit(unit: &Unit) -> PaintJob {
+    let flag = |key: &str| unit.get_bool(key).unwrap_or(false);
+    let color = |key: &str| unit.get(key).and_then(color3);
+    let color_variants = unit
+        .array("color_variant")
+        .chunks_exact(4)
+        .filter_map(|group| match group {
+            [a, b, c, d] => Some([color3(a)?, color3(b)?, color3(c)?, color3(d)?]),
+            _ => None,
+        })
+        .collect();
+    PaintJob {
+        base_color: color("base_color"),
+        mask: unit.get_str("paint_job_mask").map(str::to_owned),
+        mask_colors: [
+            color("mask_r_color"),
+            color("mask_g_color"),
+            color("mask_b_color"),
+        ],
+        airbrush: flag("airbrush"),
+        alternate_uvset: flag("alternate_uvset"),
+        flipflake: flag("flipflake"),
+        flake: Flake {
+            color: color("flake_color"),
+            density: unit.get_f32("flake_density"),
+            shininess: unit.get_f32("flake_shininess"),
+            clearcoat_rolloff: unit.get_f32("flake_clearcoat_rolloff"),
+            uvscale: unit.get_f32("flake_uvscale"),
+            noise: unit.get_str("flake_noise").map(str::to_owned),
+        },
+        flip: Flip {
+            color: color("flip_color"),
+            strength: unit.get_f32("flip_strength"),
+        },
+        locks: PaintLocks {
+            base: flag("base_color_locked"),
+            mask: [
+                flag("mask_r_locked"),
+                flag("mask_g_locked"),
+                flag("mask_b_locked"),
+            ],
+            flake: flag("flake_color_locked"),
+            flip: flag("flip_color_locked"),
+        },
+        stock: flag("stock"),
+        color_variants,
+        parts: Vec::new(),
+    }
+}
+
+/// An RGB tuple; extra components are ignored, fewer than three fail.
+fn color3(value: &Value) -> Option<[f32; 3]> {
+    let floats = value.as_floats()?;
+    <[f32; 3]>::try_from(floats.get(..3)?).ok()
+}
+
+/// The six colours of a preset's or save's `vehicle_paint_job_accessory`
+/// (F15). A key that is present but not a colour is reported.
+fn paint_override(unit: &Unit, mut warn: impl FnMut(String)) -> PaintOverride {
+    let mut color = |key: &str| {
+        let value = unit.get(key)?;
+        let parsed = color3(value);
+        if parsed.is_none() {
+            warn(format!("{}: {key} {value} is not a colour", unit.name));
+        }
+        parsed
+    };
+    PaintOverride {
+        base: color("base_color"),
+        mask: [
+            color("mask_r_color"),
+            color("mask_g_color"),
+            color("mask_b_color"),
+        ],
+        flake: color("flake_color"),
+        flip: color("flip_color"),
     }
 }
 
@@ -348,13 +518,14 @@ fn config_from_vehicle(
             ));
         }
     }
-    let paint_color = doc
+    let paint = doc
         .units_of_class("vehicle_paint_job_accessory")
-        .find_map(|u| u.get("base_color").and_then(|v| v.as_floats()))
-        .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok());
+        .next()
+        .map(|unit| paint_override(unit, |message| warn(&mut warnings, message)))
+        .unwrap_or_default();
     let mut config =
         Configuration::from_selections(catalog.truck.clone(), selections).with_hookups(hookups);
-    config.set_paint_color(paint_color);
+    config.set_paint_override(paint);
     (config, warnings)
 }
 
@@ -483,15 +654,12 @@ fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Option<Accesso
             .collect(),
         defaults: owned(unit.array_str("defaults")),
         requires,
-        base_color: unit
-            .get("base_color")
-            .and_then(|v| v.as_floats())
-            .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok()),
+        base_color: unit.get("base_color").and_then(color3),
         wheel: wheel_part(unit),
         left_hand_traffic: kind == AccessoryKind::Interior
             && unit.get_bool("left_hand_traffic").unwrap_or(false),
         drive_twin: None,
-        paint: None,
+        paint: (kind == AccessoryKind::PaintJob).then(|| Box::new(paint_job_from_unit(unit))),
     })
 }
 
