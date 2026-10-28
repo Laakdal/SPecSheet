@@ -124,7 +124,8 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - [ ] Paint UVs from the routing: slot 1 for the mask, slot 2 for `altuv`, with `paint_uv_set` as the fallback. The mask agrees with today's rule in 96 % of pieces, `altuv` in only 2,423 of 4,986 (e.g. `0xf2fff110`, 2,153 pieces). Needs a screen test of an `alternate_uvset` job on such a piece (DAF 2021 `cab_door/win_xf_uk.pmd`) before switching.
       - [ ] `texture_mult` waits for 71's spec of `dif.spec.mult.dif.spec` and the scene shaders.
    3. **Shaders** (D13: 71 writes the specs and never the WGSL; de writes the WGSL from the specs only):
-      - specs in order: `tsnmap`/`tsnmapuv`, `glass`, `lamp`, `dif.lum` and `decalshadow`, then the scene shaders `showroom_v2` and `baked`;
+      - [x] specs by 71: `glass`, `lamp`, `dif.lum`, `unlit.*`, and `decalshadow`/`light.tex`/`fakeshadow`/`shadowonly`/`none` (`docs/app/shader-specs/`). `tsnmap`/`tsnmapuv` were already in `dif-spec.md` and `truckpaint*.md`; added: UV slot *n* is vertex attribute 8 + *n*, and truckpaint `asafew.a`/`shadow`. The engine inputs they leave open (`texture_reflection_modulator`, lamp colours and contrast, material luminosity) are in each spec's last table, with stand-ins;
+      - specs by d3's agent: `dif.spec.mult.dif.spec`, `showroom_v2`, `baked`;
       - REA, one run while no build runs: the reflection cube's x/z mirroring and how `pre_exposure` is applied.
    4. **Other:** bloom, and `fakeshadow`/`shadowonly`.
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
