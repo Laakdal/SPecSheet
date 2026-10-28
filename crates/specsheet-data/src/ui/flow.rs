@@ -6,8 +6,10 @@
 //! * The cursor starts at the box's top-left; coordinates grow right and
 //!   down, in reference units.
 //! * `<ret>` returns the cursor to the origin; `<br>` starts a new line.
-//! * `<offset hshift= vshift=>` moves the cursor to an absolute position
-//!   (from the margin's left edge and the box top).
+//! * `<offset hshift= vshift=>` moves the cursor by that much from where it
+//!   is. Templates use it after `<ret>`, from the origin; the game's layered
+//!   paint thumbnail steps back with `hshift=-256` over a 256-wide icon
+//!   (F17).
 //! * `<img>` takes its natural size from the texel span `left`/`right`/
 //!   `top`/`bottom` (`pN` = texel N; reversed ranges mirror). `width`/
 //!   `height` override it; a negative value is the space left on the line
@@ -197,8 +199,8 @@ pub fn layout(nodes: &[Node], size: [f32; 2], measure: &mut dyn Measure) -> Vec<
                     cursor.x = cursor.x.max(cursor.margin[0]);
                 }
                 "offset" => {
-                    cursor.x = cursor.margin[0] + number(node.attr("hshift")).unwrap_or(0.0);
-                    cursor.y = cursor.frame[1] + number(node.attr("vshift")).unwrap_or(0.0);
+                    cursor.x += number(node.attr("hshift")).unwrap_or(0.0);
+                    cursor.y += number(node.attr("vshift")).unwrap_or(0.0);
                     cursor.line_height = 0.0;
                 }
                 "ret" => {
@@ -526,6 +528,21 @@ mod tests {
         assert_eq!(font.face.as_deref(), Some("/font/normal.font"));
     }
 
+    /// The game's layered paint thumbnail (F17) steps back over the
+    /// 256-wide icon to stack the next layer on it.
+    #[test]
+    fn offset_moves_the_cursor_from_where_it_is() {
+        let items = run(
+            "<offset hshift=10 vshift=30><img src=/a/clr_0.mat color=FF0000FF>\
+             <offset hshift=-256><img src=/a/clr_1.mat>",
+            [292.0, 96.0],
+        );
+        assert_eq!(
+            bounds(&items),
+            vec![[10.0, 30.0, 266.0, 94.0], [10.0, 30.0, 266.0, 94.0]]
+        );
+    }
+
     #[test]
     fn long_text_wraps_at_spaces_unless_nowrap() {
         // 8 units per character: "aaaa bbbb" (72) does not fit in 50.
@@ -567,7 +584,7 @@ mod tests {
             vec![
                 [15.0, 0.0, 31.0, 10.0],
                 [15.0, 10.0, 23.0, 20.0],
-                [5.0, 0.0, 13.0, 10.0],
+                [28.0, 10.0, 36.0, 20.0],
             ]
         );
     }
