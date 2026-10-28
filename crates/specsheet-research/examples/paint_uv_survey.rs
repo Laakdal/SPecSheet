@@ -3,7 +3,7 @@
 //! `truckpaint` pieces (by effect of their first look's material) per number
 //! of UV sets and per presence of vertex colours, and averages the colours.
 //! Given model paths instead, prints each paint piece's UV range per set.
-//! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example paint_uv_survey [-- /vehicle/.../x.pmd ...]
+//! Usage: ETS2_DIR=... cargo run --release -p specsheet-research --example paint_uv_survey [-- /vehicle/.../x.pmd ...]
 
 use std::collections::BTreeMap;
 

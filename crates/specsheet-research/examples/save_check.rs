@@ -3,7 +3,7 @@
 //! class and attribute names and counts only, never values or paths.
 //!
 //! Usage:
-//!   cargo run --release -p specsheet-formats --example save_check -- "<home>/profiles"
+//!   cargo run --release -p specsheet-research --example save_check -- "<home>/profiles"
 //!
 //! Optional, to stderr: `SAVE_CHECK_F3=1` prints float 3 of every binary
 //! placement; `SAVE_CHECK_KEY=<attribute>` prints that scalar from binary units.

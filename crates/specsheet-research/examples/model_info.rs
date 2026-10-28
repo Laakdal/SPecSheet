@@ -1,5 +1,5 @@
 //! Research tool: prints the looks, variants, parts and locators of a model.
-//! Usage: ETS2_DIR=... cargo run --example model_info -- /vehicle/.../x.pmd
+//! Usage: ETS2_DIR=... cargo run -p specsheet-research --example model_info -- /vehicle/.../x.pmd
 
 use specsheet_data::{GameFs, GameInstall};
 use specsheet_formats::{pmd::Pmd, pmg::Pmg};

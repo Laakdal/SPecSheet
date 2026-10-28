@@ -2,7 +2,7 @@
 //! UI scene models use. For every `.pmd` under `vehicle/truck`, `model/ui` and
 //! `model2/ui`, reads the materials of every look and counts, per effect name
 //! (from the `.mat` only), the models and distinct materials that use it.
-//! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example effect_usage
+//! Usage: ETS2_DIR=... cargo run --release -p specsheet-research --example effect_usage
 
 use std::collections::{BTreeMap, BTreeSet};
 

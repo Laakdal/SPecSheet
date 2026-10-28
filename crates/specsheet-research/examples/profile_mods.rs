@@ -2,7 +2,7 @@
 //! already decrypted. Files are only read.
 //!
 //! Usage:
-//!   cargo run --release -p specsheet-formats --example profile_mods -- <profile.sii> ...
+//!   cargo run --release -p specsheet-research --example profile_mods -- <profile.sii> ...
 
 use specsheet_formats::{scsc, sii};
 

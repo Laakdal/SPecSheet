@@ -2,7 +2,7 @@
 //! the visible wheel locators into axles (by z, within 5 cm) and prints them
 //! next to the definition's per-axle arrays (`powered_axle`,
 //! `steerable_axle`, `liftable_axle`).
-//! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example axle_survey
+//! Usage: ETS2_DIR=... cargo run --release -p specsheet-research --example axle_survey
 
 use specsheet_data::model::ModelCache;
 use specsheet_data::{list_trucks, load_catalog, GameFs, GameInstall};

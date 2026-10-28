@@ -1,0 +1,17 @@
+[package]
+name = "specsheet-research"
+version = "0.1.0"
+description = "Research tools over the user's ETS2 install: surveys, dumps and probes that produce research/evidence."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+specsheet-archive = { path = "../specsheet-archive" }
+specsheet-formats = { path = "../specsheet-formats" }
+specsheet-truck = { path = "../specsheet-truck" }
+specsheet-data = { path = "../specsheet-data" }
+
+[lints]
+workspace = true

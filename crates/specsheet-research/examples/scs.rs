@@ -1,10 +1,10 @@
 //! Research tool over a whole installation (all archives layered).
 //!
 //! Usage (ETS2_DIR must point at the game directory):
-//!   cargo run --release --example scs -- ls <dir>
-//!   cargo run --release --example scs -- cat <file>
-//!   cargo run --release --example scs -- find <dir> <substring>
-//!   cargo run --release --example scs -- tex <file.tobj>   (image and sample records)
+//!   cargo run --release -p specsheet-research --example scs -- ls <dir>
+//!   cargo run --release -p specsheet-research --example scs -- cat <file>
+//!   cargo run --release -p specsheet-research --example scs -- find <dir> <substring>
+//!   cargo run --release -p specsheet-research --example scs -- tex <file.tobj>   (image and sample records)
 
 use std::io::Write;
 

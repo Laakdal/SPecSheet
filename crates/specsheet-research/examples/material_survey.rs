@@ -5,7 +5,7 @@
 //! sources. It then prints the materials whose base texture is named like
 //! chrome or metal.
 //!
-//! Usage: cargo run --release -p specsheet-data --example material_survey
+//! Usage: cargo run --release -p specsheet-research --example material_survey
 
 use std::collections::{BTreeMap, BTreeSet};
 

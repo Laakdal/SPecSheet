@@ -7,7 +7,7 @@
 //! of that name exists. Nothing else is written.
 //!
 //! Usage:
-//!   cargo run --release -p specsheet-data --example mod_write -- <dir>
+//!   cargo run --release -p specsheet-research --example mod_write -- <dir>
 
 use specsheet_archive::{write_new_package, ZipArchive, ZipWriter};
 use specsheet_formats::mod_manifest::ModManifest;

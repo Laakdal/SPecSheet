@@ -17,6 +17,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("specsheet-formats", 0),
     ("specsheet-truck", 0),
     ("specsheet-data", 1),
+    ("specsheet-research", 8),
     ("specsheet", 9),
     ("xtask", 0),
 ];

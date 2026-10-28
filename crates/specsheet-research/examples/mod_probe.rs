@@ -1,7 +1,7 @@
 //! Research tool: what the mod folder's packages are made of.
 //!
 //! Usage:
-//!   cargo run --release --example mod_probe -- <mod dir>
+//!   cargo run --release -p specsheet-research --example mod_probe -- <mod dir>
 //!
 //! Sniffs every file by content (not extension) and reads it with the
 //! matching reader: `Archive` (HashFS v2), `HashFsV1Archive` (HashFS v1) or

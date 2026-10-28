@@ -5,7 +5,7 @@
 //! the face count, and the sample record's address modes per top-level
 //! directory.
 //!
-//! Usage: cargo run --release -p specsheet-archive --example texture_layout -- <archive.scs>...
+//! Usage: cargo run --release -p specsheet-research --example texture_layout -- <archive.scs>...
 
 use std::collections::{BTreeMap, VecDeque};
 

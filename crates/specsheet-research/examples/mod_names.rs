@@ -6,7 +6,7 @@
 //! definitions use). Packages are only read.
 //!
 //! Usage (ETS2_DIR set, or the install is discovered):
-//!   cargo run --release -p specsheet-data --example mod_names -- [--list] [--zips <dir>] <package.scs> ...
+//!   cargo run --release -p specsheet-research --example mod_names -- [--list] [--zips <dir>] <package.scs> ...
 
 use std::collections::{BTreeMap, HashSet};
 

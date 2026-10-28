@@ -2,7 +2,7 @@
 //! kinds per file extension and texture formats, and verifies that every
 //! listed name resolves and that sample textures decompress and unpack.
 //!
-//! Usage: cargo run --release --example survey -- <archive.scs>...
+//! Usage: cargo run --release -p specsheet-research --example survey -- <archive.scs>...
 
 use std::collections::{BTreeMap, VecDeque};
 

@@ -2,7 +2,7 @@
 //! the game's way and measures how far each pin lands from the bounding box
 //! of the parts placed in its slot. Pins far from their parts point at a
 //! wrong base locator or model order.
-//! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example pin_survey
+//! Usage: ETS2_DIR=... cargo run --release -p specsheet-research --example pin_survey
 
 use std::collections::BTreeMap;
 
