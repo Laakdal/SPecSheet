@@ -41,3 +41,6 @@ jobs:
 
       - name: Test
         run: cargo test --workspace
+
+      - name: Crate layers (D17)
+        run: cargo xtask layers
