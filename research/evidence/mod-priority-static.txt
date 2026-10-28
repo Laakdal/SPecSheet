@@ -1,0 +1,36 @@
+Mod mount priority (finding F14), ETS2 1.60.1.7
+=================================================
+Subject: eurotrucks2.exe, sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Method (read-only, no Ghidra run): string xrefs by RIP-relative LEA, .pdata extents and capstone
+disassembly, as in tools/research/{triage,disasm}.py; listings stay out of the repository.
+Facts only, in our own words.
+
+1. The active-mods loop (FUN_1403fc330, references "[mods] Active %Iu mods (local: %Iu,
+   workshop: %Iu)" at 0x142112188)
+   - Starts a running priority at 1001 (0x3e9).
+   - Walks the active list in order (index 0 first) and, for each mod, calls a virtual mount on
+     the mod package manager (the object at +0x1210; built by 0x1414823f0, vtable 0x1422e57e8,
+     slot +0x20 = 0x141483310) with the running priority as its fourth argument.
+   - Adds the mount's return value to the running priority when the mount does not return -1.
+2. The package mount (0x141483310)
+   - Logs "[mod_package_manager] Mod "%s" has been mounted. (… source: %s)" with source
+     "User mods" or "Steam Workshop".
+   - Clamps the priority to [-100000, 99999] and passes it to the UFS mount (0x14150ed40), whose
+     return value it returns.
+   - A package must have exactly one device ("it's expected that package has only single
+     device").
+3. The UFS device registration (0x140155610, via 0x14150efc0)
+   - Stores the priority in the mount record (+0x28 of the record).
+   - Re-sorts the mounted-device list after every mount with the comparator 0x140156c30:
+     a before b when a.priority > b.priority (returns -1), after when lower (1), 0 when equal.
+     So the list is in descending priority.
+   - Logs "[fs] device %s mounted to %s pool."
+
+Reading
+- Confirmed: mods get increasing priorities in active-list order, starting at 1001, and the
+  device list is kept highest priority first.
+- Hypothesis (strong): a file lookup takes the first device in the list that has the path, so
+  for a path two mods share, the mod LATER in active_mods[] wins. The lookup walk itself was not
+  read.
+- Hypothesis: base and DLC archives mount below 1001, so any mod outranks them where pools
+  meet. Their priorities and how the mod pool ranks against the scs pool were not read.
