@@ -246,7 +246,7 @@ Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chass
 | Question | Next step |
 |---|---|
 | Exact slot-to-locator matching rule (suffixes `_s`, `_sl`, digits) | REA: decompile the caller of `0x1421c2f90` (F8) |
-| How pins are positioned, and which slot tokens use fixed tabs instead | REA: decompile `FUN_140fbf860` (the caller of `FUN_140fe0fc0`, F5) and the writer of the token table `0x14350cc00` |
+| How pins are positioned, and which slot tokens use fixed tabs instead | REA: string search for `pin_offset`/`pin_dir`/`pin_group`, decompile the reader; and the writer of the token table `0x14350cc00` |
 | DLC mount priority | Runtime log does not show it; low impact (DLCs rarely override base files) |
 | Metadata record types `0x05` and `0x06` | No impact on reading content |
 | Meaning of `hide_in` bitmask on addons | Probably camera-dependent hiding; not needed for exterior preview |

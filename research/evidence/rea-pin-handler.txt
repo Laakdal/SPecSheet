@@ -1,0 +1,62 @@
+REA function analysis of FUN_140fbf860, the caller of the pin-select routine (F5)
+=================================================================================
+
+Command (Git Bash; S = %USERPROFILE%\rea-ets2):
+  REA_GHIDRA_STARTUP_TIMEOUT_MS=10800000 JAVA_HOME="C:\Program Files\Java\jdk-22" \
+  GHIDRA_INSTALL_DIR=%USERPROFILE%\AppData\Local\Programs\Ghidra\ghidra_12.1.4_PUBLIC \
+  npx -y rea-agents@6.4.0 function <eurotrucks2.exe> --procedure=0x140fbf860 \
+    --provider ghidra --snapshot "$S/eurotrucks2.snapshot" --format json \
+    > "$S/function-pin-caller.json"
+  (2026-10-28, about 38 min. Claude Code reaped the wrapper shell for low memory
+  but the REA process finished and wrote its full output.)
+
+Evidence ID: ev_f6f0551988f753985a7b81707b39a259d33f67755e2876037bbb577fb61d657a
+Subject:     eurotrucks2.exe, ETS2 1.60.1.7,
+             sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Provider:    Ghidra 12.1.4, default analyzers. Static only: nothing was executed.
+
+The full record (pseudocode, assembly) stays outside the repository
+(%USERPROFILE%\rea-ets2\function-pin-caller.json): it is a decompilation of SCS
+code. Below are our observations, in our own words.
+
+Function
+--------
+FUN_140fbf860, 0x140fbf860-0x140fc0b90 (4,913 bytes), four arguments: the
+screen object, an event or widget, an event type, and an action given as three
+tokens. Callers: FUN_141153e60 and FUN_1411569c0. 54 callees, among them
+FUN_140fe0fc0 (the pin-select routine of F5).
+Referenced strings: @@gamepad_enter_search_text@@, @@filter_accessories@@,
+@@clear_input@@.
+
+Observed structure
+------------------
+- It switches on the event type (cases 1-8, 0xb, 0xc, 0x10) and on widget ids.
+  The ids it tests exist in the tuning screen's layout files:
+  402 = filter.button.id and 403 = clear.input.button
+  (ui/truck_configuration_left.sii), 7500 = help.icon (..._right.sii). It also
+  tests 300, 401, 460-462, 0x1d4c (7500).
+- Input actions are compared as tokens (decoded from the constants):
+  selectfcs, select, selectalt, back, joy_sec_prv / joy_sec_nxt,
+  joy_nav_prv / joy_nav_nxt, j_trzoom_in / j_trzoom_out, j_tr_att_tra,
+  shortcut_1, shortcut_2h, shortcut_3h.
+- Pin navigation: the handler keeps the focused pin's index on the screen
+  object. The pin button is 10000 + that index, or 11000 + index for a
+  hookup. A widget counts as a pin when its id - 10000 < 10000, i.e. pins use
+  ids 10000-19999.
+
+Conclusions
+-----------
+Observed:
+  - FUN_140fbf860 is the tuning screen's input handler (truck_config_hdl_u):
+    buttons, gamepad and keyboard actions, focus. It does not create or place
+    pins.
+  - Gamepad: joy_sec_prv/nxt step between sections (tabs, Hypothesis from the
+    names), joy_nav_prv/nxt step between pins, j_trzoom_in/out zoom the truck
+    view.
+  - Pin ids form the range 10000-19999 (accessory pins from 10000, hookup
+    pins from 11000).
+Unknown:
+  - Where pins are created and positioned. Next lead: the code that reads
+    /def/truck_config_scene.sii's pin_group / pin_offset / pin_dir /
+    pin_dir_uk / double_sided (F5). Find it with a string search for those
+    keys, then decompile it.
