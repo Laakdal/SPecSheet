@@ -11,8 +11,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::SlotId;
 
 /// Whether `locator` is named for `slot` under the matching rule.
 pub fn matches_slot(slot: &str, locator: &str) -> bool {

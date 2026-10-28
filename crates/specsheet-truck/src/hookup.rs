@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::ids::{AccessoryId, SlotId};
+use specsheet_core::{AccessoryId, SlotId};
 
 /// One mountable hookup unit (`accessory_*hookup*_data : <id>.addon_hookup`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

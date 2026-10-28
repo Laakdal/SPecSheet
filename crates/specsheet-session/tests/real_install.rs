@@ -111,9 +111,9 @@ fn every_truck_model_parses() {
 #[test]
 fn every_preset_validates_and_assembles_without_warnings() {
     use specsheet_assembly::{assemble, Drive};
+    use specsheet_core::SlotId;
     use specsheet_data::model::ModelCache;
     use specsheet_data::{list_trucks, load_catalog, load_preset};
-    use specsheet_truck::SlotId;
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();
@@ -489,9 +489,9 @@ fn every_preset_wheel_sits_in_its_tyre() {
 #[test]
 fn configured_hookups_sit_on_their_host_model() {
     use specsheet_assembly::{assemble, Drive};
+    use specsheet_core::{SlotId, TruckId};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{load_catalog, load_vehicle_config};
-    use specsheet_truck::{SlotId, TruckId};
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();
@@ -835,8 +835,9 @@ fn every_paint_job_parses() {
 
 #[test]
 fn paint_job_parts_resolve_by_unit_token() {
+    use specsheet_core::{AccessoryId, TruckId};
     use specsheet_data::load_catalog;
-    use specsheet_truck::{AccessoryId, AccessoryKind, TruckId};
+    use specsheet_truck::AccessoryKind;
     use std::collections::BTreeSet;
 
     let Some(fs) = game_fs() else { return };
@@ -936,8 +937,9 @@ fn every_paint_mask_exists_or_is_a_constant() {
 
 #[test]
 fn every_desktop_preset_loads_its_paint_colours() {
+    use specsheet_core::TruckId;
     use specsheet_data::{load_catalog, load_vehicle_config};
-    use specsheet_truck::{AccessoryKind, TruckId};
+    use specsheet_truck::AccessoryKind;
 
     const KEYS: [&str; 6] = [
         "base_color",
@@ -1012,9 +1014,10 @@ fn every_desktop_preset_loads_its_paint_colours() {
 #[test]
 fn a_cabin_change_keeps_the_paint_job_design() {
     use specsheet_assembly::{slot_availability, Drive};
+    use specsheet_core::{AccessoryId, TruckId};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{load_catalog, load_preset};
-    use specsheet_truck::{AccessoryId, Configuration, TruckId};
+    use specsheet_truck::Configuration;
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();

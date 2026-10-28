@@ -8,6 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+specsheet-core = { path = "../specsheet-core" }
 specsheet-assembly = { path = "../specsheet-assembly" }
 specsheet-data = { path = "../specsheet-data" }
 specsheet-truck = { path = "../specsheet-truck" }

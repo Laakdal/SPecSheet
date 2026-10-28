@@ -15,8 +15,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use specsheet_core::math::rotate;
+use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::SlotId;
 
 use crate::Drive;
 use specsheet_data::scene::PinSpec;
@@ -148,7 +149,10 @@ pub fn pins(table: &[PinSpec], bases: &PinBases, drive: Drive) -> Vec<Pin> {
                 }
                 push(add(base.position, spec.offset), facing_of(dir));
             }
-            None => push(base.position, rotate(base.rotation_wxyz, FORWARD)),
+            None => {
+                let [w, x, y, z] = base.rotation_wxyz;
+                push(base.position, rotate([x, y, z, w], FORWARD))
+            }
         }
     }
     // The disc pin of each wheel, by (group, wheel index).
@@ -225,26 +229,6 @@ fn normalize(v: [f32; 3]) -> [f32; 3] {
         return [0.0; 3];
     }
     [v[0] / length, v[1] / length, v[2] / length]
-}
-
-/// Rotates `v` by the unit quaternion `(w, x, y, z)`.
-fn rotate([w, x, y, z]: [f32; 4], v: [f32; 3]) -> [f32; 3] {
-    let u = [x, y, z];
-    let t = cross(u, v).map(|c| 2.0 * c);
-    let c = cross(u, t);
-    [
-        v[0] + w * t[0] + c[0],
-        v[1] + w * t[1] + c[1],
-        v[2] + w * t[2] + c[2],
-    ]
-}
-
-fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
-    [
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    ]
 }
 
 #[cfg(test)]

@@ -3,10 +3,11 @@
 
 use std::collections::BTreeMap;
 
+use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::{Configuration, SlotId, TruckCatalog};
+use specsheet_truck::{Configuration, TruckCatalog};
 
-use super::{Placement, Transform};
+use super::Placement;
 use specsheet_data::model::ModelCache;
 use specsheet_data::GameFs;
 
@@ -57,7 +58,7 @@ pub(super) fn hookup_placements(
                     name: l.name.clone(),
                     position: placement
                         .transform
-                        .compose(&Transform::from_locator(l))
+                        .compose(&super::transform::from_locator(l))
                         .translation,
                 })
                 .collect()
@@ -86,7 +87,7 @@ pub(super) fn hookup_placements(
                         variant: None,
                         transform: host_placement
                             .transform
-                            .compose(&Transform::from_locator(locator)),
+                            .compose(&super::transform::from_locator(locator)),
                     }),
                     None,
                 ));

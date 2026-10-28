@@ -1,6 +1,8 @@
 //! Rule tests on a small hand-built catalog mirroring real definitions.
 
 use crate::*;
+use specsheet_core::colour::srgb_to_linear;
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 
 fn accessory(id: &str, slot: &str, kind: AccessoryKind) -> Accessory {
     let model = ModelRef {

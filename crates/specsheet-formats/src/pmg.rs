@@ -4,6 +4,8 @@
 
 use std::ops::Range;
 
+use specsheet_core::Aabb;
+
 use crate::binary::Reader;
 use crate::FormatError;
 
@@ -16,57 +18,6 @@ const PIECE_LEN: usize = 100;
 /// across all 53,917 models; the cap keeps a hostile count from
 /// allocating millions of empty sets.
 const MAX_UV_SETS: usize = 8;
-
-/// Axis-aligned bounding box.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Aabb {
-    pub min: [f32; 3],
-    pub max: [f32; 3],
-}
-
-impl Aabb {
-    /// Midpoint of `min` and `max`.
-    pub fn center(&self) -> [f32; 3] {
-        std::array::from_fn(|axis| (self.min[axis] + self.max[axis]) * 0.5)
-    }
-
-    /// Smallest box containing both boxes.
-    pub fn union(&self, other: &Aabb) -> Aabb {
-        Aabb {
-            min: std::array::from_fn(|axis| self.min[axis].min(other.min[axis])),
-            max: std::array::from_fn(|axis| self.max[axis].max(other.max[axis])),
-        }
-    }
-
-    /// The box moved in by `margin` on every side. An axis never inverts: if
-    /// the margin is larger than half the extent, that axis collapses to the
-    /// centre.
-    pub fn shrunk(&self, margin: f32) -> Aabb {
-        let center = self.center();
-        let axis = |i: usize| {
-            let (lo, hi) = (self.min[i] + margin, self.max[i] - margin);
-            if lo <= hi {
-                (lo, hi)
-            } else {
-                (center[i], center[i])
-            }
-        };
-        Aabb {
-            min: std::array::from_fn(|i| axis(i).0),
-            max: std::array::from_fn(|i| axis(i).1),
-        }
-    }
-
-    /// Whether `p` lies inside, bounds included.
-    pub fn contains_point(&self, p: [f32; 3]) -> bool {
-        (0..3).all(|axis| self.min[axis] <= p[axis] && p[axis] <= self.max[axis])
-    }
-
-    /// Whether `other` lies entirely inside, bounds included.
-    pub fn contains_box(&self, other: &Aabb) -> bool {
-        self.contains_point(other.min) && self.contains_point(other.max)
-    }
-}
 
 /// A named group of pieces and locators. Parts are shown or hidden per
 /// variant through the matching `.pmd`.

@@ -7,9 +7,10 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_truck::{
-    Accessory, AccessoryId, AccessoryKind, ChangeSet, ConfigError, Configuration, Hookup,
-    Incompatibility, SlotId, TruckCatalog, TruckId,
+    Accessory, AccessoryKind, ChangeSet, ConfigError, Configuration, Hookup, Incompatibility,
+    TruckCatalog,
 };
 
 use specsheet_assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};

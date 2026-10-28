@@ -18,8 +18,8 @@ use std::path::PathBuf;
 use bevy::prelude::*;
 use bevy::render::view::screenshot::{save_to_disk, Screenshot};
 use specsheet_assembly::Drive;
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_session::view::Tab;
-use specsheet_truck::{AccessoryId, SlotId, TruckId};
 
 use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;

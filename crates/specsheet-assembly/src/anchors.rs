@@ -2,11 +2,12 @@
 
 use std::collections::BTreeMap;
 
-use specsheet_formats::pmg::{Aabb, Locator};
-use specsheet_truck::SlotId;
+use specsheet_core::Aabb;
+use specsheet_core::SlotId;
+use specsheet_formats::pmg::Locator;
 
-use super::transform::transform_aabb;
 use super::Placement;
+use specsheet_core::math::transform_aabb;
 use specsheet_data::model::ModelCache;
 use specsheet_data::GameFs;
 

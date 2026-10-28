@@ -15,6 +15,7 @@ use bevy::render::render_resource::{
     Extent3d, TextureDimension, TextureFormat as GpuFormat, TextureViewDescriptor,
     TextureViewDimension,
 };
+use specsheet_core::colour::srgb_to_linear;
 use specsheet_data::render::{
     build_mesh, load_texture, texture_block_bytes, BlendMode, CubeTextureData, MaterialInfo,
     MeshData, MeshPiece, MipLevel, TextureData, TextureFormat,
@@ -490,14 +491,6 @@ fn endpoint_mean(block: &[u8]) -> [f32; 3] {
     };
     let (a, b) = (colour(block[0], block[1]), colour(block[2], block[3]));
     [0, 1, 2].map(|i| (a[i] + b[i]) / 2.0)
-}
-
-fn srgb_to_linear(c: f32) -> f32 {
-    if c <= 0.04045 {
-        c / 12.92
-    } else {
-        ((c + 0.055) / 1.055).powf(2.4)
-    }
 }
 
 fn is_block(format: TextureFormat) -> bool {

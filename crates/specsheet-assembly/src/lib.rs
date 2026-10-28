@@ -29,15 +29,13 @@ pub mod slots;
 
 use std::collections::BTreeMap;
 
+use specsheet_core::{AccessoryId, SlotId, Transform};
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::{
-    AccessoryId, AccessoryKind, Configuration, SlotAvailability, SlotId, TruckCatalog,
-};
+use specsheet_truck::{AccessoryKind, Configuration, SlotAvailability, TruckCatalog};
 
 pub use anchors::Anchor;
 pub use base::slot_availability;
 pub use hookups::HookupPosition;
-pub use transform::Transform;
 
 use crate::pins::PinBases;
 use crate::slots::locators_by_slot;
@@ -142,7 +140,7 @@ pub fn assemble(
                 model: model.clone(),
                 look: accessory.model.look.clone(),
                 variant: accessory.model.variant.clone(),
-                transform: Transform::from_locator(locator),
+                transform: transform::from_locator(locator),
             });
         }
     }
@@ -204,11 +202,13 @@ pub fn assemble(
 
 #[cfg(test)]
 mod tests {
-    use specsheet_formats::pmg::{Aabb, Locator};
-    use specsheet_truck::{AccessoryId, AccessoryKind, SlotId, WheelPart};
+    use specsheet_core::Aabb;
+    use specsheet_core::{AccessoryId, SlotId};
+    use specsheet_formats::pmg::Locator;
+    use specsheet_truck::{AccessoryKind, WheelPart};
 
-    use super::transform::{rotate, transform_aabb};
     use super::*;
+    use specsheet_core::math::{rotate, transform_aabb};
 
     fn wheel_part(id: &str, slot: &str, wheel: WheelPart) -> specsheet_truck::Accessory {
         specsheet_truck::Accessory {

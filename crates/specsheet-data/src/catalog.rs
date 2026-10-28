@@ -4,10 +4,11 @@
 
 use std::collections::HashMap;
 
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_formats::sii::{SiiDocument, Unit, Value};
 use specsheet_truck::{
-    slots, Accessory, AccessoryId, AccessoryKind, Configuration, Flake, Flip, Hookup, ModelRef,
-    PaintJob, PaintLocks, PaintOverride, PartPaint, SlotId, TruckCatalog, TruckId, WheelPart,
+    slots, Accessory, AccessoryKind, Configuration, Flake, Flip, Hookup, ModelRef, PaintJob,
+    PaintLocks, PaintOverride, PartPaint, TruckCatalog, WheelPart,
 };
 
 use crate::error::{GameDataError, Result};

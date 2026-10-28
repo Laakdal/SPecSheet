@@ -9,12 +9,12 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_assembly::{Drive, Placement};
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_data::paint::{piece_paint, PiecePaint};
 use specsheet_data::scene::{tuning_scene, OrbitSpec, Scene};
 use specsheet_data::GameInstall;
 use specsheet_session::view::{self, SlotOptions, TruckEntry, TruckOverview};
 use specsheet_session::{GameSession, TruckSession};
-use specsheet_truck::{AccessoryId, SlotId, TruckId};
 
 use crate::settings::{self, Settings};
 

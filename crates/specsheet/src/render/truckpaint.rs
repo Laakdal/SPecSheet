@@ -12,6 +12,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderType};
 use bevy::render::storage::ShaderBuffer;
 use bevy::shader::ShaderRef;
+use specsheet_core::colour::srgb_to_linear;
 use specsheet_data::paint::{Mask, PiecePaint};
 use specsheet_data::render::MaterialInfo;
 
@@ -182,14 +183,6 @@ fn rgb_w([r, g, b]: [f32; 3], w: f32) -> Vec4 {
     Vec4::new(r, g, b, w)
 }
 
-fn srgb_to_linear(c: f32) -> f32 {
-    if c <= 0.04045 {
-        c / 12.92
-    } else {
-        ((c + 0.055) / 1.055).powf(2.4)
-    }
-}
-
 /// The uniform for `surface` painted with `paint`. The variant follows the
 /// paint job alone, as the game's paint-material builder does: livery
 /// (`airbrush`) or colour mask, never a colour mask with `flipflake`. A
@@ -340,8 +333,8 @@ impl PaintMaterials {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use specsheet_core::AccessoryId;
     use specsheet_data::paint::{FlakePaint, FlipPaint};
-    use specsheet_truck::AccessoryId;
 
     fn surface(_effect: &str) -> PaintSurface {
         PaintSurface {

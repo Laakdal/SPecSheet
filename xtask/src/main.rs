@@ -13,13 +13,16 @@ use std::process::{Command, ExitCode};
 /// layers (`docs/ARCHITECTURE.md`, D17). A crate missing here fails the
 /// check, so a new crate has to be placed deliberately.
 const LAYERS: &[(&str, u8)] = &[
+    ("specsheet-core", 0),
     ("specsheet-archive", 0),
-    ("specsheet-formats", 0),
-    ("specsheet-truck", 0),
-    ("specsheet-data", 1),
-    ("specsheet-gameui", 2),
-    ("specsheet-assembly", 2),
-    ("specsheet-session", 3),
+    ("specsheet-theme", 0),
+    ("specsheet-formats", 1),
+    ("specsheet-truck", 1),
+    ("specsheet-data", 2),
+    ("specsheet-gameui", 3),
+    ("specsheet-assembly", 3),
+    ("specsheet-session", 4),
+    ("specsheet-render", 5),
     ("specsheet-research", 8),
     ("specsheet", 9),
     ("xtask", 0),

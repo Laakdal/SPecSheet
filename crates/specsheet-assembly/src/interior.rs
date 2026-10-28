@@ -8,7 +8,7 @@
 use specsheet_formats::pmg::Locator;
 use specsheet_truck::AccessoryKind;
 
-use super::{Drive, Placement, Transform};
+use super::{Drive, Placement};
 
 /// Cabin locator the interior's exterior-view model attaches to.
 const INTERIOR_LOCATOR: &str = "ext_interior";
@@ -47,7 +47,7 @@ pub(super) fn interior_placements(
             ));
             continue;
         };
-        let transform = Transform::from_locator(locator);
+        let transform = super::transform::from_locator(locator);
         placements.push(Placement {
             slot: accessory.slot.clone(),
             accessory: accessory.id.clone(),

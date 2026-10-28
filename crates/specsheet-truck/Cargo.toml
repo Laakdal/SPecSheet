@@ -8,6 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+specsheet-core = { path = "../specsheet-core" }
 serde = { version = "1", features = ["derive"] }
 thiserror.workspace = true
 

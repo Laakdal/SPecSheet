@@ -5,6 +5,7 @@
 //! here from `specsheet-data::view`.
 
 use bevy_egui::egui::{self, Align2, Color32, FontId, Id, Pos2, Sense};
+use specsheet_core::{AccessoryId, SlotId};
 use specsheet_data::localization::Localization;
 use specsheet_gameui::flow::{self, Font, Item, Measure};
 use specsheet_gameui::{
@@ -13,7 +14,6 @@ use specsheet_gameui::{
 };
 use specsheet_session::view::{tab_slots, OptionView, SlotOptions, Tab, TabSlot, TruckOverview};
 use specsheet_session::GameSession;
-use specsheet_truck::{AccessoryId, SlotId};
 
 use super::textures::UiTextures;
 

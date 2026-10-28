@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::ids::{AccessoryId, SlotId};
+use specsheet_core::{AccessoryId, SlotId};
 
 /// Flake noise texture used when a paint job names none (Hypothesis: the
 /// executable holds this path, and 1,063 of the 2,488 units that write
@@ -183,13 +183,4 @@ pub fn shared_mask_color(path: &str) -> Option<[f32; 4]> {
         *channel = f32::from(byte) / 255.0;
     }
     Some(rgba)
-}
-
-/// The sRGB transfer function's inverse, for one channel in `[0, 1]`.
-pub fn srgb_to_linear(c: f32) -> f32 {
-    if c <= 0.04045 {
-        c / 12.92
-    } else {
-        ((c + 0.055) / 1.055).powf(2.4)
-    }
 }

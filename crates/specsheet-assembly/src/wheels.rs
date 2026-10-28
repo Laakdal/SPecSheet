@@ -1,7 +1,8 @@
 //! Wheel parts at the chassis wheel locators (finding F9).
 
+use specsheet_core::AccessoryId;
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::{AccessoryId, AccessoryKind, WheelPart};
+use specsheet_truck::{AccessoryKind, WheelPart};
 
 use super::{Placement, Transform};
 

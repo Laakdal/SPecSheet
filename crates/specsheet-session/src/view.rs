@@ -4,9 +4,11 @@
 
 use std::collections::{HashMap, HashSet};
 
+use specsheet_core::colour::linear_to_srgb;
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_truck::{
-    Accessory, AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId, DEFAULT_BASE_COLOR,
-    DEFAULT_FLAKE_COLOR, DEFAULT_FLIP_COLOR,
+    Accessory, AccessoryKind, Incompatibility, DEFAULT_BASE_COLOR, DEFAULT_FLAKE_COLOR,
+    DEFAULT_FLIP_COLOR,
 };
 
 use crate::{GameSession, SlotOption, TruckSession};
@@ -339,15 +341,7 @@ fn icon_argument(accessory: &Accessory) -> Option<String> {
 /// channel clamped to 0–1, sRGB-encoded, ×255 truncated, printed
 /// `FF` + blue + green + red.
 fn ui_color(linear: [f32; 3]) -> String {
-    let [r, g, b] = linear.map(|c| {
-        let c = c.clamp(0.0, 1.0);
-        let srgb = if c <= 0.003_130_8 {
-            12.92 * c
-        } else {
-            1.055 * c.powf(1.0 / 2.4) - 0.055
-        };
-        (srgb * 255.0) as u8
-    });
+    let [r, g, b] = linear.map(|c| (linear_to_srgb(c) * 255.0) as u8);
     format!("FF{b:02X}{g:02X}{r:02X}")
 }
 

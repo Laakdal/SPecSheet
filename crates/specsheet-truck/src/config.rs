@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::catalog::{Accessory, AccessoryKind, TruckCatalog};
-use crate::ids::{AccessoryId, SlotId, TruckId};
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 
 /// Which addon slots the current base models can host. Computed outside the
 /// core (it needs model geometry); base/non-visual slots are always available.

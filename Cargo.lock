@@ -4849,6 +4849,7 @@ dependencies = [
  "serde",
  "serde_json",
  "specsheet-assembly",
+ "specsheet-core",
  "specsheet-data",
  "specsheet-gameui",
  "specsheet-session",
@@ -4868,9 +4869,17 @@ dependencies = [
 name = "specsheet-assembly"
 version = "0.1.0"
 dependencies = [
+ "specsheet-core",
  "specsheet-data",
  "specsheet-formats",
  "specsheet-truck",
+]
+
+[[package]]
+name = "specsheet-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -4878,6 +4887,7 @@ name = "specsheet-data"
 version = "0.1.0"
 dependencies = [
  "specsheet-archive",
+ "specsheet-core",
  "specsheet-formats",
  "specsheet-truck",
  "thiserror 2.0.21",
@@ -4890,6 +4900,7 @@ dependencies = [
  "aes",
  "cbc",
  "flate2",
+ "specsheet-core",
  "thiserror 2.0.21",
 ]
 
@@ -4897,6 +4908,7 @@ dependencies = [
 name = "specsheet-gameui"
 version = "0.1.0"
 dependencies = [
+ "specsheet-core",
  "specsheet-data",
  "specsheet-formats",
 ]
@@ -4907,6 +4919,7 @@ version = "0.1.0"
 dependencies = [
  "specsheet-archive",
  "specsheet-assembly",
+ "specsheet-core",
  "specsheet-data",
  "specsheet-formats",
  "specsheet-gameui",
@@ -4919,6 +4932,7 @@ name = "specsheet-session"
 version = "0.1.0"
 dependencies = [
  "specsheet-assembly",
+ "specsheet-core",
  "specsheet-data",
  "specsheet-formats",
  "specsheet-gameui",
@@ -4930,6 +4944,7 @@ name = "specsheet-truck"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "specsheet-core",
  "thiserror 2.0.21",
 ]
 

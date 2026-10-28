@@ -10,9 +10,9 @@
 //!        lip sits relative to the stock tyre's outer bead, per side)
 //!        wheel_fit locators  (chassis wheel locators with a rotation)
 
+use specsheet_core::Aabb;
 use specsheet_data::model::ModelCache;
 use specsheet_data::{list_trucks, load_catalog, load_preset, GameFs, GameInstall};
-use specsheet_formats::pmg::Aabb;
 use specsheet_truck::AccessoryKind;
 
 const GROUPS: &[&str] = &[

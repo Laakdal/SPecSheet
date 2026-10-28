@@ -3,8 +3,10 @@
 
 use std::collections::BTreeSet;
 
-use specsheet_formats::pmg::{Aabb, Locator};
-use specsheet_truck::{Configuration, SlotAvailability, SlotId, TruckCatalog};
+use specsheet_core::Aabb;
+use specsheet_core::SlotId;
+use specsheet_formats::pmg::Locator;
+use specsheet_truck::{Configuration, SlotAvailability, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
 use crate::slots::locators_by_slot;

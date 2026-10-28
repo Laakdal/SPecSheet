@@ -5,10 +5,10 @@
 use std::collections::BTreeSet;
 
 use specsheet_assembly::{assemble, Drive};
+use specsheet_core::TruckId;
 use specsheet_data::model::ModelCache;
 use specsheet_data::render::{build_mesh, load_texture};
 use specsheet_data::{load_catalog, load_preset, GameFs, GameInstall};
-use specsheet_truck::TruckId;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();

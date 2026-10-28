@@ -6,8 +6,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::{Accessory, AccessoryKind, SlotId, TruckCatalog};
+use specsheet_truck::{Accessory, AccessoryKind, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
 use crate::slots::locators_by_slot;
@@ -36,7 +37,7 @@ pub(super) fn cockpit_locators(
 }
 
 fn to_truck_space(parent: &Transform, locator: &Locator) -> Locator {
-    let t = parent.compose(&Transform::from_locator(locator));
+    let t = parent.compose(&super::transform::from_locator(locator));
     let [x, y, z, w] = t.rotation;
     Locator {
         name: locator.name.clone(),
@@ -103,7 +104,7 @@ pub(super) fn interior_part_placements(
         let transforms: Vec<Transform> = match (by_slot.get(&accessory.slot), cockpit) {
             (Some(locators), _) => locators
                 .iter()
-                .map(|l| Transform::from_locator(l))
+                .map(|l| super::transform::from_locator(l))
                 .collect(),
             (None, Some(eye)) => vec![*eye],
             (None, None) => {
@@ -131,7 +132,8 @@ pub(super) fn interior_part_placements(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_truck::{AccessoryId, ModelRef};
+    use specsheet_core::AccessoryId;
+    use specsheet_truck::ModelRef;
 
     fn locator(name: &str, position: [f32; 3]) -> Locator {
         Locator {

@@ -5,8 +5,8 @@ use std::collections::{BTreeMap, HashMap};
 use serde::{Deserialize, Serialize};
 
 use crate::hookup::Hookup;
-use crate::ids::{AccessoryId, SlotId, TruckId};
 use crate::paint::PaintJob;
+use specsheet_core::{AccessoryId, SlotId, TruckId};
 
 /// What kind of part an accessory is. Determines how it is assembled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

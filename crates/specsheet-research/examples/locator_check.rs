@@ -4,9 +4,10 @@
 use std::collections::BTreeSet;
 
 use specsheet_assembly::slots::locators_by_slot;
+use specsheet_core::SlotId;
 use specsheet_data::model::ModelCache;
 use specsheet_data::{list_trucks, load_catalog, load_preset, GameFs, GameInstall};
-use specsheet_truck::{AccessoryKind, SlotId};
+use specsheet_truck::AccessoryKind;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (vfs, _) = GameInstall::discover()?.mount()?;
