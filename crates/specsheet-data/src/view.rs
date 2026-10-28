@@ -4,7 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use specsheet_core::{
+use specsheet_truck::{
     Accessory, AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId, DEFAULT_BASE_COLOR,
     DEFAULT_FLAKE_COLOR, DEFAULT_FLIP_COLOR,
 };
@@ -535,7 +535,7 @@ fn describe(game: &GameSession, reason: &Incompatibility) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_core::{Flake, Flip, ModelRef, PaintJob};
+    use specsheet_truck::{Flake, Flip, ModelRef, PaintJob};
 
     fn paint_job(icon: Option<&str>, paint: PaintJob) -> Accessory {
         Accessory {

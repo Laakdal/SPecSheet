@@ -6,8 +6,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use specsheet_core::{Accessory, AccessoryKind, SlotId, TruckCatalog};
 use specsheet_formats::pmg::Locator;
+use specsheet_truck::{Accessory, AccessoryKind, SlotId, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
 use crate::fs::GameFs;
@@ -131,7 +131,7 @@ pub(super) fn interior_part_placements(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_core::{AccessoryId, ModelRef};
+    use specsheet_truck::{AccessoryId, ModelRef};
 
     fn locator(name: &str, position: [f32; 3]) -> Locator {
         Locator {

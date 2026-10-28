@@ -3,7 +3,7 @@
 //! per-part unit (finding F15, `docs/formats/paint.md`). Plain data for a
 //! renderer; nothing here touches textures.
 
-use specsheet_core::{
+use specsheet_truck::{
     shared_mask_color, AccessoryId, Configuration, SlotId, TruckCatalog, DEFAULT_BASE_COLOR,
     DEFAULT_FLAKE_CLEARCOAT_ROLLOFF, DEFAULT_FLAKE_COLOR, DEFAULT_FLAKE_DENSITY,
     DEFAULT_FLAKE_SHININESS, DEFAULT_FLAKE_UVSCALE, DEFAULT_FLAKE_VRATIO, DEFAULT_FLIP_COLOR,
@@ -166,7 +166,7 @@ pub fn piece_paint(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_core::{
+    use specsheet_truck::{
         Accessory, AccessoryKind, Flake, Flip, ModelRef, PaintJob, PaintLocks, PaintOverride,
         PartPaint, TruckId, DEFAULT_FLAKE_NOISE,
     };

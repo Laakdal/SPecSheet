@@ -429,8 +429,8 @@ fn finish_paint_textures(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_core::AccessoryId;
     use specsheet_data::paint::{FlakePaint, FlipPaint};
+    use specsheet_truck::AccessoryId;
 
     fn surface(_effect: &str) -> PaintSurface {
         PaintSurface {

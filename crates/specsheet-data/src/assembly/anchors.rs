@@ -2,8 +2,8 @@
 
 use std::collections::BTreeMap;
 
-use specsheet_core::SlotId;
 use specsheet_formats::pmg::{Aabb, Locator};
+use specsheet_truck::SlotId;
 
 use super::transform::transform_aabb;
 use super::Placement;
@@ -60,7 +60,7 @@ const INTERIOR_MARGIN: f32 = 0.05;
 pub(super) fn anchors(
     by_slot: &BTreeMap<SlotId, Vec<&Locator>>,
     slot_boxes: &BTreeMap<SlotId, Aabb>,
-    base_boxes: &[(Aabb, &specsheet_core::Accessory)],
+    base_boxes: &[(Aabb, &specsheet_truck::Accessory)],
     cabin_box: Option<Aabb>,
 ) -> Vec<Anchor> {
     let cabin_inner = cabin_box.map(|cabin| cabin.shrunk(INTERIOR_MARGIN));

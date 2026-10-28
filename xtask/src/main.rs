@@ -15,7 +15,7 @@ use std::process::{Command, ExitCode};
 const LAYERS: &[(&str, u8)] = &[
     ("specsheet-archive", 0),
     ("specsheet-formats", 0),
-    ("specsheet-core", 0),
+    ("specsheet-truck", 0),
     ("specsheet-data", 1),
     ("specsheet", 9),
     ("xtask", 0),

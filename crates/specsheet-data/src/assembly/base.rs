@@ -3,8 +3,8 @@
 
 use std::collections::BTreeSet;
 
-use specsheet_core::{Configuration, SlotAvailability, SlotId, TruckCatalog};
 use specsheet_formats::pmg::{Aabb, Locator};
+use specsheet_truck::{Configuration, SlotAvailability, SlotId, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
 use crate::fs::GameFs;
@@ -16,7 +16,7 @@ use crate::slots::locators_by_slot;
 pub(super) struct BaseLayout<'a> {
     pub(super) placements: Vec<Placement>,
     pub(super) locators: Vec<Locator>,
-    pub(super) boxes: Vec<(Aabb, &'a specsheet_core::Accessory)>,
+    pub(super) boxes: Vec<(Aabb, &'a specsheet_truck::Accessory)>,
     pub(super) warnings: Vec<String>,
 }
 

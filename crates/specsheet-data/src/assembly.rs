@@ -26,10 +26,10 @@ mod wheels;
 
 use std::collections::BTreeMap;
 
-use specsheet_core::{
+use specsheet_formats::pmg::Locator;
+use specsheet_truck::{
     AccessoryId, AccessoryKind, Configuration, SlotAvailability, SlotId, TruckCatalog,
 };
-use specsheet_formats::pmg::Locator;
 
 pub use anchors::Anchor;
 pub use base::slot_availability;
@@ -201,14 +201,14 @@ pub fn assemble(
 
 #[cfg(test)]
 mod tests {
-    use specsheet_core::{AccessoryId, AccessoryKind, SlotId, WheelPart};
     use specsheet_formats::pmg::{Aabb, Locator};
+    use specsheet_truck::{AccessoryId, AccessoryKind, SlotId, WheelPart};
 
     use super::transform::{rotate, transform_aabb};
     use super::*;
 
-    fn wheel_part(id: &str, slot: &str, wheel: WheelPart) -> specsheet_core::Accessory {
-        specsheet_core::Accessory {
+    fn wheel_part(id: &str, slot: &str, wheel: WheelPart) -> specsheet_truck::Accessory {
+        specsheet_truck::Accessory {
             id: AccessoryId::from(id),
             slot: SlotId::from(slot),
             kind: AccessoryKind::Wheel,
@@ -217,9 +217,9 @@ mod tests {
             icon: None,
             price: None,
             unlock_level: None,
-            model: specsheet_core::ModelRef {
+            model: specsheet_truck::ModelRef {
                 exterior: Some(format!("/vehicle/{id}.pmd")),
-                ..specsheet_core::ModelRef::default()
+                ..specsheet_truck::ModelRef::default()
             },
             suitable_for: Vec::new(),
             conflict_with: Vec::new(),

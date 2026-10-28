@@ -1,5 +1,5 @@
 //! Game data layer: finds the ETS2 installation, mounts its archives and
-//! turns game files into the domain types of `specsheet-core` and into
+//! turns game files into the domain types of `specsheet-truck` and into
 //! renderer-independent meshes. Never writes to the installation.
 
 pub mod assembly;

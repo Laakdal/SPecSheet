@@ -5,8 +5,8 @@
 //! x +0.683, and `ext_interior` at x −0.683 in truck space), so the
 //! locator is the eye point (Hypothesis).
 
-use specsheet_core::AccessoryKind;
 use specsheet_formats::pmg::Locator;
+use specsheet_truck::AccessoryKind;
 
 use super::{Drive, Placement, Transform};
 
@@ -18,7 +18,7 @@ const INTERIOR_LOCATOR: &str = "ext_interior";
 /// the origin, interior survey E3).
 /// Returns the exterior-view placements and the cockpit, if any.
 pub(super) fn interior_placements(
-    selected: &[&specsheet_core::Accessory],
+    selected: &[&specsheet_truck::Accessory],
     base_locators: &[Locator],
     drive: Drive,
     warnings: &mut Vec<String>,

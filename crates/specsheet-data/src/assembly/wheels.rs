@@ -1,7 +1,7 @@
 //! Wheel parts at the chassis wheel locators (finding F9).
 
-use specsheet_core::{AccessoryId, AccessoryKind, WheelPart};
 use specsheet_formats::pmg::Locator;
+use specsheet_truck::{AccessoryId, AccessoryKind, WheelPart};
 
 use super::{Placement, Transform};
 
@@ -13,12 +13,12 @@ use super::{Placement, Transform};
 /// rim/disc (finding F9): towards the truck's centre line when positive.
 /// Hub-face parts stay at the locator. Locator rotations are ignored.
 pub(super) fn wheel_placements(
-    selected: &[&specsheet_core::Accessory],
+    selected: &[&specsheet_truck::Accessory],
     front: &[&Locator],
     rear: &[&Locator],
     warnings: &mut Vec<String>,
 ) -> Vec<Placement> {
-    let is_front = |a: &specsheet_core::Accessory| a.slot.as_str().starts_with("f_");
+    let is_front = |a: &specsheet_truck::Accessory| a.slot.as_str().starts_with("f_");
     let wheel_parts: Vec<_> = selected
         .iter()
         .filter(|a| a.kind == AccessoryKind::Wheel)

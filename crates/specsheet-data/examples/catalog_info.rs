@@ -1,7 +1,7 @@
 //! Research tool: loads every truck catalog and preset, prints a summary.
 
-use specsheet_core::{AccessoryKind, SlotAvailability};
 use specsheet_data::{list_trucks, load_catalog, load_preset, GameFs, GameInstall};
+use specsheet_truck::{AccessoryKind, SlotAvailability};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (vfs, _) = GameInstall::discover()?.mount()?;

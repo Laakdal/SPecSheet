@@ -3,8 +3,8 @@
 
 use std::collections::BTreeMap;
 
-use specsheet_core::{Configuration, SlotId, TruckCatalog};
 use specsheet_formats::pmg::Locator;
+use specsheet_truck::{Configuration, SlotId, TruckCatalog};
 
 use super::{Placement, Transform};
 use crate::fs::GameFs;

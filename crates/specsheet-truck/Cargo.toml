@@ -1,5 +1,5 @@
 [package]
-name = "specsheet-core"
+name = "specsheet-truck"
 version = "0.1.0"
 description = "Truck tuning domain: accessory catalog, compatibility rules and configuration state."
 edition.workspace = true

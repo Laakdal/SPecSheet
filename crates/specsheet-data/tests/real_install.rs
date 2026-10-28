@@ -110,10 +110,10 @@ fn every_truck_model_parses() {
 
 #[test]
 fn every_preset_validates_and_assembles_without_warnings() {
-    use specsheet_core::SlotId;
     use specsheet_data::assembly::{assemble, Drive};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{list_trucks, load_catalog, load_preset};
+    use specsheet_truck::SlotId;
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();
@@ -140,7 +140,7 @@ fn every_preset_validates_and_assembles_without_warnings() {
             }
             // The cab must not look hollow: every preset's interior has an
             // exterior-view model at the cabin's `ext_interior` locator.
-            let interior = SlotId::from(specsheet_core::slots::INTERIOR);
+            let interior = SlotId::from(specsheet_truck::slots::INTERIOR);
             match assembly.placements.iter().find(|p| p.slot == interior) {
                 None => failures.push(format!("{} {drive:?}: no interior placement", truck.id)),
                 // Right-hand drive shows the interior's UK twin (F10).
@@ -372,10 +372,10 @@ fn every_tuning_scene_has_a_model_and_a_camera() {
 /// `tire_shift`.
 #[test]
 fn every_preset_wheel_sits_in_its_tyre() {
-    use specsheet_core::WheelPart;
     use specsheet_data::assembly::{assemble, Drive, Placement};
     use specsheet_data::model::{Model, ModelCache};
     use specsheet_data::{list_trucks, load_catalog, load_preset};
+    use specsheet_truck::WheelPart;
 
     /// Lip and bead are matched within this distance along the axle (m).
     /// The residual is at most 5 mm on the stock tyres (F9).
@@ -487,10 +487,10 @@ fn every_preset_wheel_sits_in_its_tyre() {
 
 #[test]
 fn configured_hookups_sit_on_their_host_model() {
-    use specsheet_core::{SlotId, TruckId};
     use specsheet_data::assembly::{assemble, Drive};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{load_catalog, load_vehicle_config};
+    use specsheet_truck::{SlotId, TruckId};
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();
@@ -509,7 +509,7 @@ fn configured_hookups_sit_on_their_host_model() {
     assert!(config
         .validate(&catalog, &Default::default())
         .iter()
-        .all(|issue| { !matches!(issue, specsheet_core::ConfigIssue::InvalidHookup { .. }) }));
+        .all(|issue| { !matches!(issue, specsheet_truck::ConfigIssue::InvalidHookup { .. }) }));
 
     let assembly = assemble(&fs, &cache, &catalog, &config, Drive::Left);
     assert!(
@@ -549,8 +549,8 @@ fn configured_hookups_sit_on_their_host_model() {
 
 #[test]
 fn every_interior_has_a_right_hand_drive_twin() {
-    use specsheet_core::AccessoryKind;
     use specsheet_data::{list_trucks, load_catalog};
+    use specsheet_truck::AccessoryKind;
 
     let Some(fs) = game_fs() else { return };
     let (mut interiors, mut paired) = (0, 0);
@@ -580,10 +580,10 @@ fn every_interior_has_a_right_hand_drive_twin() {
 /// tag, pusher and lift axles.
 #[test]
 fn every_chassis_has_one_wheel_pair_per_declared_axle() {
-    use specsheet_core::AccessoryKind;
     use specsheet_data::model::ModelCache;
     use specsheet_data::{list_trucks, load_catalog};
     use specsheet_formats::pmg::Locator;
+    use specsheet_truck::AccessoryKind;
 
     /// Left and right locators of one axle differ by up to 0.5 mm along z.
     const AXLE_TOLERANCE: f32 = 0.05;
@@ -707,10 +707,10 @@ fn every_slot_with_a_choice_is_reachable_on_the_tuning_screen() {
 
 #[test]
 fn choosing_an_interior_chooses_the_drive_side() {
-    use specsheet_core::AccessoryKind;
     use specsheet_data::assembly::Drive;
     use specsheet_data::session::GameSession;
     use specsheet_data::view;
+    use specsheet_truck::AccessoryKind;
     if std::env::var_os("ETS2_DIR").is_none() {
         return;
     }
@@ -789,7 +789,7 @@ fn every_preset_has_a_cockpit_at_the_eye_point() {
 
 /// Every truck's catalog, loaded one at a time in truck order (paint-job
 /// tests, F15).
-fn paint_catalogs(fs: &GameFs) -> impl Iterator<Item = specsheet_core::TruckCatalog> + '_ {
+fn paint_catalogs(fs: &GameFs) -> impl Iterator<Item = specsheet_truck::TruckCatalog> + '_ {
     use specsheet_data::{list_trucks, load_catalog};
     list_trucks(fs)
         .expect("trucks")
@@ -799,7 +799,7 @@ fn paint_catalogs(fs: &GameFs) -> impl Iterator<Item = specsheet_core::TruckCata
 
 #[test]
 fn every_paint_job_parses() {
-    use specsheet_core::AccessoryKind;
+    use specsheet_truck::AccessoryKind;
     let Some(fs) = game_fs() else { return };
     let (mut jobs, mut airbrush, mut alt_uv, mut flipflake, mut masked) = (0, 0, 0, 0, 0);
     let mut missing = Vec::new();
@@ -834,8 +834,8 @@ fn every_paint_job_parses() {
 
 #[test]
 fn paint_job_parts_resolve_by_unit_token() {
-    use specsheet_core::{AccessoryId, AccessoryKind, TruckId};
     use specsheet_data::load_catalog;
+    use specsheet_truck::{AccessoryId, AccessoryKind, TruckId};
     use std::collections::BTreeSet;
 
     let Some(fs) = game_fs() else { return };
@@ -903,7 +903,7 @@ fn paint_job_parts_resolve_by_unit_token() {
 
 #[test]
 fn every_paint_mask_exists_or_is_a_constant() {
-    use specsheet_core::shared_mask_color;
+    use specsheet_truck::shared_mask_color;
     use std::collections::BTreeSet;
 
     let Some(fs) = game_fs() else { return };
@@ -935,8 +935,8 @@ fn every_paint_mask_exists_or_is_a_constant() {
 
 #[test]
 fn every_desktop_preset_loads_its_paint_colours() {
-    use specsheet_core::{AccessoryKind, TruckId};
     use specsheet_data::{load_catalog, load_vehicle_config};
+    use specsheet_truck::{AccessoryKind, TruckId};
 
     const KEYS: [&str; 6] = [
         "base_color",
@@ -1010,10 +1010,10 @@ fn every_desktop_preset_loads_its_paint_colours() {
 
 #[test]
 fn a_cabin_change_keeps_the_paint_job_design() {
-    use specsheet_core::{AccessoryId, Configuration, TruckId};
     use specsheet_data::assembly::{slot_availability, Drive};
     use specsheet_data::model::ModelCache;
     use specsheet_data::{load_catalog, load_preset};
+    use specsheet_truck::{AccessoryId, Configuration, TruckId};
 
     let Some(fs) = game_fs() else { return };
     let cache = ModelCache::new();

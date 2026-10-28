@@ -4,9 +4,9 @@
 //! `steerable_axle`, `liftable_axle`).
 //! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example axle_survey
 
-use specsheet_core::AccessoryKind;
 use specsheet_data::model::ModelCache;
 use specsheet_data::{list_trucks, load_catalog, GameFs, GameInstall};
+use specsheet_truck::AccessoryKind;
 
 /// Wheel locators closer than this along z belong to one axle. Left and
 /// right locators of an axle differ by up to 0.5 mm in the game's models.

@@ -15,8 +15,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
+use specsheet_truck::SlotId;
 
 use crate::assembly::Drive;
 use crate::scene::PinSpec;

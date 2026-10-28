@@ -10,7 +10,7 @@ publish.workspace = true
 [dependencies]
 specsheet-archive = { path = "../specsheet-archive" }
 specsheet-formats = { path = "../specsheet-formats" }
-specsheet-core = { path = "../specsheet-core" }
+specsheet-truck = { path = "../specsheet-truck" }
 thiserror.workspace = true
 
 [lints]

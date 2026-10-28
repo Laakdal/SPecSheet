@@ -1,14 +1,14 @@
-//! Builds `specsheet_core` catalogs from `/def/vehicle/truck/<truck>/` and the
+//! Builds `specsheet_truck` catalogs from `/def/vehicle/truck/<truck>/` and the
 //! preset configurations from `/def/vehicle/truck_desktop/` (findings F3,
 //! F6, F15 in `docs/REVERSE_ENGINEERING.md`).
 
 use std::collections::HashMap;
 
-use specsheet_core::{
+use specsheet_formats::sii::{SiiDocument, Unit, Value};
+use specsheet_truck::{
     slots, Accessory, AccessoryId, AccessoryKind, Configuration, Flake, Flip, Hookup, ModelRef,
     PaintJob, PaintLocks, PaintOverride, PartPaint, SlotId, TruckCatalog, TruckId, WheelPart,
 };
-use specsheet_formats::sii::{SiiDocument, Unit, Value};
 
 use crate::error::{GameDataError, Result};
 use crate::fs::GameFs;

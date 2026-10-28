@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use specsheet_core::{
+use specsheet_truck::{
     Accessory, AccessoryId, AccessoryKind, ChangeSet, ConfigError, Configuration, Hookup,
     Incompatibility, SlotId, TruckCatalog, TruckId,
 };

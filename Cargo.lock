@@ -4848,8 +4848,8 @@ dependencies = [
  "image",
  "serde",
  "serde_json",
- "specsheet-core",
  "specsheet-data",
+ "specsheet-truck",
 ]
 
 [[package]]
@@ -4862,20 +4862,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "specsheet-core"
-version = "0.1.0"
-dependencies = [
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "specsheet-data"
 version = "0.1.0"
 dependencies = [
  "specsheet-archive",
- "specsheet-core",
  "specsheet-formats",
+ "specsheet-truck",
  "thiserror 2.0.21",
 ]
 
@@ -4886,6 +4878,14 @@ dependencies = [
  "aes",
  "cbc",
  "flate2",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "specsheet-truck"
+version = "0.1.0"
+dependencies = [
+ "serde",
  "thiserror 2.0.21",
 ]
 
