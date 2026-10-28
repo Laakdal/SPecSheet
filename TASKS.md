@@ -55,7 +55,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] Right-hand-drive interiors: UK twins paired for all 219 units (F10).
 - [x] Volvo "FH6" name and missing side mirrors explained as game data (F12).
 - [x] Paint-job data model (F15): every paint job's masks, colours, flags, flake/flip and per-part units (token-keyed files, `acc_list` resolved), all six preset colours as `PaintOverride`, family re-pick on a cabin change, and `piece_paint` per placed part; real-install tests cover all 19,998 paint jobs, masks and the 26 presets.
-- [x] Truck paint material (D13, clean-room from `shader-specs/truckpaint.md`): `crates/specsheet/src/render/truckpaint.{rs,wgsl}` draws colour masks, airbrush liveries, flip colour, flakes and the doubled vertex colour per placed part. The `paint_uv_survey` example settled the mask UV (set 0, `altuv` set 1) and vertex colours (`paint-vertex-streams.txt`). Seen working on the Scania S: Driving Academy livery, 770 Deep Red.
+- [x] Truck paint material (D13, clean-room from `shader-specs/truckpaint.md`): `crates/specsheet/src/render/truckpaint.{rs,wgsl}` draws colour masks, airbrush liveries, flip colour, flakes and the doubled vertex colour per placed part. The `paint_uv_survey` example settled the mask UV (set 0, `altuv` set 1) and vertex colours (`paint-vertex-streams.txt`). Seen working on the Scania S, MAN TGX Euro 6 and Actros 2014 (Driving Academy, Altamira, 770 Deep Red). Only the paint job's `airbrush` picks livery vs colour mask (the MAN cab's `.mat` names `airbrush`).
 
 - [x] **The game's truck configuration screen** (`truck.config`) is drawn from the install's layouts, templates, colours and icons (`docs/app/ui.md`):
   - the markup layout engine (`specsheet-data::ui::flow`);
