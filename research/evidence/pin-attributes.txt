@@ -152,3 +152,87 @@ observations, in our own words:
     projection depth and group.
 Next: FUN_140fcf210, the likely builder of the records (base point,
 pin_offset, pin_dir, double_sided, use_non_wheel_pin_data_from_model).
+
+8. REA function on FUN_140fcf210: the builder of the pin records
+-----------------------------------------------------------------
+Command: rea function <exe> --procedure=0x140fcf210, 2026-10-28 16:08-16:32.
+Evidence ID: ev_ddace5ef3ed537ddd858cf93112717227e4d57e818f19bfa0f7752c24b9b657d
+FUN_140fcf210, 11,434 bytes; its caller FUN_140fc7900 runs it when tab 560
+(e_accessories) or 570 (i_accessories) opens, with an "interior" flag for
+570. Read from the pseudocode plus a capstone disassembly of its callees;
+both stay outside the repository. Our observations, in our own words, with
+the label of each:
+
+Pin table
+  - The scene table (ui_truck_scene_config) is the base. When the truck's
+    accessory_truck_data has pin entries, a copy is made and each truck entry
+    replaces look, offset, dir, dir_uk and double_sided of the first scene
+    entry with the same pin_group (exact match), marking it overridden.
+    Truck entries without a scene entry are ignored. (Confirmed)
+  - Two more scene fields exist: exterior_only (0x3e8) and
+    hookups_exterior_only (0x410). (Confirmed from the attribute table.)
+  - A group is matched to an entry by exact token compare, first entry
+    wins. (Confirmed)
+
+Which slots get pins
+  - Non-wheel candidates are the slot folders of the vehicle's definition
+    (names of at most 12 token characters). Slots without a pin_group entry
+    are still pinned, with look custom_acc. (Confirmed) The exterior pass
+    skips interior_only slots; the interior pass skips exterior_only slots
+    and builds no wheel pins. (Confirmed)
+  - A slot whose locator is not found gets no pin. (Confirmed)
+  - A final pass removes records for which no options are collected
+    (Hypothesis: "no options, no pin").
+  - Hookup pins are not built here. (Confirmed)
+
+Base point (non-wheel)
+  - The first locator, in the visible parts of the truck's models, whose name
+    starts with the slot name (digits compared only up to the slot name's
+    length; names of 12 or more characters must match exactly). One base
+    point per slot, never a mean. Example from cab_s_low.pmd: beacon matches
+    beacon_sl, mirror matches mirror_s (x = 0), doorhndl matches doorhndl_s.
+    (Confirmed for the match; the model search order is a strong Hypothesis.)
+  - Base = that locator's position plus its model's placement offset in the
+    truck (translation only). (Confirmed; one extra z term Unknown.)
+
+Offset, facing and double_sided (non-wheel)
+  - Position = base + pin_offset, in truck space, unrotated and unscaled.
+    (Confirmed)
+  - Facing from pin_dir: heading = atan2(-x, -z), pitch = asin(y / |v|),
+    roll 0, so (0,0,-1) faces forward, (-1,0,0) left, (0,0,1) back, (1,0,0)
+    right. A zero vector gives the identity rotation. (Confirmed; the axis
+    the per-frame fade compares is Hypothesis -z.)
+  - pin_dir_uk replaces pin_dir when a byte of the interior object is set
+    (Hypothesis: a right-hand-drive interior).
+  - Without a table entry, the pin sits on the locator with the locator's
+    rotation. (Confirmed)
+  - double_sided: two records with the same id, the mirrored one first:
+    offset x and dir x negated. (Confirmed)
+  - use_non_wheel_pin_data_from_model: when true and the truck did not
+    override the group, the pin sits on the raw locator with the locator's
+    rotation (double_sided still applies); when false the table applies.
+    Wheels ignore it. Its default is Unknown; no 1.60 truck sets it.
+    (Confirmed)
+  - Many paired accessories hang on one centre locator (mirror_s at x = 0),
+    which is why their pin_offset x is about half the truck's width. (Our
+    reading of the data above.)
+
+Wheels
+  - Exterior pass only, after the other slots. Types in order: tire, disc,
+    hub, cover, nuts. rim, f_wheel and r_wheel never get a pin. (Confirmed)
+  - For each wheel group (f, r) and each wheel of it: base = that wheel's
+    position (Hypothesis: the wheel locator centre). Even wheels (left) get
+    the record at base + pin_offset; odd wheels (right) get a mirrored one
+    only when double_sided. So every axle gets its own pins. Both wheels of
+    an axle share one id (<group><i & ~1>, e.g. f_tire0). Without a table
+    entry, a plain pin at the wheel with identity rotation. (Confirmed)
+  - hub, cover and nuts point at the disc pin of their wheel (record +0x18)
+    and the per-frame update shows them only in one state of that link
+    (Hypothesis: while the disc pin is open). Every other record has -1.
+  - So the centre dot seen in the game is the hub pin (offset -0.1 / -0.12),
+    not a rim pin. (Hypothesis, to re-check in game.)
+
+Record layout (Confirmed): +0x0 vehicle index in the chain, +0x8 id token,
++0x10 look token, +0x18 linked record index or -1, +0x1c position (x, y, z
+plus two 512 m cell indices), +0x2c rotation quaternion (w, x, y, z),
++0x3c..+0x3e flags.
