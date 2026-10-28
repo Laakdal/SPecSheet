@@ -84,7 +84,8 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - `pin_look` is `custom_acc` 59 times, and `acc_cover`, `acc_hub` and `acc_nuts` twice each.
   - 60 of 65 `pin_group` values match truck slot directory names. Unmatched: `cabdefl`, `f_fendr_cab`, `hoodlatch`, `m_mudflap`, `markers`.
   - Most likely this is the per-slot pin offset and direction (with a UK direction) applied to the slot's locator.
-- **Unknown:** how `pin_offset`/`pin_dir` are applied, and which code creates the `acc_info_t` records. The best next target is the single caller `FUN_140fbf860`.
+- **Input (Confirmed, REA static).** The single caller `FUN_140fbf860` is the screen's input handler, not pin creation (`ev_f6f0551…`, `research/evidence/rea-pin-handler.txt`). It handles `joy_sec_prv`/`joy_sec_nxt` (tabs, by name), `joy_nav_prv`/`joy_nav_nxt` (pin to pin), `j_trzoom_in`/`j_trzoom_out`, select and back, and treats ids 10000–19999 as pins.
+- **Unknown:** how `pin_offset`/`pin_dir` are applied, and which code creates the `acc_info_t` records. Next lead: the code that reads `truck_config_scene.sii`'s `pin_*` keys (string search, then decompile).
 
 ### F6: Preset configurations use the save-game vehicle structure (Confirmed)
 - `/def/vehicle/truck_desktop/<truck>.sii` holds one `vehicle` unit whose `accessories[]` point to:
@@ -133,8 +134,9 @@ Observations (strings only; no code has been decompiled yet, so how they are use
 - **REA trace** `ev_5455a45c5b46a548623e6cb05dfd550bef755fd710b92f42ef0472fb0905a4f1` (`research/evidence/rea-trace-pin-button.json`): the pin-button string `0x14223d860` is referenced only from `0x140fe1465`, inside `FUN_140fe0fc0` (`0x140fe0fc0`-`0x140fe1569`, 1,450 bytes). This is the `truck_config_hdl_u` routine that looks up pin buttons by base id + pin index. Static reference only; nothing was executed.
 
 - **REA function** `ev_47817a8206a278f996aa8bdd5002e18731d8e65fbf27ad42fa0857b42bc3d520` (`research/evidence/rea-pin-select.txt`): `FUN_140fe0fc0` selects a pin rather than creating one. Results are in F5. Its only caller is `FUN_140fbf860`.
+- **REA function** `ev_f6f0551988f753985a7b81707b39a259d33f67755e2876037bbb577fb61d657a` (`research/evidence/rea-pin-handler.txt`): `FUN_140fbf860` (4,913 bytes) is the tuning screen's input handler. Results are in F5.
 
-Next REA step: one batched run on `FUN_140fbf860` (pin creation and placement) and the caller of `0x1421c2f90` (locator lookup), to turn F4/F5 into Confirmed.
+Next REA step: one combined string search (the `pin_*` keys of `truck_config_scene.sii`, camera, exposure, lift-axle and paint-effect seeds), then decompile the functions it points to, plus the caller of `0x1421c2f90` (locator lookup), to turn F4/F5 into Confirmed.
 
 ### F9: Rims and discs carry the tyre's lateral offset in `tire_shift` (Confirmed attribute, Hypothesis rule)
 Evidence: `research/evidence/wheel-tire-shift.txt`. Rerun with `wheel_fit`, `def_stats` and the commands at the top of that file.
