@@ -38,6 +38,13 @@ Glass, decals and lamps keep their own rules; paint and `dif.spec` have their ow
 - **Exposure (ours):** the cube's mean luminance, from its smallest mip, is scaled to the gradient's (about 0.5), clamped to ×0.25–×4. The game's cubes are dark, and the base cubes hit the ×4 cap. How the game itself exposes them is **Unknown** (REA queued).
 - The garage scene's own materials use `/material/environment/ui_vehicle_reflection.tobj`, which no truck material names. It is a flat grey cube: all six faces are (0.258, 0.246, 0.210) (`research/evidence/reflection-cubes.txt`). Whether the game substitutes it for vehicle reflections in UI scenes, which would give flat reflections on the tuning screen, is **Unknown** (REA queued).
 
+**The vehicle reflection slot.** `/material/environment/vehicle_reflection.tobj`, which most truck `.mat`s name as their `texture_reflection`, is the engine's vehicle reflection slot rather than only a file (F16, `research/evidence/exposure-tonemap-data.txt` §4). Hub scenes fill it with their own `vehicle_reflection` cube. The tuning scene (`truck_config_scene`) sets `cube_reflection: true` and names none, which suggests the engine renders a cube of the scene itself (Hypothesis). `render::vehicle_slot_cube` picks the slot's cube for the game materials:
+- the scene's `vehicle_reflection`, if it names one;
+- else, with `cube_reflection`, `ui_vehicle_reflection.tobj`, **ours (approximation)**: a stand-in for the rendered garage cube, which we don't render yet. The exe never names this file;
+- else the slot's own file (the bright forest cube).
+
+`GameTextures::set_vehicle_slot` rebinds every material that sampled the slot when the scene changes. Other cubes (`fuzzy_reflection`, `vehicle_reflection_blurry*`) are untouched. Grey-cube screenshots against the user's in-game Scania S Vortex and red MAN read much closer than the forest cube, which made paint far too glossy.
+
 See [scenes.md](scenes.md) for the environment strength.
 
 The stand-ins are an approximation, not the game's shaders.
@@ -127,7 +134,7 @@ Ours, each a Hypothesis:
 - **Output scale 1.** The game's linear HDR goes straight into Bevy's ACES tonemapper, without a reference. The game's eye adaptation and tone mapping are Unknown (F16); REA on its tonemap parameters is queued.
 - **Cube direction.** The reflected vector in world space, with z flipped as Bevy samples its environment cubes, which keeps the orientation the viewer's reflections had. The game's x/z mirroring is Unknown; if reflections look left/right flipped, suspect that.
 
-Seen working: Under Wraps now reads dark crimson like its thumbnail (brown under Bevy's lighting), with the forest cube of `vehicle_reflection.tobj` upright on the cab.
+Seen working: Under Wraps now reads dark crimson like its thumbnail (brown under Bevy's lighting), with the forest cube of `vehicle_reflection.tobj` upright on the cab (before the vehicle slot; the tuning scene now uses the grey stand-in).
 
 ## Texture upload
 
