@@ -70,6 +70,9 @@ pub struct ModelRef {
     pub cockpit_look: Option<String>,
     #[serde(default)]
     pub cockpit_variant: Option<String>,
+    /// Right-hand-drive replacement of `cockpit` (`interior_model_uk`).
+    #[serde(default)]
+    pub cockpit_uk: Option<String>,
 }
 
 /// One purchasable/selectable part.

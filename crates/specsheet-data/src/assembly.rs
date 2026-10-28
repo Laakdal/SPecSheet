@@ -15,6 +15,7 @@
 
 mod anchors;
 mod base;
+mod cockpit;
 mod hookups;
 mod interior;
 mod transform;
@@ -37,6 +38,7 @@ use crate::model::ModelCache;
 use crate::slots::locators_by_slot;
 use anchors::{anchors, placed_boxes};
 use base::{addon_slots, base_layout};
+use cockpit::{cockpit_locators, cockpit_slots, interior_part_placements, interior_slots};
 use hookups::hookup_placements;
 use interior::interior_placements;
 use wheels::wheel_placements;
@@ -58,6 +60,9 @@ pub struct Assembly {
     /// The selected interior's full cockpit, for the interior camera; not
     /// part of the exterior view. Its transform is the driver's eye point.
     pub cockpit: Option<Placement>,
+    /// Interior-only accessories on the cockpit's locators, seen from the
+    /// driver's seat (F10).
+    pub interior_parts: Vec<Placement>,
     /// Hookup positions offered by each placed host accessory, by slot.
     pub hookup_positions: BTreeMap<SlotId, Vec<HookupPosition>>,
     pub availability: SlotAvailability,
@@ -147,6 +152,18 @@ pub fn assemble(
     let (interior, cockpit) =
         interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
     assembly.placements.extend(interior);
+    let cockpit_locs = cockpit
+        .as_ref()
+        .map(|c| cockpit_locators(fs, cache, c, &mut assembly.warnings))
+        .unwrap_or_default();
+    let cockpit_by_slot = cockpit_slots(&interior_slots(catalog), &by_slot, &cockpit_locs);
+    assembly.interior_parts = interior_part_placements(
+        &selected,
+        &cockpit_by_slot,
+        cockpit.as_ref().map(|c| &c.transform),
+        drive,
+        &mut assembly.warnings,
+    );
     assembly.cockpit = cockpit;
     let (positions, hookups) = hookup_placements(fs, cache, catalog, config, &assembly.placements);
     assembly.hookup_positions = positions;
@@ -161,10 +178,19 @@ pub fn assemble(
         .iter()
         .find(|(_, a)| a.kind == AccessoryKind::Cabin)
         .map(|(aabb, _)| *aabb);
-    let slot_boxes = placed_boxes(fs, cache, &assembly.placements);
+    // Anchors cover the cockpit's slots too, so interior parts get pins.
+    let placed: Vec<Placement> = assembly
+        .placements
+        .iter()
+        .chain(&assembly.interior_parts)
+        .cloned()
+        .collect();
+    let slot_boxes = placed_boxes(fs, cache, &placed);
+    let mut all_slots = by_slot.clone();
+    all_slots.extend(cockpit_by_slot);
     assembly.anchors = anchors(
         catalog,
-        &by_slot,
+        &all_slots,
         &slot_boxes,
         &base_boxes,
         cabin_box,
