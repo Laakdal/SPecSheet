@@ -96,7 +96,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [ ] Extractor parity (D19; facts from sk-zk Extractor, each confirmed on our install first, own code; `mod-name-recovery.txt` sections 8–9):
   - [x] Compared paths with Extractor 2026-07-29 on the 22 v1 packages: files named, ours 160,589 vs 160,726, the same set in 17 packages.
   - [x] Rules: exact `.tobj` texture records, `automat/` by content hash, packing-order neighbours, v1 packages as candidates (`--others`), extra candidates from a file (`--paths`). 169,777 of 171,094 named (was 167,657); MAN TG3 6,445 (was 4,341).
-  - [x] Word swaps learned from game folders (NG Sound `blinker_off`, MAN TG3 +28) and a per-package cache for `--others` (82 s → 0.3 s); 169,806 of 171,094 named (`mod-name-recovery.txt` section 10).
+  - [x] Word swaps learned from game folders (NG Sound `blinker_off`, MAN TG3 +28) and a per-package cache for `--others` (82 s → 0.3 s); sibling vehicle folders (NG Sound's Scania T, 90 of 91). 169,815 of 171,094 named (`mod-name-recovery.txt` sections 10–11).
   - [ ] Recheck file by file that the 2,104 new MAN TG3 names cover Extractor's 695 automat + 1,409 `.dds`.
   - [x] Not observed here, not built: map sector guessing (every v1 package already fully named where Extractor is), junk and decoy entries (0 unreadable, no decoys).
   - [x] Content types (`sniff.rs`); unnamed entries are labelled by type.
