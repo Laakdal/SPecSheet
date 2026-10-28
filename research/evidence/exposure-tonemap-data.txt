@@ -72,3 +72,24 @@ Observations:
 - The tonemap operator itself lives in shader code (not read, D13). The key
   names (contrast, shoulder, a middle grey) suggest a filmic curve with those
   three controls (Hypothesis).
+
+4. Engine reflection slots (static disassembly, tools/research/disasm.py)
+- FUN_1411f20b0 (826 bytes) creates two engine-owned texture objects by
+  resource name: "/material/environment/vehicle_reflection.tobj" and
+  "/material/environment/generic_reflection.tobj".
+- FUN_1403f51c0 (3,797 bytes) fills a table of four reflection slots
+  (records of 0x48 bytes), each named by a path plus blur variants:
+    slot 0 /material/environment/vehicle_reflection.tobj + _blurry3, _blurry4, _blurry5
+    slot 1 /material/environment/generic_reflection.tobj
+    slot 2 /material/environment/interior_reflection.tobj + _blurry2.._blurry5
+    slot 3 /material/environment/building_reflection/building_ref.tobj
+  (then dashboard, gps, bare_map and player_tag textures).
+  Truck materials name these paths, including the interior_reflection_blurry2/3/4
+  variants (research/evidence/material-survey.txt).
+Observed: a material's texture_reflection that names one of these paths
+resolves to an engine slot, not just to the file. Hypothesis: in a UI scene the
+scene's vehicle_reflection cube fills slot 0, so it replaces the cube for every
+material that names vehicle_reflection.tobj, while materials that name other
+cubes (fuzzy_reflection, soft_reflection, ...) keep their own. The code that
+loads the scene's vehicle_reflection (scene class +0x1d8) into the slot is not
+located yet (Unknown).
