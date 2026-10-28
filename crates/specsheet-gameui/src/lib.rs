@@ -3,6 +3,8 @@
 //! from, UI colours and UI materials. Presentation-neutral: front ends turn
 //! this into drawing and fill the containers the game fills in code.
 
+#![warn(missing_docs)]
+
 pub mod flow;
 
 use std::collections::HashMap;
@@ -22,6 +24,7 @@ const DEFAULT_LIST_DELIMITER: &str = "~~";
 /// The UI reference size (Confirmed: `game.log.txt` prints "Setting UI
 /// reference mode to: 1440x900"; root screens span exactly this).
 pub const REFERENCE_WIDTH: f32 = 1440.0;
+/// See [`REFERENCE_WIDTH`].
 pub const REFERENCE_HEIGHT: f32 = 900.0;
 
 /// How a window keeps its 1440-wide layout on wider screens (Hypothesis:
@@ -31,25 +34,34 @@ pub enum KeepAspect {
     /// Stretched to fill.
     #[default]
     None,
+    /// Pinned to the left edge.
     Left,
+    /// Centred.
     Center,
+    /// Pinned to the right edge.
     Right,
 }
 
 /// A rectangle in reference units, y pointing up from the bottom left.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rect {
+    /// Left edge.
     pub left: f32,
+    /// Right edge.
     pub right: f32,
+    /// Top edge.
     pub top: f32,
+    /// Bottom edge.
     pub bottom: f32,
 }
 
 impl Rect {
+    /// Right minus left.
     pub fn width(&self) -> f32 {
         self.right - self.left
     }
 
+    /// Top minus bottom.
     pub fn height(&self) -> f32 {
         self.top - self.bottom
     }
@@ -64,10 +76,13 @@ pub struct Widget {
     pub class: String,
     /// 0 = not addressed by code.
     pub id: i64,
+    /// Index of the parent widget in [`Layout::widgets`].
     pub parent: Option<usize>,
+    /// Its rectangle, relative to the parent.
     pub rect: Rect,
     /// Draw order within the window (Hypothesis: higher on top).
     pub layer: i64,
+    /// The template that draws it.
     pub look_template: Option<String>,
     /// Template arguments, `|`-separated.
     pub value: Option<String>,
@@ -75,9 +90,11 @@ pub struct Widget {
     pub text: Option<String>,
     /// Button rows: one button per item, with `id_list` parallel.
     pub value_list: Vec<String>,
+    /// Button rows: the id of each item.
     pub id_list: Vec<i64>,
     /// Lists: item size and gap.
     pub item_size: Option<[f32; 2]>,
+    /// Lists: gap between items.
     pub item_gap: Option<f32>,
     /// Sliders: smallest handle length (`minimal_handle_size`).
     pub min_handle: Option<f32>,
@@ -86,8 +103,11 @@ pub struct Widget {
 /// A layout file: one window root and its widgets.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Layout {
+    /// The layout file.
     pub path: String,
+    /// How it keeps its aspect on wide screens.
     pub keep_aspect: KeepAspect,
+    /// Its widgets, in file order.
     pub widgets: Vec<Widget>,
 }
 
@@ -111,6 +131,7 @@ impl Layout {
 pub struct Screen {
     /// Localisation reference of the title (`@@…@@`).
     pub title: Option<String>,
+    /// The layout files, in drawing order.
     pub layouts: Vec<Layout>,
 }
 
@@ -138,6 +159,7 @@ pub fn load_screen(fs: &GameFs, name: &str) -> Result<Screen> {
     })
 }
 
+/// Loads one layout file.
 pub fn load_layout(fs: &GameFs, path: &str) -> Result<Layout> {
     let doc = fs.read_sii(path)?;
     Ok(layout_from_doc(path, &doc))
@@ -230,29 +252,41 @@ fn widget(unit: &Unit, parent: Option<usize>) -> Widget {
 /// A text look (`ui::text_template`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextTemplate {
+    /// The markup, with `%1`… placeholders for the widget's value.
     pub markup: String,
+    /// Fixed width, if any.
     pub width: Option<f32>,
+    /// Fixed height, if any.
     pub height: Option<f32>,
 }
 
 /// A button look per state (`ui::button_template`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ButtonTemplate {
+    /// Markup in the normal state.
     pub normal: String,
     /// Selected or hovered.
     pub selected: String,
+    /// Markup while pressed.
     pub pressed: String,
+    /// Markup when disabled.
     pub disabled: String,
+    /// Fixed width, if any.
     pub width: Option<f32>,
+    /// Fixed height, if any.
     pub height: Option<f32>,
 }
 
 /// A vertical scrollbar look (`ui::slider_template`, `*_vert` fields).
 #[derive(Clone, Debug, PartialEq)]
 pub struct SliderTemplate {
+    /// Handle markup.
     pub handle: String,
+    /// Handle markup while hovered.
     pub handle_hovered: String,
+    /// Handle markup while dragged.
     pub handle_pressed: String,
+    /// Track markup.
     pub track: String,
     /// Space kept free at both ends of the track.
     pub margin: f32,
@@ -270,14 +304,17 @@ pub struct Templates {
 }
 
 impl Templates {
+    /// The text template `name`.
     pub fn text(&self, name: &str) -> Option<&TextTemplate> {
         self.text.get(name)
     }
 
+    /// The button template `name`.
     pub fn button(&self, name: &str) -> Option<&ButtonTemplate> {
         self.buttons.get(name)
     }
 
+    /// The slider template `name`.
     pub fn slider(&self, name: &str) -> Option<&SliderTemplate> {
         self.sliders.get(name)
     }
@@ -416,6 +453,7 @@ pub fn parse_color(text: &str) -> Option<[u8; 4]> {
 /// A UI material: what an `<img src=…>` draws.
 #[derive(Clone, Debug, PartialEq)]
 pub struct UiMaterial {
+    /// The UI effect, e.g. `ui.rfx` or `ui.sdf.rfx`.
     pub effect: String,
     /// Absolute `.tobj` path.
     pub texture: Option<String>,

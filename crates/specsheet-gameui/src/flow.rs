@@ -27,7 +27,9 @@ use super::parse_color;
 /// A font selection: game font file (`None` = default) and scale.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Font {
+    /// The font file.
     pub face: Option<String>,
+    /// Horizontal and vertical scale.
     pub scale: [f32; 2],
 }
 
@@ -51,25 +53,35 @@ pub trait Measure {
 /// `[left, top, right, bottom]`, y down from the box top.
 pub type Bounds = [f32; 4];
 
+/// One thing to draw, positioned by the layout.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
+    /// An image from a UI material.
     Image {
+        /// Where it goes.
         bounds: Bounds,
+        /// The UI material path.
         src: String,
         /// Texel range `[left, top, right, bottom]`; reversed ranges mirror.
         texels: Bounds,
         /// Straight RGBA tint.
         color: [u8; 4],
     },
+    /// A run of text.
     Text {
+        /// Where it goes.
         bounds: Bounds,
+        /// The text.
         text: String,
+        /// Its font.
         font: Font,
+        /// Straight RGBA colour.
         color: [u8; 4],
     },
 }
 
 impl Item {
+    /// Where the item goes.
     pub fn bounds(&self) -> Bounds {
         match self {
             Item::Image { bounds, .. } | Item::Text { bounds, .. } => *bounds,
