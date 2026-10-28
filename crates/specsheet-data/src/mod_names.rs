@@ -23,11 +23,31 @@ use specsheet_archive::{DirListing, EntryV1, HashFsV1Archive, Vfs};
 use specsheet_formats::{paths, sii};
 
 /// Files larger than this are not scanned for paths (sound banks and
-/// textures reach hundreds of MB and name nothing).
+/// textures reach hundreds of MB and name nothing). Listings too; the
+/// largest in 21 real packages is 87 KB.
 const MAX_SCAN: u32 = 1 << 20;
-/// Upper bound on candidate paths tried per package, so hostile content
-/// cannot grow the search without end. The game has about 610,000 paths.
-const MAX_CANDIDATES: usize = 4_000_000;
+
+/// Bounds on one package's search, so hostile content cannot grow it
+/// without end, set well above what the test install needs
+/// (`research/evidence/mod-name-recovery.txt`, section 6).
+#[derive(Clone, Copy, Debug)]
+struct Limits {
+    /// Paths ever queued, tried or waiting. A full run with the game and
+    /// the ZIP mods as candidates queues about 1.27 million.
+    candidates: usize,
+    /// Total length of those paths; about 59 MB in that run.
+    candidate_bytes: usize,
+    /// Bytes read to scan for paths, listings included. The largest real
+    /// package holds 1.18 GB of files small enough to scan, and a file is
+    /// read at most twice (unnamed, then named).
+    scan_bytes: u64,
+}
+
+const LIMITS: Limits = Limits {
+    candidates: 4_000_000,
+    candidate_bytes: 256 << 20,
+    scan_bytes: 4 << 30,
+};
 
 /// Names recovered for a package's entries.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -119,29 +139,94 @@ impl Package for V1<'_> {
     }
 }
 
+/// Paths waiting to be tried, each checked and queued once, within
+/// [`Limits`].
+struct Search {
+    limits: Limits,
+    queue: VecDeque<String>,
+    /// Every path ever queued.
+    seen: HashSet<String>,
+    seen_bytes: usize,
+    scanned_bytes: u64,
+}
+
+impl Search {
+    fn new(limits: Limits) -> Self {
+        Self {
+            limits,
+            queue: VecDeque::new(),
+            seen: HashSet::new(),
+            seen_bytes: 0,
+            scanned_bytes: 0,
+        }
+    }
+
+    /// Queues `path` if it is a plausible path ([`paths::clean`]), new, and
+    /// within the candidate limits; otherwise drops it.
+    fn push(&mut self, path: &str) {
+        let Some(path) = paths::clean(path) else {
+            return;
+        };
+        let full = self.seen.len() >= self.limits.candidates
+            || self.seen_bytes + path.len() > self.limits.candidate_bytes;
+        if full || self.seen.contains(path) {
+            return;
+        }
+        self.seen_bytes += path.len();
+        self.seen.insert(path.to_owned());
+        self.queue.push_back(path.to_owned());
+    }
+
+    fn extend<S: AsRef<str>>(&mut self, paths: impl IntoIterator<Item = S>) {
+        for path in paths {
+            self.push(path.as_ref());
+        }
+    }
+
+    /// Whether an entry of `size` bytes may be read to scan it, counting
+    /// it against the scan limit if so.
+    fn may_scan(&mut self, size: u32) -> bool {
+        let total = self.scanned_bytes + u64::from(size);
+        if size > MAX_SCAN || total > self.limits.scan_bytes {
+            return false;
+        }
+        self.scanned_bytes = total;
+        true
+    }
+}
+
 fn recover(package: &impl Package, candidates: impl IntoIterator<Item = String>) -> RecoveredNames {
-    let mut queue: VecDeque<String> = ["manifest.sii", "versions.sii"]
-        .into_iter()
-        .map(str::to_owned)
-        .chain(candidates)
-        .collect();
-    let mut seen: HashSet<String> = HashSet::new();
+    recover_with(package, candidates, LIMITS)
+}
+
+fn recover_with(
+    package: &impl Package,
+    candidates: impl IntoIterator<Item = String>,
+    limits: Limits,
+) -> RecoveredNames {
+    let mut search = Search::new(limits);
+    search.extend(["manifest.sii", "versions.sii"]);
+    search.extend(candidates);
     let mut names = BTreeMap::new();
     let mut scanned: HashSet<u64> = HashSet::new();
     loop {
-        drain(package, &mut queue, &mut seen, &mut names);
+        drain(package, &mut search, &mut names);
         // Files nothing names yet may still mention others by absolute path.
         let before = names.len();
         for (hash, is_dir, size) in package.entries() {
-            if is_dir || size > MAX_SCAN || names.contains_key(&hash) || !scanned.insert(hash) {
+            if is_dir
+                || names.contains_key(&hash)
+                || !scanned.insert(hash)
+                || !search.may_scan(size)
+            {
                 continue;
             }
             if let Some(bytes) = package.read_hash(hash) {
-                queue.extend(paths::referenced_paths("", &bytes));
-                queue.extend(paths::unit_paths(&bytes));
+                search.extend(paths::referenced_paths("", &bytes));
+                search.extend(paths::unit_paths(&bytes));
             }
         }
-        drain(package, &mut queue, &mut seen, &mut names);
+        drain(package, &mut search, &mut names);
         if names.len() == before {
             break;
         }
@@ -157,29 +242,17 @@ fn recover(package: &impl Package, candidates: impl IntoIterator<Item = String>)
 }
 
 /// Tries every queued path, adding what each match leads to.
-fn drain(
-    package: &impl Package,
-    queue: &mut VecDeque<String>,
-    seen: &mut HashSet<String>,
-    names: &mut BTreeMap<u64, String>,
-) {
-    while let Some(path) = queue.pop_front() {
-        let path = path.trim_start_matches('/').to_owned();
-        if path.is_empty() || seen.contains(&path) {
-            continue;
-        }
-        if seen.len() >= MAX_CANDIDATES {
-            break;
-        }
-        seen.insert(path.clone());
+fn drain(package: &impl Package, search: &mut Search, names: &mut BTreeMap<u64, String>) {
+    while let Some(path) = search.queue.pop_front() {
         // A parent may be a directory entry whose listing names more files.
         let mut parent = path.as_str();
         while let Some((up, _)) = parent.rsplit_once('/') {
-            if !seen.contains(up) {
-                queue.push_back(up.to_owned());
-            }
+            search.push(up);
             parent = up;
         }
+        // Companions too, even of a missing file: a package may keep a
+        // texture's descriptor without the texture.
+        search.extend(paths::companions(&path));
         let Some((hash, is_dir, size)) = package.find(&path) else {
             continue;
         };
@@ -188,23 +261,25 @@ fn drain(
         }
         names.insert(hash, path.clone());
         if is_dir {
-            if let Some(listing) = package.list_dir(&path) {
-                let children = listing.files.iter().chain(&listing.directories);
-                queue.extend(children.map(|name| format!("{path}/{name}")));
+            if search.may_scan(size) {
+                if let Some(listing) = package.list_dir(&path) {
+                    for name in listing.files.iter().chain(&listing.directories) {
+                        search.push(&format!("{path}/{name}"));
+                    }
+                }
             }
             continue;
         }
-        queue.extend(paths::companions(&path));
-        if size > MAX_SCAN {
+        if !search.may_scan(size) {
             continue;
         }
         let Some(bytes) = package.read(&path) else {
             continue;
         };
-        queue.extend(paths::referenced_paths(&path, &bytes));
-        queue.extend(paths::unit_paths(&bytes));
+        search.extend(paths::referenced_paths(&path, &bytes));
+        search.extend(paths::unit_paths(&bytes));
         if path == "manifest.sii" {
-            queue.extend(manifest_files(&bytes));
+            search.extend(manifest_files(&bytes));
         }
     }
 }
@@ -224,6 +299,7 @@ fn manifest_files(bytes: &[u8]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::{Cell, RefCell};
     use std::collections::HashMap;
 
     use super::*;
@@ -235,6 +311,10 @@ mod tests {
         dirs: HashMap<String, DirListing>,
         /// Paths the package holds but no source names.
         hidden: Vec<String>,
+        /// Every path the search looked up.
+        asked: RefCell<Vec<String>>,
+        /// Bytes handed out by `read` and `read_hash`.
+        bytes_read: Cell<u64>,
     }
 
     fn hash(path: &str) -> u64 {
@@ -243,6 +323,7 @@ mod tests {
 
     impl Package for Fake {
         fn find(&self, path: &str) -> Option<(u64, bool, u32)> {
+            self.asked.borrow_mut().push(path.to_owned());
             if let Some(bytes) = self.files.get(path) {
                 return Some((hash(path), false, bytes.len() as u32));
             }
@@ -250,7 +331,10 @@ mod tests {
         }
 
         fn read(&self, path: &str) -> Option<Vec<u8>> {
-            self.files.get(path).cloned()
+            let bytes = self.files.get(path).cloned()?;
+            self.bytes_read
+                .set(self.bytes_read.get() + bytes.len() as u64);
+            Some(bytes)
         }
 
         fn list_dir(&self, path: &str) -> Option<DirListing> {
@@ -268,10 +352,14 @@ mod tests {
         }
 
         fn read_hash(&self, wanted: u64) -> Option<Vec<u8>> {
-            self.files
+            let bytes = self
+                .files
                 .iter()
                 .find(|(p, _)| hash(p) == wanted)
-                .map(|(_, b)| b.clone())
+                .map(|(_, b)| b.clone())?;
+            self.bytes_read
+                .set(self.bytes_read.get() + bytes.len() as u64);
+            Some(bytes)
         }
     }
 
@@ -406,5 +494,93 @@ mod tests {
             .file("big.bin", &big);
         let result = recover(&package, ["a.sii".to_owned(), "big.bin".to_owned()]);
         assert_eq!(named(&result), ["a.sii", "b.sii", "big.bin"]);
+    }
+
+    #[test]
+    fn names_a_descriptor_whose_texture_is_missing() {
+        // Nothing names the .tobj, and the texture it points to is not in
+        // the package; its name is still the texture's with `.tobj`.
+        let package = Fake::default().file(
+            "model/sky/a.tobj",
+            b"\x01\x0a\xb1\x70\x00\x00\x00\x00/model/sky/a.dds",
+        );
+        let result = recover(&package, Vec::new());
+        assert_eq!(named(&result), ["model/sky/a.tobj"]);
+    }
+
+    #[test]
+    fn never_looks_up_unsafe_or_overlong_paths() {
+        // Listing names and caller candidates go through the same checks as
+        // paths found in files.
+        let mut package = Fake::default().file("def/a/ok.sii", b"");
+        package.dirs.insert(
+            "def/a".to_owned(),
+            DirListing {
+                files: vec![
+                    "ok.sii".to_owned(),
+                    "../up.sii".to_owned(),
+                    String::new(),
+                    "x".repeat(600),
+                ],
+                directories: vec![".".to_owned(), "b/../c".to_owned()],
+            },
+        );
+        let overlong = format!("def/{}x.sii", "b/".repeat(400));
+        let result = recover(
+            &package,
+            ["def/a".to_owned(), overlong, "def//c.sii".to_owned()],
+        );
+        assert_eq!(named(&result), ["def/a", "def/a/ok.sii"]);
+        for path in package.asked.borrow().iter() {
+            assert_eq!(
+                paths::clean(path),
+                Some(path.as_str()),
+                "looked up {path:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_candidate_budget_counts_paths_still_waiting() {
+        let limits = Limits {
+            candidates: 10,
+            ..LIMITS
+        };
+        let mut search = Search::new(limits);
+        search.extend((0..50).map(|i| format!("r/{i}.sii")));
+        assert_eq!(search.queue.len(), 10);
+        // Repeats cost nothing.
+        let mut search = Search::new(limits);
+        search.extend(std::iter::repeat_n("r/same.sii", 50));
+        assert_eq!(search.queue.len(), 1);
+        // The total length is bounded too.
+        let mut search = Search::new(Limits {
+            candidate_bytes: 100,
+            ..LIMITS
+        });
+        search.extend((0..50).map(|i| format!("r/{i:08}.sii")));
+        assert_eq!(search.queue.len(), 100 / "r/00000000.sii".len());
+    }
+
+    #[test]
+    fn stops_scanning_at_the_byte_budget() {
+        // 20 files nothing names, 100 bytes each, 450 bytes of budget.
+        let mut package = Fake::default();
+        for i in 0..20 {
+            package
+                .files
+                .insert(format!("hidden/{i}.sii"), vec![b'x'; 100]);
+        }
+        let limits = Limits {
+            scan_bytes: 450,
+            ..LIMITS
+        };
+        let result = recover_with(&package, Vec::new(), limits);
+        assert_eq!(result.unnamed.len(), 20);
+        assert!(
+            package.bytes_read.get() <= 450,
+            "{}",
+            package.bytes_read.get()
+        );
     }
 }
