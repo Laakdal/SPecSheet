@@ -162,6 +162,7 @@ mod tests {
             wheel: None,
             left_hand_traffic: false,
             drive_twin: None,
+            paint: None,
         }
     }
 
