@@ -5,7 +5,7 @@
 //! listing, and some ship none at all (`docs/formats/mods.md`). The game
 //! never needs them, since it always looks a file up by its full path. To
 //! show a package's contents we hash candidate paths and keep the ones that
-//! match, from three sources:
+//! match, from these sources:
 //! - paths the caller supplies: every path of the mounted game
 //!   ([`game_paths`]), since mods replace game files at their own paths,
 //!   and the files of the other mod packages, since a model package is
@@ -13,13 +13,17 @@
 //! - the listings of every directory entry found, and the parents of every
 //!   candidate, which reach listings below a missing root;
 //! - paths mentioned inside the package's files, named or not
-//!   ([`specsheet_formats::paths`]), the conventional files of the addon
-//!   units they declare, and the icon and description that `manifest.sii`
-//!   names.
+//!   ([`specsheet_formats::paths`], `.tobj` texture paths read exactly),
+//!   the conventional files of the addon units they declare, and the icon
+//!   and description that `manifest.sii` names;
+//! - the content hash of each unnamed entry, which names a generated
+//!   `automat/` material;
+//! - the stems of the named files packed next to an unnamed one, with the
+//!   package's extensions.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
-use specsheet_archive::{DirListing, EntryV1, HashFsV1Archive, Vfs};
+use specsheet_archive::{city_hash_64, DirListing, EntryV1, HashFsV1Archive, Vfs};
 use specsheet_formats::{paths, sii};
 
 /// Files larger than this are not scanned for paths (sound banks and
@@ -104,6 +108,8 @@ trait Package {
     /// Hash, directory flag and size of every entry.
     fn entries(&self) -> Vec<(u64, bool, u32)>;
     fn read_hash(&self, hash: u64) -> Option<Vec<u8>>;
+    /// Hashes of the file entries in the order their data is stored.
+    fn packing_order(&self) -> Vec<u64>;
 }
 
 struct V1<'a> {
@@ -136,6 +142,16 @@ impl Package for V1<'_> {
     fn read_hash(&self, hash: u64) -> Option<Vec<u8>> {
         let entry = self.by_hash.get(&hash)?;
         self.archive.read_entry(entry).ok()
+    }
+
+    fn packing_order(&self) -> Vec<u64> {
+        let mut files: Vec<&EntryV1> = self
+            .archive
+            .entries()
+            .filter(|e| !e.is_directory())
+            .collect();
+        files.sort_by_key(|e| e.offset);
+        files.into_iter().map(|e| e.hash).collect()
     }
 }
 
@@ -224,9 +240,14 @@ fn recover_with(
             if let Some(bytes) = package.read_hash(hash) {
                 search.extend(paths::referenced_paths("", &bytes));
                 search.extend(paths::unit_paths(&bytes));
+                search.push(&automat_path(&bytes));
             }
         }
         drain(package, &mut search, &mut names);
+        if names.len() == before {
+            search.extend(neighbour_guesses(package, &names));
+            drain(package, &mut search, &mut names);
+        }
         if names.len() == before {
             break;
         }
@@ -284,6 +305,61 @@ fn drain(package: &impl Package, search: &mut Search, names: &mut BTreeMap<u64, 
     }
 }
 
+/// Guesses from the packing order. Packers write a folder's files together,
+/// often sorted by name, so the named files packed just before and after an
+/// unnamed one give its likely folder and stem (`research/evidence/
+/// mod-name-recovery.txt`, section 7). Each such `<folder>/<stem>` is tried
+/// with every extension the package's named files use.
+fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>) -> Vec<String> {
+    let split = |path: &str| -> Option<(usize, usize)> {
+        let name_at = path.rfind('/').map_or(0, |i| i + 1);
+        let dot = path[name_at..].find('.')?;
+        Some((name_at, name_at + dot))
+    };
+    let extensions: BTreeSet<&str> = names
+        .values()
+        .filter_map(|p| split(p).map(|(_, dot)| &p[dot + 1..]))
+        .collect();
+    let order: Vec<Option<&String>> = package
+        .packing_order()
+        .iter()
+        .map(|h| names.get(h))
+        .collect();
+    // The nearest named file before each position.
+    let mut before = Vec::with_capacity(order.len());
+    let mut last = None;
+    for name in &order {
+        before.push(last);
+        if name.is_some() {
+            last = *name;
+        }
+    }
+    let mut out = Vec::new();
+    let mut next = None;
+    for (i, name) in order.iter().enumerate().rev() {
+        if name.is_some() {
+            next = *name;
+            continue;
+        }
+        for neighbour in before[i].into_iter().chain(next) {
+            if let Some((_, dot)) = split(neighbour) {
+                let stem = &neighbour[..dot];
+                out.extend(extensions.iter().map(|ext| format!("{stem}.{ext}")));
+            }
+        }
+    }
+    out
+}
+
+/// Where a generated material with these bytes lives: the game names every
+/// `automat/<xx>/<hash>.mat` by the CityHash64 of its content, `xx` being
+/// the first two hex digits (65,473 of 65,473,
+/// `research/evidence/mod-name-recovery.txt` section 8).
+fn automat_path(bytes: &[u8]) -> String {
+    let digest = format!("{:016x}", city_hash_64(bytes));
+    format!("automat/{}/{digest}.mat", &digest[..2])
+}
+
 /// The root-relative icon and description files a manifest names.
 fn manifest_files(bytes: &[u8]) -> Vec<String> {
     let Ok(document) = sii::parse("/manifest.sii", bytes) else {
@@ -315,6 +391,8 @@ mod tests {
         asked: RefCell<Vec<String>>,
         /// Bytes handed out by `read` and `read_hash`.
         bytes_read: Cell<u64>,
+        /// File paths in packing order.
+        order: Vec<String>,
     }
 
     fn hash(path: &str) -> u64 {
@@ -360,6 +438,10 @@ mod tests {
             self.bytes_read
                 .set(self.bytes_read.get() + bytes.len() as u64);
             Some(bytes)
+        }
+
+        fn packing_order(&self) -> Vec<u64> {
+            self.order.iter().map(|p| hash(p)).collect()
         }
     }
 
@@ -494,6 +576,35 @@ mod tests {
             .file("big.bin", &big);
         let result = recover(&package, ["a.sii".to_owned(), "big.bin".to_owned()]);
         assert_eq!(named(&result), ["a.sii", "b.sii", "big.bin"]);
+    }
+
+    #[test]
+    fn guesses_from_named_neighbours_in_packing_order() {
+        // Nothing names dlc/a.dds, but it is packed beside dlc/a.pmd, and
+        // the package uses the .dds extension elsewhere.
+        let mut package = Fake::default()
+            .file("dlc/a.dds", b"junk")
+            .file("dlc/a.pmd", b"")
+            .file("dlc/a.pmg", b"")
+            .file("m/x.dds", b"");
+        package.order = ["dlc/a.dds", "dlc/a.pmd", "dlc/a.pmg", "m/x.dds"]
+            .map(str::to_owned)
+            .to_vec();
+        let result = recover(&package, ["dlc/a.pmd".to_owned(), "m/x.dds".to_owned()]);
+        assert_eq!(
+            named(&result),
+            ["dlc/a.dds", "dlc/a.pmd", "dlc/a.pmg", "m/x.dds"]
+        );
+    }
+
+    #[test]
+    fn names_automat_materials_by_their_content() {
+        let content = b"material : \"eut2.dif\" {\n texture : \"/x.tobj\"\n}\n";
+        let digest = format!("{:016x}", specsheet_archive::city_hash_64(content));
+        let path = format!("automat/{}/{digest}.mat", &digest[..2]);
+        let package = Fake::default().file(&path, content);
+        let result = recover(&package, Vec::new());
+        assert_eq!(named(&result), [path.as_str()]);
     }
 
     #[test]
