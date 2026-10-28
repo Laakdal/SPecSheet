@@ -1,43 +1,71 @@
 # Hotspots (Design D7)
 
-The clickable markers on the truck. How the game itself creates its pins is in [../REVERSE_ENGINEERING.md](../REVERSE_ENGINEERING.md) (F5, F8); which parts of this match the game is tracked in [../PARITY.md](../PARITY.md).
+The clickable pins on the truck. The exterior pins follow the game's own rules, read from the executable ([F5](../REVERSE_ENGINEERING.md); evidence in `research/evidence/pin-attributes.txt`). Which parts of this match the game is tracked in [../PARITY.md](../PARITY.md).
 
-## Anchors (`specsheet-data::assembly`)
+## Exterior pins (`specsheet-data::pins`)
 
-- Each slot's anchor is the centre of its placed models' bounding box.
-- An anchor that would fall inside the cabin box (models spanning both sides, e.g. mirror pairs) moves to the box's −x face.
-- **Empty slots** (nothing placed) use their bare locators and carry `Anchor::empty`. These can sit away from any geometry, e.g. `b_grill` ahead of the bumper, or `f_mudflap` on the centre line for an L/R pair.
-- **Interior slots:** a slot is interior when its models lie entirely inside the cabin box shrunk by 5 cm.
-- **Wheel groups:** every wheel part of an axle shares one position and a group key (`Anchor::group`, e.g. `wheel_f`, the locator prefix).
-- **Cockpit slots:** interior-only accessories (the steering wheel, curtains, toys…) attach to locators on the interior's full cockpit, moved into truck space. Their anchors come from those placements or locators, so they get pins in the interior view (F10).
+The game builds one record per pin from the truck's locators and the pin table of `/def/truck_config_scene.sii` (`pin_group`, `pin_offset`, `pin_dir`, `pin_dir_uk`, `double_sided`; tabulated in `research/evidence/pin-table.txt`).
 
-## Which slots get a marker (`specsheet-data::view::overview`)
+- **Base point:** the first visible base-model locator whose name starts with the slot name (12-character names must match exactly). One base per slot, never a mean (`pins::slot_locator`). This differs from part placement, which uses the longest matching slot name (F4).
+  - Models are searched cabin first, then chassis. The game's model order is a Hypothesis.
+  - A slot without a locator gets no pin.
+- **Position:** base + `pin_offset`, in truck space, neither rotated nor scaled. Many paired parts hang on one centre locator (`mirror_s` at x = 0), so their offset x is about half the truck's width.
+- **Facing:** the unit vector of `pin_dir`. A zero direction gives the identity rotation, which faces forward (−z, Hypothesis). On a right-hand-drive truck `pin_dir_uk` replaces it (Hypothesis).
+- **Without a table entry:** the pin sits on the locator and faces the locator's own forward.
+- **`double_sided`:** a second, mirrored pin (offset x and direction x negated), built first.
+- **Wheels:** pins for the tyre, disc, hub, cover and nuts of every wheel, axle by axle from the front, left before right.
+  - The base is the wheel locator.
+  - Left wheels get base + offset; right wheels get the mirrored pin when the entry is `double_sided`.
+  - Rims and complete wheels (`f_wheel`, `r_wheel`) never get a pin.
+- **Not used:** the per-truck pin table in `accessory_truck_data`, which in 1.60 only the Renault T and E-Tech T set (`f_light_top`). Also not used is its `use_non_wheel_pin_data_from_model` switch, taken as false (Hypothesis): otherwise the scene table's non-wheel offsets would never apply.
 
-Only accessory slots get a pin; base parts are picked through their fixed tab (F5, see [ui.md](ui.md)). An accessory slot gets a pin when it has at least two options or is an addon slot. Each `Hotspot` carries its tab (exterior or interior accessories), the selected part's name, and the `empty` and `group` flags. Slots without a pin are listed in `TruckOverview::general` with their tab.
+Measured on every preset (`research/evidence/pin-survey.txt`): the pins land on their parts, with a median of 0 m and 90 % within 0.1 m.
+
+## Which slots get a pin (`specsheet-data::view::overview`)
+
+Only accessory slots get a pin; base parts are picked through their fixed tab (F5, see [ui.md](ui.md)).
+- An exterior slot is pinned when it is an addon or wheel slot with at least one option, or another slot with at least two. The game drops only slots with no options.
+- Slots whose parts sit inside the cabin box shrunk by 5 cm keep their anchor as an interior pin (below).
+
+Each `Hotspot` carries:
+- its tab;
+- the selected part's name;
+- an `empty` flag (nothing placed in the slot);
+- its `facing`;
+- for a wheel's hub, cover and nuts, a `link` to that wheel's disc pin.
+
+Slots without a pin are listed in `TruckOverview::general` with their tab.
+
+## Interior pins (`specsheet-data::assembly`)
+
+Interior slots still use our anchors: the centre of the placed models' bounding box, or the bare locators while empty. Interior-only accessories (steering wheel, curtains, toys…) attach to locators on the interior's full cockpit, moved into truck space (F10). How the game places interior pins is not decoded yet: it searches the interior model's locators, and the space it ends up in is Unknown.
 
 ## On screen (`crates/specsheet`)
 
-Every frame, `ui::ui` projects each anchor through the truck's transform and the 3D camera:
+Every frame, `ui::ui` projects each pin of the open accessory tab through the truck's transform and the 3D camera:
 
-- **Far-side culling** (`hotspots::side_facing`): an anchor is hidden when its horizontal direction from the truck centre (1.5 m up) points away from the camera, i.e. the dot product with the camera direction is below −0.15. Anchors within 20 cm of the centre line are always shown. There is no per-pixel depth test yet.
-- **Only the open tab's pins** are drawn: exterior accessories or interior accessories. Fixed tabs show none.
-- **Panels hide pins:** an anchor that projects under a drawn part of the game screen is dropped.
-- **Clustering** (`hotspots::cluster`): each visible marker joins the first cluster whose centre lies within 22 px, otherwise it starts a new one. A cluster's centre is the mean of its members. Clustering is in screen space, so it adapts as the camera moves.
+- **Fade** (`hotspots::opacity`, Confirmed F5): opacity = clamp((cos θ − 0.1) / 0.9, 0, 1).
+  - θ is the angle between the pin's facing and the camera's view axis, the same axis for every pin.
+  - A pin is fully opaque head-on and gone at about 84°.
+  - From the default orbit (front-left), left-facing pins show at about 0.54, and their mirrored twins on the right are hidden.
+  - Inside the cab, every pin shows fully.
+- **Disc pins** (Confirmed F5): opening a wheel's disc pin shows that wheel's hub, cover and nut pins. Opening any other unlinked pin hides them again (`hotspots::open_after_click`).
+- **Panels hide pins:** a pin that projects under a drawn part of the game screen is dropped.
+- **No merging, no depth test:** like the game, nearby pins don't merge and pins aren't hidden behind the truck's geometry.
 
-### Marker styles
+### Marker styles (ours)
 
 | Marker | Look |
 |---|---|
-| Single slot | Dot in its category colour: exterior orange, chassis & cabin green, wheels blue, interior lilac. Hover shows the slot name. |
-| Cluster | White dot with the member count; a click opens a list of its slots with their selected parts |
-| Wheel group (all members share `group`) | Numbered dot in the wheel colour |
-| Empty slots only | Hollow ring: the slot has nothing fitted and the marker sits on bare locators |
+| Pin | Dot in its category colour: exterior orange, wheels blue, interior lilac. Hover shows the slot name. |
+| Empty slot | Hollow ring: nothing is fitted in the slot |
 | Active slot (open in the sidebar) | Extra orange ring |
+
+The game draws its pins with its own button templates (`btn.custom_accn`, `btn.custom_accs` when selected, and the `acc_hub`/`acc_cover`/`acc_nuts` looks), 32 px square. We don't draw those yet.
 
 ## Known gaps
 
-- Anchors for empty slots float where the locator is. A better anchor would be the first compatible option placed at that locator.
-- **Wheels don't match the game.** The game gives each wheel part its own pin around the wheel: tyre 0.4 m up, disc 0.25 m up, rim and hub at the centre, cover behind, nuts in front. Its rim pin sits on the wheel locator ([F5](../REVERSE_ENGINEERING.md), `research/evidence/pin-table.txt`). We stack all seven wheel slots, including `f_wheel`, which has no pin entry, on the mean of the axle group's left locators. That shows as one dot counting 7, and on multi-axle trucks it falls between two axles.
-- A wheel group sits on the left wheels of its axle, so from the right side the marker is on the far wheel.
-- Markers have no depth test against the meshes.
-- Our anchors ignore the game's pin table (`TuningScene::pins`: `pin_offset`, `pin_dir`, `double_sided`). How the game applies it to non-wheel parts is Unknown; REA on the pin reader is in progress.
+- Pin graphics are ours, not the game's button templates. The game also pulses a 64 px ring on some pins (Hypothesis: newly available parts).
+- Interior pins use our anchors, not the game's interior placement.
+- The per-truck pin table and `use_non_wheel_pin_data_from_model` are not read.
+- Badge slots and the Renault T's `s_panel` can take another slot's locator by the first-prefix rule (`pin-survey.txt`); to check in game.

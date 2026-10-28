@@ -98,13 +98,14 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | UI screens, templates, colours, UI materials; markup layout | `specsheet-data/src/ui/{mod,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
 | Display strings | `specsheet-data/src/localization.rs` | unit |
 | Session (options, select, hookups, drive) | `specsheet-data/src/session.rs` | through `real_install` |
+| Exterior pins the game's way: base locator, offset, facing, mirrored and wheel pins | `specsheet-data/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
 | Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-data/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
 | App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
 | Meshes, materials, textures to GPU (with upload checks) | `specsheet/src/assets.rs` | unit |
 | Clean-room game materials (truck paint) | `specsheet/src/render/{mod,truckpaint}.rs`, `truckpaint.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
 | The game's truck configuration screen (layout drawing, tabs, lists), UI textures, SpecSheet window | `specsheet/src/ui/{mod,screen,textures}.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
-| Pins over the 3D view (projection, culling, clustering) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
+| Pins over the 3D view (projection, fade by facing, disc-linked wheel pins) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
 | Dev script mode | `specsheet/src/script.rs` | unit |
 | Visual parity runner (`--parity`, cases in `parity/cases.json`) | `specsheet/src/parity.rs` | unit |
 

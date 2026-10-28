@@ -36,7 +36,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
 - **Decision:** the backend sends per-model JSON (pieces, material refs, transforms) and binary vertex/index buffers. Textures are sent as compressed surfaces with mip chains.
 - **Alternative:** GLB with PNG textures. Rejected: costly re-encoding, larger transfers, and the BC compression would be lost.
 
-### D7: Hotspot anchors from placed models, clustered in screen space
+### D7: Hotspot anchors from placed models, clustered in screen space (exterior superseded)
 - **Context:** the game creates its pins at runtime (F5), and its exact placement code is still unconfirmed. Scania alone has about 80 slots, many of them centimetres apart.
 - **Decision:**
   - Anchor each slot at the bounding-box centre of its placed models. Empty slots use their locators.
@@ -47,6 +47,12 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - Raw locator positions. Rejected: centred locators such as `s_panel` and `mirror_s` sit inside the cabin.
   - Show every slot. Rejected: unusable.
 - This is a design choice consistent with F4/F5, not a reproduction of the game's pin placement.
+- **Superseded for exterior pins (2026-10-28).** F5 now decodes the game's pin builder and per-frame update, so exterior pins follow the game ([app/hotspots.md](app/hotspots.md)):
+  - base locator + `pin_offset`, with mirrored twins for `double_sided` entries;
+  - pins per wheel part and per wheel, with hub, cover and nuts shown through their disc pin;
+  - a fade by facing instead of the far-side cut;
+  - no clustering, since the game has none.
+  - **Still ours:** interior pins keep the bounding-box anchors, and the marker look (dots, the hollow ring for empty slots) is ours.
 
 ### D8: Only base game and DLC archives are mounted (partly superseded by D15)
 - Mods (`Documents/Euro Truck Simulator 2/mod`) use HashFS v1 and ZIP, and change data arbitrarily.

@@ -69,7 +69,7 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - PMD variants `default`/`uk` toggle these parts (`visible` attribute).
   - The cabin definition picks the variant (`variant` / `variant_uk`).
 
-### F5: The tuning screen places "accessory pins" at runtime (Confirmed ids and tabs, Unknown placement)
+### F5: The tuning screen places "accessory pins" at runtime (Confirmed ids, tabs and placement)
 - `ui/truck_configuration_center.sii` contains `ui::group : _nameless._.accpins` (id 9000) with **no children**. Pins are created by code, not by the UI definition.
 - The same file has the tab row: `ui::button_row` id 499, values `cabin~~chassis~~engine~~transmission~~color~~e_accessories~~interior~~i_accessories`, ids `510~~500~~520~~530~~550~~560~~540~~570`.
 - **Pin and tab ids (Confirmed, REA static).** `FUN_140fe0fc0` (`ev_47817a8…`, `research/evidence/rea-pin-select.txt`) shows an accessory on the tuning screen. It switches the tab row to the accessory's tab, then activates its pin:
@@ -84,16 +84,19 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - `pin_look` is `custom_acc` 59 times, and `acc_cover`, `acc_hub` and `acc_nuts` twice each.
   - 60 of 65 `pin_group` values match truck slot directory names. Unmatched: `cabdefl`, `f_fendr_cab`, `hoodlatch`, `m_mudflap`, `markers`.
   - Most likely this is the per-slot pin offset and direction (with a UK direction) applied to the slot's locator.
-- **Wheel pins (Confirmed data; base point observed in game).** Tabulated in `research/evidence/pin-table.txt`.
-  - Each wheel part has its own entry: `tire`, `disc`, `rim`, `hub` (`acc_hub`), `cover` (`acc_cover`) and `nuts` (`acc_nuts`), front and rear. All face −x and are `double_sided`.
-  - Around the wheel: tyre 0.40 m up, disc 0.25 m up, rim and hub at the centre, cover 0.15 m back, nuts 0.15 m forward. x is −0.1 at the front and −0.3 at the rear (twin tyres), with small per-part differences.
-  - `f_wheel`/`r_wheel` (complete wheels) have no entry. Whether the game pins them is Unknown.
-  - **Observed in the game (the user, 2026-10-28):** the rim pin sits at the wheel's locator, and the tyre pin is the tyre entry's `pin_offset` added to that point. Which wheel locator is used on multi-axle trucks is Unknown.
-- **Other pins (Confirmed data, Hypothesis use).** Every entry with `double_sided` false has x offset 0. Every `double_sided` entry outside the wheels has x from −0.8 to −1.35, except `cabdefl` and `r_deflector`. Those are left/right pairs: fenders, lights, steps, mirrors, side skirts.
-  - **Hypothesis:** a `double_sided` pin starts from the centre of the slot's left and right locators, the x offset moves it to the truck's side, and it is mirrored to the side facing the camera. The wheels don't fit this, because they start from a wheel locator.
-  - `pin_dir_uk` differs from `pin_dir` only for `cab_door`, `codrv_seat` and `s_mirror` (x flipped, the driver's side).
+- **How pins are built and shown (Confirmed, REA static).** Evidence: `research/evidence/pin-attributes.txt` §5–8. The builder is `FUN_140fcf210` (`ev_ddace5e…`); the per-frame update is `FUN_140fcba50` (`ev_bf0e8de…`). The pin data loads into `ui_truck_scene_config` and, per truck, `accessory_truck_data`. The app follows these rules in [app/hotspots.md](app/hotspots.md).
+  - **Base point:** the first visible locator whose name starts with the slot name, so one per slot, never a mean. The model search order is a Hypothesis. A slot without a locator gets no pin.
+  - **Position and facing:** position = base + `pin_offset`, in truck space. The facing comes from `pin_dir` as heading and pitch, with no roll. A zero direction gives the identity rotation.
+  - **Without a table entry:** the pin sits on the locator with the locator's rotation.
+  - **`pin_dir_uk`:** used when a flag of the interior object is set (Hypothesis: right-hand drive).
+  - **`double_sided`:** adds a mirrored pin, with offset x and direction x negated.
+  - **Wheels:** the exterior tab only. Pins for tire, disc, hub, cover and nuts on every wheel: left wheels at wheel + offset, right wheels mirrored when `double_sided`. **Rims, `f_wheel` and `r_wheel` never get a pin.** Hub, cover and nut pins link to their wheel's disc pin and show only while that disc pin is open: selecting a pin stores its index at the field the update compares.
+  - **Per-truck table:** a truck's own pin table replaces matching scene entries. Its `use_non_wheel_pin_data_from_model` puts non-wheel pins on their raw locators; its default is Unknown, and no 1.60 truck sets it.
+  - **Every frame:** opacity = clamp((cos θ − 0.1) / 0.9, 0, 1), where θ is between the pin's facing and the camera's view axis. A pin is hidden outside the view depth or at zero opacity. The button is 32 px square, 36 px in one state. **No merging of nearby pins and no depth test.**
+  - **Correction (2026-10-28):** the user's earlier in-game note "the rim pin sits on the wheel's locator" cannot be a rim pin, since no rim record exists. It is most likely the **hub** pin (offset −0.1 / −0.12, at the wheel centre). To re-check in game.
+  - Data side: `research/evidence/pin-table.txt` (the 65 entries), `pin-survey.txt` (pins on every preset land on their parts: median 0 m, 90 % within 0.1 m).
 - **Input (Confirmed, REA static).** The single caller `FUN_140fbf860` is the screen's input handler, not pin creation (`ev_f6f0551…`, `research/evidence/rea-pin-handler.txt`). It handles `joy_sec_prv`/`joy_sec_nxt` (tabs, by name), `joy_nav_prv`/`joy_nav_nxt` (pin to pin), `j_trzoom_in`/`j_trzoom_out`, select and back, and treats ids 10000–19999 as pins.
-- **Unknown:** the base point of non-wheel pins, what `pin_dir` and `double_sided` do (visibility, mirroring), whether pins merge on screen, and which code creates the `acc_info_t` records. In progress: `rea trace --query=pin_offset` to find the reader, then decompile it and the code that places pins.
+- **Unknown:** the default of `use_non_wheel_pin_data_from_model`, the game's model search order, where interior pins end up, and what the pulsing ring (record flag +0x3c) marks.
 
 ### F6: Preset configurations use the save-game vehicle structure (Confirmed)
 - `/def/vehicle/truck_desktop/<truck>.sii` holds one `vehicle` unit whose `accessories[]` point to:
