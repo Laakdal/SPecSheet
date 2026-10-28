@@ -32,9 +32,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let t = std::time::Instant::now();
     let assembly = assemble(&fs, &cache, &catalog, &preset, drive);
     println!(
-        "assembled {} placements, {} anchors, {} available slots in {:?}",
+        "assembled {} placements, {} exterior and {} interior pin bases, {} available slots in {:?}",
         assembly.placements.len(),
-        assembly.anchors.len(),
+        assembly.pin_bases.slots.len(),
+        assembly.pin_bases.interior.len(),
         assembly.availability.available.len(),
         t.elapsed()
     );
@@ -82,8 +83,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         bytes / (1 << 20),
         t.elapsed()
     );
-    for a in assembly.anchors.iter().take(8) {
-        println!("  anchor {} {:?}", a.slot, a.position);
+    for (slot, base) in assembly.pin_bases.slots.iter().take(8) {
+        println!("  pin base {slot} {:?}", base.position);
     }
     Ok(())
 }

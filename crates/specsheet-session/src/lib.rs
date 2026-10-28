@@ -35,6 +35,8 @@ pub struct GameSession {
     localization: Localization,
     /// The tuning screen's pin table (F5); empty when it fails to load.
     pins: Vec<PinSpec>,
+    /// Slots the tuning screen pins only from the inside (`interior_only`).
+    interior_only: Vec<String>,
     trucks: Vec<TruckSummary>,
     catalogs: Mutex<HashMap<TruckId, Arc<TruckCatalog>>>,
     /// Archives that failed to open (reported, not fatal).
@@ -48,13 +50,16 @@ impl GameSession {
         let fs = GameFs::new(vfs);
         let localization = Localization::load(&fs, LANGUAGE).unwrap_or_default();
         let trucks = list_trucks(&fs)?;
-        let pins = tuning_scene(&fs).map(|t| t.pins).unwrap_or_default();
+        let (pins, interior_only) = tuning_scene(&fs)
+            .map(|t| (t.pins, t.interior_only))
+            .unwrap_or_default();
         Ok(Self {
             install,
             fs,
             models: ModelCache::new(),
             localization,
             pins,
+            interior_only,
             trucks,
             catalogs: Mutex::new(HashMap::new()),
             mount_failures: failures
@@ -87,6 +92,12 @@ impl GameSession {
     /// The tuning screen's pin table (`/def/truck_config_scene.sii`).
     pub fn pin_table(&self) -> &[PinSpec] {
         &self.pins
+    }
+
+    /// Slots whose pins the exterior tab skips (`interior_only` in
+    /// `/def/truck_config_scene.sii`, F5).
+    pub fn interior_only(&self) -> &[String] {
+        &self.interior_only
     }
 
     /// The game's tuning scenes, default garage first.

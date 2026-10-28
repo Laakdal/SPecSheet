@@ -3,7 +3,6 @@
 
 use std::collections::BTreeSet;
 
-use specsheet_core::Aabb;
 use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
 use specsheet_truck::{Configuration, SlotAvailability, TruckCatalog};
@@ -14,25 +13,23 @@ use specsheet_data::model::ModelCache;
 use specsheet_data::GameFs;
 
 /// Base models (chassis, cabin) of a configuration: their placements,
-/// visible locators and bounding boxes.
-pub(super) struct BaseLayout<'a> {
+/// visible locators.
+pub(super) struct BaseLayout {
     pub(super) placements: Vec<Placement>,
     pub(super) locators: Vec<Locator>,
-    pub(super) boxes: Vec<(Aabb, &'a specsheet_truck::Accessory)>,
     pub(super) warnings: Vec<String>,
 }
 
-pub(super) fn base_layout<'a>(
+pub(super) fn base_layout(
     fs: &GameFs,
     cache: &ModelCache,
-    catalog: &'a TruckCatalog,
+    catalog: &TruckCatalog,
     config: &Configuration,
     drive: Drive,
-) -> BaseLayout<'a> {
+) -> BaseLayout {
     let mut layout = BaseLayout {
         placements: Vec::new(),
         locators: Vec::new(),
-        boxes: Vec::new(),
         warnings: Vec::new(),
     };
     let bases = config
@@ -66,7 +63,6 @@ pub(super) fn base_layout<'a>(
                     variant: variant.cloned(),
                     transform: Transform::IDENTITY,
                 });
-                layout.boxes.push((model.pmg.aabb, accessory));
             }
             Err(error) => layout.warnings.push(format!("{}: {error}", accessory.id)),
         }

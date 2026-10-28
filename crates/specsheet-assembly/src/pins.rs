@@ -48,6 +48,9 @@ pub struct PinBase {
 pub struct PinBases {
     /// The base point of every exterior accessory slot that has a locator.
     pub slots: BTreeMap<SlotId, PinBase>,
+    /// The base point of every accessory slot found on the cockpit's
+    /// locators, in truck space (the interior tab's pins).
+    pub interior: BTreeMap<SlotId, PinBase>,
     /// Wheel positions per wheel group (`f`, `r`), axle by axle from the
     /// front, left wheel before right.
     pub wheels: Vec<(char, Vec<[f32; 3]>)>,
@@ -84,12 +87,19 @@ pub fn slot_locator<'a>(
     })
 }
 
-/// The pin bases of `slots` among the visible base-model `locators`, plus
-/// the wheel positions from the front (`wheel_f*`) and rear (`wheel_r*`)
-/// wheel locators.
+/// The pin bases of `slots` among the visible base-model `locators` and
+/// among the `cockpit`'s locators (already in truck space), plus the wheel
+/// positions from the front (`wheel_f*`) and rear (`wheel_r*`) wheel
+/// locators.
+///
+/// Interior pins start from the full cockpit, the only model that carries
+/// the interior slots' locators; they are head-relative, so the cockpit's
+/// placement at the eye point puts them in the cab (F5, Hypothesis
+/// consistent with the data).
 pub fn bases(
     slots: &BTreeSet<SlotId>,
     locators: &[Locator],
+    cockpit: &[Locator],
     front: &[&Locator],
     rear: &[&Locator],
 ) -> PinBases {
@@ -104,13 +114,17 @@ pub fn bases(
         positions.sort_by(|a, b| a[2].total_cmp(&b[2]).then(a[0].total_cmp(&b[0])));
         positions
     };
-    PinBases {
-        slots: slots
+    let found = |locators: &[Locator]| -> BTreeMap<SlotId, PinBase> {
+        slots
             .iter()
             .filter_map(|slot| {
                 slot_locator(slot.as_str(), locators).map(|l| (slot.clone(), base(l)))
             })
-            .collect(),
+            .collect()
+    };
+    PinBases {
+        slots: found(locators),
+        interior: found(cockpit),
         wheels: [('f', wheels(front)), ('r', wheels(rear))]
             .into_iter()
             .filter(|(_, w)| !w.is_empty())
@@ -122,39 +136,9 @@ pub fn bases(
 /// pin table). `slots` are pinned in key order, wheels after them.
 pub fn pins(table: &[PinSpec], bases: &PinBases, drive: Drive) -> Vec<Pin> {
     let entry = |group: &str| table.iter().find(|p| p.group == group);
-    // Hypothesis: the UK direction is the right-hand-drive one.
-    let dir = |spec: &PinSpec| match drive {
-        Drive::Right => spec.dir_uk,
-        Drive::Left => spec.dir,
-    };
+    let dir = |spec: &PinSpec| direction(spec, drive);
     let mut pins = Vec::new();
-    for (slot, base) in &bases.slots {
-        let mut push = |position, facing| {
-            pins.push(Pin {
-                slot: slot.clone(),
-                position,
-                facing,
-                link: None,
-                expands: false,
-            })
-        };
-        match entry(slot.as_str()) {
-            Some(spec) => {
-                let dir = dir(spec);
-                if spec.double_sided {
-                    push(
-                        add(base.position, mirror(spec.offset)),
-                        facing_of(mirror(dir)),
-                    );
-                }
-                push(add(base.position, spec.offset), facing_of(dir));
-            }
-            None => {
-                let [w, x, y, z] = base.rotation_wxyz;
-                push(base.position, rotate([x, y, z, w], FORWARD))
-            }
-        }
-    }
+    slot_pins(table, &bases.slots, drive, &mut pins);
     // The disc pin of each wheel, by (group, wheel index).
     let mut discs: BTreeMap<(char, usize), usize> = BTreeMap::new();
     for kind in WHEEL_PIN_TYPES {
@@ -190,6 +174,60 @@ pub fn pins(table: &[PinSpec], bases: &PinBases, drive: Drive) -> Vec<Pin> {
         }
     }
     pins
+}
+
+/// The interior tab's pins: the same rules as the exterior slots, from the
+/// cockpit's locators. Wheels have no interior pins.
+pub fn interior_pins(table: &[PinSpec], bases: &PinBases, drive: Drive) -> Vec<Pin> {
+    let mut pins = Vec::new();
+    slot_pins(table, &bases.interior, drive, &mut pins);
+    pins
+}
+
+/// Hypothesis: the UK direction is the right-hand-drive one.
+fn direction(spec: &PinSpec, drive: Drive) -> [f32; 3] {
+    match drive {
+        Drive::Right => spec.dir_uk,
+        Drive::Left => spec.dir,
+    }
+}
+
+/// One pin per slot at base + offset facing `pin_dir`, preceded by its
+/// mirror for `double_sided` entries; without an entry, the pin sits on the
+/// locator facing the locator's forward.
+fn slot_pins(
+    table: &[PinSpec],
+    slots: &BTreeMap<SlotId, PinBase>,
+    drive: Drive,
+    pins: &mut Vec<Pin>,
+) {
+    for (slot, base) in slots {
+        let mut push = |position, facing| {
+            pins.push(Pin {
+                slot: slot.clone(),
+                position,
+                facing,
+                link: None,
+                expands: false,
+            })
+        };
+        match table.iter().find(|p| p.group == slot.as_str()) {
+            Some(spec) => {
+                let dir = direction(spec, drive);
+                if spec.double_sided {
+                    push(
+                        add(base.position, mirror(spec.offset)),
+                        facing_of(mirror(dir)),
+                    );
+                }
+                push(add(base.position, spec.offset), facing_of(dir));
+            }
+            None => {
+                let [w, x, y, z] = base.rotation_wxyz;
+                push(base.position, rotate([x, y, z, w], FORWARD))
+            }
+        }
+    }
 }
 
 /// How opaque a pin facing `facing` is when the camera looks along
@@ -290,7 +328,7 @@ mod tests {
         );
         let bases = PinBases {
             slots,
-            wheels: Vec::new(),
+            ..PinBases::default()
         };
         let table = [spec("mirror", [-1.35, 0.0, 0.0], [-1.0, 0.0, -1.0], true)];
         let pins = pins(&table, &bases, Drive::Left);
@@ -316,7 +354,7 @@ mod tests {
         );
         let bases = PinBases {
             slots,
-            wheels: Vec::new(),
+            ..PinBases::default()
         };
         let pins = pins(&[], &bases, Drive::Left);
         assert_eq!(pins.len(), 1);
@@ -338,6 +376,7 @@ mod tests {
         ];
         let bases = bases(
             &BTreeSet::new(),
+            &[],
             &[],
             &front.iter().collect::<Vec<_>>(),
             &rear.iter().collect::<Vec<_>>(),
@@ -387,6 +426,7 @@ mod tests {
         let bases = bases(
             &BTreeSet::new(),
             &[],
+            &[],
             &front.iter().collect::<Vec<_>>(),
             &[],
         );
@@ -411,7 +451,7 @@ mod tests {
         );
         let bases = PinBases {
             slots,
-            wheels: Vec::new(),
+            ..PinBases::default()
         };
         let mut door = spec("cab_door", [0.0; 3], [1.0, 0.0, 0.0], false);
         door.dir_uk = [-1.0, 0.0, 0.0];
@@ -437,5 +477,33 @@ mod tests {
         assert!(opacity(FORWARD, view_axis) > 0.75, "front-facing pins show");
         assert_eq!(opacity([0.0, 0.0, 1.0], view_axis), 0.0, "rear hidden");
         assert_eq!(opacity(view_axis, view_axis), 1.0);
+    }
+
+    #[test]
+    fn interior_pins_start_from_the_cockpit_locators() {
+        // Cockpit locators already moved to the eye point (truck space).
+        let cockpit = [
+            locator("steering_w", [-0.7, 2.3, -2.4]),
+            locator("toybig_1", [0.0, 2.9, -1.6]),
+        ];
+        let exterior = [locator("toybig_x", [9.0, 9.0, 9.0])];
+        let slots: BTreeSet<SlotId> = ["steering_w", "toybig"].map(SlotId::from).into();
+        let bases = bases(&slots, &exterior, &cockpit, &[], &[]);
+        assert_eq!(bases.interior.len(), 2);
+        let table = [spec("toybig", [0.0, 0.1, 0.0], [0.0, 0.0, 1.0], false)];
+        let pins = interior_pins(&table, &bases, Drive::Left);
+        let toy = pins
+            .iter()
+            .find(|p| p.slot.as_str() == "toybig")
+            .expect("toy");
+        assert!(close(toy.position, [0.0, 3.0, -1.6]));
+        assert!(close(toy.facing, [0.0, 0.0, 1.0]));
+        // Without a table entry: on the locator, facing its forward.
+        let wheel = pins
+            .iter()
+            .find(|p| p.slot.as_str() == "steering_w")
+            .expect("wheel");
+        assert_eq!(wheel.position, [-0.7, 2.3, -2.4]);
+        assert!(close(wheel.facing, FORWARD));
     }
 }

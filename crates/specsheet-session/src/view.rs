@@ -2,7 +2,7 @@
 //! slots get a marker, and plain-language verdicts. Front ends render these
 //! as they are and hold no tuning rules (see `docs/ARCHITECTURE.md`).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use specsheet_core::colour::linear_to_srgb;
 use specsheet_core::{AccessoryId, SlotId, TruckId};
@@ -378,7 +378,6 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
             matches!(kind, AccessoryKind::Addon | AccessoryKind::Wheel) || option_count > 1;
         (tab.has_pins() && chosen).then_some((kind, option_count, tab))
     };
-    let anchors: HashMap<&SlotId, _> = assembly.anchors.iter().map(|a| (&a.slot, a)).collect();
     let placed: HashSet<&SlotId> = assembly.placements.iter().map(|p| &p.slot).collect();
     let hotspot =
         |slot: &SlotId, position, facing, kind, option_count, tab, interior: bool| Hotspot {
@@ -399,13 +398,13 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
             empty: !placed.contains(slot),
             tab,
         };
-    // Exterior pins are the game's (F5); a slot whose parts sit inside the
-    // cab keeps its anchor as an interior pin instead.
+    // The game's two passes (F5): exterior pins from the base models, which
+    // skip the scene's interior-only slots; interior pins from the cockpit.
     let exterior = pins::pins(game.pin_table(), &assembly.pin_bases, session.drive());
     let mut kept: Vec<Option<usize>> = Vec::with_capacity(exterior.len());
     let mut hotspots: Vec<Hotspot> = Vec::new();
     for pin in &exterior {
-        let inside = anchors.get(&pin.slot).is_some_and(|a| a.interior);
+        let inside = game.interior_only().iter().any(|s| s == pin.slot.as_str());
         let shown = pinned(&pin.slot, false).filter(|_| !inside);
         // A linked pin follows its target out when the target is dropped.
         let link = pin.link.map(|i| kept.get(i).copied().flatten());
@@ -429,12 +428,12 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
         };
         kept.push(index);
     }
-    for anchor in assembly.anchors.iter().filter(|a| a.interior) {
-        if let Some((kind, option_count, tab)) = pinned(&anchor.slot, true) {
+    for pin in pins::interior_pins(game.pin_table(), &assembly.pin_bases, session.drive()) {
+        if let Some((kind, option_count, tab)) = pinned(&pin.slot, true) {
             hotspots.push(hotspot(
-                &anchor.slot,
-                anchor.position,
-                None,
+                &pin.slot,
+                pin.position,
+                Some(pin.facing),
                 kind,
                 option_count,
                 tab,
