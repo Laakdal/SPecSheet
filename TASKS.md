@@ -75,7 +75,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] REA trace: the pin-button string is used by `FUN_140fe0fc0` (F8).
 - [x] REA decompilation of `FUN_140fe0fc0` (F5): it selects a pin (button `10000 + n`; hookups `11000 + m`) after switching to one of the game's 8 tabs. It does not create or place pins.
 - [x] License-safe re-derivation: the PMD/PMG layouts and the texture image/sample records are now cited from our own bytes (`pmg-layout-derivation.txt`, `texture-unpack-derivation.txt`). Corrections: piece +60 is the vertex stride (now checked), and an empty hookup string means no hookup.
-- [ ] DXGI 67 (R9G9B9E5_SHAREDEXP, skyboxes and HDR UI images) is missing from `pixel_layout`, so those textures do not unpack. Needed only if the app renders skyboxes.
+- [x] DXGI 67 (R9G9B9E5_SHAREDEXP): unpacked and uploaded as `Rgb9e5Ufloat`; all 197 textures (skyboxes, HDR UI images) unpack and decode to plausible HDR (`hdr-textures.txt`).
 - [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
 - [x] Clean-room rewrite, phase 1 (D13): `pmd.rs`, `pmg.rs` and `texture.rs` rewritten from interface stubs and our own evidence by an agent that never saw TruckLib or the old code. Output identical to the old code for all 278,633 models and textures in the install (`research/evidence/cleanroom-phase1.txt`), plus three resource-exhaustion guards.
 - [x] Clean-room rewrite, phase 2 (D13): `hashfs.rs` rewritten by a second fresh agent from a byte-level derivation of the HashFS v2 layout (`hashfs-layout-derivation.txt`). Identical to the old reader on all 116 archives (`cleanroom-phase2.txt`). It corrected the old doc: the header ends at 0x34, record 0x06 is on .pmg only, and 547 entries appear in no listing.
@@ -111,6 +111,22 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
+0. **Priority (user, 2026-10-29): environment, shaders, textures, then the rest.** In dependency order, with owners:
+   1. **Environment** (de):
+      - the vehicle-reflection slot, uncommitted and waiting for the user's go;
+      - the tonemap from `shader-specs/tonemap.md`, then the pre-exposure (0.0973) A/B;
+      - real-time shadows from the scene's main light;
+      - the scene fields still unused: `light_specular`, `floor_reflection`, `cube_reflection`.
+   2. **Textures** (d3, data only, no shader text):
+      - [x] DXGI 67 (R9G9B9E5_SHAREDEXP) unpacks and uploads (`hdr-textures.txt`).
+      - [x] `MaterialInfo` carries `normal_texture`, `normal_detail_texture` and `mult_texture`; `MeshPiece` carries `tangents` and `normal_uvs` (the set routed to UV slot 6). de wires them to the GPU; BC5 already uploads natively.
+      - [x] PMG piece +8 is the UV slot routing (`pmg-uv-routing.txt`, 611,638 pieces).
+      - [ ] Paint UVs from the routing: slot 1 for the mask, slot 2 for `altuv`, with `paint_uv_set` as the fallback. The mask agrees with today's rule in 96 % of pieces, `altuv` in only 2,423 of 4,986 (e.g. `0xf2fff110`, 2,153 pieces). Needs a screen test of an `alternate_uvset` job on such a piece (DAF 2021 `cab_door/win_xf_uk.pmd`) before switching.
+      - [ ] `texture_mult` waits for 71's spec of `dif.spec.mult.dif.spec` and the scene shaders.
+   3. **Shaders** (D13: 71 writes the specs and never the WGSL; de writes the WGSL from the specs only):
+      - specs in order: `tsnmap`/`tsnmapuv`, `glass`, `lamp`, `dif.lum` and `decalshadow`, then the scene shaders `showroom_v2` and `baked`;
+      - REA, one run while no build runs: the reflection cube's x/z mirroring and how `pre_exposure` is applied.
+   4. **Other:** bloom, and `fakeshadow`/`shadowonly`.
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
    - the game's lighting: the shared module (`specsheet-render/src/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). Next: the reflection strength and cube (the engine's vehicle_reflection slot, F17 §4, with 71), normal maps (needs tangents), then the output scale against the game's tone mapping (F16, spec in progress);
