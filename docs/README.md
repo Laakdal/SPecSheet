@@ -29,5 +29,6 @@ Docs are organised by topic. Each fact has one home: `formats/` describes what g
   - [app/scenes.md](app/scenes.md): tuning scenes, lights, fog, orbit camera
   - [app/hotspots.md](app/hotspots.md): anchors, culling, clustering, marker styles
   - [app/ui.md](app/ui.md): egui layout, sidebar, busy state, settings
+  - [app/design-system.md](app/design-system.md): tokens, rules and screens for the app's own UI (not the 1:1 tuning screen)
 
 Root files: [../README.md](../README.md), [../TASKS.md](../TASKS.md), [../CHANGELOG.md](../CHANGELOG.md), [../AGENTS.md](../AGENTS.md).
