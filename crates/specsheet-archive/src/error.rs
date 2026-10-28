@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-/// Errors produced while reading an archive.
+/// Errors produced while reading an archive or writing a package.
 #[derive(Debug, thiserror::Error)]
 pub enum ArchiveError {
     #[error("I/O error on {path}: {source}")]
@@ -23,6 +23,14 @@ pub enum ArchiveError {
     NotZip,
     #[error("`{path}` uses unsupported ZIP compression method {method}")]
     UnsupportedZipMethod { path: String, method: u16 },
+    #[error("package path `{path}` is {reason}")]
+    InvalidPackagePath { path: String, reason: &'static str },
+    #[error("package path `{0}` is added twice")]
+    DuplicatePackagePath(String),
+    #[error("package would need ZIP64: {0}")]
+    PackageTooLarge(String),
+    #[error("a package named like `{}` already exists", .0.display())]
+    PackageExists(PathBuf),
     #[error("corrupt archive {path}: {reason}")]
     Corrupt { path: PathBuf, reason: String },
     #[error("`{0}` not found")]

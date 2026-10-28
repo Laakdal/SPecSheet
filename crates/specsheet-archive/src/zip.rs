@@ -19,16 +19,16 @@ use crate::error::{ArchiveError, Result};
 use crate::hashfs::DirListing;
 use crate::read_at::read_exact_at;
 
-const END_SIGNATURE: u32 = 0x0605_4b50;
+pub(crate) const END_SIGNATURE: u32 = 0x0605_4b50;
 const END_LEN: usize = 22;
 const ZIP64_LOCATOR_SIGNATURE: u32 = 0x0706_4b50;
 const ZIP64_LOCATOR_LEN: usize = 20;
 const ZIP64_END_SIGNATURE: u32 = 0x0606_4b50;
 const ZIP64_END_LEN: usize = 56;
 const ZIP64_EXTRA_ID: u16 = 0x0001;
-const CENTRAL_SIGNATURE: u32 = 0x0201_4b50;
+pub(crate) const CENTRAL_SIGNATURE: u32 = 0x0201_4b50;
 const CENTRAL_LEN: usize = 46;
-const LOCAL_SIGNATURE: u32 = 0x0403_4b50;
+pub(crate) const LOCAL_SIGNATURE: u32 = 0x0403_4b50;
 const LOCAL_LEN: usize = 30;
 /// The end record sits within the last `END_LEN + u16::MAX` bytes (its
 /// comment is at most 65,535 bytes long).
@@ -37,8 +37,8 @@ const END_SEARCH: u64 = (END_LEN + u16::MAX as usize) as u64;
 /// against hostile size fields.
 const MAX_FILE_SIZE: u64 = 1 << 31;
 
-const METHOD_STORED: u16 = 0;
-const METHOD_DEFLATE: u16 = 8;
+pub(crate) const METHOD_STORED: u16 = 0;
+pub(crate) const METHOD_DEFLATE: u16 = 8;
 
 /// One file of the central directory.
 #[derive(Clone, Debug)]
