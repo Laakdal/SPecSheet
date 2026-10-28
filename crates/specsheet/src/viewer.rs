@@ -2,7 +2,7 @@
 //! and the orbit camera. Models load on the async compute pool and are
 //! shared between instances; placements are diffed so unchanged parts stay.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use bevy::camera::Exposure;
@@ -16,6 +16,7 @@ use bevy::render::settings::WgpuFeatures;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
 use specsheet_data::assembly::Placement;
+use specsheet_data::paint::PiecePaint;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
@@ -520,13 +521,19 @@ fn placement_key(placement: &Placement) -> ModelKey {
     }
 }
 
-/// Instances are diffed by model and transform, so unchanged parts are not
-/// rebuilt.
-fn instance_key(placement: &Placement) -> String {
+/// Instances are diffed by model, transform and paint, so a paint change
+/// rebuilds exactly the parts it touches.
+fn instance_key(placement: &Placement, paint: &Paint<'_>) -> String {
     let t = &placement.transform;
     format!(
-        "{}|{:?}|{:?}|{:?}|{:?}|{}",
-        placement.model, placement.look, placement.variant, t.translation, t.rotation, t.scale
+        "{}|{:?}|{:?}|{:?}|{:?}|{}|{}",
+        placement.model,
+        placement.look,
+        placement.variant,
+        t.translation,
+        t.rotation,
+        t.scale,
+        paint.key()
     )
 }
 
@@ -538,8 +545,9 @@ pub struct TruckInstances {
     pub eye: Option<Vec3>,
     /// (truck generation, model-cache generation) last synced.
     synced: (u64, u64),
-    paint: Option<[f32; 3]>,
-    paintable: HashSet<AssetId<StandardMaterial>>,
+    /// Paint materials by (unpainted material, paint): instances with the
+    /// same paint share them.
+    paint_materials: HashMap<(AssetId<StandardMaterial>, String), Handle<StandardMaterial>>,
     /// Truck-space bounds of the placed models.
     pub bounds: Option<(Vec3, Vec3)>,
 }
@@ -587,7 +595,14 @@ fn sync_truck(
         return;
     }
     instances.synced = generations;
-    let paint = studio.overview.as_ref().and_then(|o| o.paint_color);
+    // Placements without a paint job take the configuration's colour.
+    let fallback = studio.overview.as_ref().and_then(|o| o.paint_color);
+    let paint_of = |p: &Placement| {
+        studio
+            .paints
+            .get(&(p.slot.clone(), p.accessory.clone()))
+            .map_or_else(|| Paint::Color(fallback), Paint::Job)
+    };
     // The cockpit is an instance of its own, shown only in the interior
     // view; the exterior-view interior is hidden there instead.
     let cockpit = studio.cockpit.as_ref();
@@ -600,11 +615,11 @@ fn sync_truck(
             } else {
                 ViewPart::Exterior
             };
-            (instance_key(p), (p, part))
+            (instance_key(p, &paint_of(p)), (p, part))
         })
         .chain(cockpit.into_iter().chain(&studio.interior_parts).map(|p| {
             (
-                format!("cockpit|{}", instance_key(p)),
+                format!("cockpit|{}", instance_key(p, &paint_of(p))),
                 (p, ViewPart::Cockpit),
             )
         }))
@@ -618,7 +633,6 @@ fn sync_truck(
         keep
     });
     let mut bounds: Option<(Vec3, Vec3)> = None;
-    let mut new_paintable = Vec::new();
     for (key, (placement, part)) in &wanted {
         let model_key = placement_key(placement);
         let Some(model) = cache.get(&studio, &model_key) else {
@@ -648,42 +662,73 @@ fn sync_truck(
         let entity = commands
             .spawn((transform, Visibility::default(), *part, ChildOf(*root)))
             .id();
-        for (mesh, material) in &model.pieces {
+        let paint = paint_of(placement);
+        for ((mesh, material), painted) in model.pieces.iter().zip(&model.painted) {
+            let material = if *painted {
+                paint_material(&mut instances, &mut materials, material, &paint)
+            } else {
+                material.clone()
+            };
             commands.spawn((
                 Mesh3d(mesh.clone()),
-                MeshMaterial3d(material.clone()),
+                MeshMaterial3d(material),
                 ChildOf(entity),
             ));
         }
-        new_paintable.extend(model.paintable.iter().map(Handle::id));
         instances.entities.insert(key.clone(), entity);
     }
     instances.bounds = bounds;
-    let repaint_all = instances.paint != paint;
-    instances.paint = paint;
-    let color = paint_color(paint);
-    let targets: Vec<AssetId<StandardMaterial>> = if repaint_all {
-        instances.paintable.extend(new_paintable);
-        instances.paintable.iter().copied().collect()
-    } else {
-        new_paintable
-            .into_iter()
-            .filter(|id| instances.paintable.insert(*id))
-            .collect()
-    };
-    for id in targets {
-        if let Some(mut material) = materials.get_mut(id) {
-            material.base_color = color;
+}
+
+/// The paint a placed accessory takes on its `truckpaint` pieces.
+enum Paint<'a> {
+    /// The paint job's resolved paint (`specsheet_data::paint`).
+    Job(&'a PiecePaint),
+    /// No paint job: the configuration's colour, if any.
+    Color(Option<[f32; 3]>),
+}
+
+impl Paint<'_> {
+    /// Identifies the paint in instance and material keys.
+    fn key(&self) -> String {
+        match self {
+            Paint::Job(paint) => format!("{paint:?}"),
+            Paint::Color(color) => format!("color {color:?}"),
+        }
+    }
+
+    /// The body colour. Game colours are linear (Coffee Brown is
+    /// (0.034, 0.023, 0.014)); without one the paint is a neutral grey.
+    fn base_color(&self) -> Color {
+        let color = match self {
+            Paint::Job(paint) => paint.base_color,
+            Paint::Color(color) => *color,
+        };
+        match color {
+            Some([r, g, b]) => Color::linear_rgb(r, g, b),
+            None => Color::linear_rgb(0.6, 0.6, 0.6),
         }
     }
 }
 
-/// Game paint colours are linear (e.g. Coffee Brown is (0.034, 0.023, 0.014)).
-fn paint_color(paint: Option<[f32; 3]>) -> Color {
-    match paint {
-        Some([r, g, b]) => Color::linear_rgb(r, g, b),
-        None => Color::linear_rgb(0.6, 0.6, 0.6),
+/// `base` with the paint applied, shared by every piece with the same
+/// material and paint. Until the clean-room truckpaint material lands
+/// (D13), only the base colour is applied.
+fn paint_material(
+    instances: &mut TruckInstances,
+    materials: &mut Assets<StandardMaterial>,
+    base: &Handle<StandardMaterial>,
+    paint: &Paint<'_>,
+) -> Handle<StandardMaterial> {
+    let key = (base.id(), paint.key());
+    if let Some(handle) = instances.paint_materials.get(&key) {
+        return handle.clone();
     }
+    let mut material = materials.get(base).cloned().unwrap_or_default();
+    material.base_color = paint.base_color();
+    let handle = materials.add(material);
+    instances.paint_materials.insert(key, handle.clone());
+    handle
 }
 
 /// The scene as last applied, and its model once spawned.

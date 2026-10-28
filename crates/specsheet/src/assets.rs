@@ -75,8 +75,9 @@ pub fn load_model(game: &GameSession, key: &ModelKey) -> Result<ModelPayload, St
 /// A model uploaded to the GPU; instances share its meshes and materials.
 pub struct GpuModel {
     pub pieces: Vec<(Handle<Mesh>, Handle<StandardMaterial>)>,
-    /// Materials painted with the truck's paint colour.
-    pub paintable: Vec<Handle<StandardMaterial>>,
+    /// Per piece: its material is a `truckpaint` one and takes the paint of
+    /// the placement it belongs to.
+    pub painted: Vec<bool>,
     /// The reflection cube (`texture_reflection`) of every reflective
     /// material, once per material; the viewer uses the most common one as
     /// its environment map.
@@ -127,21 +128,22 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
             stores.materials.add(material(info, texture))
         })
         .collect();
-    let paintable = mesh
-        .materials
-        .iter()
-        .zip(&materials)
-        .filter(|(info, _)| info.paintable)
-        .map(|(_, handle)| handle.clone())
-        .collect();
     let mut pieces = Vec::new();
+    let mut painted = Vec::new();
     for (index, piece) in mesh.pieces.into_iter().enumerate() {
         let Some(material) = materials.get(piece.material) else {
             warnings.push(format!("{}: piece {index} has no material", mesh.path));
             continue;
         };
+        let paint = mesh
+            .materials
+            .get(piece.material)
+            .is_some_and(|info| info.paintable);
         match piece_mesh(piece) {
-            Ok(m) => pieces.push((stores.meshes.add(m), material.clone())),
+            Ok(m) => {
+                pieces.push((stores.meshes.add(m), material.clone()));
+                painted.push(paint);
+            }
             Err(error) => warnings.push(format!("{}: piece {index}: {error}", mesh.path)),
         }
     }
@@ -153,7 +155,7 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         .collect();
     let model = GpuModel {
         pieces,
-        paintable,
+        painted,
         reflections,
         aabb_min: Vec3::from(mesh.aabb_min),
         aabb_max: Vec3::from(mesh.aabb_max),

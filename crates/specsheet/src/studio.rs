@@ -3,12 +3,14 @@
 //! blocks; the truck session moves into the task and comes back with the
 //! result.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_data::assembly::{Drive, Placement};
+use specsheet_data::paint::{piece_paint, PiecePaint};
 use specsheet_data::scene::{tuning_scene, OrbitSpec, Scene};
 use specsheet_data::session::{GameSession, TruckSession};
 use specsheet_data::view::{self, SlotOptions, TruckEntry, TruckOverview};
@@ -106,6 +108,8 @@ pub struct Studio {
     pub cockpit: Option<Placement>,
     /// Interior-only accessories on the cockpit, shown with it.
     pub interior_parts: Vec<Placement>,
+    /// The paint of every placed accessory with a paint job (F15).
+    pub paints: HashMap<(SlotId, AccessoryId), PiecePaint>,
     /// Bumped whenever `placements` or the paint colour change.
     pub truck_generation: u64,
     pub options: Option<SlotOptions>,
@@ -143,6 +147,17 @@ impl Studio {
         self.placements = session.assembly().placements.clone();
         self.cockpit = session.assembly().cockpit.clone();
         self.interior_parts = session.assembly().interior_parts.clone();
+        self.paints = self
+            .placements
+            .iter()
+            .chain(&self.interior_parts)
+            .chain(&self.cockpit)
+            .filter_map(|p| {
+                let paint =
+                    piece_paint(session.catalog(), session.config(), &p.slot, &p.accessory)?;
+                Some(((p.slot.clone(), p.accessory.clone()), paint))
+            })
+            .collect();
         self.truck_generation += 1;
         if let Some(options) = &self.options {
             self.options = Some(view::slot_options(game, session, &options.slot));
