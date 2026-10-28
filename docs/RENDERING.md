@@ -4,7 +4,7 @@ How the app turns game data into the 3D tuning view. What the game files contain
 
 - [app/materials.md](app/materials.md): `.mat` effects to Bevy materials, the truck paint material, texture upload.
 - [app/shaders.md](app/shaders.md): which game shaders the trucks use, why the look isn't 1:1 yet, and the status of each clean-room material.
-- [app/shader-specs/](app/shader-specs/): the clean-room specs (D13) the WGSL is written from: `truckpaint`, `truckpaint-lighting`, `dif-spec`.
+- [app/shader-specs/](app/shader-specs/): the clean-room specs (D13) the WGSL is written from: `truckpaint`, `truckpaint-lighting`, `dif-spec`, `dif-spec-mult`, `baked`, `showroom-v2`.
 - [app/scenes.md](app/scenes.md): the `/def/desktop` scenes, camera, lights, fog and orbit controls.
 - [app/hotspots.md](app/hotspots.md): the game's pins (exterior, wheel and interior), their fade by facing, and the disc-linked wheel pins.
 - [app/ui.md](app/ui.md): the egui layout, sidebar and controls.

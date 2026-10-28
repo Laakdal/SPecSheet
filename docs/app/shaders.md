@@ -30,7 +30,7 @@ Share of all 24,441 model uses:
 | `glass` | 3.2 % | Alpha is the specular map; tint colour and tint opacity |
 | `decalshadow` | 1.2 % | Transparent baked shadows |
 | `fakeshadow` | 0.6 % | Shadow-volume contours (wheels) |
-| everything else | under 4 % together | `dif`, `dif.spec.mult.dif.spec` (liveries), `light.tex`, `unlit.*`, scene shaders such as `showroom_v2`, `baked`, `water` |
+| everything else | under 4 % together | `dif`, `dif.spec.mult.dif.spec` (baked occlusion over a tiled base: the tuning garage), `light.tex`, `unlit.*`, scene shaders such as `showroom_v2`, `baked`, `water` |
 
 | Flavor | Share | Meaning |
 |---|---|---|
@@ -63,6 +63,9 @@ These use only `.mat` parameters, textures and Bevy's renderer:
 |---|---|---|
 | `truckpaint` | Done: [shader-specs/truckpaint.md](shader-specs/truckpaint.md), [truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) | Surface done, under Bevy's lighting ([materials.md](materials.md#truck-paint-eut2truckpaint)) |
 | `dif.spec` | Done: [shader-specs/dif-spec.md](shader-specs/dif-spec.md), with the lighting model and the deferred path | Next: one shared lighting module for `dif.spec` and `truckpaint`, with per-material cube sampling (§5.5) |
+| `dif.spec.mult.dif.spec` (with `add.env`, `tsnmap`, `tsnmapuv`, `paint`, `iamod`) and `dif.spec.decal.mult` | Done: [shader-specs/dif-spec-mult.md](shader-specs/dif-spec-mult.md), as deltas on `dif-spec.md`: `texture_mult` on UV slot 1 multiplies the base, and the tuning garage is almost all this base | Not started |
+| `baked.spec.add.env`, `.paint` | Done: [shader-specs/baked.md](shader-specs/baked.md): per-texel shading textures; seen only on far truck LODs (Hypothesis), so the tuning screen likely never draws it | Not started |
+| `showroom_v2` | Done: [shader-specs/showroom-v2.md](shader-specs/showroom-v2.md): unlit, animated background dome | Not started |
 | `glass` (+ `tsnmap`, `tsnmapuv`) | Done: [shader-specs/glass.md](shader-specs/glass.md): a multiply pass (tint² × (1 − opacity)), then an additive surface pass with a Schlick reflection | Not started |
 | `lamp` (+ `add.env`, `tsnmap(uv)`) | Done: [shader-specs/lamp.md](shader-specs/lamp.md): `dif.spec.add.env` plus a masked glow from the engine's lamp colours (zero with the lights off) | Not started |
 | `dif.lum` (+ `lvcol`, `decal.over`) | Done: [shader-specs/dif-lum.md](shader-specs/dif-lum.md): lit surface plus emission weighted by base alpha | Not started |
@@ -76,7 +79,7 @@ These use only `.mat` parameters, textures and Bevy's renderer:
    2. `truckpaint` with `altuv`, `airbrush`, `colormask` and `flipflake`, together with the paint-job data ([TUNING_SYSTEM.md](../TUNING_SYSTEM.md), paint research).
    3. `glass` and `lamp` (including `add.env`).
    4. `dif.lum`, `decalshadow`, `light.tex` and `unlit.*`.
-   5. The scene shaders used by the tuning garage (`showroom_v2`, `baked`).
+   5. The tuning garage's base `dif.spec.mult.dif.spec` (`texture_mult` baked occlusion), then the scene shaders `showroom_v2` and `baked`.
    6. Lighting model, exposure and tonemapping.
 4. **Measure.** After each base, run `specsheet --parity` against the reference screenshots and record the scores in [../PARITY.md](../PARITY.md). Reference screenshots are deferred for now; until they exist, engine conventions (exposure, tonemapping, camera) come from the executable via REA, and each material is checked by eye in a `SPECSHEET_SCRIPT` screenshot.
 
