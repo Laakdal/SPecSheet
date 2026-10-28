@@ -13,10 +13,21 @@ use crate::sii::{self, resolve_relative};
 /// Longest path we keep; game paths are far shorter.
 const MAX_PATH: usize = 512;
 
+/// First bytes of a standalone `.tobj` file.
+const TOBJ_MAGIC: [u8; 4] = [0x01, 0x0a, 0xb1, 0x70];
+/// Where a `.tobj` file's texture path records start.
+const TOBJ_PATHS: usize = 0x28;
+
 /// Paths (without a leading slash, any `#event` suffix removed) that the
 /// bytes of `file` mention. May contain paths that do not exist.
 pub fn referenced_paths(file: &str, bytes: &[u8]) -> Vec<String> {
     let mut out = Vec::new();
+    if let Some(textures) = tobj_textures(bytes) {
+        for path in textures {
+            push(&mut out, path);
+        }
+        return out;
+    }
     for run in bytes.split(|b| !(b.is_ascii_graphic() || *b == b' ' || *b == b'\t')) {
         let Ok(text) = std::str::from_utf8(run) else {
             continue;
@@ -113,6 +124,31 @@ pub fn unit_paths(bytes: &[u8]) -> Vec<String> {
         );
     }
     out
+}
+
+/// The texture paths of a standalone `.tobj` file: from 0x28, records of a
+/// little-endian u64 length and that many path bytes, filling the file
+/// exactly (one record; six for a cube map). Read whole, since a path may
+/// hold characters such as `?*<>:#` (`research/evidence/
+/// mod-name-recovery.txt`, section 8). `None` when the bytes are not a
+/// `.tobj` or the records do not fill them.
+fn tobj_textures(bytes: &[u8]) -> Option<Vec<&str>> {
+    if !bytes.starts_with(&TOBJ_MAGIC) {
+        return None;
+    }
+    let mut rest = bytes.get(TOBJ_PATHS..)?;
+    let mut out = Vec::new();
+    while !rest.is_empty() {
+        let (len, tail) = rest.split_first_chunk::<8>()?;
+        let len = usize::try_from(u64::from_le_bytes(*len)).ok()?;
+        if len > MAX_PATH || len > tail.len() {
+            return None;
+        }
+        let (path, tail) = tail.split_at(len);
+        out.push(std::str::from_utf8(path).ok()?);
+        rest = tail;
+    }
+    (!out.is_empty()).then_some(out)
 }
 
 /// The path characters at the start of `text`, cut at `#` (an event or
@@ -225,6 +261,35 @@ vehicle_accessory : .x
         );
         // Outside a .mat, a bare quoted name is not a path.
         assert!(referenced_paths("def/x.sii", mat).is_empty());
+    }
+
+    fn tobj(paths: &[&str]) -> Vec<u8> {
+        let mut out = vec![0x01, 0x0a, 0xb1, 0x70];
+        out.resize(0x28, 0);
+        for p in paths {
+            out.extend((p.len() as u64).to_le_bytes());
+            out.extend(p.as_bytes());
+        }
+        out
+    }
+
+    #[test]
+    fn reads_tobj_texture_paths_exactly() {
+        // Characters the general scanner stops at are part of the path.
+        let odd = "/?30*3<*:/<</*<<_**<:*/?#>_?3_.dds";
+        assert_eq!(referenced_paths("x.tobj", &tobj(&[odd])), [&odd[1..]]);
+        // A cube map names six textures.
+        let cube = tobj(&[
+            "/m/s.dds", "/m/s.dds", "/m/t.dds", "/m/b.dds", "/m/s.dds", "/m/s.dds",
+        ]);
+        assert_eq!(
+            referenced_paths("x.tobj", &cube),
+            ["m/s.dds", "m/s.dds", "m/t.dds", "m/b.dds", "m/s.dds", "m/s.dds"]
+        );
+        // Records that do not fill the file fall back to the general scan.
+        let mut bad = tobj(&["/m/a.dds"]);
+        bad[0x28] = 0xff;
+        assert_eq!(referenced_paths("x.tobj", &bad), ["m/a.dds"]);
     }
 
     #[test]
