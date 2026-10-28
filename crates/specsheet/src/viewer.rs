@@ -13,6 +13,7 @@ use bevy::pbr::{DistanceFog, FogFalloff};
 use bevy::prelude::*;
 use bevy::render::renderer::RenderDevice;
 use bevy::render::settings::WgpuFeatures;
+use bevy::render::storage::ShaderBuffer;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
 use specsheet_data::assembly::Placement;
@@ -20,7 +21,7 @@ use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
 use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
-use crate::render::{Paint, PaintMaterials, TruckPaintMaterial};
+use crate::render::{GameLight, GameLighting, Paint, PaintMaterials, TruckPaintMaterial};
 use crate::studio::{FrameSet, Studio};
 
 /// The truck, the scene, lights and the orbit camera.
@@ -206,7 +207,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
+    mut lighting: ResMut<GameLighting>,
+    mut buffers: ResMut<Assets<ShaderBuffer>>,
 ) {
+    lighting.set(&mut buffers, game_light(None));
     let orbit = Orbit::from_pose(DEFAULT_CAMERA, DEFAULT_TARGET);
     commands.spawn((
         Camera3d::default(),
@@ -672,9 +676,16 @@ struct PieceMaterials<'w> {
     paints: ResMut<'w, PaintMaterials>,
     standard: Res<'w, Assets<StandardMaterial>>,
     materials: ResMut<'w, Assets<TruckPaintMaterial>>,
+    lighting: ResMut<'w, GameLighting>,
+    buffers: ResMut<'w, Assets<ShaderBuffer>>,
 }
 
 impl PieceMaterials<'_> {
+    /// Lights every game material with `scene`'s light, or the defaults.
+    fn set_light(&mut self, scene: Option<&Scene>) {
+        self.lighting.set(&mut self.buffers, game_light(scene));
+    }
+
     /// Spawns `model`'s pieces under `parent`, painted with `paint`.
     fn spawn(
         &mut self,
@@ -702,6 +713,7 @@ impl PieceMaterials<'_> {
                 studio.game.as_ref(),
                 &self.standard,
                 &mut self.materials,
+                &self.lighting.buffer,
                 material,
                 &painted.surface,
                 paint,
@@ -771,6 +783,7 @@ fn apply_scene(
         }
         let (sun_light, sun_transform) = &mut *sun;
         apply_lights(scene, &mut ambient, sun_light, sun_transform);
+        paints.set_light(Some(scene));
         let strength = scene
             .light_environment
             .map_or(DEFAULT_ENVIRONMENT, |e| e.min(MAX_ENVIRONMENT));
@@ -841,6 +854,27 @@ fn apply_scene(
     paints.spawn(&mut commands, &studio, entity, &model, &Paint::Color(None));
     state.model_entity = Some(entity);
     **floor = Visibility::Hidden;
+}
+
+/// The game materials' light (dif-spec.md §3.3) from `scene`, with the
+/// viewer's defaults where it has none.
+fn game_light(scene: Option<&Scene>) -> GameLight {
+    let travel = scene
+        .and_then(|s| s.light_direction)
+        .map_or(DEFAULT_SUN_DIRECTION, Vec3::from);
+    GameLight::new(
+        travel,
+        scene
+            .and_then(|s| s.light_diffuse)
+            .unwrap_or([DEFAULT_SUN; 3]),
+        scene.and_then(|s| s.light_specular),
+        scene
+            .and_then(|s| s.light_ambient)
+            .unwrap_or(DEFAULT_AMBIENT),
+        scene
+            .and_then(|s| s.light_environment)
+            .unwrap_or(DEFAULT_ENVIRONMENT),
+    )
 }
 
 fn apply_lights(

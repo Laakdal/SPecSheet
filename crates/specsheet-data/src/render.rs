@@ -55,6 +55,9 @@ pub struct MaterialInfo {
     pub fresnel: Option<[f32; 2]>,
     /// `.tobj` path of the reflection cube map (`texture_reflection`).
     pub reflection_texture: Option<String>,
+    /// Weight of the scene's additional ambient colour
+    /// (`additional_ambient`; dif-spec.md §3.1).
+    pub additional_ambient: Option<f32>,
 }
 
 impl MaterialInfo {
@@ -73,6 +76,7 @@ impl MaterialInfo {
             env_factor: None,
             fresnel: None,
             reflection_texture: None,
+            additional_ambient: None,
         }
     }
 
@@ -115,6 +119,7 @@ impl MaterialInfo {
             env_factor: rgb("env_factor"),
             fresnel: floats("fresnel").and_then(|v| <[f32; 2]>::try_from(v.get(..2)?).ok()),
             reflection_texture: texture("texture_reflection"),
+            additional_ambient: floats("additional_ambient").and_then(|v| v.first().copied()),
         }
     }
 }
@@ -498,6 +503,7 @@ mod tests {
         // A typical chrome (`research/evidence/material-survey.txt`).
         let source = r#"effect : "eut2.dif.spec.weight.add.env.rfx" {
             diffuse : { 0.214041 , 0.214041 , 0.214041 }
+            additional_ambient : 0.5
             env_factor : { 0.977402 , 0.977402 , 0.977402 }
             fresnel : { 1 , 1 }
             shininess : 70
@@ -510,6 +516,7 @@ mod tests {
         assert_eq!(m.shininess, Some(70.0));
         assert_eq!(m.env_factor, Some([0.977402; 3]));
         assert_eq!(m.fresnel, Some([1.0, 1.0]));
+        assert_eq!(m.additional_ambient, Some(0.5));
         assert_eq!(
             m.reflection_texture.as_deref(),
             Some("/material/environment/vehicle_reflection.tobj")

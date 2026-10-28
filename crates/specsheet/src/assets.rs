@@ -720,6 +720,7 @@ mod tests {
             env_factor: None,
             fresnel: None,
             reflection_texture: None,
+            additional_ambient: None,
         };
         let glass = material(&info("eut2.glass", BlendMode::Blend), None);
         assert_eq!(glass.alpha_mode, AlphaMode::Blend);
@@ -747,6 +748,7 @@ mod tests {
             env_factor: Some([0.977402; 3]),
             fresnel: Some([1.0, 1.0]),
             reflection_texture: None,
+            additional_ambient: None,
         };
         let chrome = material(&chrome_info, None);
         assert!((chrome.metallic - 0.977).abs() < 1e-3);

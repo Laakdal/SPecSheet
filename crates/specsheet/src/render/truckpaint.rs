@@ -1,9 +1,8 @@
-//! The `eut2.truckpaint` effect family as a Bevy material, from the spec
-//! `docs/app/shader-specs/truckpaint.md`. The paint's surface follows the
-//! spec: albedo, colour masks, airbrush liveries, flip colour, flakes and
-//! the mask's specular factor. The lighting is still Bevy's PBR, shared with
-//! the materials next to it, until the game's lighting model replaces it for
-//! every material at once (`docs/app/materials.md`).
+//! The `eut2.truckpaint` effect family as a Bevy material, from the specs
+//! `docs/app/shader-specs/truckpaint.md` and `truckpaint-lighting.md`: the
+//! paint's surface (albedo, colour masks, airbrush liveries, flip colour,
+//! flakes, the mask's specular factor), lit by the game's forward model
+//! (`game_lighting.wgsl`) with the `.mat`'s own reflection cube.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -14,15 +13,19 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderType};
 use bevy::render::renderer::RenderDevice;
 use bevy::render::settings::WgpuFeatures;
+use bevy::render::storage::ShaderBuffer;
 use bevy::shader::ShaderRef;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_data::paint::{Mask, PiecePaint};
-use specsheet_data::render::{load_texture, MaterialInfo, TextureData};
+use specsheet_data::render::{
+    load_cube_texture, load_texture, CubeTextureData, MaterialInfo, TextureData,
+};
 use specsheet_data::session::GameSession;
 
 use crate::assets;
 
-/// A `truckpaint` piece's material: the `.mat`'s PBR stand-in plus the paint.
+/// A `truckpaint` piece's material: the `.mat`'s stand-in (base texture,
+/// diffuse, vertex colour) plus the paint.
 pub type TruckPaintMaterial = ExtendedMaterial<StandardMaterial, TruckPaint>;
 
 const SHADER: &str = "embedded://specsheet/render/truckpaint.wgsl";
@@ -41,6 +44,8 @@ impl Plugin for TruckPaintPlugin {
 // Defaults for the spec's Unknowns: ours, each listed in materials.md.
 /// λ, the flake light's strength, is engine-set (truckpaint.md §7).
 const FLAKE_STRENGTH: f32 = 1.0;
+/// μ, `texture_reflection_modulator`, is engine-set (lighting §4).
+const REFLECTION_MODULATOR: f32 = 1.0;
 /// φ above 1 makes the facing weight negative (§7: `flip_strength` reaches
 /// 2.7), so it is clamped to the blend's own range.
 const MAX_FLIP_WEIGHT: f32 = 1.0;
@@ -66,6 +71,7 @@ const AIRBRUSH: u32 = 2;
 const FLIPFLAKE: u32 = 4;
 const MASK_TEXTURE: u32 = 16;
 const FLAKE_TEXTURE: u32 = 32;
+const REFLECTION_TEXTURE: u32 = 64;
 
 /// The spec's paint inputs (truckpaint.md §2), in its symbols.
 #[derive(Clone, Copy, Debug, Default, PartialEq, ShaderType, Reflect)]
@@ -86,7 +92,7 @@ pub struct PaintUniform {
     pub flake_setup: Vec4,
     /// S_mat (rgb), p_mat.
     pub specular: Vec4,
-    /// F0, λ.
+    /// F0, λ, a_mat, μ.
     pub shading: Vec4,
     pub flags: u32,
 }
@@ -103,6 +109,13 @@ pub struct TruckPaint {
     #[texture(103)]
     #[sampler(104)]
     pub flake_noise: Option<Handle<Image>>,
+    /// The scene's light ([`crate::render::GameLighting`]).
+    #[storage(105, read_only)]
+    pub light: Handle<ShaderBuffer>,
+    /// The `.mat`'s `texture_reflection` cube.
+    #[texture(106, dimension = "cube")]
+    #[sampler(107)]
+    pub reflection: Option<Handle<Image>>,
 }
 
 impl MaterialExtension for TruckPaint {
@@ -111,14 +124,17 @@ impl MaterialExtension for TruckPaint {
     }
 }
 
-/// What a `truckpaint` `.mat` contributes: its specular inputs. The
-/// flavours it names (`airbrush`, `flipflake`, `altuv`) are replaced by the
-/// paint job's (research/evidence/rea-paint-variant.txt).
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// What a `truckpaint` `.mat` contributes: its specular, ambient and
+/// reflection inputs. The flavours it names (`airbrush`, `flipflake`,
+/// `altuv`) are replaced by the paint job's
+/// (research/evidence/rea-paint-variant.txt).
+#[derive(Clone, Debug, PartialEq)]
 pub struct PaintSurface {
     specular: [f32; 3],
     shininess: f32,
     fresnel: f32,
+    additional_ambient: f32,
+    reflection: Option<String>,
 }
 
 impl PaintSurface {
@@ -131,6 +147,8 @@ impl PaintSurface {
             specular: info.specular.unwrap_or(DEFAULT_SPECULAR),
             shininess: info.shininess.unwrap_or(DEFAULT_SHININESS),
             fresnel: info.fresnel.map_or(DEFAULT_FRESNEL, |f| f[0]),
+            additional_ambient: info.additional_ambient.unwrap_or(0.0),
+            reflection: info.reflection_texture.clone(),
         })
     }
 }
@@ -194,7 +212,12 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
         mask_g: rgb_w(base, 1.0),
         mask_b: rgb_w(base, 1.0),
         specular: rgb_w(surface.specular, surface.shininess),
-        shading: Vec4::new(surface.fresnel, FLAKE_STRENGTH, 0.0, 0.0),
+        shading: Vec4::new(
+            surface.fresnel,
+            FLAKE_STRENGTH,
+            surface.additional_ambient,
+            REFLECTION_MODULATOR,
+        ),
         ..default()
     };
     let Paint::Job(job) = paint else {
@@ -242,23 +265,29 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
     uniform
 }
 
-/// The two textures a paint can bind.
+/// The textures a paint can bind.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Binding {
     Mask,
     FlakeNoise,
+    Reflection,
+}
+
+enum Loaded {
+    Flat(TextureData),
+    Cube(CubeTextureData),
 }
 
 enum TextureState {
-    Loading(Task<Result<TextureData, String>>),
+    Loading(Task<Result<Loaded, String>>),
     Ready(Handle<Image>),
     Failed,
 }
 
 /// Paint materials, shared by every piece with the same `.mat` and paint,
-/// and the mask and flake textures they bind. A texture that is loading or
-/// failed leaves its binding empty and its flag clear, so the piece draws
-/// with the paint colour alone.
+/// and the mask, flake and reflection textures they bind. A texture that is
+/// loading or failed leaves its binding empty and its flag clear, so the
+/// piece draws without it.
 #[derive(Resource, Default)]
 pub struct PaintMaterials {
     materials: HashMap<(AssetId<StandardMaterial>, String), Handle<TruckPaintMaterial>>,
@@ -268,11 +297,13 @@ pub struct PaintMaterials {
 
 impl PaintMaterials {
     /// The material for `base` (the `.mat`'s stand-in) under `paint`.
+    #[allow(clippy::too_many_arguments)]
     pub fn get(
         &mut self,
         game: Option<&Arc<GameSession>>,
         standard: &Assets<StandardMaterial>,
         materials: &mut Assets<TruckPaintMaterial>,
+        light: &Handle<ShaderBuffer>,
         base: &Handle<StandardMaterial>,
         surface: &PaintSurface,
         paint: &Paint<'_>,
@@ -285,9 +316,13 @@ impl PaintMaterials {
             base: standard.get(base).cloned().unwrap_or_default(),
             extension: TruckPaint {
                 paint: paint_uniform(surface, paint),
+                light: light.clone(),
                 ..default()
             },
         });
+        if let Some(cube) = &surface.reflection {
+            self.request(game, &handle, cube, Binding::Reflection);
+        }
         if let Paint::Job(job) = paint {
             let flags = paint_uniform(surface, paint).flags;
             if let Some(Mask::Texture(path)) = &job.mask {
@@ -316,7 +351,12 @@ impl PaintMaterials {
             };
             let task_path = path.to_owned();
             let task = AsyncComputeTaskPool::get().spawn(async move {
-                load_texture(game.fs(), &task_path).map_err(|e| e.to_string())
+                let loaded = if binding == Binding::Reflection {
+                    load_cube_texture(game.fs(), &task_path).map(Loaded::Cube)
+                } else {
+                    load_texture(game.fs(), &task_path).map(Loaded::Flat)
+                };
+                loaded.map_err(|e| e.to_string())
             });
             self.textures
                 .insert(path.to_owned(), TextureState::Loading(task));
@@ -347,7 +387,11 @@ fn finish_paint_textures(
         let Some(result) = check_ready(task) else {
             continue;
         };
-        *state = match result.and_then(|data| assets::texture_image(data, bc_supported)) {
+        let image = result.and_then(|loaded| match loaded {
+            Loaded::Flat(data) => assets::texture_image(data, bc_supported),
+            Loaded::Cube(data) => assets::cube_image(data, bc_supported),
+        });
+        *state = match image {
             Ok(image) => TextureState::Ready(images.add(image)),
             Err(error) => {
                 warn!("paint texture {path}: {error}");
@@ -372,6 +416,10 @@ fn finish_paint_textures(
                     paint.flake_noise = Some(image);
                     paint.paint.flags |= FLAKE_TEXTURE;
                 }
+                Binding::Reflection => {
+                    paint.reflection = Some(image);
+                    paint.paint.flags |= REFLECTION_TEXTURE;
+                }
             }
         }
         false
@@ -389,6 +437,8 @@ mod tests {
             specular: [0.5; 3],
             shininess: 60.0,
             fresnel: 0.2,
+            additional_ambient: 0.0,
+            reflection: None,
         }
     }
 
@@ -520,6 +570,7 @@ mod tests {
             env_factor: None,
             fresnel: Some([0.3, 0.9]),
             reflection_texture: None,
+            additional_ambient: None,
         };
         let s = PaintSurface::of(&info).expect("paint");
         assert_eq!((s.fresnel, s.shininess), (0.3, DEFAULT_SHININESS));
