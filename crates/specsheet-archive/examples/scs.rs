@@ -58,12 +58,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ["find", root, needle] => find(&vfs, root, needle)?,
         ["tex", path] => {
             let texture = vfs.read_texture(path)?;
-            println!(
-                "{:?}
-{:?}",
-                texture.image, texture.sample
-            );
+            println!("{:?}", texture.image);
+            println!("{:?}", texture.sample);
             println!("{} decompressed bytes", texture.surfaces.len());
+            // Per face, the colour of the smallest mip: for BC formats the
+            // mean of the block's two RGB565 endpoints (sRGB-encoded).
+            let surfaces = texture.unpack()?;
+            for face in 0..texture.image.face_count {
+                let Some(last) = surfaces.iter().rev().find(|s| s.face == face) else {
+                    continue;
+                };
+                let rgb = match texture.image.dxgi_format {
+                    70..=72 => endpoint_mean(&last.data[..4]),
+                    73..=78 => endpoint_mean(&last.data[8..12]),
+                    _ => continue,
+                };
+                println!("face {face}: smallest-mip colour {rgb:.3?}");
+            }
         }
         _ => eprintln!("usage: scs ls <dir> | cat <file> | find <dir> <substring> | tex <file>"),
     }
@@ -90,4 +101,18 @@ fn find(vfs: &Vfs, root: &str, needle: &str) -> Result<(), Box<dyn std::error::E
         stack.extend(listing.directories.iter().map(|d| join(d)));
     }
     Ok(())
+}
+
+/// Mean of the two RGB565 endpoint colours of a BC colour block.
+fn endpoint_mean(block: &[u8]) -> [f32; 3] {
+    let colour = |lo: u8, hi: u8| {
+        let v = u16::from_le_bytes([lo, hi]);
+        [
+            f32::from(v >> 11) / 31.0,
+            f32::from((v >> 5) & 0x3f) / 63.0,
+            f32::from(v & 0x1f) / 31.0,
+        ]
+    };
+    let (a, b) = (colour(block[0], block[1]), colour(block[2], block[3]));
+    [0, 1, 2].map(|i| (a[i] + b[i]) / 2.0)
 }
