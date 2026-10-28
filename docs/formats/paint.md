@@ -123,14 +123,14 @@ Each colour is sRGB-encoded (standard curve, clamped to 0–1), multiplied by 25
 
 | Value | Source |
 |---|---|
-| base, mask r/g/b, flake and flip colours | the configuration's override, else the paint job's value |
+| base, mask r/g/b, flake and flip colours | the paint job's value when that colour is locked (F17); otherwise the configuration's override, else the paint job's value |
 | mask | the `PartPaint` that lists the accessory, else the paint job's `paint_job_mask` (Hypothesis); `Mask::Constant` for `shared_` names |
 | flake scale | the part's `flake_uvscale`, else the paint job's |
 | flake v-ratio | the part's `flake_vratio` only |
 | flake noise | `flake_noise`, else `/material/custom/flake_noise.tobj` (Hypothesis) |
 | `airbrush`, `alternate_uvset`, `flipflake`, density, shininess, rolloff, flip strength | the paint job |
 
-Locks are exposed, not enforced: an override wins over a locked colour (Design). **The game does the opposite: a locked colour wins (F17)**, so this differs from the game.
+Locks are enforced as in the game: a locked colour ignores the override (F17).
 
 ## Unknown
 
