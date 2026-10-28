@@ -131,12 +131,12 @@ pub enum PixelLayout {
 ///
 /// Each observed format is covered together with its DXGI family (typeless,
 /// UNORM, sRGB, integer variants), whose members share one memory layout.
-/// R9G9B9E5 (67) is observed but deliberately left out (textures.md: "not
-/// unpacked yet").
 pub fn pixel_layout(dxgi_format: u32) -> Option<PixelLayout> {
     let layout = match dxgi_format {
         // R8G8B8A8, R16G16 and B8G8R8A8/X8 families: 4 bytes per pixel.
         27..=38 | 87 | 88 | 90..=93 => PixelLayout::Linear { bytes_per_pixel: 4 },
+        // R9G9B9E5_SHAREDEXP: three 9-bit mantissas and a shared exponent.
+        67 => PixelLayout::Linear { bytes_per_pixel: 4 },
         // R8 family and A8_UNORM.
         60..=65 => PixelLayout::Linear { bytes_per_pixel: 1 },
         // BC1 and BC4: 8 bytes per 4x4 block.
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn knows_the_observed_formats() {
-        for dxgi in [35, 87, 88, 91, 93] {
+        for dxgi in [35, 67, 87, 88, 91, 93] {
             assert_eq!(
                 pixel_layout(dxgi),
                 Some(PixelLayout::Linear { bytes_per_pixel: 4 })
@@ -359,7 +359,7 @@ mod tests {
         for dxgi in [75, 77, 78, 83] {
             assert_eq!(pixel_layout(dxgi), Some(PixelLayout::Block { bytes: 16 }));
         }
-        for dxgi in [0, 2, 67, 89, 98, u32::MAX] {
+        for dxgi in [0, 2, 66, 89, 98, u32::MAX] {
             assert_eq!(pixel_layout(dxgi), None);
         }
     }
@@ -471,7 +471,7 @@ mod tests {
 
     #[test]
     fn rejects_unsupported_formats_and_short_data() {
-        assert!(packed(meta(4, 4, 1, 67, 1), 4096).unpack().is_err());
+        assert!(packed(meta(4, 4, 1, 66, 1), 4096).unpack().is_err());
         assert!(packed(meta(4, 4, 1, 71, 1), 7).unpack().is_err());
         assert!(packed(meta(4, 4, 1, 71, 1), 0).unpack().is_err());
     }
