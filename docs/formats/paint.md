@@ -26,18 +26,26 @@ Attribute counts are over all 19,998 units [S2]. Colours are RGB tuples in [0, 1
 | `base_color` | 19,550 | body colour (448 units have none) | `base_color` (also `Accessory::base_color`) |
 | `paint_job_mask` | 18,137 | mask or livery texture of the main body | `mask` |
 | `mask_r_color`, `mask_g_color`, `mask_b_color` | 11,675 / 11,844 / 11,920 | colours for the mask's channels; a unit may write only some | `mask_colors` |
-| `airbrush` | 14,942 (true 14,937) | the mask is a painted livery (Hypothesis) | `airbrush` |
-| `alternate_uvset` | 5,487 (always true) | the mask uses a second UV set (Hypothesis, from the `altuv` effect variants) | `alternate_uvset` |
-| `flipflake` | 9,526 (always true) | flakes and flip colour are drawn (Hypothesis) | `flipflake` |
+| `airbrush` | 14,942 (true 14,937) | the mask is a painted livery: effect flag `airbrush`, mask in `texture_paintjob` (Confirmed, F17) | `airbrush` |
+| `alternate_uvset` | 5,487 (always true) | effect flag `altuv`, the mask uses the alternate UV set (Confirmed, F17); turned off for parts listed in the per-part file | `alternate_uvset` |
+| `flipflake` | 9,526 (always true) | effect flag `flipflake`: flakes and flip colour drawn, `flake_noise` in `texture_flakenoise` (Confirmed, F17) | `flipflake` |
 | `flake_color`, `flake_density` (0–2), `flake_shininess` (0–60), `flake_clearcoat_rolloff` (2.24–5.5), `flake_uvscale` (1–128) | 15,901 / 6,935 / 8,721 / 12,574 / 4,707 | metallic flakes | `flake` |
 | `flake_noise` | 2,488 | flake pattern texture; `/material/custom/flake_noise.tobj` on 1,063, DLC patterns on the rest | `flake.noise` |
 | `flip_color`, `flip_strength` (0.3–2.7) | 15,901 / 12,938 | colour seen at grazing angles | `flip` |
-| `base_color_locked`, `mask_{r,g,b}_locked`, `flake_color_locked`, `flip_color_locked` | 9,736 / 8,611, 8,472, 9,035 / 7,370 / 7,371 | the colour is fixed (Hypothesis); absent means false | `locks` |
+| `base_color_locked`, `mask_{r,g,b}_locked`, `flake_color_locked`, `flip_color_locked` | 9,736 / 8,611, 8,472, 9,035 / 7,370 / 7,371 | the paint job's colour wins over the truck's saved colour (Confirmed, F17); absent means false | `locks` |
 | `stock` | 720 | Unknown (true 400, false 320) | `stock` |
 | `color_variant[]` | 2,451 | tuple3 array, always a multiple of 4 long; no 4-group equals (base, mask r, g, b) in 2,138 units, so the meaning of the four is Unknown | `color_variants` (groups of 4) |
 | `part_type`, `steam_inventory_id`, `academy_reward` | | not used | |
+| `alternate_flipflake_uvset`, `base_texture_override`, `base_texture` | 0 each | in the executable's attribute table but set by no base-game unit: `flipflakeuv` instead of `flipflake`; a path that replaces `texture_base`; `base_texture` has no plain stored field (meaning Unknown) [F17] | not read |
+| `flake_vratio` | (in the class table) | the paint job's own flake v-ratio, like the per-part unit's | not read |
 
-Default flake noise: when `flake_noise` is absent SpecSheet uses `/material/custom/flake_noise.tobj` (Hypothesis: the executable holds the path [S7], and it is the most common explicit value). `Flake::noise_texture()` applies it.
+**Defaults (F17).** Both paint classes embed one parameter block, and the executable's default construction of it gives:
+- mask r/g/b (1,0,0), (0,1,0), (0,0,1), base (1,1,1);
+- flip (1,0,0), `flip_strength` 0.27; flake (0,1,0);
+- `flake_uvscale` 32, `flake_vratio` 1, `flake_density` 1, `flake_shininess` 50, `flake_clearcoat_rolloff` 2.2;
+- `flake_noise` `/material/custom/flake_noise.tobj`, and an empty mask.
+
+These are Confirmed for per-part units, and a strong Hypothesis for absent paint-job attributes (same block type). `Flake::noise_texture()` applies the flake-noise default.
 
 Feature combinations [S2, S7]: non-airbrush units with mask colours never set `flipflake` (2,931 units, 0 with it), and the effect directory has no `airbrush`+`colormask` and no `colormask`+`flipflake` variant. This fits three kinds of paint job (Hypothesis): plain/metallic colour (no mask), colour mask (`mask_*_color` pick colours per channel), airbrush (the mask is the livery itself).
 
@@ -67,6 +75,30 @@ Feature combinations [S2, S7]: non-airbrush units with mask colours never set `f
 
 Paint reaches a model piece through its material's effect: `eut2.truckpaint` with optional `.tsnmap`/`.tsnmapuv` base and the feature variants `airbrush`, `colormask`, `flipflake`, `flipflakeuv`, `altuv` (names from the `/effect/eut2/truckpaint` listing only [S7]). Cabin materials carry no paint parameters; a few upgrade materials name a pre-composed variant and carry placeholder paint parameters (`paintjob_base_color (1,0,0)`, `texture_paintjob …/empty.tobj`) [S6]. Which pieces of a model are painted is therefore decided by the material, not by the paint job.
 
+## How the game applies a paint job (F17)
+
+Evidence: `research/evidence/rea-paint-variant.txt`, `rea-paint-apply.txt` and `paint-class-layout.txt`. Facts only (D13).
+
+1. **Colours.** Base, mask r/g/b, flake and flip each come from the truck's saved paint (`vehicle_paint_job_accessory`). The paint job's own colour is used only when that colour's `*_locked` is set.
+2. **Part lookup.** A part named `<slot>.<accessory>` in the per-part file takes that unit's mask, `flake_uvscale` and `flake_vratio`, and `altuv` is off. Other parts use the paint job's mask with `alternate_uvset`.
+3. **Effect.** The part's material is cloned onto `eut2.truckpaint` with these flags:
+   - `airbrush`;
+   - `flipflake`, or `flipflakeuv` with `alternate_flipflake_uvset`;
+   - `colormask`, set when there is a mask and neither `airbrush` nor `flipflake`;
+   - `altuv`;
+   - kept from the original material: `shadow`, `skinned` and two flags still Unknown.
+
+   Materials that opt out (an engine check) get plain `eut2.truckpaint`.
+4. **Textures.**
+   - The mask goes into `texture_paintjob` when the job is `colormask` or `airbrush`.
+   - `flake_noise` goes into `texture_flakenoise` when `flipflake` is set.
+   - `base_texture_override` replaces `texture_base`.
+5. **Constants.** Four vec4:
+   - without `flipflake`: (mask_r, 0), (mask_g, 0), (mask_b, 0), (base, 0);
+   - with `flipflake`: (flake_uvscale, flake_shininess, flake_clearcoat_rolloff, flake_vratio), (flake_color, flake_density), (flip_color, flip_strength), (base, 0).
+
+How the shader combines them is not read (D13: needs a clean-room spec). Two caller paths compute `altuv`/`flipflakeuv` from values not yet decoded (F17 Unknown).
+
 ## Presets and saves
 
 `vehicle_paint_job_accessory` stores `data_path` (the paint job's **file** path, 548 of 548 presets) and up to six colours: `base_color`, `mask_r_color`, `mask_g_color`, `mask_b_color`, `flake_color`, `flip_color` (Confirmed [S8]). Saves write all six plus `refund` (Confirmed [S10]).
@@ -89,10 +121,11 @@ Paint reaches a model piece through its material's effect: `eut2.truckpaint` wit
 | flake noise | `flake_noise`, else `/material/custom/flake_noise.tobj` (Hypothesis) |
 | `airbrush`, `alternate_uvset`, `flipflake`, density, shininess, rolloff, flip strength | the paint job |
 
-Locks are exposed, not enforced: an override wins over a locked colour (Design).
+Locks are exposed, not enforced: an override wins over a locked colour (Design). **The game does the opposite: a locked colour wins (F17)**, so this differs from the game.
 
 ## Unknown
 
 - The meaning of `color_variant[]` and of `stock`.
 - How tile coordinates in mask names relate to model UVs, and which UV set an `alternate_uvset` mask uses on a model with only one (the Scania S has 82 alt-UV paint jobs, but its cab paint piece has one UV set [S6]).
-- How the shader combines base, mask, flakes and flip (needs a clean-room spec, D13).
+- How the shader combines the four constants and the textures (needs a clean-room spec, D13).
+- Which two flags the game keeps from the original material, besides `shadow` and `skinned`; and the `altuv`/`flipflakeuv` inputs of two caller paths (F17).

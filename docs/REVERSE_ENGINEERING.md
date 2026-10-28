@@ -280,10 +280,11 @@ Evidence: `research/evidence/paint-job-survey.txt` (S1–S10). Format details: [
 - **Masks (Confirmed).** `pjm_at_<x>x<y>_size_<w>x<h>.tobj` tiles, BC1/BC3 sRGB, sized as named; each cabin variant of a design (`_a`, `_b`, `_c`, one `suitable_for` cabin each) uses its own tile. `shared_<RRGGBBAA>.tobj` masks are uniform 4×4 textures equal to the hex name (4,816 of 4,816, S5).
 - **Presets and saves (Confirmed).** `vehicle_paint_job_accessory` references the paint job by file path (`data_path`) and stores up to six colours: base, mask r/g/b, flake, flip; saves write all six (S8, S10).
 - **Hypothesis.**
-  - Painted parts that no `acc_list` names use the paint job's main mask: the Scania S bumper and door handles share the cab's material and lie in the cab's UV square (S6).
-  - `flake_noise` defaults to `/material/custom/flake_noise.tobj` (in the executable and the most common value, S7).
-  - Three kinds of paint job: plain/metallic, colour mask, airbrush livery (feature combinations and effect variant names, S2, S7).
-  - A `*_locked` colour cannot be changed by the player.
+  - Painted parts that no `acc_list` names use the paint job's main mask: the Scania S bumper and door handles share the cab's material and lie in the cab's UV square (S6). The executable's per-part rule agrees (F17).
+  - Three kinds of paint job: plain/metallic, colour mask, airbrush livery (feature combinations and effect variant names, S2, S7). The effect flags in F17 fit this.
+- **Confirmed by the executable (F17).**
+  - `flake_noise` defaults to `/material/custom/flake_noise.tobj`.
+  - A `*_locked` colour wins over the truck's saved colour.
 - **Unknown.** `color_variant[]` and `stock`; how mask tile coordinates map to UVs; the per-accessory files `accessory/<slot>/paint_job/` (127 of 131 name no installed paint job, S3); the shading maths (needs a clean-room spec).
 - **Test.** The real-install tests `every_paint_job_parses`, `paint_job_parts_resolve_by_unit_token`, `every_paint_mask_exists_or_is_a_constant`, `every_desktop_preset_loads_its_paint_colours` and `a_cabin_change_keeps_the_paint_job_design`.
 
@@ -297,6 +298,44 @@ Evidence: `research/evidence/rea-search-batch2.{txt,json}` (`ev_f88b185e…`). T
 - **Lift axles.** Input actions `truck.lift_axle` / `truck.trailer.lift_axle`, the stick animations `lift_axle_stick_anim` / `lift_axle_trailer_stick_anim`, indicator colours, and the keys `liftable_axle` / `liftable_axles`. Nothing yet says whether the tuning screen shows them raised (F13 stays Unknown).
 - **Paint effects.** The effect suffixes `flipflake`, `altuv`, `colormask`, `airbrush` and `flipflakeuv` sit next to `%s/paint_job/accessory/%s.sii`, along with `alternate_flipflake_uvset` and `/paint_job/`. So the paint effect name is built from suffixes (Hypothesis, F15). Two hard-coded paths name single trucks, `kenworth.w900` and `volvo.fh16_2012` `/paint_job/%s`; their purpose is **Unknown**.
 - **Next.** `rea trace --query=<string>` resolves one string per run to its function (about 30–45 min each), then `rea function` decompiles it. In order: `pin_offset`, `camera_default_azimuth`, `deferred_param_tonemap_params`, `%s/paint_job/accessory/%s.sii`, `liftable_axles`.
+
+### F17: How the game applies a paint job to a part's material (Confirmed, REA static; two caller paths Unknown)
+Evidence:
+- `research/evidence/rea-paint-variant.txt`: the material builder `FUN_1408d1100`, decompiled (`ev_6e3f6685…`); found by tracing `colormask` (`ev_e5217996…`).
+- `research/evidence/rea-paint-apply.txt`: its callers, from static disassembly.
+- `research/evidence/paint-class-layout.txt`: field offsets from the executable's attribute tables.
+
+Facts only (D13); the format side is in [formats/paint.md](formats/paint.md).
+- **Material.** For each material of a painted part, the game clones the material onto the effect `eut2.truckpaint` with these flags:
+  - `airbrush` = the paint job's `airbrush`;
+  - `flipflake` = its `flipflake`, named `flipflakeuv` when `alternate_flipflake_uvset` is set;
+  - `colormask` = it has a mask, and neither `airbrush` nor `flipflake` is set;
+  - `altuv` = `alternate_uvset`, forced off for a part listed in the per-part file (below).
+
+  It also copies `shadow`, `skinned` and two more flags from the original material (which two is **Unknown**). If the RFX conversion fails, the part keeps its material ("Unable to create material when applying paint job.").
+- **Opt-out.** A material that passes an engine check (`FUN_14042e920`, Unknown), or carries the sentinel (−1, −2, −3, −4) at material `+0x70`, gets plain `eut2.truckpaint` without paint flags.
+- **Textures.**
+  - The mask goes into the slot `texture_paintjob` when `colormask` or `airbrush` is set.
+  - `flake_noise` goes into `texture_flakenoise` when `flipflake` is set.
+  - `base_texture_override` replaces `texture_base`.
+- **Colours: the saved colour unless locked.** Each of base, mask r/g/b, flake and flip comes from the truck's saved paint (`vehicle_paint_job_accessory`). The paint job's own colour is used only when that colour's `*_locked` is set. Without a paint job, all six are the saved ones.
+- **Per-part rule.** When the part is named `<slot>.<accessory>` in `paint_job/accessory/<token>.sii`, its unit supplies the mask, `flake_uvscale` and `flake_vratio`, and `altuv` is turned off. Otherwise the paint job's own mask is used, with `alternate_uvset`.
+- **Shader constants** (four vec4 at material `+0xf0`, `+0x100`, `+0x110`, `+0x120`):
+  - without `flipflake`: (mask_r, 0), (mask_g, 0), (mask_b, 0), (base, 0);
+  - with `flipflake`: (flake_uvscale, flake_shininess, flake_clearcoat_rolloff, flake_vratio), (flake_color, flake_density), (flip_color, flip_strength), (base, 0).
+- **Defaults.** Both paint classes embed one parameter block. Its default construction gives:
+  - mask r/g/b = (1,0,0), (0,1,0), (0,0,1); base (1,1,1);
+  - flip (1,0,0), `flip_strength` 0.27; flake (0,1,0);
+  - `flake_uvscale` 32, `flake_vratio` 1, `flake_density` 1, `flake_shininess` 50, `flake_clearcoat_rolloff` 2.2;
+  - `flake_noise` `/material/custom/flake_noise.tobj`.
+
+  Confirmed for the per-part instance; for absent paint-job attributes, Hypothesis (strong, same block type).
+- **Attributes the base game never sets** (0 units each): `alternate_flipflake_uvset`, `base_texture_override`, and `base_texture` (stored in no plain field; handled by code).
+- **No builder call.** One caller (`0x1408cea60`) calls the builder only when the job has a mask, `flipflake`, `airbrush` or a base override; otherwise it calls `0x1408d0ea0` (Hypothesis: restores plain truckpaint). How a plain-colour job's colour reaches the shader is **Unknown**.
+- **Unknown.**
+  - Two of the five callers (`0x14068e680`, `0x1408d2740`) compute the `altuv`/`flipflakeuv` flags from other values.
+  - Peer data: on the MAN TGX Euro 6, Altamira draws correctly only with the cab `.mat`'s own `altuv` honoured, although the job sets no `alternate_uvset`. It is unresolved whether the cab is listed in the per-part file or one of those paths applies.
+  - How the shader combines the constants (D13: needs a clean-room spec).
 
 ## Open questions
 
