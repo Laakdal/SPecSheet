@@ -101,7 +101,8 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - [x] Content types (`sniff.rs`); unnamed entries are labelled by type.
   - [ ] 3nK-encoded SII: 2 samples in MAN TG3, no repeating XOR key; needs the exe (REA) for the algorithm. Unknown.
   - [ ] Salt override for v1. Table-at-end v1: Unknown, no sample.
-  - [x] Extraction of v1 and ZIP packages (`extract.rs`, `mod_extract`): checked on NG Sound (91 files).
+  - [x] Extraction of v1 and ZIP packages (`extract.rs`, `mod_extract`): checked on NG Sound (91 files). Size limit (default 64 GiB) checked before writing, after a security review.
+  - [ ] Stream large entries to disk instead of holding each in memory (needs a reader API in `specsheet-archive`).
   - [ ] Extraction of game (v2) archives: non-texture files first; packed textures need a `.dds` and a standalone `.tobj` written (fields Unknown).
   - [ ] Tree and filter options for the example.
 
