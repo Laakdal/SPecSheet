@@ -1,0 +1,74 @@
+Exposure, tonemap and reflection keys: executable tables and climate data
+==========================================================================
+
+Sources (ETS2 1.60.1.7, read-only):
+- the executable's attribute tables (tools/research/attr_tables.py, keys
+  eye_adaptation_speed, light_environment, camera_fov);
+- /def/climate/<name>/{nice,bad}.sii (dumped with the scs example) and
+  /def/desktop/config*.sii, /def/truck_config_scene.sii.
+Hex floats in SII (&xxxxxxxx) are decoded as big-endian IEEE 754 from the hex text.
+
+1. Class of the tuning-screen scene files (ui_truck_scene_base_config family;
+   class ptr 0x141d39420), relevant keys with field offsets:
+   light_direction +0x10, light_ambient +0x1c, light_diffuse +0x28,
+   light_specular +0x34, light_environment +0x40, pre_exposure +0x44 (float),
+   fog_color +0x48, fog_density +0x54, camera_auto_fit +0x58 (bool),
+   camera_position/aim/fov +0x5c/+0x68/+0x74, camera_position_lv/aim_lv/fov_lv
+   +0x78/+0x84/+0x90, lv_limit +0x94, truck_y_override +0xa8,
+   vehicle_reflection +0x1d8 (path), floor_reflection +0x21c,
+   cube_reflection +0x21d, vehicle_lights_on +0x21e, variant_overrides +0x220,
+   part_order +0x248.
+   Data:
+   - /def/truck_config_scene.sii sets light_ambient (0.3)^3, light_diffuse and
+     light_specular (1.2)^3, light_direction (0.9, -2, 1.2), cube_reflection
+     true. It sets no pre_exposure and no vehicle_reflection.
+   - /def/desktop scenes set vehicle_reflection per scene:
+     christmasbg and waves /model/ui/dome_cubemap.tobj; dark_studio
+     /model/ui/texture/enviroment/dark_scene_ref.tobj; halloween_2023
+     /model/ui/halloween/cubemap/halloween_cm.tobj; hangar
+     /model/ui/hangar/hangar_cubemap.tobj; xmas /model/ui/environment/mountains.tobj.
+     halloween_2023 also sets pre_exposure 1.0. config, night_city,
+     northlights and under_bridge set neither.
+   - The executable names /material/environment/vehicle_reflection.tobj
+     itself (F16), presumably the default when a scene sets none (Hypothesis).
+
+2. sun_profile class (class ptr 0x141d2b7b0), tonemap and exposure keys:
+   target_gray, contrast, shoulder_length (tonemap curve); min_scale,
+   max_scale, scale_override, dark_adaptation_speed, bright_adaptation_speed,
+   stability, low_intensity_minimum/maximum/color (eye adaptation);
+   bloom_threshold, bloom_limit, bloom_intensity, bloom_standard_deviation;
+   color_balance, color_saturation; ambient, diffuse, specular, env, env_static_mod.
+   The table also lists stored-elsewhere keys (field -1), e.g. target_white,
+   scene_multiplier, bloom_multiplier and *_hdr_coef. These are probably older
+   or derived names; none occurs in the 1.60 climate files.
+
+3. Values per climate (min..max over all profiles; decoded):
+   albedo_bad (14 profiles): target_gray 0.2965..0.2965; contrast 0; shoulder_length 1; min_scale 4.09; max_scale 4.09..4.259; scale_override 0; dark_adaptation_speed 0.5..0.529; bright_adaptation_speed 0.5..0.529; bloom_threshold 0.156..0.503; bloom_limit 1.526e-05; bloom_intensity 0; bloom_standard_deviation 0.1; color_saturation 1; env 0
+   albedo_nice (14 profiles): target_gray 0.2965..0.2965; contrast 0; shoulder_length 1; min_scale 4.09; max_scale 4.09..4.259; scale_override 0; dark_adaptation_speed 0.5..0.529; bright_adaptation_speed 0.5..0.529; bloom_threshold 0.156..0.503; bloom_limit 1024; bloom_intensity 0; bloom_standard_deviation 3.464; color_saturation 1; env 0
+   black_bad (1 profiles): target_gray 0.18; contrast 0.1; shoulder_length 1; min_scale 5.555; max_scale 5.555; scale_override 0; dark_adaptation_speed 1; bright_adaptation_speed 1; bloom_threshold 1; bloom_limit 1024; bloom_intensity 0; bloom_standard_deviation 1; color_saturation 1; env 1
+   black_nice (1 profiles): target_gray 0.18; contrast 0.1; shoulder_length 1; min_scale 5.555; max_scale 5.555; scale_override 0; dark_adaptation_speed 1; bright_adaptation_speed 1; bloom_threshold 1; bloom_limit 1024; bloom_intensity 0; bloom_standard_deviation 1; color_saturation 1; env 1
+   default_bad (34 profiles): target_gray 0.18..0.2645; contrast 0.09893..0.3261; shoulder_length 1.126..1.335; min_scale 0.3292..986.8; max_scale 0.6174..1815; scale_override 0.1876..0.3635; dark_adaptation_speed 0.3763; bright_adaptation_speed 0.745..0.753; bloom_threshold 1.526e-05; bloom_limit 8.444..67.08; bloom_intensity 0.0001248..0.1912; bloom_standard_deviation 2.904..3.517; color_saturation 0.9469..1.062; env 1
+   default_nice (34 profiles): target_gray 0.18..0.2988; contrast 0.09893..0.3847; shoulder_length 1.126..1.335; min_scale 0.3719..456; max_scale 0.6174..1815; scale_override 0.1876..0.4148; dark_adaptation_speed 0.3763; bright_adaptation_speed 0.745..0.9021; bloom_threshold 1.526e-05; bloom_limit 26.34; bloom_intensity 0.0003892..0.1128; bloom_standard_deviation 2.904..3.517; color_saturation 0.9982..1.093; env 1
+   grayscale_bad (34 profiles): target_gray 0.05259..0.2665; contrast 0.288..0.3921; shoulder_length 0.5432..1.137; min_scale 0.1221; max_scale 0.3874..5234; scale_override 0..0.4185; dark_adaptation_speed 0.496..0.504; bright_adaptation_speed 0.745..0.753; bloom_threshold 1.526e-05; bloom_limit 22.88..2195; bloom_intensity 0.0001835..0.4398; bloom_standard_deviation 1.82..3.517; color_saturation 0; env 1
+   grayscale_nice (34 profiles): target_gray 0.18..0.2988; contrast 0.09893..0.3847; shoulder_length 1.137; min_scale 0.3719..456; max_scale 0.657..1815; scale_override 0.1876..0.3635; dark_adaptation_speed 0.3763; bright_adaptation_speed 0.9021; bloom_threshold 1.526e-05; bloom_limit 26.34; bloom_intensity 0.0003892..0.1128; bloom_standard_deviation 2.904..3.517; color_saturation 0..0.001527; env 1
+   integrity_bad (1 profiles): target_gray 0.18; contrast 0.1; shoulder_length 1; min_scale 5.555; max_scale 5.555; scale_override 0; dark_adaptation_speed 1; bright_adaptation_speed 1; bloom_threshold 0.02975; bloom_limit 0.8329; bloom_intensity 0.2813; bloom_standard_deviation 2.353; color_saturation 1; env 1
+   integrity_nice (1 profiles): target_gray 0.18; contrast 0.1; shoulder_length 1; min_scale 5.555; max_scale 5.555; scale_override 0; dark_adaptation_speed 1; bright_adaptation_speed 1; bloom_threshold 0.02975; bloom_limit 0.8329; bloom_intensity 0.2813; bloom_standard_deviation 2.353; color_saturation 1; env 1
+   reference_bad (34 profiles): target_gray 0.05259..0.2665; contrast 0.288..0.3921; shoulder_length 0.5432..1.137; min_scale 0.3161..6663; max_scale 0.3292..5234; scale_override 0; dark_adaptation_speed 0.496..0.504; bright_adaptation_speed 0.745..0.753; bloom_threshold 1.526e-05; bloom_limit 22.88..2195; bloom_intensity 0.0001835..0.4398; bloom_standard_deviation 1.82..3.517; color_saturation 1; env 1
+   reference_nice (34 profiles): target_gray 0.18..0.2645; contrast 0.295; shoulder_length 1.126..1.335; min_scale 0.3719..1481; max_scale 0.3719..1815; scale_override 0.01176; dark_adaptation_speed 0.3763; bright_adaptation_speed 0.9021; bloom_threshold 1.526e-05; bloom_limit 26.34; bloom_intensity 0.0003892..0.1128; bloom_standard_deviation 2.904..3.517; color_saturation 1; env 1
+   underground_bad (1 profiles): 
+   underground_nice (1 profiles): target_gray 0.06814; contrast 0.392; shoulder_length 0.642; min_scale 0.1221; max_scale 947.4; scale_override 0.3525; dark_adaptation_speed 0.504; bright_adaptation_speed 0.753; bloom_threshold 1.526e-05; bloom_limit 22.39; bloom_intensity 0.001317; bloom_standard_deviation 3.517; color_saturation 1.041; env 1
+
+Observations:
+- The world climates (default, reference, grayscale, underground) use a
+  middle grey near 0.18, contrast ~0.1-0.39, shoulder ~0.54-1.34, and an
+  adaptive exposure scale whose range reaches the hundreds to thousands. Their
+  light values are tiny absolute numbers (e.g. sun ~4e-4, ambient ~3e-5 in
+  reference), which the scale brings to display range.
+- The `black` and `integrity` climates fix the exposure: min_scale =
+  max_scale = 5.555 (= 1/0.18), scale_override 0, contrast 0.1, shoulder 1,
+  target_gray 0.18. `black` also has no bloom (intensity 0). These look like
+  profiles for non-world scenes. Which climate or exposure the tuning screen
+  uses is Unknown.
+- The tonemap operator itself lives in shader code (not read, D13). The key
+  names (contrast, shoulder, a middle grey) suggest a filmic curve with those
+  three controls (Hypothesis).
