@@ -111,3 +111,10 @@ Each entry records the context, the decision and the alternatives considered. Ne
 - **Alternatives:**
   - Bevy's own image types. Rejected: they don't expose PNG decoding outside the asset system.
   - A separate tool crate. Rejected: the runner re-runs the app binary itself, and keeping it in the binary avoids a second build target.
+
+### D16: One design system for the screens the game doesn't have
+- **Context:** besides the 1:1 tuning screen, the app needs its own screens: home, truck picker, settings, configurations, mods and profiles, parity, about. The user chose Horizon's method (horizon-rust/horizon, MIT) for them.
+- **Decision:** a dependency-free `specsheet-theme` crate holds the tokens: colour roles in light and dark, a type scale, spacing, radius, and bundled OFL fonts. Contrast tests enforce WCAG AA. The app maps the tokens onto egui once. The six rules and the screens are in [app/design-system.md](app/design-system.md). The tuning screen stays the game's own UI.
+- **Alternatives:**
+  - A separate GPUI launcher like Horizon's. Rejected: a second app and UI framework for screens egui can draw.
+  - Copying Horizon's look. Rejected: only the method is taken; SPecSheet has its own accent, wordmark and font choice.
