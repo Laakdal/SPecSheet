@@ -157,3 +157,25 @@ Not established: which of the 13 readers of +0x48 apply it and how (as
 radiance x pre_exposure, or into the exposure/tonemap); whether the UI path
 runs eye adaptation, and which values R holds in a UI scene. The UI path
 reads no sun_profile in the functions seen.
+
+7. The global lighting block is eutpp_scene_light (attribute table)
+attr_tables.py on "limited_pre_exposure" gives class ptr 0x141d1ca40
+(eutpp_scene_light) with these offsets, which equal the fields that
+FUN_140f89490 (UI scene) and FUN_1404dca40 (world) write:
+  +0x18 ambient, +0x24 diffuse, +0x30 specular (float3)
+  +0x3c diffspec_conditional_mult   UI 1.0
+  +0x40 light_source_visibility     UI 1.0
+  +0x44 ec_adjustment               UI 0      (exposure-compensation adjustment)
+  +0x48 limited_pre_exposure        UI pre_exposure (0.0973 for the tuning
+                                    screen); world 1.0
+  +0x4c environment                 UI light_environment
+  +0x50 environment_conditional_mult  UI 1.0 (k)
+  +0x54 aurora_diffuse
+No CPU code reads +0x48 back through the global pointer (scan of every load
+of 0x1434e8258 followed by a read of +0x48/+0x4c/+0x50: only one read, of
++0x4c, at 0x14050d21a). So the block is consumed as a whole: Hypothesis,
+uploaded as shader constants. How limited_pre_exposure and ec_adjustment
+enter the lighting or tonemap is therefore shader code (D13 spec scope).
+Debug strings in the executable describe automatic exposure from the scene
+histogram, with an option to "use only sun light value for exposure", and an
+"Exposure compensation" setting.
