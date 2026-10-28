@@ -9,6 +9,8 @@ license = "MIT"
 publish = false
 
 [workspace.dependencies]
+aes = "0.8"
+cbc = "0.1"
 flate2 = "1"
 thiserror = "2"
 

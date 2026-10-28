@@ -4,9 +4,11 @@
 //! its input as untrusted: malformed data yields an error, never a panic.
 
 mod binary;
+pub mod bsii;
 pub mod mat;
 pub mod pmd;
 pub mod pmg;
+pub mod scsc;
 pub mod sii;
 pub mod token;
 pub mod ui_markup;
