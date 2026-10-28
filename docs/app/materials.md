@@ -13,7 +13,7 @@ How the app draws game materials. The effect files themselves are described in [
 | `add` not followed by `env` (e.g. `dif.lum.add`) | `Additive` | `AlphaMode::Add` (light shafts, glows) |
 | `a` | `AlphaTest` | `AlphaMode::Mask(0.5)` |
 | `truckpaint` | `paintable` | the truck paint material (below) |
-| `dif.spec…` (not paint, lamp, additive or `mult`) | — | the `dif.spec` material (below) |
+| `dif.spec…` (not paint, lamp or additive; of the `mult` effects only `dif.spec.mult.dif.spec…` and `dif.spec.decal.mult`) | — | the `dif.spec` material (below) |
 | `lamp`, `lum`, `light` | `emissive` | emissive = base texture × 40 |
 | `decal`, `over` | `decal` | `depth_bias` 8 |
 | an `env_factor` on an opaque or cut-out material outside the paint and `dif.spec` materials (e.g. `baked.spec.add.env`, 20 uses) | `env_factor`, `shininess` | reflective metal (below) |
@@ -26,7 +26,7 @@ How the app draws game materials. The effect files themselves are described in [
 Glass, decals and lamps keep their own rules; paint and `dif.spec` have their own materials.
 
 - Colours in `.mat` (`diffuse`, `env_factor`) and paint jobs (`base_color`) are linear RGB, and are used as such. Paint values such as Coffee Brown (0.034, 0.023, 0.014) only make sense as linear. Textures flagged `_SRGB` are uploaded as `*UnormSrgb` formats.
-- `MaterialInfo` also carries `specular`, `fresnel` and `additional_ambient` for the game materials. Per `.mat`, the stand-in uploads only `texture_base`; the game materials also load the `.mat`'s reflection cube (`render::GameTextures`). `dif.spec` also loads its normal maps (`texture_nmap`, `texture_nmap_detail`); `texture_mult` (baked AO) is not drawn yet; paint masks and flake noise come from the paint job.
+- `MaterialInfo` also carries `specular`, `fresnel` and `additional_ambient` for the game materials. Per `.mat`, the stand-in uploads only `texture_base`; the game materials also load the `.mat`'s reflection cube (`render::GameTextures`). `dif.spec` also loads its normal maps (`texture_nmap`, `texture_nmap_detail`) and `texture_mult` (baked AO); paint masks and flake noise come from the paint job.
 - Other stand-ins use metallic 0.1 and roughness 0.6.
 
 **Environment map (the game's reflection cube).**
@@ -61,6 +61,18 @@ The stand-ins are an approximation, not the game's shaders.
   - Ours: the bitangent is built per fragment from the interpolated N and T, not per vertex as §3.2 says (a per-vertex frame needs a custom vertex shader for every `dif.spec` piece).
   - Seen working: the Scania S step plates show their studs only with the maps on; in the default view only the grille and wheels change.
 - **Not drawn yet:** `oclu` (its texture on UV1 is ignored) and the `asafew` mask stretch.
+
+**The `mult` base (`dif.spec.mult.dif.spec…`)** is a flavour of the same material, from [shader-specs/dif-spec-mult.md](shader-specs/dif-spec-mult.md):
+- **Surface (§3):** `texture_mult` M multiplies the albedo (`B.rgb · M.rgb · diffuse · 2 × vertex colour · fn`). The specular is `B.a · M.a · specular`, with no remap, and `add.env` scales its reflection by `M.a` too (§4.3). M is decoded by its format (the garage's BC3 sRGB occlusion to linear, §2.2) and sampled with the `.tobj`'s address modes.
+- **UVs (§2.1):** M samples the set the piece routes to UV slot 1 (`MeshPiece::mult_uvs`). The mesh has two UV attributes, so `DifSpecSurface::route_uvs` fits the slots per piece:
+  - when slot 1 is the UV0 set, M reads `UV_0`, and a `tsnmapuv` stream keeps `UV_1`;
+  - otherwise M takes `UV_1`. A `tsnmapuv` stream then reads `UV_0` when it is the UV0 set (the garage: slot 6 → set 0), or shares `UV_1` when it is the mult set.
+  - A piece with three distinct sets keeps its vertex normal, with a warning. It would need a custom vertex attribute and vertex shader.
+  - A piece without slot 1, or whose texture did not upload, draws M as white.
+- **Flavours:** `add.env`, `tsnmap`, `tsnmapuv` and `paint`, which uses the `.mat`'s `diffuse` (§1, H). Others, and `fade.mult`, keep the stand-in.
+- **`iamod` (§5):** drawn as the `mult` base without its third layer, which is what the layer gives at vertex alpha 1. `MaterialInfo` and `MeshPiece` don't carry `texture_iamod` or UV slot 2 yet.
+- **`dif.spec.decal.mult` (§6):** the plain maths, drawn with Bevy's `AlphaMode::Multiply`. The shader outputs alpha 1, so alpha doesn't fade the decal (§6.2), and skips the output scale, which the target already holds. Bevy's fog is off for it: the game's white fog (§6.3, H) is within about 1 % of no fog in the garage.
+- Ours: vertex alpha counts in the `mult` specular and reflection masks too (below). That is close on the garage, but on `iamod` pieces vertex alpha is the layer's fade weight: below 1 it darkens the masks by `c.a` where the game darkens them by the layer's alpha.
 
 Ours, each a Hypothesis:
 - g, the cube brightness: 1. (ms, mb), the specular-mask remap: (1, 0).
@@ -169,4 +181,4 @@ Order:
 3. Glass.
 4. Lamp.
 
-Garage materials also need `texture_mult` and the `showroom_cube` reflection. Never commit extracted shader text; it is game code.
+Garage materials also need the `showroom_cube` reflection. Never commit extracted shader text; it is game code.
