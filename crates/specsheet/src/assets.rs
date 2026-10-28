@@ -11,10 +11,13 @@ use bevy::asset::RenderAssetUsages;
 use bevy::image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat as GpuFormat};
+use bevy::render::render_resource::{
+    Extent3d, TextureDimension, TextureFormat as GpuFormat, TextureViewDescriptor,
+    TextureViewDimension,
+};
 use specsheet_data::render::{
-    build_mesh, load_texture, texture_block_bytes, BlendMode, MaterialInfo, MeshData, MeshPiece,
-    TextureData, TextureFormat,
+    build_mesh, load_texture, texture_block_bytes, BlendMode, CubeTextureData, MaterialInfo,
+    MeshData, MeshPiece, MipLevel, TextureData, TextureFormat,
 };
 use specsheet_data::session::GameSession;
 
@@ -74,6 +77,10 @@ pub struct GpuModel {
     pub pieces: Vec<(Handle<Mesh>, Handle<StandardMaterial>)>,
     /// Materials painted with the truck's paint colour.
     pub paintable: Vec<Handle<StandardMaterial>>,
+    /// The reflection cube (`texture_reflection`) of every reflective
+    /// material, once per material; the viewer uses the most common one as
+    /// its environment map.
+    pub reflections: Vec<String>,
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
 }
@@ -138,9 +145,16 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
             Err(error) => warnings.push(format!("{}: piece {index}: {error}", mesh.path)),
         }
     }
+    let reflections = mesh
+        .materials
+        .iter()
+        .filter(|info| reflective_surface(info).is_some())
+        .filter_map(|info| info.reflection_texture.clone())
+        .collect();
     let model = GpuModel {
         pieces,
         paintable,
+        reflections,
         aabb_min: Vec3::from(mesh.aabb_min),
         aabb_max: Vec3::from(mesh.aabb_max),
     };
@@ -260,62 +274,14 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
 
 /// Largest texture side accepted (the wgpu limit on desktop adapters).
 const MAX_TEXTURE_SIZE: u32 = 16384;
+/// Largest cube side Bevy's environment map generator accepts.
+const MAX_CUBE_SIZE: u32 = 8192;
 
 /// Builds a GPU image from a converted game texture, checking every size
 /// wgpu would otherwise panic on.
 pub fn texture_image(data: TextureData, bc_supported: bool) -> Result<Image, String> {
-    let block = matches!(
-        data.format,
-        TextureFormat::Bc1
-            | TextureFormat::Bc2
-            | TextureFormat::Bc3
-            | TextureFormat::Bc4
-            | TextureFormat::Bc5
-    );
-    if block && !bc_supported {
-        return Err("GPU lacks BC texture compression".to_owned());
-    }
-    let format = gpu_format(data.format, data.srgb);
-    let (unit_bytes, _) = texture_block_bytes(data.format);
-    let base = data.mips.first().ok_or("texture has no surfaces")?;
-    let (width, height) = (base.width, base.height);
-    if width == 0 || height == 0 || width > MAX_TEXTURE_SIZE || height > MAX_TEXTURE_SIZE {
-        return Err(format!("unsupported size {width}x{height}"));
-    }
-    if block && (width % 4 != 0 || height % 4 != 0) {
-        return Err(format!(
-            "BC texture size {width}x{height} is not a multiple of 4"
-        ));
-    }
-    let max_mips = 32 - width.max(height).leading_zeros();
-    if data.mips.len() > max_mips as usize {
-        return Err(format!(
-            "{} mips exceed the chain of {max_mips}",
-            data.mips.len()
-        ));
-    }
-    let mut bytes = Vec::new();
-    for (level, mip) in data.mips.iter().enumerate() {
-        let (w, h) = ((width >> level).max(1), (height >> level).max(1));
-        if (mip.width, mip.height) != (w, h) {
-            return Err(format!(
-                "mip {level} is {}x{}, expected {w}x{h}",
-                mip.width, mip.height
-            ));
-        }
-        let expected = if block {
-            w.div_ceil(4) as usize * h.div_ceil(4) as usize * unit_bytes as usize
-        } else {
-            w as usize * h as usize * unit_bytes as usize
-        };
-        if mip.data.len() != expected {
-            return Err(format!(
-                "mip {level} has {} bytes, expected {expected}",
-                mip.data.len()
-            ));
-        }
-        bytes.extend_from_slice(&mip.data);
-    }
+    check_bc(data.format, bc_supported)?;
+    let (width, height, bytes) = mip_chain(data.format, &data.mips)?;
     let mut image = Image::new(
         Extent3d {
             width,
@@ -324,7 +290,7 @@ pub fn texture_image(data: TextureData, bc_supported: bool) -> Result<Image, Str
         },
         TextureDimension::D2,
         bytes,
-        format,
+        gpu_format(data.format, data.srgb),
         RenderAssetUsages::RENDER_WORLD,
     );
     image.texture_descriptor.mip_level_count = data.mips.len() as u32;
@@ -347,6 +313,185 @@ pub fn texture_image(data: TextureData, bc_supported: bool) -> Result<Image, Str
     Ok(image)
 }
 
+/// Builds the environment cube from a game reflection cube. Bevy's
+/// generated environment map panics unless the cube is square with a
+/// power-of-two side of at most 8192, so that is checked here, along with
+/// every face carrying the same mip chain.
+pub fn cube_image(data: CubeTextureData, bc_supported: bool) -> Result<Image, String> {
+    check_bc(data.format, bc_supported)?;
+    if data.faces.len() != 6 {
+        return Err(format!("cube has {} faces", data.faces.len()));
+    }
+    let mut bytes = Vec::new();
+    let mut layout = None;
+    for (index, face) in data.faces.iter().enumerate() {
+        let (width, height, face_bytes) =
+            mip_chain(data.format, face).map_err(|e| format!("face {index}: {e}"))?;
+        if width != height || !width.is_power_of_two() || width > MAX_CUBE_SIZE {
+            return Err(format!(
+                "face {index} is {width}x{height}, not a power-of-two square"
+            ));
+        }
+        match layout {
+            None => layout = Some((width, face.len())),
+            Some(first) if first != (width, face.len()) => {
+                return Err(format!("face {index} differs from face 0"));
+            }
+            Some(_) => {}
+        }
+        bytes.extend(face_bytes);
+    }
+    let Some((side, mip_count)) = layout else {
+        return Err("cube has no faces".to_owned());
+    };
+    let mut image = Image::new(
+        Extent3d {
+            width: side,
+            height: side,
+            depth_or_array_layers: 6,
+        },
+        TextureDimension::D2,
+        bytes,
+        gpu_format(data.format, data.srgb),
+        RenderAssetUsages::RENDER_WORLD,
+    );
+    image.texture_descriptor.mip_level_count = mip_count as u32;
+    image.texture_view_descriptor = Some(TextureViewDescriptor {
+        dimension: Some(TextureViewDimension::Cube),
+        ..default()
+    });
+    image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        mag_filter: ImageFilterMode::Linear,
+        min_filter: ImageFilterMode::Linear,
+        mipmap_filter: ImageFilterMode::Linear,
+        ..default()
+    });
+    Ok(image)
+}
+
+/// Mean linear luminance of a cube, read from the smallest mip of each face
+/// (for BC formats, the mean of the block's two endpoint colours). Used to
+/// keep the scene's exposure when the cube replaces the gradient. `None` for
+/// formats it cannot read.
+pub fn cube_mean_luminance(data: &CubeTextureData) -> Option<f32> {
+    let mut sum = 0.0;
+    for face in &data.faces {
+        let data_bytes = &face.last()?.data;
+        let rgb = match data.format {
+            TextureFormat::Bc1 => endpoint_mean(data_bytes.get(..4)?),
+            TextureFormat::Bc2 | TextureFormat::Bc3 => endpoint_mean(data_bytes.get(8..12)?),
+            TextureFormat::Rgba8 => {
+                let pixels = data_bytes.len() / 4;
+                if pixels == 0 {
+                    return None;
+                }
+                let mut rgb = [0.0; 3];
+                for pixel in data_bytes.chunks_exact(4) {
+                    for (channel, value) in rgb.iter_mut().zip(pixel) {
+                        *channel += f32::from(*value) / 255.0 / pixels as f32;
+                    }
+                }
+                rgb
+            }
+            _ => return None,
+        };
+        let [r, g, b] = if data.srgb {
+            rgb.map(srgb_to_linear)
+        } else {
+            rgb
+        };
+        sum += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+    (!data.faces.is_empty()).then(|| sum / data.faces.len() as f32)
+}
+
+/// Mean of the two RGB565 endpoint colours of a BC colour block.
+fn endpoint_mean(block: &[u8]) -> [f32; 3] {
+    let colour = |lo: u8, hi: u8| {
+        let v = u16::from_le_bytes([lo, hi]);
+        [
+            f32::from(v >> 11) / 31.0,
+            f32::from((v >> 5) & 0x3f) / 63.0,
+            f32::from(v & 0x1f) / 31.0,
+        ]
+    };
+    let (a, b) = (colour(block[0], block[1]), colour(block[2], block[3]));
+    [0, 1, 2].map(|i| (a[i] + b[i]) / 2.0)
+}
+
+fn srgb_to_linear(c: f32) -> f32 {
+    if c <= 0.04045 {
+        c / 12.92
+    } else {
+        ((c + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+fn is_block(format: TextureFormat) -> bool {
+    matches!(
+        format,
+        TextureFormat::Bc1
+            | TextureFormat::Bc2
+            | TextureFormat::Bc3
+            | TextureFormat::Bc4
+            | TextureFormat::Bc5
+    )
+}
+
+fn check_bc(format: TextureFormat, bc_supported: bool) -> Result<(), String> {
+    if is_block(format) && !bc_supported {
+        return Err("GPU lacks BC texture compression".to_owned());
+    }
+    Ok(())
+}
+
+/// Checks a mip chain against what wgpu accepts and concatenates it.
+/// Returns the base width, height and the bytes.
+fn mip_chain(format: TextureFormat, mips: &[MipLevel]) -> Result<(u32, u32, Vec<u8>), String> {
+    let block = is_block(format);
+    let (unit_bytes, _) = texture_block_bytes(format);
+    let base = mips.first().ok_or("texture has no surfaces")?;
+    let (width, height) = (base.width, base.height);
+    if width == 0 || height == 0 || width > MAX_TEXTURE_SIZE || height > MAX_TEXTURE_SIZE {
+        return Err(format!("unsupported size {width}x{height}"));
+    }
+    if block && (width % 4 != 0 || height % 4 != 0) {
+        return Err(format!(
+            "BC texture size {width}x{height} is not a multiple of 4"
+        ));
+    }
+    let max_mips = 32 - width.max(height).leading_zeros();
+    if mips.len() > max_mips as usize {
+        return Err(format!(
+            "{} mips exceed the chain of {max_mips}",
+            mips.len()
+        ));
+    }
+    let mut bytes = Vec::new();
+    for (level, mip) in mips.iter().enumerate() {
+        let (w, h) = ((width >> level).max(1), (height >> level).max(1));
+        if (mip.width, mip.height) != (w, h) {
+            return Err(format!(
+                "mip {level} is {}x{}, expected {w}x{h}",
+                mip.width, mip.height
+            ));
+        }
+        let expected = if block {
+            w.div_ceil(4) as usize * h.div_ceil(4) as usize * unit_bytes as usize
+        } else {
+            w as usize * h as usize * unit_bytes as usize
+        };
+        if mip.data.len() != expected {
+            return Err(format!(
+                "mip {level} has {} bytes, expected {expected}",
+                mip.data.len()
+            ));
+        }
+        bytes.extend_from_slice(&mip.data);
+    }
+    Ok((width, height, bytes))
+}
+
 fn gpu_format(format: TextureFormat, srgb: bool) -> GpuFormat {
     match (format, srgb) {
         (TextureFormat::Bc1, false) => GpuFormat::Bc1RgbaUnorm,
@@ -366,7 +511,6 @@ fn gpu_format(format: TextureFormat, srgb: bool) -> GpuFormat {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_data::render::MipLevel;
 
     fn bc1(width: u32, height: u32, mips: usize) -> TextureData {
         TextureData {
@@ -385,6 +529,44 @@ mod tests {
             repeat_u: true,
             repeat_v: false,
         }
+    }
+
+    #[test]
+    fn measures_a_cube_from_its_smallest_mips() {
+        // One 4x4 BC1 block per face with both endpoints pure white.
+        let white = vec![MipLevel {
+            width: 4,
+            height: 4,
+            data: vec![0xff, 0xff, 0xff, 0xff, 0, 0, 0, 0],
+        }];
+        let cube = CubeTextureData {
+            format: TextureFormat::Bc1,
+            srgb: true,
+            faces: vec![white; 6],
+        };
+        let mean = cube_mean_luminance(&cube).expect("readable");
+        assert!((mean - 1.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn builds_a_cube_and_rejects_malformed_ones() {
+        let face = |side: u32| bc1(side, side, 3).mips;
+        let cube = |faces: Vec<Vec<MipLevel>>| CubeTextureData {
+            format: TextureFormat::Bc1,
+            srgb: true,
+            faces,
+        };
+        let image = cube_image(cube(vec![face(16); 6]), true).expect("valid cube");
+        assert_eq!(image.texture_descriptor.size.depth_or_array_layers, 6);
+        assert_eq!(image.texture_descriptor.mip_level_count, 3);
+
+        assert!(cube_image(cube(vec![face(16); 5]), true).is_err());
+        let mut mixed = vec![face(16); 6];
+        mixed[3] = face(8);
+        assert!(cube_image(cube(mixed), true).is_err());
+        // Bevy's generator panics on a side that is not a power of two.
+        assert!(cube_image(cube(vec![bc1(12, 12, 1).mips; 6]), true).is_err());
+        assert!(cube_image(cube(vec![face(16); 6]), false).is_err());
     }
 
     #[test]

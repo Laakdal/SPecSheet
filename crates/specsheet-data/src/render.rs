@@ -242,13 +242,63 @@ pub struct TextureData {
     pub repeat_v: bool,
 }
 
+/// A cube texture ready for upload: six faces in their stored order, each a
+/// tightly packed mip chain. The order is taken to be +x, −x, +y, −y, +z, −z
+/// (the DDS convention; Hypothesis, see `docs/formats/textures.md`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct CubeTextureData {
+    pub format: TextureFormat,
+    pub srgb: bool,
+    pub faces: Vec<Vec<MipLevel>>,
+}
+
 /// Loads `.tobj` texture `path` and converts it for upload.
 pub fn load_texture(fs: &GameFs, path: &str) -> Result<TextureData> {
     let packed = fs.vfs().read_texture(path.trim_start_matches('/'))?;
     convert_texture(path, &packed)
 }
 
+/// Loads the six-face cube texture `path` (e.g. a material's
+/// `texture_reflection`) and converts it for upload.
+pub fn load_cube_texture(fs: &GameFs, path: &str) -> Result<CubeTextureData> {
+    let packed = fs.vfs().read_texture(path.trim_start_matches('/'))?;
+    convert_cube(path, &packed)
+}
+
+fn convert_cube(path: &str, packed: &PackedTexture) -> Result<CubeTextureData> {
+    if !packed.image.is_cube || packed.image.face_count != 6 {
+        return Err(GameDataError::Definition {
+            path: path.to_owned(),
+            message: format!("not a cube texture ({} faces)", packed.image.face_count),
+        });
+    }
+    let (format, srgb, faces) = convert_faces(path, packed)?;
+    Ok(CubeTextureData {
+        format,
+        srgb,
+        faces,
+    })
+}
+
 fn convert_texture(path: &str, packed: &PackedTexture) -> Result<TextureData> {
+    let (format, srgb, faces) = convert_faces(path, packed)?;
+    let repeat = |mode: specsheet_archive::AddressMode| {
+        matches!(mode, specsheet_archive::AddressMode::Repeat)
+    };
+    Ok(TextureData {
+        format,
+        srgb,
+        mips: faces.into_iter().next().unwrap_or_default(),
+        repeat_u: repeat(packed.sample.address_u),
+        repeat_v: repeat(packed.sample.address_v),
+    })
+}
+
+/// The upload format, its sRGB flag and the unpacked mip chain of every face.
+fn convert_faces(
+    path: &str,
+    packed: &PackedTexture,
+) -> Result<(TextureFormat, bool, Vec<Vec<MipLevel>>)> {
     let format_error = |message: String| GameDataError::Definition {
         path: path.to_owned(),
         message,
@@ -274,38 +324,27 @@ fn convert_texture(path: &str, packed: &PackedTexture) -> Result<TextureData> {
     if pixel_layout(dxgi).is_none() {
         return Err(format_error(format!("no layout for DXGI format {dxgi}")));
     }
-    let mips = packed
-        .unpack()
-        .map_err(format_error)?
-        .into_iter()
-        .filter(|s| s.face == 0)
-        .map(|surface| {
-            let mut data = surface.data;
-            if swizzle_bgra {
-                for pixel in data.chunks_exact_mut(4) {
-                    pixel.swap(0, 2);
-                    if x_channel_is_opaque {
-                        pixel[3] = 255;
-                    }
+    let mut faces = vec![Vec::new(); packed.image.face_count as usize];
+    for surface in packed.unpack().map_err(format_error)? {
+        let mut data = surface.data;
+        if swizzle_bgra {
+            for pixel in data.chunks_exact_mut(4) {
+                pixel.swap(0, 2);
+                if x_channel_is_opaque {
+                    pixel[3] = 255;
                 }
             }
-            MipLevel {
-                width: surface.width,
-                height: surface.height,
-                data,
-            }
-        })
-        .collect();
-    let repeat = |mode: specsheet_archive::AddressMode| {
-        matches!(mode, specsheet_archive::AddressMode::Repeat)
-    };
-    Ok(TextureData {
-        format,
-        srgb,
-        mips,
-        repeat_u: repeat(packed.sample.address_u),
-        repeat_v: repeat(packed.sample.address_v),
-    })
+        }
+        let face = faces
+            .get_mut(surface.face as usize)
+            .ok_or_else(|| format_error(format!("surface of face {}", surface.face)))?;
+        face.push(MipLevel {
+            width: surface.width,
+            height: surface.height,
+            data,
+        });
+    }
+    Ok((format, srgb, faces))
 }
 
 /// Bytes per block or pixel of an upload format, for consumers that
@@ -354,6 +393,46 @@ mod tests {
             BlendMode::Opaque
         );
         assert_eq!(material("eut2.water.rfx").blend, BlendMode::Blend);
+    }
+
+    /// A packed 2x2 RGBA8 texture with one mip per face; face `f` is filled
+    /// with byte `f`.
+    fn packed(faces: u32) -> PackedTexture {
+        use specsheet_archive::{AddressMode, ImageMeta, SampleMeta};
+        PackedTexture {
+            image: ImageMeta {
+                width: 2,
+                height: 2,
+                mip_count: 1,
+                dxgi_format: 28,
+                is_cube: faces == 6,
+                face_count: faces,
+                pitch_alignment: 1,
+                image_alignment: 1,
+            },
+            sample: SampleMeta {
+                mag_linear: true,
+                min_linear: true,
+                address_u: AddressMode::ClampToEdge,
+                address_v: AddressMode::ClampToEdge,
+            },
+            surfaces: (0..faces as u8).flat_map(|f| [f; 16]).collect(),
+        }
+    }
+
+    #[test]
+    fn converts_all_six_faces_of_a_cube() {
+        let cube = convert_cube("/c.tobj", &packed(6)).expect("cube");
+        assert_eq!(cube.faces.len(), 6);
+        for (f, mips) in cube.faces.iter().enumerate() {
+            assert_eq!(mips.len(), 1);
+            assert_eq!((mips[0].width, mips[0].height), (2, 2));
+            assert!(mips[0].data.iter().all(|&b| usize::from(b) == f));
+        }
+        assert!(convert_cube("/flat.tobj", &packed(1)).is_err());
+        // A 2D load of a cube keeps face 0, as before.
+        let flat = convert_texture("/c.tobj", &packed(6)).expect("2d");
+        assert!(flat.mips[0].data.iter().all(|&b| b == 0));
     }
 
     #[test]

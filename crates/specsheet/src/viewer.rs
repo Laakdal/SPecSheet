@@ -8,7 +8,7 @@ use std::sync::Arc;
 use bevy::camera::Exposure;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll, MouseScrollUnit};
-use bevy::light::EnvironmentMapLight;
+use bevy::light::{EnvironmentMapLight, GeneratedEnvironmentMapLight};
 use bevy::pbr::{DistanceFog, FogFalloff};
 use bevy::prelude::*;
 use bevy::render::renderer::RenderDevice;
@@ -16,6 +16,7 @@ use bevy::render::settings::WgpuFeatures;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
 use specsheet_data::assembly::Placement;
+use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
 use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
@@ -27,6 +28,7 @@ pub struct ViewerPlugin;
 impl Plugin for ViewerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ModelCache>()
+            .init_resource::<ReflectionCube>()
             .init_resource::<TruckInstances>()
             .init_resource::<SceneState>()
             .init_resource::<ViewportInput>()
@@ -36,6 +38,7 @@ impl Plugin for ViewerPlugin {
                 (
                     finish_models,
                     apply_scene,
+                    update_reflection,
                     sync_truck,
                     frame_truck,
                     orbit_camera,
@@ -249,8 +252,8 @@ fn setup(
     commands.spawn((TruckRoot, Transform::default(), Visibility::default()));
 }
 
-/// A neutral studio gradient standing in for the game's cube reflections
-/// (`light_environment` scales it).
+/// A neutral studio gradient, used until the game's reflection cube is
+/// loaded (`light_environment` scales it).
 fn environment(images: &mut Assets<Image>, strength: f32) -> EnvironmentMapLight {
     let mut light = EnvironmentMapLight::hemispherical_gradient(
         images,
@@ -260,6 +263,163 @@ fn environment(images: &mut Assets<Image>, strength: f32) -> EnvironmentMapLight
     );
     light.intensity = strength * ENVIRONMENT_NITS;
     light
+}
+
+enum CubeState {
+    Loading(Task<Result<CubeTextureData, String>>),
+    /// The uploaded cube and the factor that keeps the scene's exposure.
+    Ready(Handle<Image>, f32),
+    Failed,
+}
+
+/// Approximate mean luminance of the gradient in `environment()`: the
+/// intensities were tuned against it.
+const GRADIENT_MEAN_LUMINANCE: f32 = 0.5;
+
+/// Factor that gives a cube of mean luminance `mean` the gradient's overall
+/// brightness, limited so an odd cube cannot blow out or black out the view.
+fn exposure_balance(mean: Option<f32>) -> f32 {
+    mean.filter(|m| *m > 0.0)
+        .map_or(1.0, |m| (GRADIENT_MEAN_LUMINANCE / m).clamp(0.25, 4.0))
+}
+
+/// The game's reflection cube as the camera's environment map, in place of
+/// the gradient (`docs/app/materials.md`). The cube is the one most
+/// reflective materials of the truck's models name in `texture_reflection`,
+/// e.g. `/material/environment/vehicle_reflection.tobj`.
+#[derive(Resource)]
+pub struct ReflectionCube {
+    cubes: HashMap<String, CubeState>,
+    /// The most used cube among the loaded models.
+    wanted: Option<String>,
+    /// The cube on the camera, with its exposure factor.
+    active: Option<(String, f32)>,
+    /// (truck generation, model-cache generation) when `wanted` was last
+    /// counted.
+    counted: (u64, u64),
+    /// The scene's `light_environment`, capped.
+    strength: f32,
+}
+
+impl Default for ReflectionCube {
+    fn default() -> Self {
+        Self {
+            cubes: HashMap::new(),
+            wanted: None,
+            active: None,
+            counted: (0, 0),
+            strength: DEFAULT_ENVIRONMENT,
+        }
+    }
+}
+
+/// The most used path, ties broken by name so the choice is stable.
+fn most_used<'a>(paths: impl Iterator<Item = &'a String>) -> Option<String> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for path in paths {
+        *counts.entry(path).or_default() += 1;
+    }
+    counts
+        .into_iter()
+        .max_by(|a, b| a.1.cmp(&b.1).then(b.0.cmp(a.0)))
+        .map(|(path, _)| path.to_owned())
+}
+
+/// Picks, loads and installs the reflection cube. Loading runs on the async
+/// compute pool; a cube that fails validation leaves the gradient in place.
+fn update_reflection(
+    mut commands: Commands,
+    studio: Res<Studio>,
+    mut cache: ResMut<ModelCache>,
+    mut reflection: ResMut<ReflectionCube>,
+    mut images: ResMut<Assets<Image>>,
+    device: Option<Res<RenderDevice>>,
+    camera: Single<Entity, With<Camera3d>>,
+) {
+    let reflection = &mut *reflection;
+    let generations = (studio.truck_generation, cache.generation);
+    if reflection.counted != generations {
+        // Decide once every truck model has finished loading, so the choice
+        // does not flip while parts arrive.
+        let models: Option<Vec<Option<Arc<GpuModel>>>> = studio
+            .placements
+            .iter()
+            .map(
+                |placement| match cache.models.get(&placement_key(placement)) {
+                    Some(ModelState::Ready(model)) => Some(Some(Arc::clone(model))),
+                    Some(ModelState::Failed) => Some(None),
+                    _ => None,
+                },
+            )
+            .collect();
+        if let Some(models) = models {
+            reflection.counted = generations;
+            reflection.wanted = most_used(
+                models
+                    .iter()
+                    .flatten()
+                    .flat_map(|model| model.reflections.iter()),
+            );
+        }
+    }
+    if let (Some(path), Some(game)) = (&reflection.wanted, &studio.game) {
+        if !reflection.cubes.contains_key(path) {
+            let (task_path, game) = (path.clone(), game.clone());
+            let task = AsyncComputeTaskPool::get().spawn(async move {
+                load_cube_texture(game.fs(), &task_path).map_err(|e| e.to_string())
+            });
+            reflection
+                .cubes
+                .insert(path.clone(), CubeState::Loading(task));
+        }
+    }
+    let bc_supported =
+        device.is_some_and(|d| d.features().contains(WgpuFeatures::TEXTURE_COMPRESSION_BC));
+    for (path, state) in &mut reflection.cubes {
+        let CubeState::Loading(task) = state else {
+            continue;
+        };
+        let Some(result) = check_ready(task) else {
+            continue;
+        };
+        let image = result.and_then(|data| {
+            let balance = exposure_balance(assets::cube_mean_luminance(&data));
+            assets::cube_image(data, bc_supported).map(|image| (image, balance))
+        });
+        *state = match image {
+            Ok((image, balance)) => CubeState::Ready(images.add(image), balance),
+            Err(error) => {
+                cache.warnings.push(format!("{path}: {error}"));
+                CubeState::Failed
+            }
+        };
+    }
+    let Some(path) = reflection.wanted.clone() else {
+        return;
+    };
+    if reflection
+        .active
+        .as_ref()
+        .is_some_and(|(active, _)| *active == path)
+    {
+        return;
+    }
+    let Some(CubeState::Ready(handle, balance)) = reflection.cubes.get(&path) else {
+        return;
+    };
+    let balance = *balance;
+    // Bevy only generates the filtered maps for a camera without an
+    // `EnvironmentMapLight`, then adds one itself.
+    commands
+        .entity(*camera)
+        .remove::<EnvironmentMapLight>()
+        .insert(GeneratedEnvironmentMapLight {
+            environment_map: handle.clone(),
+            intensity: reflection.strength * ENVIRONMENT_NITS * balance,
+            ..default()
+        });
+    info!("environment map: {path} (exposure x{balance:.2})");
+    reflection.active = Some((path, balance));
 }
 
 enum ModelState {
@@ -501,6 +661,14 @@ fn apply_scene(
     mut floor: Single<&mut Visibility, With<FallbackFloor>>,
     scene_root: Single<Entity, With<SceneRoot>>,
     mut input: ResMut<ViewportInput>,
+    mut reflection: ResMut<ReflectionCube>,
+    mut environment_lights: Query<
+        (
+            Option<&mut EnvironmentMapLight>,
+            Option<&mut GeneratedEnvironmentMapLight>,
+        ),
+        With<Camera3d>,
+    >,
 ) {
     let (camera_entity, mut orbit, mut projection) = camera.into_inner();
     if state.generation != studio.scene_generation {
@@ -526,8 +694,22 @@ fn apply_scene(
         let strength = scene
             .light_environment
             .map_or(DEFAULT_ENVIRONMENT, |e| e.min(MAX_ENVIRONMENT));
+        reflection.strength = strength;
         let mut camera_commands = commands.entity(camera_entity);
-        camera_commands.insert(environment(&mut images, strength));
+        if let Some((_, balance)) = reflection.active {
+            // The generated map copies its intensity once, so set both.
+            let intensity = strength * ENVIRONMENT_NITS * balance;
+            for (light, generated) in &mut environment_lights {
+                if let Some(mut light) = light {
+                    light.intensity = intensity;
+                }
+                if let Some(mut generated) = generated {
+                    generated.intensity = intensity;
+                }
+            }
+        } else {
+            camera_commands.insert(environment(&mut images, strength));
+        }
         match (scene.fog_color, scene.fog_density) {
             (Some([r, g, b]), Some(density)) => camera_commands.insert(DistanceFog {
                 color: Color::linear_rgb(r, g, b),
