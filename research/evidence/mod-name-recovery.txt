@@ -305,3 +305,23 @@ reads only .sii .sui .mat .tobj .pmd .soundref files of at most 1 MiB in a
 ZIP (the examples' old code read every file): 2,068,441 candidates against
 2,093,281, with no name lost. 56 packages: first scan 82 s, from the cache
 0.3 s; cache size 51 MB.
+
+
+11. Sibling vehicle folders
+---------------------------
+NG Sound's last 10 unnamed entries were interior, cabin and chassis sound
+includes (.sui text: "# Configuration of the interior sounds ...", reverb
+and window equalizer settings). Their named copies sit under
+def/vehicle/truck/scania.{s,r}_2016/. Guess (one-off, by --paths): every
+truck folder that the other packages mention (51, 19 of them Scania
+variants, e.g. scania.t_2016, scania.rt_2016, scania.streamline) x the 51
+relative paths NG Sound has under a truck folder = 2,601 guesses -> 9 more
+named, all under def/vehicle/truck/scania.t_2016/ (cabin 1, chassis 1,
+interior 4; engine 3 and transmission 3 were already named). So NG Sound
+covers a modded Scania T with the same layout as the S and R. One interior
+sound list stays unnamed.
+Built as a rule (vehicle_guesses): each found def/vehicle/<kind>/<name>/
+<rest> is tried under every other <name> of that kind seen among the
+candidates and found names. 22 v1 packages with --others: 169,815 of
+171,094 named (was 169,806; NG Sound 90 of 91, every other package
+unchanged); run time 269 s against 251 s.
