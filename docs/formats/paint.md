@@ -99,6 +99,15 @@ Evidence: `research/evidence/rea-paint-variant.txt`, `rea-paint-apply.txt` and `
 
 How the shader combines them is not read (D13: needs a clean-room spec). Two caller paths compute `altuv`/`flipflakeuv` from values not yet decoded (F17 Unknown).
 
+## Thumbnails (F17)
+
+The paint list's thumbnail is built from the paint job's own colours, not the truck's saved ones:
+- a paint job with an `icon` shows `<icon>.mat`;
+- otherwise, with `flipflake`, a layered markup shows `clr_0` = base, `clr_1` = flip, `clr_2` = flake, with `clr_3` drawn uncoloured on top;
+- otherwise, one `color_icon.mat` in the base colour.
+
+Each colour is sRGB-encoded (standard curve, clamped to 0–1), multiplied by 255 and truncated, then written as `FF` + blue + green + red in hex.
+
 ## Presets and saves
 
 `vehicle_paint_job_accessory` stores `data_path` (the paint job's **file** path, 548 of 548 presets) and up to six colours: `base_color`, `mask_r_color`, `mask_g_color`, `mask_b_color`, `flake_color`, `flip_color` (Confirmed [S8]). Saves write all six plus `refund` (Confirmed [S10]).

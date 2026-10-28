@@ -331,6 +331,12 @@ Facts only (D13); the format side is in [formats/paint.md](formats/paint.md).
 
   Confirmed for the per-part instance; for absent paint-job attributes, Hypothesis (strong, same block type).
 - **Attributes the base game never sets** (0 units each): `alternate_flipflake_uvset`, `base_texture_override`, and `base_texture` (stored in no plain field; handled by code).
+- **Thumbnails.** `FUN_1408d05b0` builds the paint list's thumbnail from the job's own colours:
+  - with an `icon`: `<icon>.mat`;
+  - with `flipflake`: layered `clr_0` base, `clr_1` flip, `clr_2` flake, `clr_3` uncoloured;
+  - otherwise: `color_icon.mat` in the base colour.
+
+  Each colour is sRGB-encoded, ×255 truncated, and written as `FF`+BB+GG+RR ([formats/paint.md](formats/paint.md#thumbnails-f17)).
 - **No builder call.** One caller (`0x1408cea60`) calls the builder only when the job has a mask, `flipflake`, `airbrush` or a base override; otherwise it calls `0x1408d0ea0` (Hypothesis: restores plain truckpaint). How a plain-colour job's colour reaches the shader is **Unknown**.
 - **Unknown.**
   - Two of the five callers (`0x14068e680`, `0x1408d2740`) compute the `altuv`/`flipflakeuv` flags from other values.
