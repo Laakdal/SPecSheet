@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Changed
+- **Interior view:** the Interior and Interior Accessories tabs now put you in the driver's seat, with the truck's full cockpit and your interior accessories (steering wheel, curtains, cab toys…) in place. Drag to look around. Interior accessories now have pins.
 - **The game's own tuning screen:** the app now draws ETS2's truck configuration screen from the game's layout files, templates, colours and icons in your install:
   - "Vehicle configurator" panel, category bar with the game's 8 tabs, accessory tiles with icons and prices, folded vehicle analysis and leave button;
   - pins only on the accessory tabs, as in the game;

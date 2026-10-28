@@ -63,6 +63,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - The app opens on `/def/truck_config_scene.sii` with the game's orbit camera.
   - Seen working in `SPECSHEET_SCRIPT` screenshots: cabin tab, exterior accessories with pins, the light-bar list, and a pick that fits the bar and moves the ✓.
 - [x] **Visual parity runner:** `specsheet --parity` renders `parity/cases.json` (Scania S preset, Volvo FH 2024 preset, Scania S with the first light bar) and scores them against references in `research/parity/` (MAE, SSIM, diff heatmap). Verified end to end with a render as its own reference (MAE 0, SSIM 1); real references are still to be captured by the user (`docs/DEVELOPMENT.md`).
+- [x] **Interior view (F10):** the interior tabs look from the driver's seat. The full cockpit sits at the `ext_interior` eye point, and interior-only accessories (steering wheel, curtains, toys, carpets…) are placed on its locators, with pins. Real-install tests: every preset has a cockpit at the eye point in both drives, and every preset assembles without warnings. Seen working: Scania cockpit and steering wheel from the seat, interior pins, and picking a retro steering wheel swaps it in.
 
 ## In progress
 
