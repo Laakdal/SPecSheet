@@ -1,0 +1,83 @@
+REA function analysis of the paint-job material builder FUN_1408d1100 (F15/F17)
+================================================================================
+
+Command (Git Bash; S = %USERPROFILE%\rea-ets2; 33 min):
+  REA_GHIDRA_STARTUP_TIMEOUT_MS=10800000 JAVA_HOME="C:\Program Files\Java\jdk-22" \
+  GHIDRA_INSTALL_DIR=%USERPROFILE%\AppData\Local\Programs\Ghidra\ghidra_12.1.4_PUBLIC \
+  npx -y rea-agents@6.4.0 function <eurotrucks2.exe> --procedure=0x1408d1100 \
+    --provider ghidra --snapshot "$S/eurotrucks2.snapshot" --format json \
+    > "$S/function-paint-variant.json"
+Found by: rea trace --query=colormask (ev_e52179960f915243ea9c367b4b1ba82dd739d27bfb061334818c493435e94624):
+  the string "colormask" (0x1421a5408) is referenced only from 0x1408d1399 and
+  0x1408d13a7, both inside FUN_1408d1100.
+
+Evidence ID: ev_6e3f6685df016cea4196b1271e6a17f9819af96f1d4aad6d9dd82ed2c73d816c
+Subject:     eurotrucks2.exe, ETS2 1.60.1.7,
+             sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Provider:    Ghidra 12.1.4. Static only: nothing was executed.
+The full record stays outside the repository (decompiled SCS code, D13);
+below are our observations in our own words.
+
+Function
+--------
+FUN_1408d1100, 0x1408d1100-0x1408d1e68 (3,433 bytes). Single caller FUN_1408d1e70.
+Arguments, as used: (1) the part's material handle, replaced on success;
+(2) a resolved paint record (layout below); (3) a flag; (4) a flag;
+(5) a texture path.
+Strings: eut2.truckpaint, shadow, colormask, airbrush, flipflake, flipflakeuv,
+altuv, asafew.a, skinned, texture_paintjob, texture_flakenoise, texture_base,
+"Failed to convert effect descriptor to RFX in create_material_clone().",
+"Unable to create material when applying paint job." (x5).
+Constant 0x142c31460 (.data) = (-1.0, -2.0, -3.0, -4.0), read from the file.
+
+What it does (observed)
+-----------------------
+It clones the part's material onto the effect "eut2.truckpaint" with a set of
+flags, then binds textures and writes four colour constants.
+
+1. Opt-out. Some materials skip every paint feature:
+   - the original material passes a check FUN_14042e920 (Unknown), or
+   - it passes FUN_14042e8c0 (Unknown) and its four floats at material +0x70
+     equal (-1, -2, -3, -4).
+   Such a material gets plain eut2.truckpaint: no colormask, airbrush,
+   flipflake or altuv flag.
+2. Flags, otherwise (record = argument 2):
+   - airbrush    = record byte +0xa1;
+   - flipflake   = record byte +0xa0, named "flipflakeuv" when argument 4
+                   is set and "flipflake" otherwise;
+   - colormask   = the record's mask path (+0x08) is non-empty AND neither
+                   flipflake nor airbrush is set;
+   - altuv       = argument 3.
+   So airbrush and colormask never combine, colormask and flipflake never
+   combine, and airbrush and flipflake can combine.
+3. Flags carried over from the original material: shadow, skinned, the flag
+   named by "asafew.a" (Unknown which), and one more flag that FUN_1408d0810
+   reads from the original material (Unknown which).
+4. The flag set is converted to an RFX effect; on failure the messages above
+   are logged and the part keeps its material.
+5. Textures (the new material has 8 slots, matched by slot name):
+   - if colormask or airbrush: the record's mask path (+0x08) goes into
+     the slot texture_paintjob;
+   - if flipflake: the record's second path (+0x88) goes into
+     texture_flakenoise;
+   - if argument 5 is a non-empty path: it replaces texture_base.
+6. Four colour constants (vec4) are written to the material at +0xf0, +0x100,
+   +0x110, +0x120:
+   - without flipflake: (r+0x20..0x28, 0), (r+0x2c..0x34, 0),
+     (r+0x38..0x40, 0), (r+0x44..0x4c, 0): four colours, w = 0;
+   - with flipflake: (r+0x6c, r+0x78, r+0x7c, r+0x70),
+     (r+0x60, r+0x64, r+0x68, r+0x74), (r+0x50..0x5c), (r+0x44..0x4c, 0):
+     the fourth colour is shared; the first three pack flake/flip values.
+   Which paint-job attribute sits at which record offset is set by the
+   caller (next run: FUN_1408d1e70).
+7. If the original material passed FUN_14042e920, the new material's +0x70
+   is set to (-1, -2, -3, -4).
+
+Not yet known (needs the caller FUN_1408d1e70)
+----------------------------------------------
+- Which attributes fill the record (+0x20..+0x7c), i.e. which colour and flake/
+  flip value lands in which constant, and their defaults when absent.
+- What arguments 3, 4 and 5 are. Expected from the class layout
+  (paint-class-layout.txt): alternate_uvset (+0x1be) -> altuv,
+  alternate_flipflake_uvset (+0x1bf) -> flipflakeuv, base_texture_override
+  (+0x1c8) -> texture_base. Hypothesis until the caller is read.
