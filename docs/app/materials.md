@@ -59,20 +59,21 @@ This is an approximation, not the game's shaders.
   - flip: the facing/averted blend of P and the flip colour.
 - **Albedo** = base texture × `.mat` diffuse × paint colour × 2 × vertex colour.
 - **Constant masks** (`shared_RRGGBBAA`) enter as linear RGB with linear alpha.
-- **Flakes:** the noise at `(u·s, v·s·r)` changes only the highlight's colour and its power (`τ`, coverage `c`). Under Bevy's lighting no sparkle is visible yet (770 Deep Red, close view). Check it again once the spec's Blinn-Phong highlight replaces PBR.
+- **Flakes:** the noise at `(u·s, v·s·r)` changes only the highlight's colour and its power (`τ`, coverage `c`). Under Bevy's lighting no sparkle is visible yet (770 Deep Red, close view). Check it again once the spec's Blinn-Phong highlight replaces PBR. Test case: Under Wraps on the MAN TGX Euro 6 has no mask; its gift-wrap pattern comes from its own flake noise (`tile_christ3.tobj`), and we show none of it.
 - **Mask factor:** the colour mask's alpha and the base alpha scale the specular and the reflection.
 
 **Settled by our data** (`research/evidence/paint-vertex-streams.txt`, example `paint_uv_survey`, 7,740 truck models):
-- **Mask UV (Confirmed).** The mask uses PMG UV set 0, and alternate-UV paint uses set 1 (`MeshPiece::uvs2`, Bevy `UV_1`).
-  - The spec's guess that sets count from 0 (mask on set 1, alternate UVs on set 2) would leave 393 of 1,725 paint pieces without their set; this reading leaves 1.
-  - Liveries line up on cabs where the two readings differ: the MAN TGX Euro 6 `cab_xl` (2 sets, `altuv`) and the Actros 2014 (3 sets).
-  - A piece without set 1 falls back to set 0.
+- **Paint UV (Confirmed on screen).** Sets count from 0, as the spec says: the mask and flakes use PMG UV set 1, and `alternate_uvset` jobs use set 2 (`specsheet_data::render::paint_uv_set`).
+  - Test: Bulgarian Flag Decal (`alternate_uvset`) on the Actros 2014 Gigaspace cab, whose paint piece has 3 sets. From set 2 the flag lands on the door; from set 1 it does not show.
+  - Our first reading (mask on set 0, a `.mat`'s `altuv` moving it to set 1) also lined up Altamira and Driving Academy on the MAN and Actros cabs. Those `.mat`s name `altuv` and the jobs don't, so both readings land on set 1 there.
+  - A mesh without the set falls back to its last one (Hypothesis). 393 of 1,725 paint pieces lack set 1, among them the Scania S cab (only set 0), whose masks line up.
+  - The mesh carries the chosen set as Bevy `UV_1`. Paint pieces whose `alternate_uvset` set differs get a second mesh, which the viewer picks for such jobs.
 - **Vertex colours (Confirmed).** Every paint piece has a colour stream, so the spec's "mesh without one" case does not arise for paint. The mean is grey 0.326, so 2 × colour ≈ 0.65 darkens paint about 35% compared with before. The colours are uploaded doubled, and only on paint meshes. Byte order: lowest byte red, a **Hypothesis**; only 464 of 2.8M vertices are not grey.
 
-**Variant choice.** The game rebuilds a painted part's material as `eut2.truckpaint` plus flags (REA: `research/evidence/rea-paint-variant.txt`).
+**Variant choice.** The game rebuilds a painted part's material as `eut2.truckpaint` plus flags taken from the paint job; the `.mat`'s own `airbrush`, `flipflake` and `altuv` are replaced (REA: `research/evidence/rea-paint-variant.txt`, F17).
 - **Livery or colour mask (Confirmed, REA and on screen):** only the paint job's `airbrush` decides. With a mask, the paint is a livery if the job says `airbrush`; else a colour mask, unless the job is `flipflake`: the game never combines colour mask and flipflake. No base-game flipflake job has a mask without `airbrush` (9,526 flipflake jobs), so that rule shows nowhere yet. The MAN TGX Euro 6 cab's `.mat` names `airbrush`, yet its Driving Academy job draws correctly only as a colour mask; drawn as a livery, the mask's channel weights showed as red and green stripes.
-- **`altuv` (Confirmed on screen):** the union of the `.mat`'s `altuv` and the paint job's `alternate_uvset`. The builder takes `altuv` from an argument its caller computes. Altamira and Driving Academy on the MAN TGX Euro 6 do not set `alternate_uvset`, but the cab's `.mat` names `altuv`. With the `.mat`'s flavour ignored, Altamira vanishes from the cab, because UV set 0 lands on an empty part of the livery. With it, the livery lines up.
-- **`flipflake` (Hypothesis):** the union of the `.mat`'s flavour and the paint job's flag. The builder sets it from the paint job; whether a `.mat`'s own flavour survives (as `altuv`'s does) awaits the REA run on its caller.
+- **`altuv` (Confirmed, REA and on screen):** the paint job's `alternate_uvset`, except on a part listed in the job's per-part file, which never takes it (`PiecePaint::alternate_uvset`).
+- **`flipflake` (Confirmed, REA):** the paint job's flag alone.
 - **`flipflakeuv`:** not implemented. What selects it is Unknown, and the flakes use the mask's UV.
 
 **Ours, in place of the spec's Unknowns** (constants at the top of `truckpaint.rs`):
