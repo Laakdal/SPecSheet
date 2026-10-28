@@ -1,0 +1,65 @@
+Shader spec sources: eut2.showroom_v2 (docs/app/shader-specs/showroom-v2.md), ETS2 1.60.1.7
+=====================================================================================
+
+Clean-room note (D13): shaders were read in the session scratchpad only; this file holds no
+shader text.
+
+Commands (Git Bash, from the repository root)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  scs cat effect/eut2/showroom_v2/eut2.showroom_v2.rfx ; scs cat effect/eut2/_shd/<hash>.glsl.vso|fso
+  scs cat effect/deferred/rs/forward_none.rs ; scs cat effect/def/{inputs,uniforms,eut2_interfaces}.sui
+
+Effect read (glsl technique; pass: render state, vertex object, fragment object)
+  eut2.showroom_v2                         T1         opaque     forward_none.rs        29381b966755497508bab8c8a7b40431 d8026f51ebdd6a2d948236eb4fe352b8
+
+How each fact was established
+  - Vertex 29381b96: UV slot 0 and 1 inputs (texcoord0, texcoord1); three u offsets = speed
+    xyz x the 4th component of the showroom parameter constant, added to UV 1's u; ramp row =
+    that 4th component x showroom_r_color.x; four ramp reads at u = 1/8, 3/8, 5/8, 7/8, lod 0.
+  - Fragment d8026f51: three wave reads (red, squared), mult read on UV 0 (red), back-to-front
+    lerps weighted by wave x ramp alpha, x doubled vertex colour x an engine UI brightness
+    scale; fog; alpha 1. No light inputs.
+  - Input table: showroom_speed default (1, 2, 3); showroom_r_color default (1, 0, 0), UI label
+    "Top (R) color". Uniform table: showroom_params <- input.showroom.speed;
+    showroom_r_color <- input.showroom.r.color. No table entry for the UI brightness scale.
+  - Interface table: eut2.showroom_v2 = colour, normal, position, texcoord0, texcoord1.
+
+Material (attribute values only): scs cat automat/1a/1ab632d5ded5f7ef.mat
+  showroom_r_color (0.000077, 0, 0); showroom_speed (-0.05, 0.06, -0.075);
+  texture_base /model/ui/waves_1.tobj; texture_base_1 /model/ui/waves_2.tobj;
+  texture_mask /model/ui/bcg_colors.tobj (mip_filter none); texture_mult /model/ui/waves_mult.tobj;
+  texture /model/ui/waves_0.tobj
+
+model_info /model/ui/background_dome.pmd
+  == /model/ui/background_dome.pmd
+  looks: ["default", "color1", "color2", "color3"]
+  variants: ["c_cabin"]
+  aabb: Aabb { min: [-21.260265, -0.23612039, -21.260265], max: [21.260265, 11.115129, 21.260265] }
+  material 0: /automat/1a/1ab632d5ded5f7ef.mat Some("eut2.showroom_v2.rfx")
+uv_routing_survey /model/ui/background_dome.pmd
+  == /model/ui/background_dome.pmd
+  piece 0: 0xffffff10 (0:0 1:1) 2 sets {"showroom_v2"}
+    set 0: u 0.000..1.000  v 0.007..0.999
+    set 1: u 0.000..1.000  v 0.003..1.002
+scs cat def/desktop/config.waves.sii (excerpt)
+  	scene_name: "@@waves@@"
+  	scene_model_path: "/model/ui/background_dome.pmd"
+  	scene_model_look: "color1"
+  	scene_model_variant: "c_cabin"
+
+Texture records: scs tex <file.tobj>   (DXGI 80 BC4 UNORM, 93 B8G8R8X8 UNORM sRGB)
+  model/ui/waves_0.tobj
+    ImageMeta { width: 2048, height: 512, mip_count: 12, dxgi_format: 80, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }
+  model/ui/waves_1.tobj
+    ImageMeta { width: 2048, height: 512, mip_count: 12, dxgi_format: 80, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }
+  model/ui/waves_2.tobj
+    ImageMeta { width: 2048, height: 512, mip_count: 12, dxgi_format: 80, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }
+  model/ui/waves_mult.tobj
+    ImageMeta { width: 2048, height: 512, mip_count: 12, dxgi_format: 80, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }
+  model/ui/bcg_colors.tobj
+    ImageMeta { width: 4, height: 512, mip_count: 1, dxgi_format: 93, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }

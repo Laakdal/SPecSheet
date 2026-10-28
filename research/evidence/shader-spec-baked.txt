@@ -1,0 +1,68 @@
+Shader spec sources: eut2.baked.spec.add.env and eut2.baked.spec.add.env.paint
+(docs/app/shader-specs/baked.md), ETS2 1.60.1.7
+=====================================================================================
+
+Clean-room note (D13): shaders were read in the session scratchpad only; this file holds no
+shader text.
+
+Commands (Git Bash, from the repository root)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  cargo build --release -j 2 -p specsheet-research --example scs --example model_info --example uv_routing_survey
+  scs cat effect/eut2/baked/<effect>.rfx ; scs cat effect/eut2/_shd/<hash>.glsl.vso|fso
+  scs cat effect/deferred/rs/post_add.rs ; scs cat effect/def/{uniforms,eut2_interfaces}.sui
+  Main bodies normalised and diffed (paint vs non-paint forward pass).
+
+Effects read (glsl technique; pass: render state, vertex object, fragment object)
+  eut2.baked.spec                          T1         defattr    attrib_render.rs       0132aa66f0d6ad4ea9584d932e422314 954a7ea226b48bbdd59c5130afae584b
+  eut2.baked.spec                          T1         fwdopaque  forward_none.rs        0132aa66f0d6ad4ea9584d932e422314 7bd57f35f23fd3f25a9236961e48a17a
+  eut2.baked.spec.add.env                  T1         defattr    attrib_render.rs       0132aa66f0d6ad4ea9584d932e422314 954a7ea226b48bbdd59c5130afae584b
+  eut2.baked.spec.add.env                  T1         defpost    post_add.rs            32a656676909d2b2b06f504ae64e74fd a59ca5720f25d0a188a04dfbb809e2ef
+  eut2.baked.spec.add.env                  T1         fwdopaque  forward_none.rs        417b3c581e40d71eb77274cce2b81166 3e383530a938001123d2ab8c28b45079
+  eut2.baked.spec.add.env.paint            T1         defattr    attrib_render.rs       0132aa66f0d6ad4ea9584d932e422314 419739b0cdfaeeb754ba3f5f0f2893cd
+  eut2.baked.spec.add.env.paint            T1         defpost    post_add.rs            32a656676909d2b2b06f504ae64e74fd a59ca5720f25d0a188a04dfbb809e2ef
+  eut2.baked.spec.add.env.paint            T1         fwdopaque  forward_none.rs        417b3c581e40d71eb77274cce2b81166 80a70fb04222b94e5ccb1a2969a00f80
+  Also listed, not specified: baked, baked.spec.add.env.day/.night (passes defattrcu + defpost
+  custom_composition), baked.spec.add.env.tsnmap.
+
+How each fact was established
+  - Forward 3e383530 (add.env): one UV interpolant from texcoord0 (vertex 417b3c58); base rgb x
+    doubled vertex colour; specular power 1024 * over.r^2, specular intensity over.g, gate
+    switch over.b > 0.5; no .mat diffuse/specular/shininess/additional_ambient constants;
+    reflection = cube x (3 * mask.r * reflection modulator) x Schlick fresnel x saturated
+    ambient-alpha; output alpha 1.
+  - Forward 80a70fb0 (paint) vs 3e383530: only the albedo differs: paint mask (texture_mask_1.r
+    x 4, saturated) lerps base rgb towards base rgb x material_diffuse.
+  - G-buffer 954a7ea2 (= baked.spec's): same albedo, power, intensity and gate; zero emittance,
+    ka 0. Paint G-buffer 419739b0 adds the same paint lerp.
+  - Post pass a59ca572 (post_add.rs: blend src_alpha/one, depth gequal, no write, back cull):
+    the reflection of the forward pass, with the normal from the G-buffer and the visibility
+    from the diffuse light buffer alpha.
+  - Uniform table: material_diffuse <- input.diffuse; fresnel (float4) <- input.fresnel;
+    texture_reflection_modulator has no input (engine).
+  - Interface table: eut2.baked.spec.add.env and .paint = colour, normal, position, texcoord0.
+
+Usage (truck and UI models): uv_routing_survey vehicle/truck model/ui model2/ui
+     22 0:0          baked []  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3.pmd piece 0
+      3 0:0          baked.spec.add.env  vehicle/truck/daf_2021/cargo/daf_xg_4x2_cargo_lod3.pmd piece 1
+     19 0:0          baked.spec.add.env.paint  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3.pmd piece 0
+
+Materials (attribute values only): model_info on the two pmd files, then scs cat
+  automat/77/77d28e2dc895589f.mat: effect : "eut2.baked.spec.add.env.paint.rfx" fresnel : { 0.200000 , 0.900000 } "texture_base" "texture_over" "texture_mask" "texture_mask_1" "texture_reflection" 
+  automat/48/48e9f038cae145e8.mat: effect : "eut2.baked.spec.add.env.rfx" fresnel : { 0.200000 , 0.900000 } "texture_base" "texture_over" "texture_mask" "texture_reflection" 
+
+Texture records: scs tex <file.tobj>   (DXGI 72 BC1 sRGB, 77 BC3 UNORM, 80 BC4 UNORM)
+  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3_baked_dif.tobj
+    ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 72, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3_baked_bspec.tobj
+    ImageMeta { width: 128, height: 128, mip_count: 8, dxgi_format: 77, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3_baked_env.tobj
+    ImageMeta { width: 128, height: 128, mip_count: 8, dxgi_format: 80, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3_baked_paint.tobj
+    ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 80, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+  material/environment/fuzzy_reflection/fuzzy_reflection.tobj
+    ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 72, is_cube: true, face_count: 6, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }

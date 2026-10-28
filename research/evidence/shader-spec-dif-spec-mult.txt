@@ -1,0 +1,243 @@
+Shader spec sources: eut2.dif.spec.mult.dif.spec family and dif.spec.decal.mult
+(docs/app/shader-specs/dif-spec-mult.md), ETS2 1.60.1.7
+=====================================================================================
+
+Clean-room note (D13): the game's shaders were read only to learn the maths. All extracted
+text was kept outside the repository, in the session scratchpad. This file lists what was
+read and the non-shader data cited. It contains no shader text.
+
+Commands (Git Bash, from the repository root)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  cargo build --release -j 2 -p specsheet-research --example scs --example model_info --example uv_routing_survey
+  scs cat effect/eut2/<dir>/<effect>.rfx            effect -> passes -> shader objects (glsl technique only)
+  scs cat effect/eut2/_shd/<hash>.glsl.vso|fso      shader objects; printable runs extracted in the scratchpad
+  scs cat effect/deferred/rs/{decal_mult,forward_mult,decal_none,forward_none,attrib_render}.rs
+  scs cat effect/def/{flavors,inputs,uniforms,vas,eut2_interfaces}.sui
+  Fragment and vertex main bodies were normalised (temporaries renamed) and diffed pairwise.
+
+Base directories: effect/eut2/dif_spec_mult_dif_spec/, dif_spec_mult_dif_spec_add_env/,
+dif_spec_mult_dif_spec_iamod_dif_spec/; dif.spec.decal.mult is in effect/eut2/dif_spec/.
+
+Effects read (glsl technique; pass: render state, vertex object, fragment object)
+  eut2.dif.spec.mult.dif.spec                          T1         defattr   attrib_render.rs 5de0bdc06915198d390866cbf3e54586 3360427a343af813aff355223ec22278
+  eut2.dif.spec.mult.dif.spec                          T1         fwdopaque forward_none.rs 5de0bdc06915198d390866cbf3e54586 5cc8152753f10654b47c615273050df9
+  eut2.dif.spec.mult.dif.spec.tsnmap                   T1 [nmap]  defattr   attrib_render.rs 011405072b48df8dfe7d319fa7c21ca6 b78c010d01bf3091b1645b04e07423a4
+  eut2.dif.spec.mult.dif.spec.tsnmap                   T1 [nmap]  fwdopaque forward_none.rs 011405072b48df8dfe7d319fa7c21ca6 62b7723df1d2377fa653a5b4286858bb
+  eut2.dif.spec.mult.dif.spec.tsnmap                   T2         defattr   attrib_render.rs 5de0bdc06915198d390866cbf3e54586 3360427a343af813aff355223ec22278
+  eut2.dif.spec.mult.dif.spec.tsnmap                   T2         fwdopaque forward_none.rs 5de0bdc06915198d390866cbf3e54586 5cc8152753f10654b47c615273050df9
+  eut2.dif.spec.mult.dif.spec.tsnmapuv                 T1 [nmap]  defattr   attrib_render.rs 51fe009675540c2a617d41ded1631782 27ac62fa8310941c706b28228a36bb92
+  eut2.dif.spec.mult.dif.spec.tsnmapuv                 T1 [nmap]  fwdopaque forward_none.rs 51fe009675540c2a617d41ded1631782 c69b604a4fbc47aab8b59ed93e2330fa
+  eut2.dif.spec.mult.dif.spec.tsnmapuv                 T2         defattr   attrib_render.rs 5de0bdc06915198d390866cbf3e54586 3360427a343af813aff355223ec22278
+  eut2.dif.spec.mult.dif.spec.tsnmapuv                 T2         fwdopaque forward_none.rs 5de0bdc06915198d390866cbf3e54586 5cc8152753f10654b47c615273050df9
+  eut2.dif.spec.mult.dif.spec.add.env                  T1         defattr   attrib_render.rs 35d4c0dc54684347627b0161f49bfbdf d005974f9e37e8c817fa5a37e3c0e5ff
+  eut2.dif.spec.mult.dif.spec.add.env                  T1         fwdopaque forward_none.rs 35d4c0dc54684347627b0161f49bfbdf 896dc6972361f8a533f37b3b6ef7894f
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmap           T1 [nmap]  defattr   attrib_render.rs 49d8cffbc1b930079cfd319723a754b7 aec4fae8b3631f107e01f73a50ddb87a
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmap           T1 [nmap]  fwdopaque forward_none.rs 49d8cffbc1b930079cfd319723a754b7 1ad821e7149b92babc66af0afbbfcfa5
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmap           T2         defattr   attrib_render.rs 35d4c0dc54684347627b0161f49bfbdf d005974f9e37e8c817fa5a37e3c0e5ff
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmap           T2         fwdopaque forward_none.rs 35d4c0dc54684347627b0161f49bfbdf 896dc6972361f8a533f37b3b6ef7894f
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv         T1 [nmap]  defattr   attrib_render.rs 0647d8866d6db305374cc7d593eba273 56be1004c087c78d3c1ffa6f102dff71
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv         T1 [nmap]  fwdopaque forward_none.rs 0647d8866d6db305374cc7d593eba273 e9e12b2dcafa385b5e1226b442ed337d
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv         T2         defattr   attrib_render.rs 35d4c0dc54684347627b0161f49bfbdf d005974f9e37e8c817fa5a37e3c0e5ff
+  eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv         T2         fwdopaque forward_none.rs 35d4c0dc54684347627b0161f49bfbdf 896dc6972361f8a533f37b3b6ef7894f
+  eut2.dif.spec.mult.dif.spec.iamod.dif.spec           T1         defattr   attrib_render.rs f414854a89065104efd9fa48dda9035c 25203024909685f019c38e67030736a5
+  eut2.dif.spec.mult.dif.spec.iamod.dif.spec           T1         fwdopaque forward_none.rs f414854a89065104efd9fa48dda9035c 960c95847d66c681d0e90d5fd0d68f6f
+  eut2.dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  T1 [nmap]  defattr   attrib_render.rs f47948241dbc983b9c6c5ace28882ea7 16d464b8b35dc8fe5b8c8a6e13df921f
+  eut2.dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  T1 [nmap]  fwdopaque forward_none.rs f47948241dbc983b9c6c5ace28882ea7 7ebb08534b8756c39fbfa3c27cd10e54
+  eut2.dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  T2         defattr   attrib_render.rs f414854a89065104efd9fa48dda9035c 25203024909685f019c38e67030736a5
+  eut2.dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  T2         fwdopaque forward_none.rs f414854a89065104efd9fa48dda9035c 960c95847d66c681d0e90d5fd0d68f6f
+  eut2.dif.spec.decal.mult                             T1         decalpost decal_mult.rs  204cf5782d99ad08ea6194e66f6d3475 f8d91ca6b931f333c20fa92ec368f768
+  eut2.dif.spec.decal.mult                             T1         decal     decal_mult.rs  3e01f28b441c901fcf70cf2599157d1c ebc9efa92dda5e0d226c01a9fa8097f7
+  eut2.dif.spec.mult                                   T1         blend     forward_mult.rs 3e01f28b441c901fcf70cf2599157d1c ebc9efa92dda5e0d226c01a9fa8097f7
+  eut2.dif.spec.mult.dif.spec.paint                    T1         defattr   attrib_render.rs 5de0bdc06915198d390866cbf3e54586 3360427a343af813aff355223ec22278
+  eut2.dif.spec.mult.dif.spec.paint                    T1         fwdopaque forward_none.rs 5de0bdc06915198d390866cbf3e54586 5cc8152753f10654b47c615273050df9
+  eut2.dif.spec.mult.dif.spec.add.env.paint            T1         defattr   attrib_render.rs 35d4c0dc54684347627b0161f49bfbdf d005974f9e37e8c817fa5a37e3c0e5ff
+  eut2.dif.spec.mult.dif.spec.add.env.paint            T1         fwdopaque forward_none.rs 35d4c0dc54684347627b0161f49bfbdf 896dc6972361f8a533f37b3b6ef7894f
+  eut2.dif.spec.mult.dif.spec.decal                    T1         decalpost decal_none.rs  1e0886fe97dfe9276c5ff08a0934b6f4 a3975889dcda6eb707af4099e3bb56cb
+  eut2.dif.spec.mult.dif.spec.decal                    T1         decal     decal_none.rs  5de0bdc06915198d390866cbf3e54586 5cc8152753f10654b47c615273050df9
+  (T1 = first glsl technique, T2 = the fallback technique without the normal-map condition.)
+  Comparison objects: eut2.dif.spec, eut2.dif.spec.add.env, eut2.dif.spec.decal (hashes as in
+  research/evidence/shader-spec-dif-spec.txt).
+
+How each fact was established
+  - Base vs dif.spec: forward 5cc81527 vs ebc9efa9, and G-buffer 3360427a vs 8e789a42. The only
+    differences: a second 2D texture (texture_mult) sampled on the second interpolated UV pair
+    and multiplied into the base sample (all four channels); the specular mask is the product's
+    alpha without the remap; the forward output alpha is vertex alpha.
+  - add.env vs dif.spec.add.env: forward 896dc697 vs 44df0b82, G-buffer d005974f vs c4956540.
+    Same as above, plus the reflection strength multiplied by texture_mult alpha.
+  - tsnmap (62b7723d) and tsnmapuv (c69b604a, e9e12b2d): the normal decode constants and fn
+    factor of dif-spec §5.2 were read again; tsnmap samples the normal map on the base UV,
+    tsnmapuv on the UV 6 stream.
+  - iamod (960c9584, 7ebb0853): third texture on UV 2, lerped to white by vertex alpha, multiplied
+    into the product; output alpha constant 1.
+  - UV slots: vertex objects 5de0bdc0, 01140507, 0647d886, f414854a, f4794824 (texcoord 0/1/2/6
+    attribute inputs), and the effect interface table: eut2.dif.spec.mult.dif.spec = colour,
+    normal, position, texcoord0, texcoord1; .add.env.tsnmapuv adds tangent, texcoord6;
+    .iamod.dif.spec.tsnmapuv adds texcoord2 and texcoord6; eut2.dif.spec.decal.mult = texcoord0.
+  - paint: eut2.dif.spec.mult.dif.spec.paint and .add.env.paint name the same objects as the
+    non-paint effects.
+  - dif.spec.decal.mult: same objects as eut2.dif.spec.decal (decalpost 204cf578/f8d91ca6,
+    decal 3e01f28b/ebc9efa9); state decal_mult.rs = decal_none.rs plus blend src dst_color,
+    dst zero. forward_mult.rs: depth greater, no write, back cull, same blend.
+  - Flavor table: flavor "mult" adds a white-fog fragment define ("add": a black-fog one).
+  - Material-input table: mult_uvscale and mult_uvscale_secondary exist (default (1,1)); no
+    material uniform lists them as inputs, and none of the objects above references them.
+
+Garage materials (scs cat automat/cc/cc9de879db5d57dd.mat, automat/66/66b6b917f1c899a6.mat,
+automat/57/578a47b9c7e49f39.mat; attribute values only)
+  cc9de879 eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv: additional_ambient 0, diffuse 1,
+    env_factor 1, fresnel (0.2, 0.9), reflection 0.1, shininess 85, specular 0.017495;
+    texture_base /material/tiled/metal_plates_gs_01.tobj, texture_mult
+    /model/ui/garage/ao_textures/metal_plates_v3.tobj (u_address clamp), texture_nmap
+    /material/tiled/metal_plates_gs_01_nrm.tobj, texture_reflection
+    /material/environment/showroom_cube/reflection.tobj (u/v/w clamp, aniso disabled)
+  66b6b917 eut2.dif.spec.mult.dif.spec: diffuse 1, shininess 4, specular 0.025455;
+    texture_base /model/ui/garage/sign_light.tobj, texture_mult .../ao_textures/escape_light.tobj (u clamp)
+  578a47b9 eut2.dif.spec.decal.mult (dark_studio.pmd): diffuse 1, specular 0.603827,
+    shininess 0, queue_bias 0; texture_base /model/ui/texture/floor_1_light_map.tobj
+
+Texture records: scs tex <file.tobj>
+  model/ui/garage/ao_textures/metal_plates_v3.tobj
+    ImageMeta { width: 1024, height: 1024, mip_count: 11, dxgi_format: 78, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: Repeat }
+  model/ui/garage/ao_textures/escape_light.tobj
+    ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 78, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: Repeat }
+  material/tiled/metal_plates_gs_01.tobj
+    ImageMeta { width: 512, height: 2048, mip_count: 12, dxgi_format: 78, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }
+  material/tiled/metal_plates_gs_01_nrm.tobj
+    ImageMeta { width: 512, height: 2048, mip_count: 12, dxgi_format: 83, is_cube: false, face_count: 1, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: Repeat, address_v: Repeat }
+  material/environment/showroom_cube/reflection.tobj
+    ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 72, is_cube: true, face_count: 6, pitch_alignment: 256, image_alignment: 512 }
+    SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+  (DXGI 78 = BC3_UNORM_SRGB, 83 = BC5_UNORM, 72 = BC1_UNORM_SRGB)
+
+Garage materials: model_info /model/ui/garage/desktop_garage.pmd
+  material 0: /automat/60/60bec8969712f8b5.mat Some("eut2.dif.spec.decal.over.rfx")
+  material 1: /automat/40/408526e9278658d1.mat Some("eut2.none.rfx")
+  material 2: /automat/38/38cb3e113a3294e2.mat Some("eut2.dif.lum.spec.lvcol.rfx")
+  material 3: /automat/75/751cae7bd433fa3f.mat Some("eut2.glass.rfx")
+  material 4: /automat/b6/b6e03e827f2d6ef3.mat Some("eut2.glass.rfx")
+  material 5: /automat/66/66b6b917f1c899a6.mat Some("eut2.dif.spec.mult.dif.spec.rfx")
+  material 6: /automat/cc/cc9de879db5d57dd.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 7: /automat/86/867e226d237b3686.mat Some("eut2.dif.lum.add.rfx")
+  material 8: /automat/80/80ef342a10ab6ff5.mat Some("eut2.dif.spec.add.env.a.rfx")
+  material 9: /automat/72/7284550864d28def.mat Some("eut2.dif.spec.mult.dif.spec.rfx")
+  material 10: /automat/35/357f745a357db5b6.mat Some("eut2.dif.spec.mult.dif.spec.tsnmap.rfx")
+  material 11: /automat/ac/ac7fd297b2445410.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmap.rfx")
+  material 12: /automat/c9/c93fcdb06f3f3ff1.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 13: /automat/06/06442d302af443af.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 14: /automat/a8/a8ef32f0ea463a6c.mat Some("eut2.dif.spec.mult.dif.spec.add.env.rfx")
+  material 15: /automat/08/082c2a4613d8f43a.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 16: /automat/ba/baa356238e20aee0.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 17: /automat/14/14dbc400690312b3.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 18: /automat/a7/a764c359af83f9f8.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 19: /automat/17/175a9c593e4862ee.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 20: /automat/e3/e37e48d13f04b432.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 21: /automat/e5/e56f4689d60d44b3.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 22: /automat/66/66aed25a7ed0c410.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 23: /automat/37/3766f3b7ee5e53a5.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 24: /automat/ed/edc934996175dd09.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 25: /automat/06/063e44e9f27a6d1c.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 26: /automat/2d/2dbe42094c618405.mat Some("eut2.dif.spec.mult.dif.spec.tsnmapuv.rfx")
+  material 27: /automat/f3/f36ab7e0331f2fbc.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 28: /automat/7a/7af7b99609d786f9.mat Some("eut2.dif.spec.mult.dif.spec.add.env.tsnmapuv.rfx")
+  material 29: /automat/b5/b5704bb3f0c9184d.mat Some("eut2.dif.spec.rfx")
+  material 30: /automat/07/079ef7896ceddc5e.mat Some("eut2.dif.spec.decal.over.rfx")
+  -> 22 of 31 materials are eut2.dif.spec.mult.dif.spec*
+
+UV routing per piece: uv_routing_survey /model/ui/garage/desktop_garage.pmd (mult pieces only)
+  piece 0: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 3: 0xffffff10 (0:0 1:1) 2 sets {"dif.spec.mult.dif.spec"}
+  piece 10: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 13: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 14: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 15: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 16: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 17: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 18: 0xffffff10 (0:0 1:1) 2 sets {"dif.spec.mult.dif.spec.add.env"}
+  piece 19: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 20: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 21: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 22: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 24: 0xffffff10 (0:0 1:1) 2 sets {"dif.spec.mult.dif.spec.tsnmap"}
+  piece 26: 0xffffff10 (0:0 1:1) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmap"}
+  piece 27: 0xffffff10 (0:0 1:1) 2 sets {"dif.spec.mult.dif.spec"}
+  piece 28: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 29: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.tsnmapuv"}
+  piece 30: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 31: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 32: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 33: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+  piece 34: 0xf0ffff10 (0:0 1:1 6:0) 2 sets {"dif.spec.mult.dif.spec.add.env.tsnmapuv"}
+
+UV routing by effect over vehicle, model, model2: uv_routing_survey vehicle model model2
+  (498,909 pieces in 51,923 models; section 'routing by full effect name', mult lines only)
+  columns: pieces, slot:set, effect, example
+      7 0:0          dif.spec.a.decal.mult  model2/sign/company_logos/snl/poster_sign_sln_rus.pmd piece 0
+      2 0:0          dif.spec.add.env.a.decal.mult  vehicle/railcar/czloko_effishunter_300/static/scene.pmd piece 4
+      5 0:0          dif.spec.decal.mult  model/ui/dark_studio.pmd piece 17
+      1 0:0 6:0      dif.spec.fade.mult.dif.spec.tsnmapuv2  model2/landmark/fi/helsinki_bus_station_07_bus.pmd piece 4
+    839 0:0 1:0      dif.spec.mult.dif.spec  model2/landmark/me/podgorica_montenegro_bridge_blkw.pmd piece 4
+    389 0:0 1:1      dif.spec.mult.dif.spec  model/bridge/mieszczanski.pmd piece 0
+     36 0:0 1:1      dif.spec.mult.dif.spec.a  model2/landmark/bridge/bridge_a9_01_lv.pmd piece 0
+     18 0:0 1:0      dif.spec.mult.dif.spec.a.decal.over  model2/rock/hillside_blke.pmd piece 0
+     23 0:0 1:0      dif.spec.mult.dif.spec.add.env  model/ui/dark_studio.pmd piece 3
+      4 0:0 1:0 6:0  dif.spec.mult.dif.spec.add.env  vehicle/props/container_generic/cargo/cargo_20_lod1.pmd piece 0
+   1092 0:0 1:1      dif.spec.mult.dif.spec.add.env  model/aircraft/747/747.pmd piece 1
+      4 0:0 1:1 6:2  dif.spec.mult.dif.spec.add.env  vehicle/ai/dagger/ai.pmd piece 1
+     31 0:0 1:1      dif.spec.mult.dif.spec.add.env.a  model/parked_bus/static/oldbus_static_rusty.pmd piece 2
+     96 0:0 1:1      dif.spec.mult.dif.spec.add.env.paint  vehicle/ai/ducato/ambulance.pmd piece 3
+     33 0:0 1:1      dif.spec.mult.dif.spec.add.env.tsnmap  model/ui/garage/desktop_garage.pmd piece 26
+      4 0:0 1:0 6:0  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/props/container_generic/cargo/cargo_20_lod1.pmd piece 0
+      2 0:0 1:0 6:1  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/props/container_generic/cargo/cargo_20_lod0.pmd piece 0
+      6 0:0 1:1 2:0 6:2 dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 3
+    792 0:0 1:1 6:0  dif.spec.mult.dif.spec.add.env.tsnmapuv  model/ui/dark_studio.pmd piece 4
+     35 0:0 1:1 6:1  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/ai/tram_duwag/tram_duwag_car2_lod1.pmd piece 25
+   4542 0:0 1:1 6:2  dif.spec.mult.dif.spec.add.env.tsnmapuv  model/aircraft/a320/a320.pmd piece 6
+    559 0:0 1:0      dif.spec.mult.dif.spec.decal.over  model2/rock/at_rock_limestone_curve_16m.pmd piece 5
+      1 0:0 1:1      dif.spec.mult.dif.spec.decal.over  model2/building/farm/farm_garage_01_poc.pmd piece 5
+     13 0:0 1:0 2:0  dif.spec.mult.dif.spec.iamod.dif.spec  model2/border_crossing/border_hamzabeyli_enter_04_tr_blke.pmd piece 14
+     18 0:0 1:0 2:1  dif.spec.mult.dif.spec.iamod.dif.spec  model/sign/traffic/es/madrid_red_es_04.pmd piece 0
+    103 0:0 1:1 2:0  dif.spec.mult.dif.spec.iamod.dif.spec  model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 5
+    673 0:0 1:1 2:1  dif.spec.mult.dif.spec.iamod.dif.spec  model/mover/flag_countries.pmd piece 2
+  17912 0:0 1:1 2:2  dif.spec.mult.dif.spec.iamod.dif.spec  model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 7
+      3 0:0 1:1 2:2 6:0 dif.spec.mult.dif.spec.iamod.dif.spec  model2/building/shop/gas_shop_01_blkw.pmd piece 55
+     18 0:0 1:1 2:2  dif.spec.mult.dif.spec.iamod.dif.spec.tsnmap  model2/building/administration/admin_17_de.pmd piece 3
+    938 0:0 1:0 2:0 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/building/shop/car_dealer_01_blkw.pmd piece 33
+    175 0:0 1:0 2:1 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/building/hotel/hotel_05_blkw.pmd piece 5
+    277 0:0 1:1 2:0 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/building/administration/admin_big_06_it_lod1.pmd piece 18
+   1165 0:0 1:1 2:1 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/sign/traffic/es/tiket_01_es.pmd piece 5
+  23228 0:0 1:1 2:2 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/props/lumber/planks_stack_packed_pile_01_poc_pile.pmd piece 8
+      8 0:0 1:1 2:2 6:1 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/landmark/de/rostock_monument_01_de.pmd piece 9
+      4 0:0 1:1 2:2 6:2 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/landmark/hannover/hannover_messe_admin_01_de.pmd piece 10
+     23 0:0 1:1 2:2 6:3 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/props/lumber/ar_planks_stack_packed_pile.pmd piece 33
+     91 0:0 1:0      dif.spec.mult.dif.spec.opasrc01.decal.over  model2/building/parking/village_garage_03_poc.pmd piece 12
+   3478 0:0 1:1      dif.spec.mult.dif.spec.opasrc01.decal.over  model/building/farm/il_silo_old_01.pmd piece 5
+     24 0:0 1:1      dif.spec.mult.dif.spec.opasrc01.over  model2/barrier/stone/stone_wall/barrier_stone_01_lux.pmd piece 5
+      3 0:0 1:0      dif.spec.mult.dif.spec.over  model2/vegetation/decal/tomato_field_bump/tomato_field_bump_narrow_blke.pmd piece 0
+     41 0:0 1:1      dif.spec.mult.dif.spec.shadow  model/mover/characters/models/workers/m_old_raking.pmd piece 0
+     76 0:0 1:0      dif.spec.mult.dif.spec.tsnmap  model2/rock/at_rock_limestone_curve_16m.pmd piece 3
+      8 0:0 1:1      dif.spec.mult.dif.spec.tsnmap  model/ui/garage/desktop_garage.pmd piece 24
+    258 0:0 1:1      dif.spec.mult.dif.spec.tsnmap.shadow  model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 6
+   1564 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv  model2/hill/rock_formation_layered1/rock_formation_layered1.pmd piece 0
+     28 0:0 1:0 6:1  dif.spec.mult.dif.spec.tsnmapuv  model2/rock/road_cliff_01_balt.pmd piece 6
+    233 0:0 1:1 6:0  dif.spec.mult.dif.spec.tsnmapuv  model/ui/garage/desktop_garage.pmd piece 29
+     59 0:0 1:1 6:1  dif.spec.mult.dif.spec.tsnmapuv  model2/rock/balt_roadcliff_3_low.pmd piece 1
+   3485 0:0 1:1 6:2  dif.spec.mult.dif.spec.tsnmapuv  vehicle/railcar/train_dutch_double/ai/cart1.pmd piece 1
+     22 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv.a  model2/rock/balt_hillside1.pmd piece 0
+      8 0:0 1:1 6:1  dif.spec.mult.dif.spec.tsnmapuv.a  model2/props/construction/pile_01_rus.pmd piece 0
+    387 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv.shadow  model2/rock/ibe_rock_blocky1_b.pmd piece 1
+      1 0:0 1:0 6:1  dif.spec.mult.dif.spec.tsnmapuv.shadow  model2/rock/rock_cut_1_mult_balt.pmd piece 1
+     66 0:0 1:1 6:0  dif.spec.mult.dif.spec.tsnmapuv.shadow  model/mover/characters/models/special/m_afam_bp_01.pmd piece 1
+      1 0:0 1:1 6:1  dif.spec.mult.dif.spec.tsnmapuv.shadow  model2/rock/rock_grassy_1_balt.pmd piece 4
+      6 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv.tg1  model2/rock/ibe_rock_jagged1_c.pmd piece 5
+     28 0:0          unlit.tex.decal.mult  model/parked_trailers/static/reefer/trailer_reefer_01_sc.pmd piece 8
+   2317 0:0          unlit.vcol.tex.awhite.decal.mult  model/truck_service_int/garage.pmd piece 18
+
+UI scenes using iamod (for the dif-spec-mult.md usage note): uv_routing_survey vehicle/truck model/ui model2/ui
+      1 0:0 1:1 2:1  dif.spec.mult.dif.spec.iamod.dif.spec  model/ui/showroom/showroom_sc.pmd piece 46
+      5 0:0 1:1 2:2  dif.spec.mult.dif.spec.iamod.dif.spec  model/ui/showroom/showroom_sc.pmd piece 7
+      1 0:0 1:1 2:2 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/ui/showroom/showroom_sc.pmd piece 35
