@@ -584,6 +584,26 @@ fn gap_names(before: &str, after: &str, words: &Words) -> Vec<String> {
     out
 }
 
+/// The named files around each run of unnamed ones in packing order, in
+/// one pass: one gap per run, none for a run at either end.
+fn gaps<'a>(order: &[Option<&'a String>]) -> Vec<(&'a String, &'a String)> {
+    let mut out = Vec::new();
+    let (mut before, mut in_run) = (None, false);
+    for name in order {
+        match name {
+            Some(name) => {
+                if let (true, Some(low)) = (in_run, before) {
+                    out.push((low, *name));
+                }
+                before = Some(*name);
+                in_run = false;
+            }
+            None => in_run = true,
+        }
+    }
+    out
+}
+
 /// For each unnamed file packed between two named files of one folder, the
 /// names that sort between theirs (packers sort a folder's names;
 /// `research/evidence/mod-name-recovery.txt` section 12). The words come
@@ -600,17 +620,10 @@ fn gap_guesses(
         .iter()
         .map(|h| names.get(h))
         .collect();
-    let mut gaps = Vec::new();
-    let mut before = None;
-    for (i, name) in order.iter().enumerate() {
-        if name.is_some() {
-            before = *name;
-            continue;
-        }
-        if let (Some(low), Some(high)) = (before, order[i + 1..].iter().flatten().next()) {
-            gaps.push((String::clone(low), String::clone(high)));
-        }
-    }
+    let gaps: Vec<(String, String)> = gaps(&order)
+        .into_iter()
+        .map(|(low, high)| (low.clone(), high.clone()))
+        .collect();
     if gaps.is_empty() {
         return;
     }
@@ -1014,6 +1027,21 @@ mod tests {
             named(&result),
             ["f/sound.sui", "f/sound_2024.sui", "f/sound_effects.sui"]
         );
+    }
+
+    #[test]
+    fn finds_one_gap_per_run_of_unnamed_files() {
+        let (a, b, c) = ("f/a.x".to_owned(), "f/b.x".to_owned(), "f/c.x".to_owned());
+        // a, ?, ?, ?, b, ?, c, ?: runs between a-b and b-c; the trailing
+        // run has no named file after it.
+        let order = [Some(&a), None, None, None, Some(&b), None, Some(&c), None];
+        assert_eq!(gaps(&order), [(&a, &b), (&b, &c)]);
+        // A long run is one gap, found in one pass.
+        let mut long = vec![Some(&a)];
+        long.extend(std::iter::repeat_n(None, 100_000));
+        long.push(Some(&b));
+        assert_eq!(gaps(&long), [(&a, &b)]);
+        assert!(gaps(&[None, None]).is_empty());
     }
 
     #[test]
