@@ -185,6 +185,11 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
   - **Rule:** the twin is in the same directory, and its file name is the left-hand-drive one with one extra `uk` word (`uk_a`, `a_uk`, `standard_low` → `standard_uk_low`). It pairs all 219 one-to-one with no ambiguity.
   - **Implementation:** `specsheet-data` stores the twin's exterior model as `exterior_uk` / `variant_uk` and places it in right-hand drive.
   - **Tests:** `every_interior_has_a_right_hand_drive_twin` (219 of 438), and the preset test's RHD branch.
+- **The full cockpit sits at the same locator, which is the driver's eye (Hypothesis, strong).**
+  - The interior's `model`/`look`/`variant` (the cockpit) is placed at the cabin's `ext_interior` locator, like `ext_model`.
+  - The cockpit's locators are head-relative. In `/vehicle/truck/scania_2016/interior/model.pmd`, `steering_w` is at (−0.0007, −0.372, −0.555) and the cab-centre locators sit at x +0.6827, while `ext_interior` is at x −0.683 in truck space. So the cockpit origin is the driver's seat.
+  - The interior accessories' locators (`steering_w`, `curtain_f`, `toyhang`/`toybed`/`toyseat`, `set_glass`, cup-holder sets, `intlight_*`, `flag_l`/`flag_r`, `frntglss_mid`, …) are on the cockpit model, not the cabin. This explains why those slots get no pin on the exterior.
+  - Implementation: `Assembly::cockpit` (peer commit d19ebca); test `real_install::every_preset_has_a_cockpit_at_the_eye_point`.
 
 ### F11: Addon hookups mount on numbered positions of their host accessory (Confirmed data, Hypothesis on position rules)
 Evidence:
