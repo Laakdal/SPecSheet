@@ -1,5 +1,9 @@
 //! The interior's exterior-view model at the cabin's `ext_interior`
-//! locator (finding F10).
+//! locator (finding F10), and its full cockpit at the same locator for the
+//! interior camera. The cockpit's locators are relative to the driver's
+//! eye (the steering wheel at (0, −0.37, −0.55), the cab centre at
+//! x +0.683, and `ext_interior` at x −0.683 in truck space), so the
+//! locator is the eye point (Hypothesis).
 
 use specsheet_core::AccessoryKind;
 use specsheet_formats::pmg::Locator;
@@ -12,13 +16,15 @@ const INTERIOR_LOCATOR: &str = "ext_interior";
 /// Places the selected interior's exterior-view model at the cabin's
 /// `ext_interior` locator (all 26 presets fit there; six would not fit at
 /// the origin, interior survey E3).
+/// Returns the exterior-view placements and the cockpit, if any.
 pub(super) fn interior_placements(
     selected: &[&specsheet_core::Accessory],
     base_locators: &[Locator],
     drive: Drive,
     warnings: &mut Vec<String>,
-) -> Vec<Placement> {
+) -> (Vec<Placement>, Option<Placement>) {
     let mut placements = Vec::new();
+    let mut cockpit = None;
     for accessory in selected
         .iter()
         .filter(|a| a.kind == AccessoryKind::Interior)
@@ -41,14 +47,25 @@ pub(super) fn interior_placements(
             ));
             continue;
         };
+        let transform = Transform::from_locator(locator);
         placements.push(Placement {
             slot: accessory.slot.clone(),
             accessory: accessory.id.clone(),
             model: model.clone(),
             look: accessory.model.look.clone(),
             variant: variant.cloned(),
-            transform: Transform::from_locator(locator),
+            transform,
         });
+        if let Some(full) = &accessory.model.cockpit {
+            cockpit = Some(Placement {
+                slot: accessory.slot.clone(),
+                accessory: accessory.id.clone(),
+                model: full.clone(),
+                look: accessory.model.cockpit_look.clone(),
+                variant: accessory.model.cockpit_variant.clone(),
+                transform,
+            });
+        }
     }
-    placements
+    (placements, cockpit)
 }

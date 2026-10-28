@@ -62,6 +62,14 @@ pub struct ModelRef {
     pub look: Option<String>,
     pub variant: Option<String>,
     pub variant_uk: Option<String>,
+    /// Interiors: the full cockpit seen from the driver's seat (`model`,
+    /// `look`, `variant`); `exterior` is the light exterior-view model.
+    #[serde(default)]
+    pub cockpit: Option<String>,
+    #[serde(default)]
+    pub cockpit_look: Option<String>,
+    #[serde(default)]
+    pub cockpit_variant: Option<String>,
 }
 
 /// One purchasable/selectable part.

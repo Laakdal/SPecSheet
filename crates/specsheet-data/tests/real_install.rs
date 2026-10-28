@@ -744,3 +744,42 @@ fn choosing_an_interior_chooses_the_drive_side() {
     assert!(checked > 0, "no truck offers a UK interior");
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+#[test]
+fn every_preset_has_a_cockpit_at_the_eye_point() {
+    use specsheet_data::assembly::Drive;
+    use specsheet_data::session::GameSession;
+    use specsheet_data::view;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let mut failures = Vec::new();
+    for truck in view::trucks(&game) {
+        let mut session = game.start_truck(&truck.id).expect("truck");
+        for drive in [Drive::Left, Drive::Right] {
+            session.set_drive(&game, drive);
+            match &session.assembly().cockpit {
+                None => failures.push(format!("{} {drive:?}: no cockpit", truck.id)),
+                Some(cockpit) => {
+                    if game.models().load(game.fs(), &cockpit.model).is_err() {
+                        failures.push(format!(
+                            "{} {drive:?}: {} fails to load",
+                            truck.id, cockpit.model
+                        ));
+                    }
+                    // The exterior-view interior shares the eye point.
+                    let exterior = session
+                        .assembly()
+                        .placements
+                        .iter()
+                        .find(|p| p.accessory == cockpit.accessory);
+                    if exterior.is_none_or(|p| p.transform != cockpit.transform) {
+                        failures.push(format!("{} {drive:?}: cockpit off the eye point", truck.id));
+                    }
+                }
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
