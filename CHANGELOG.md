@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Paint jobs render like the game's:** two-tone colour masks, airbrush liveries (logos, stripes, the 770 designs) and metallic flip colours that shift with the viewing angle. Each part takes its own paint, and the game's baked shading on painted panels is applied, so paint looks darker than before. The lighting is still an approximation. Metallic flakes are wired in but not visible yet.
 - **Metallic flakes show:** paint jobs that leave out a flake or flip value now take the game's defaults instead of zero, so flake patterns appear in the highlights (e.g. Under Wraps' gift wrap on the MAN TGX Euro 6). Missing mask colours default to red, green and blue as in the game.
 - **Paint-job thumbnails for plain colours:** stock colours without an icon (the RAL colours) show a swatch of their colour, and metallic ones a layered swatch with the flip and flake colours, as in the game.
+- **Paint is lit like the game's:** painted panels use the game's own lighting (ambient, sun, unnormalised highlights) and reflect their own reflection cube, so metallic colours read truer (Under Wraps is crimson, not brown). Unpainted parts still use the approximate lighting.
 - **Alternate-UV paint jobs land where the game puts them:** decals such as the Bulgarian Flag Decal on the Actros 2014 now show on the door; paint uses the model's second UV set, and the third for alternate-UV jobs.
 - **Pins sit where the game puts them:** each exterior pin starts from its slot's locator plus the game's own offset, paired parts get a pin on both sides, and every wheel gets its own tyre, disc, hub, cover and nut pins. Hub, cover and nut pins appear once the wheel's disc pin is opened. Pins fade as they turn away from the camera instead of vanishing, and nearby pins no longer merge into numbered clusters.
 - **Locked paint colours stay locked:** a paint job's locked colours now win over a preset's or save's own colours, as in the game.
@@ -68,6 +69,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Game version pin:** `GameInstall::version()` reads the installed version from `version.scs`. The real-install tests fail with instructions on any version other than `TESTED_GAME_VERSION` (1.60.1.7).
 
 ### Fixed
+- Debug builds no longer panic on uncompressed game textures with mipmaps (flake noise, UI textures): Bevy's single-mip size check is bypassed for the full chain.
 - Chrome and polished metal no longer render nearly black: materials with an `env_factor` become PBR metal, with roughness from `shininess`.
 - Text SII placements `(x, y, z) (w; x, y, z)` parse as one value. They used to fail the whole file, so no save could be read.
 - **Licensing:** the model (PMD/PMG) and texture code was rewritten clean-room from our own evidence (D13), with output identical to before on every model and texture in the game. The parsers now also bound UV sets, total decoded geometry and variant values against hostile files.

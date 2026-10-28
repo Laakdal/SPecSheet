@@ -95,7 +95,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
-   - the game's lighting model in one shared WGSL module for truckpaint and `dif.spec`, with per-material cube sampling (dif-spec §5.5, agreed with 71);
+   - the game's lighting: the shared module (`render/game_lighting.wgsl`) lights truckpaint, with its own reflection cube (done). Next, `dif.spec` on it with per-material cube sampling (dif-spec §5.5), then normal maps (needs tangents), then the output scale against the game's eye adaptation (F16);
    - align with the game's paint application (F17, done by REA): locked colours win (done, a9cc0b2); effect flags from the paint job and UV sets 1/2 (done); the engine defaults for missing paint values (done). Still open: the UV set used when a model lacks it, and two caller paths;
    - the `paint_job` slot UI and the colour picker.
 3. **Interior:** interior models and an interior camera; `hide_in`.
