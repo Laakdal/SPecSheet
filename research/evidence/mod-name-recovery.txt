@@ -272,3 +272,36 @@ printed the four most common first-8-byte heads per extension):
                          at offset 8 in NG Sound's 2 banks
 .pmd/.pma/.pmc start with a small u32 version (4/5/6) only; too weak to
 label, so those stay .bin. A label never names a file.
+
+
+10. Word swaps, own names in other folders, and the scan cache
+--------------------------------------------------------------
+Two more rules measured before building (one-off example, deleted), with the
+game's paths as candidates, on the 7 packages that still had unnamed
+entries:
+  (a) word swaps: in the game, two file names in one folder with one
+      extension that differ in exactly one '_' word (folders of at most 200
+      files). 13,462 swaps occur in at least 20 such pairs (top: 01<->02
+      8,298, 02<->03 4,967, lod1<->lod2 4,934). Applied to a package's
+      named files: NG Sound +1 (def/vehicle/truck/scan.ng.common/interior/
+      blinker_off.soundref, from blinker_on; 194 guesses), the other 6 +0.
+      The game has no file named blinker_off.soundref, only longer names
+      such as sound/truck/default/interior_blinker_off.soundref.
+  (b) a package's own file names tried in its other folders with the same
+      extension: MAN TG3 +2 for 662,314 guesses, the others +0. Not built.
+Built (a) (specsheet_data::mod_names::learn_word_swaps, MIN_SWAP_COUNT 20).
+22 v1 packages with --others: 169,806 of 171,094 named (was 169,777):
+NG Sound 81 (+1), MAN TG3 6,473 (+28); no package lost a name.
+NG Sound with the other packages also names 3 files under
+def/vehicle/truck/scania.t_2016/ (engine/sound_dc16_122.sui,
+transmission/opti_g33cmr.sui, opti_grso905r.sui): a Scania T that only
+another mod provides. So at least those of the 1.60-unmatched fragments in
+section 5 belong to a modded truck, not to a renamed 1.59 path; the
+section 5 Hypothesis is narrowed to the 10 still unnamed.
+Scan cache (specsheet_data::mod_scan): the candidates of each package in
+the mod folder are cached by name, size and modification time in
+%LOCALAPPDATA%\dev.specsheet.app\mod-scan (paths only). The shared scan
+reads only .sii .sui .mat .tobj .pmd .soundref files of at most 1 MiB in a
+ZIP (the examples' old code read every file): 2,068,441 candidates against
+2,093,281, with no name lost. 56 packages: first scan 82 s, from the cache
+0.3 s; cache size 51 MB.
