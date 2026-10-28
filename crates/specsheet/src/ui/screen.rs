@@ -105,6 +105,10 @@ pub struct ScreenState {
     pub tab: Option<Tab>,
     /// Accessory list scroll, in reference units.
     pub scroll: f32,
+    /// Mouse wheel this frame, in reference units (positive: up). Read from
+    /// Bevy's input, as the 3D camera does; egui's scroll delta stays empty
+    /// for this screen.
+    pub wheel: f32,
 }
 
 /// The price box in customize mode: the truck's price when loaded and
@@ -242,6 +246,11 @@ pub fn draw(
         .flatten()
         .filter(|t| t.has_pins());
     let list_open = options.is_some() || slot_list.is_some();
+    let list_items = match (options, slot_list) {
+        (Some(o), _) => o.options.len(),
+        (None, Some(tab)) => tab_slots(overview, tab).len(),
+        (None, None) => 0,
+    };
     for layout in &assets.screen.layouts {
         let mut order: Vec<usize> = (0..layout.widgets.len()).collect();
         order.sort_by_key(|&i| layout.widgets[i].layer);
@@ -254,6 +263,16 @@ pub fn draw(
             let size = [widget.rect.width(), widget.rect.height()];
             let painted = match widget.id {
                 ids::TAB_ROW => tab_row(ui, cx, assets, widget, target, state, &mut clicks),
+                _ if widget.class == SLIDER_CLASS
+                    && widget
+                        .parent
+                        .is_some_and(|p| layout.widgets[p].id == ids::ACCESSORY_LIST) =>
+                {
+                    let list = widget.parent.map(|p| &layout.widgets[p]);
+                    list.and_then(|list| {
+                        list_slider(ui, cx, assets, widget, target, list, list_items, state)
+                    })
+                }
                 ids::ACCESSORY_LIST => match (options, slot_list) {
                     (Some(o), _) => {
                         accessory_list(ui, cx, assets, widget, target, o, state, &mut clicks)
@@ -461,9 +480,13 @@ fn accessory_list(
         .look_template
         .as_deref()
         .and_then(|t| assets.templates.button(t))?;
-    let list = ui.interact(target, Id::new("acclist"), Sense::hover());
-    if list.hovered() {
-        state.scroll -= ui.input(|i| i.smooth_scroll_delta.y) / cx.mapping.scale;
+    // The tiles take egui's hover and the screen's area claims no layer
+    // space, so test the pointer position against the list itself.
+    if ui
+        .input(|i| i.pointer.hover_pos())
+        .is_some_and(|p| target.contains(p))
+    {
+        state.scroll -= state.wheel;
     }
     let ([item_w, item_h], pitch) = list_geometry(widget, options.options.len(), state)?;
     let scale = cx.mapping.scale;
@@ -491,6 +514,64 @@ fn accessory_list(
             clicks.push(Click::Select(option.id.clone()));
         }
     }
+    Some(target)
+}
+
+const SLIDER_CLASS: &str = "ui::slider_common";
+
+/// The accessory list's scrollbar from its `ui::slider_template`: the track,
+/// and a handle whose position follows the list's scroll and which can be
+/// dragged. Hidden when the list fits (the template's disabled state is
+/// empty). The handle keeps `minimal_handle_size`, as the widget's
+/// `dynamic_handle: false` suggests (Hypothesis).
+#[allow(clippy::too_many_arguments)]
+fn list_slider(
+    ui: &mut egui::Ui,
+    cx: &mut Context<'_>,
+    assets: &ScreenAssets,
+    widget: &Widget,
+    target: egui::Rect,
+    list: &Widget,
+    items: usize,
+    state: &mut ScreenState,
+) -> Option<egui::Rect> {
+    let template = widget
+        .look_template
+        .as_deref()
+        .and_then(|t| assets.templates.slider(t))?;
+    let [_, item_h] = list.item_size?;
+    let pitch = item_h + list.item_gap.unwrap_or(0.0);
+    let max_scroll = (pitch * items as f32 - list.rect.height()).max(0.0);
+    if max_scroll <= 0.0 {
+        return None;
+    }
+    let size = [widget.rect.width(), widget.rect.height()];
+    cx.paint(&template.track, size, target);
+    let length = size[1] - 2.0 * template.margin;
+    let handle = widget
+        .min_handle
+        .unwrap_or(length / 4.0)
+        .clamp(1.0, length.max(1.0));
+    let travel = (length - handle).max(1.0);
+    let scale = target.height() / size[1].max(1.0);
+    let top = template.margin + travel * (state.scroll / max_scroll).clamp(0.0, 1.0);
+    let rect = egui::Rect::from_min_size(
+        Pos2::new(target.left(), target.top() + top * scale),
+        egui::vec2(target.width(), handle * scale),
+    );
+    let response = ui.interact(rect, Id::new("list-slider"), Sense::drag());
+    if response.dragged() {
+        state.scroll += response.drag_delta().y / scale * (max_scroll / travel);
+        state.scroll = state.scroll.clamp(0.0, max_scroll);
+    }
+    let markup = if response.dragged() {
+        &template.handle_pressed
+    } else if response.hovered() {
+        &template.handle_hovered
+    } else {
+        &template.handle
+    };
+    cx.paint(markup, [size[0], handle], rect);
     Some(target)
 }
 
@@ -527,9 +608,13 @@ fn slot_tiles(
         .look_template
         .as_deref()
         .and_then(|t| assets.templates.button(t))?;
-    let list = ui.interact(target, Id::new("slotlist"), Sense::hover());
-    if list.hovered() {
-        state.scroll -= ui.input(|i| i.smooth_scroll_delta.y) / cx.mapping.scale;
+    // The tiles take egui's hover and the screen's area claims no layer
+    // space, so test the pointer position against the list itself.
+    if ui
+        .input(|i| i.pointer.hover_pos())
+        .is_some_and(|p| target.contains(p))
+    {
+        state.scroll -= state.wheel;
     }
     let ([item_w, item_h], pitch) = list_geometry(widget, slots.len(), state)?;
     let scale = cx.mapping.scale;
@@ -634,6 +719,7 @@ mod tests {
             id_list: Vec::new(),
             item_size: None,
             item_gap: None,
+            min_handle: None,
         }
     }
 

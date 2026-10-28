@@ -9,6 +9,7 @@ mod textures;
 
 use bevy::camera::visibility::RenderLayers;
 use bevy::camera::CameraOutputMode;
+use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
 use bevy::prelude::*;
 use bevy::render::render_resource::BlendState;
 use bevy_egui::{
@@ -48,6 +49,8 @@ const MUTED: Color32 = Color32::from_rgb(0x8d, 0x94, 0xa1);
 const ACCENT: Color32 = Color32::from_rgb(0xf5, 0xa6, 0x23);
 const DANGER: Color32 = Color32::from_rgb(0xef, 0x6b, 0x6b);
 const MARKER_SIZE: f32 = 16.0;
+/// Reference units one wheel notch scrolls a list: about half a tile.
+const WHEEL_LINE: f32 = 50.0;
 const GROUP_SIZE: f32 = 20.0;
 /// The game screen this app reproduces (`/ui/desc/truck.sui`).
 const SCREEN: &str = "truck.config";
@@ -138,6 +141,7 @@ fn ui(
     mut actions: ResMut<Actions>,
     mut state: ResMut<UiState>,
     cache: Res<ModelCache>,
+    scroll: Res<AccumulatedMouseScroll>,
     mut input: ResMut<ViewportInput>,
     camera: Single<(&mut Camera, &GlobalTransform), With<Camera3d>>,
     truck: Single<&GlobalTransform, With<TruckRoot>>,
@@ -152,6 +156,11 @@ fn ui(
         state.assets = load_assets(&studio);
     }
     let window = ctx.viewport_rect();
+    let mapping = Mapping::new(window);
+    state.screen.wheel = match scroll.unit {
+        MouseScrollUnit::Line => scroll.delta.y * WHEEL_LINE,
+        MouseScrollUnit::Pixel => scroll.delta.y / mapping.scale,
+    };
     // The game draws its screen over a full-window 3D view.
     let (mut camera, camera_transform) = camera.into_inner();
     camera.viewport = None;
@@ -177,7 +186,7 @@ fn ui(
                     game,
                     textures: &mut state.textures,
                     localization: game.localization(),
-                    mapping: Mapping::new(window),
+                    mapping,
                 };
                 let (clicks, rects) = screen::draw(
                     ui,
