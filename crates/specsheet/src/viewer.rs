@@ -42,6 +42,7 @@ impl Plugin for ViewerPlugin {
                     sync_truck,
                     frame_truck,
                     orbit_camera,
+                    apply_view_mode,
                 )
                     .chain()
                     .in_set(FrameSet::View),
@@ -533,12 +534,43 @@ fn instance_key(placement: &Placement) -> String {
 #[derive(Resource, Default)]
 pub struct TruckInstances {
     entities: HashMap<String, Entity>,
+    /// Truck-space driver's eye: the cockpit's placement.
+    pub eye: Option<Vec3>,
     /// (truck generation, model-cache generation) last synced.
     synced: (u64, u64),
     paint: Option<[f32; 3]>,
     paintable: HashSet<AssetId<StandardMaterial>>,
     /// Truck-space bounds of the placed models.
     pub bounds: Option<(Vec3, Vec3)>,
+}
+
+/// Which view an instance belongs to.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ViewPart {
+    Exterior,
+    /// The light exterior-view interior; hidden from inside.
+    InteriorShell,
+    /// The full cockpit; shown only from inside.
+    Cockpit,
+}
+
+/// Shows the cockpit or the exterior-view interior, by view.
+fn apply_view_mode(input: Res<ViewportInput>, mut parts: Query<(&ViewPart, &mut Visibility)>) {
+    for (part, mut visibility) in &mut parts {
+        let shown = match part {
+            ViewPart::Exterior => true,
+            ViewPart::InteriorShell => !input.interior_view,
+            ViewPart::Cockpit => input.interior_view,
+        };
+        let wanted = if shown {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+        if *visibility != wanted {
+            *visibility = wanted;
+        }
+    }
 }
 
 /// Brings the spawned truck in line with the studio's placements.
@@ -556,11 +588,28 @@ fn sync_truck(
     }
     instances.synced = generations;
     let paint = studio.overview.as_ref().and_then(|o| o.paint_color);
-    let wanted: HashMap<String, &Placement> = studio
+    // The cockpit is an instance of its own, shown only in the interior
+    // view; the exterior-view interior is hidden there instead.
+    let cockpit = studio.cockpit.as_ref();
+    let wanted: HashMap<String, (&Placement, ViewPart)> = studio
         .placements
         .iter()
-        .map(|p| (instance_key(p), p))
+        .map(|p| {
+            let part = if cockpit.is_some_and(|c| c.accessory == p.accessory) {
+                ViewPart::InteriorShell
+            } else {
+                ViewPart::Exterior
+            };
+            (instance_key(p), (p, part))
+        })
+        .chain(cockpit.map(|c| {
+            (
+                format!("cockpit|{}", instance_key(c)),
+                (c, ViewPart::Cockpit),
+            )
+        }))
         .collect();
+    instances.eye = cockpit.map(|c| Vec3::from(c.transform.translation));
     instances.entities.retain(|key, entity| {
         let keep = wanted.contains_key(key);
         if !keep {
@@ -570,7 +619,7 @@ fn sync_truck(
     });
     let mut bounds: Option<(Vec3, Vec3)> = None;
     let mut new_paintable = Vec::new();
-    for (key, placement) in &wanted {
+    for (key, (placement, part)) in &wanted {
         let model_key = placement_key(placement);
         let Some(model) = cache.get(&studio, &model_key) else {
             continue;
@@ -582,7 +631,8 @@ fn sync_truck(
             scale: Vec3::splat(t.scale),
         };
         let corners = [model.aabb_min, model.aabb_max];
-        for corner in (0..8).map(|i| {
+        let outside = *part != ViewPart::Cockpit;
+        for corner in (0..8).filter(|_| outside).map(|i| {
             Vec3::new(
                 corners[i & 1].x,
                 corners[(i >> 1) & 1].y,
@@ -596,7 +646,7 @@ fn sync_truck(
             continue;
         }
         let entity = commands
-            .spawn((transform, Visibility::default(), ChildOf(*root)))
+            .spawn((transform, Visibility::default(), *part, ChildOf(*root)))
             .id();
         for (mesh, material) in &model.pieces {
             commands.spawn((
@@ -817,6 +867,12 @@ fn frame_truck(
 pub struct ViewportInput {
     /// The pointer is over the 3D view and no marker or panel.
     pub hovered: bool,
+    /// The camera sits at the driver's eye (interior tabs), set by the UI.
+    pub interior_view: bool,
+    /// Where the driver looks: `(yaw, pitch)`, 0 looking ahead.
+    head: Vec2,
+    /// Whether the last frame was the interior view.
+    was_interior: bool,
     dragging: bool,
     /// Cursor position last frame, for drag deltas.
     last_cursor: Option<Vec2>,
@@ -824,6 +880,21 @@ pub struct ViewportInput {
     home: Option<Orbit>,
 }
 
+/// The driver's initial look: ahead and slightly down at the dashboard.
+const INTERIOR_LOOK: Vec2 = Vec2::new(0.0, -0.2);
+/// How far the driver may turn the head.
+const MAX_HEAD_YAW: f32 = 2.6;
+const MAX_HEAD_PITCH: f32 = 1.2;
+
+/// The camera at the driver's eye (`eye`, truck space) looking along
+/// `head` = (yaw, pitch); trucks face −z.
+fn head_transform(truck: Transform, eye: Vec3, head: Vec2) -> Transform {
+    let local = Quat::from_euler(EulerRot::YXZ, head.x, head.y, 0.0);
+    let position = truck.transform_point(eye);
+    Transform::from_translation(position).with_rotation(truck.rotation * local)
+}
+
+/// In the interior view, a drag turns the driver's head instead.
 /// Left drag rotates, right or middle drag pans, the wheel zooms, Home
 /// restores the scene's view. Drags follow the cursor inside the window, so
 /// a release the window never sees (outside it, or after losing focus) can
@@ -834,6 +905,8 @@ fn orbit_camera(
     scroll: Res<AccumulatedMouseScroll>,
     window: Single<&Window, With<PrimaryWindow>>,
     mut input: ResMut<ViewportInput>,
+    instances: Res<TruckInstances>,
+    truck: Single<&GlobalTransform, With<TruckRoot>>,
     camera: Single<(&mut Orbit, &mut Transform, &Projection)>,
 ) {
     let (mut orbit, mut transform, projection) = camera.into_inner();
@@ -856,6 +929,23 @@ fn orbit_camera(
             next = home;
         }
     }
+    if input.interior_view {
+        if let Some(eye) = instances.eye {
+            if !input.was_interior {
+                input.head = INTERIOR_LOOK;
+            }
+            input.was_interior = true;
+            if input.dragging {
+                input.head.x -= delta.x * ROTATE_SPEED;
+                input.head.y -= delta.y * ROTATE_SPEED;
+            }
+            input.head.x = input.head.x.clamp(-MAX_HEAD_YAW, MAX_HEAD_YAW);
+            input.head.y = input.head.y.clamp(-MAX_HEAD_PITCH, MAX_HEAD_PITCH);
+            *transform = head_transform(truck.compute_transform(), eye, input.head);
+            return;
+        }
+    }
+    input.was_interior = false;
     let motion = AccumulatedMouseMotion { delta };
     if input.dragging && motion.delta != Vec2::ZERO {
         if buttons.pressed(MouseButton::Left) {
@@ -908,6 +998,18 @@ mod tests {
         let orbit = Orbit::from_spec(&spec);
         assert!(orbit.position().distance(Vec3::from(spec.position())) < 1e-4);
         assert_eq!((orbit.min_pitch, orbit.max_pitch), (0.0, 0.35));
+    }
+
+    #[test]
+    fn the_driver_looks_ahead_along_minus_z() {
+        let truck = Transform::from_translation(Vec3::new(1.0, 0.0, 0.0));
+        let eye = Vec3::new(-0.683, 2.705, -1.862);
+        let camera = head_transform(truck, eye, Vec2::ZERO);
+        assert!(camera.translation.distance(Vec3::new(0.317, 2.705, -1.862)) < 1e-5);
+        assert!(camera.forward().distance(Vec3::NEG_Z) < 1e-5);
+        // Turning left (positive yaw) looks towards −x.
+        let left = head_transform(truck, eye, Vec2::new(0.5, 0.0));
+        assert!(left.forward().x < 0.0);
     }
 
     #[test]

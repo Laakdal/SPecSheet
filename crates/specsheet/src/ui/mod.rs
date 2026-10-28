@@ -215,6 +215,12 @@ fn ui(
             }
         }
 
+        // Interior tabs look from the driver's seat.
+        input.interior_view = studio.cockpit.is_some()
+            && matches!(
+                state.screen.tab,
+                Some(Tab::Interior | Tab::InteriorAccessories)
+            );
         // Pins: only on the open accessory tab (F5).
         let truck_center = truck.transform_point(Vec3::Y * TRUCK_CENTER_HEIGHT);
         let eye = camera_transform.translation();
@@ -226,7 +232,8 @@ fn ui(
             .filter(|(_, h)| Some(h.tab) == tab)
             .filter_map(|(index, hotspot)| {
                 let world = truck.transform_point(Vec3::from(hotspot.position));
-                if !side_facing(world, truck_center, eye) {
+                // From inside the cab every side faces the camera.
+                if !input.interior_view && !side_facing(world, truck_center, eye) {
                     return None;
                 }
                 let p = camera.world_to_viewport(camera_transform, world).ok()?;
