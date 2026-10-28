@@ -784,14 +784,14 @@ fn every_preset_has_a_cockpit_at_the_eye_point() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// Every truck's catalog, in truck order (paint-job tests, F15).
-fn paint_catalogs(fs: &GameFs) -> Vec<specsheet_core::TruckCatalog> {
+/// Every truck's catalog, loaded one at a time in truck order (paint-job
+/// tests, F15).
+fn paint_catalogs(fs: &GameFs) -> impl Iterator<Item = specsheet_core::TruckCatalog> + '_ {
     use specsheet_data::{list_trucks, load_catalog};
     list_trucks(fs)
         .expect("trucks")
-        .iter()
-        .map(|truck| load_catalog(fs, &truck.id).expect("catalog").0)
-        .collect()
+        .into_iter()
+        .map(move |truck| load_catalog(fs, &truck.id).expect("catalog").0)
 }
 
 #[test]
@@ -932,9 +932,8 @@ fn every_paint_mask_exists_or_is_a_constant() {
 
 #[test]
 fn every_desktop_preset_loads_its_paint_colours() {
-    use specsheet_core::{AccessoryKind, TruckCatalog, TruckId};
+    use specsheet_core::{AccessoryKind, TruckId};
     use specsheet_data::{load_catalog, load_vehicle_config};
-    use std::collections::HashMap;
 
     const KEYS: [&str; 6] = [
         "base_color",
@@ -946,7 +945,6 @@ fn every_desktop_preset_loads_its_paint_colours() {
     ];
     let Some(fs) = game_fs() else { return };
     let dir = "/def/vehicle/truck_desktop";
-    let mut catalogs: HashMap<String, TruckCatalog> = HashMap::new();
     let (mut presets, mut written, mut failures) = (0, 0, Vec::new());
     for file in fs.list_dir(dir).expect("presets").files {
         let path = format!("{dir}/{file}");
@@ -961,9 +959,9 @@ fn every_desktop_preset_loads_its_paint_colours() {
                     .map(str::to_owned)
             })
             .unwrap_or_else(|| panic!("{path}: no truck"));
-        let catalog = catalogs
-            .entry(truck.clone())
-            .or_insert_with(|| load_catalog(&fs, &TruckId::new(truck)).expect("catalog").0);
+        // One preset per truck: each catalog is loaded once and dropped.
+        let (catalog, _) = load_catalog(&fs, &TruckId::new(truck)).expect("catalog");
+        let catalog = &catalog;
         let (config, warnings) = load_vehicle_config(&fs, catalog, &path).expect("config");
         presets += 1;
         if !warnings.is_empty() {
