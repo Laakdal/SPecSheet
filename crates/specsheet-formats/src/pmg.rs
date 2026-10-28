@@ -49,6 +49,11 @@ pub struct Locator {
 pub struct Piece {
     /// Index into the material list of the `.pmd` look.
     pub material: u32,
+    /// The stored `u32` at piece +8, as read. Hypothesis (models.md,
+    /// "Piece"): nibble `n`, from the least significant, is the stored UV
+    /// set that feeds UV slot `n`; `0xf` leaves the slot unused. See
+    /// [`Piece::uv_set_for_slot`].
+    pub uv_routing: u32,
     pub aabb: Aabb,
     /// Required: a piece without a position stream is an error.
     pub positions: Vec<[f32; 3]>,
@@ -63,6 +68,16 @@ pub struct Piece {
     pub uv_sets: Vec<Vec<[f32; 2]>>,
     /// Triangle-list indices into this piece's vertices.
     pub indices: Vec<u16>,
+}
+
+impl Piece {
+    /// The stored UV set that [`Piece::uv_routing`] names for UV `slot`
+    /// (0..8), or `None` when the nibble is `0xf`, the slot is out of range
+    /// or the set is not stored (never seen in the game's files).
+    pub fn uv_set_for_slot(&self, slot: usize) -> Option<usize> {
+        let set = (slot < 8).then(|| ((self.uv_routing >> (4 * slot)) & 0xf) as usize)?;
+        (set < self.uv_sets.len()).then_some(set)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -214,6 +229,7 @@ impl Slot {
 struct PieceHeader {
     index_count: usize,
     vertex_count: usize,
+    uv_routing: u32,
     uv_count: usize,
     material: u32,
     aabb: Aabb,
@@ -228,7 +244,7 @@ impl PieceHeader {
     fn read(r: &mut Reader<'_>) -> Result<Self, FormatError> {
         let index_count = r.u32()? as usize;
         let vertex_count = r.u32()? as usize;
-        let _flags = r.u32()?;
+        let uv_routing = r.u32()?;
         let uv_count = r.u32()? as usize;
         let material = r.u32()?;
         let _bounding_sphere = r.vec4()?;
@@ -245,6 +261,7 @@ impl PieceHeader {
         Ok(Self {
             index_count,
             vertex_count,
+            uv_routing,
             uv_count,
             material,
             aabb,
@@ -403,6 +420,7 @@ impl PieceData<'_> {
             .collect::<Result<_, FormatError>>()?;
         Ok(Piece {
             material: self.piece.material,
+            uv_routing: self.piece.uv_routing,
             aabb: self.piece.aabb,
             positions: self.required(Slot::Position)?,
             normals: self.required(Slot::Normal)?,
@@ -539,6 +557,8 @@ mod tests {
         tangents: bool,
         color: bool,
         bones: bool,
+        /// The `u32` stored at piece +8.
+        uv_routing: u32,
         indices: Vec<u16>,
     }
 
@@ -550,6 +570,7 @@ mod tests {
                 tangents: false,
                 color: true,
                 bones: false,
+                uv_routing: 0xffff_fff0,
                 indices: vec![0, 1, 2],
             }
         }
@@ -571,6 +592,7 @@ mod tests {
                 PieceSpec {
                     uv_sets: 2,
                     tangents: true,
+                    uv_routing: 0xf1ff_fff0,
                     ..PieceSpec::default()
                 },
                 PieceSpec {
@@ -721,8 +743,12 @@ mod tests {
         }
         for (i, piece) in f.pieces.iter().enumerate() {
             let (layout, stride) = stream_offsets[i];
-            let counts = [piece.indices.len(), piece.vertices, 0, piece.uv_sets, i];
+            let counts = [piece.indices.len(), piece.vertices];
             u32s(&mut out, &counts.map(|c| c as u32));
+            u32s(
+                &mut out,
+                &[piece.uv_routing, piece.uv_sets as u32, i as u32],
+            );
             f32s(&mut out, &[0.0, 0.0, 0.0, 5.0]);
             f32s(&mut out, &[-1.0, -1.0, -1.0, 4.0, 1.0, 1.0]);
             u32s(&mut out, &[stride as u32]);
@@ -771,6 +797,11 @@ mod tests {
 
         let piece = &pmg.pieces[0];
         assert_eq!(piece.material, 0);
+        assert_eq!(piece.uv_routing, 0xf1ff_fff0);
+        assert_eq!(piece.uv_set_for_slot(0), Some(0));
+        assert_eq!(piece.uv_set_for_slot(6), Some(1));
+        assert_eq!(piece.uv_set_for_slot(1), None);
+        assert_eq!(piece.uv_set_for_slot(8), None);
         assert_eq!(piece.aabb.max, [4.0, 1.0, 1.0]);
         assert_eq!(piece.positions, (0..3).map(position).collect::<Vec<_>>());
         assert_eq!(piece.normals, vec![[0.0, 1.0, 0.0]; 3]);
@@ -787,6 +818,9 @@ mod tests {
         let pmg = Pmg::parse(&build(&fixture())).unwrap();
         let piece = &pmg.pieces[1];
         assert_eq!(piece.material, 1);
+        assert_eq!(piece.uv_routing, 0xffff_fff0);
+        // Slot 0 names set 0, but this piece stores no UV sets.
+        assert_eq!(piece.uv_set_for_slot(0), None);
         assert_eq!(piece.positions.len(), 4);
         assert_eq!(piece.tangents, None);
         assert!(piece.colors.is_empty());
