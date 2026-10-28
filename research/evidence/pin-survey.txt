@@ -1,0 +1,115 @@
+Pin survey: how far the game-rule pins land from their parts (F5)
+=================================================================
+
+Tool: crates/specsheet-data/examples/pin_survey.rs
+  ETS2_DIR=<game dir> cargo run --release -p specsheet-data --example pin_survey
+Install: ETS2 1.60.1.7, every truck's game preset, left-hand drive.
+
+For every exterior pin (built by specsheet_data::pins from the scene's pin
+table, see pin-attributes.txt §8) whose slot has placed parts, the distance
+from the pin to the bounding box of those parts (0 = on or inside the box).
+Pins of slots with nothing placed are counted but not measured.
+
+pin table: 65 entries
+1098 exterior pins on placed parts (233 on empty slots): median 0.000 m, p90 0.094 m, max 2.758 m
+--- worst 25
+  2.758  mercedes.actros badge_b
+  2.361  renault.t s_panel
+  2.361  renault.etech_t s_panel
+  2.185  volvo.fh16_2012 badge
+  2.131  volvo.fh_2021 badge
+  1.821  volvo.fh_2024 badge
+  0.734  man.tgx_2020 r_bumper
+  0.734  daf.xf_electric sideskrt_bar
+  0.734  daf.xf_electric sideskrt_bar
+  0.678  volvo.fh_2024 r_mudflap
+  0.678  volvo.fh_2021 r_mudflap
+  0.678  volvo.fh16_2012 r_mudflap
+  0.558  daf.xd exhaust_m
+  0.558  daf.2021 exhaust_m
+  0.540  iveco.sway exhaust_m
+  0.539  scania.s_2024e badge
+  0.480  mercedes.actros2014 r_mudflap
+  0.410  mercedes.actros r_mudflap
+  0.362  man.tgx_2020 r_mudflap
+  0.350  daf.2021 r_light
+  0.350  daf.2021 r_light
+  0.344  iveco.sway trlr_cables
+  0.336  man.tgx_euro6 badge_c
+  0.326  mercedes.actros f_intake_cab
+  0.313  man.tgx_2020 tank
+--- per slot: pins, worst distance
+air_tank           2   0.087
+b_detector         4   0.000
+b_grill            5   0.206
+badge             12   2.185
+badge_a            2   0.311
+badge_b            3   2.758
+badge_c            2   0.336
+cab_door           3   0.000
+cor_def            8   0.099
+doorhndl          32   0.041
+doorstep          36   0.231
+exhaust_l          2   0.000
+exhaust_m          3   0.558
+f_badge            9   0.037
+f_bumper          17   0.312
+f_chs_logo         1   0.001
+f_cover            6   0.000
+f_disc            52   0.000
+f_fender           6   0.000
+f_fender_cab      20   0.090
+f_fender_chs      28   0.069
+f_fendr_chs        4   0.098
+f_hub             52   0.000
+f_inlay_cab        5   0.124
+f_inlay_chs       11   0.129
+f_intake_bar       5   0.034
+f_intake_cab      16   0.326
+f_intake_chs      14   0.257
+f_intk_b_cab       3   0.000
+f_intk_b_chs       3   0.000
+f_light_bmp        4   0.057
+f_light_chs       34   0.133
+f_light_mid        6   0.000
+f_logo            13   0.061
+f_mirror          17   0.014
+f_nuts            52   0.000
+f_tire            52   0.000
+f_turn_light       4   0.000
+f_wnd_frame       14   0.102
+filter             3   0.035
+mirror            36   0.287
+r_bumper          12   0.734
+r_chs_cover        6   0.116
+r_deflector       22   0.031
+r_disc            52   0.000
+r_fender          34   0.171
+r_fendr_top       34   0.224
+r_hub             52   0.009
+r_light           14   0.350
+r_mudflap         19   0.678
+r_nuts            52   0.000
+r_tire            52   0.000
+s_badge           10   0.097
+s_deflector       24   0.000
+s_mirror          15   0.162
+s_panel           16   2.361
+s_reflector        2   0.000
+s_strip            2   0.000
+sideskirt         36   0.000
+sideskrt_bar      10   0.734
+sunshield          2   0.039
+sunshld            3   0.000
+tank              16   0.313
+trlr_cables        8   0.344
+windowtrim         4   0.053
+
+Reading
+-------
+- The rule puts pins on their parts: median 0 m, 90 % within 0.1 m.
+- The outliers above 1 m are badge slots (badge, badge_b) and s_panel on
+  the Renault T and E-Tech T. Their slot names are prefixes of other slots'
+  locator names, and the game's first-prefix-match rule (pin-attributes.txt
+  §8) can then pick another slot's locator. That is what the decoded rule
+  does; whether the game shows these pins there is to be checked in game.

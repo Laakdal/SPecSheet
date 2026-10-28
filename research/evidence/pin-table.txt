@@ -91,3 +91,10 @@ D. Observation in the game (the user, 2026-10-28)
 -------------------------------------------------
 On the tuning screen the rim pin sits at the wheel's locator on the truck, and
 the tyre pin is the tire entry's pin_offset added to that point.
+
+E. Correction to D (2026-10-28)
+-------------------------------
+The executable's pin builder (pin-attributes.txt §8) never makes a rim pin,
+so the dot seen at the wheel's locator cannot be a rim pin. It is most
+likely the hub pin, whose offset (-0.1 front, -0.12 rear) puts it at the
+wheel centre. To re-check in game.
