@@ -684,19 +684,33 @@ impl PieceMaterials<'_> {
         model: &GpuModel,
         paint: &Paint<'_>,
     ) {
-        for ((mesh, material), surface) in model.pieces.iter().zip(&model.painted) {
-            let mut piece = commands.spawn((Mesh3d(mesh.clone()), ChildOf(parent)));
-            match surface {
-                Some(surface) => piece.insert(MeshMaterial3d(self.paints.get(
-                    studio.game.as_ref(),
-                    &self.standard,
-                    &mut self.materials,
-                    material,
-                    surface,
-                    paint,
-                ))),
-                None => piece.insert(MeshMaterial3d(material.clone())),
+        for ((mesh, material), painted) in model.pieces.iter().zip(&model.painted) {
+            let Some(painted) = painted else {
+                commands.spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    ChildOf(parent),
+                ));
+                continue;
             };
+            let mesh = painted
+                .alternate_mesh
+                .as_ref()
+                .filter(|_| paint.alternate_uvset())
+                .unwrap_or(mesh);
+            let material = self.paints.get(
+                studio.game.as_ref(),
+                &self.standard,
+                &mut self.materials,
+                material,
+                &painted.surface,
+                paint,
+            );
+            commands.spawn((
+                Mesh3d(mesh.clone()),
+                MeshMaterial3d(material),
+                ChildOf(parent),
+            ));
         }
     }
 }

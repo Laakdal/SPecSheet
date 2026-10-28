@@ -27,7 +27,6 @@ struct PaintUniform {
 const COLORMASK: u32 = 1u;
 const AIRBRUSH: u32 = 2u;
 const FLIPFLAKE: u32 = 4u;
-const ALTUV: u32 = 8u;
 const MASK_TEXTURE: u32 = 16u;
 const FLAKE_TEXTURE: u32 = 32u;
 
@@ -54,16 +53,13 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let n = pbr_input.N;
     let v = pbr_input.V;
 
-    // The paint UV: the first set, or the second for alternate-UV paint.
-#ifdef VERTEX_UVS_A
-    var uv_paint = in.uv;
-#else
-    var uv_paint = vec2<f32>(0.0);
-#endif
+    // The paint UV: the mesh carries the set this paint samples as UV_1.
 #ifdef VERTEX_UVS_B
-    if has(ALTUV) {
-        uv_paint = in.uv_b;
-    }
+    let uv_paint = in.uv_b;
+#else ifdef VERTEX_UVS_A
+    let uv_paint = in.uv;
+#else
+    let uv_paint = vec2<f32>(0.0);
 #endif
 
     let sampled_mask = textureSample(mask_texture, mask_sampler, uv_paint);

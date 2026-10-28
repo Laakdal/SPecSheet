@@ -127,9 +127,12 @@ pub struct MeshPiece {
     pub normals: Vec<[f32; 3]>,
     /// First UV set, if present.
     pub uvs: Option<Vec<[f32; 2]>>,
-    /// Second UV set, if present: paint masks of `alternate_uvset` paint
-    /// jobs use it (F15).
-    pub uvs2: Option<Vec<[f32; 2]>>,
+    /// For a `truckpaint` piece, the UV set its paint samples (masks,
+    /// flakes): see [`paint_uv_set`].
+    pub paint_uvs: Option<Vec<[f32; 2]>>,
+    /// The UV set `alternate_uvset` paint jobs sample, when it differs from
+    /// `paint_uvs`.
+    pub alternate_paint_uvs: Option<Vec<[f32; 2]>>,
     /// Vertex colours as RGBA in 0–1, if present: each stored byte / 255,
     /// the lowest byte red (Hypothesis: truck paint pieces are grey, so the
     /// order is untested; `paint_uv_survey`).
@@ -144,6 +147,17 @@ pub struct MeshData {
     pub pieces: Vec<MeshPiece>,
     pub aabb_min: [f32; 3],
     pub aabb_max: [f32; 3],
+}
+
+/// The PMG UV set, counted from 0, that truck paint samples on a mesh with
+/// `sets` UV sets: set 1, or set 2 for `alternate_uvset` paint jobs
+/// (Confirmed on screen: an alternate-UV decal on the Actros 2014 cab lands
+/// on the door only from set 2; `docs/app/shader-specs/truckpaint.md` §2).
+/// A mesh without that set falls back to its last one (Hypothesis: the
+/// Scania S cab has only set 0 and its masks line up).
+pub fn paint_uv_set(sets: usize, alternate: bool) -> Option<usize> {
+    let wanted = if alternate { 2 } else { 1 };
+    sets.checked_sub(1).map(|last| last.min(wanted))
 }
 
 /// Builds the drawable mesh of `model` for one look and variant, limited
@@ -193,12 +207,17 @@ pub fn build_mesh(
                 .chunks_exact(3)
                 .flat_map(|t| [u32::from(t[0]), u32::from(t[2]), u32::from(t[1])])
                 .collect();
+            let painted = materials.get(material).is_some_and(|m| m.paintable);
+            let sets = if painted { piece.uv_sets.len() } else { 0 };
+            let paint_set = paint_uv_set(sets, false);
+            let alternate_set = paint_uv_set(sets, true).filter(|&set| Some(set) != paint_set);
             pieces.push(MeshPiece {
                 material,
                 positions: piece.positions.clone(),
                 normals: piece.normals.clone(),
                 uvs: piece.uv_sets.first().cloned(),
-                uvs2: piece.uv_sets.get(1).cloned(),
+                paint_uvs: paint_set.and_then(|set| piece.uv_sets.get(set).cloned()),
+                alternate_paint_uvs: alternate_set.and_then(|set| piece.uv_sets.get(set).cloned()),
                 colors: vertex_colors(&piece.colors),
                 indices,
             });
@@ -390,6 +409,18 @@ mod tests {
         );
         let mat = Material::parse(source.as_bytes()).expect("parse");
         MaterialInfo::from_material("/vehicle/truck/x/m.mat", &mat)
+    }
+
+    #[test]
+    fn paint_samples_uv_set_one_or_two_counted_from_zero() {
+        // The Actros 2014 cab's paint piece has 3 sets: an alternate-UV
+        // decal lands on the door only from set 2.
+        assert_eq!(paint_uv_set(3, false), Some(1));
+        assert_eq!(paint_uv_set(3, true), Some(2));
+        // A mesh without the set falls back to its last one (Hypothesis).
+        assert_eq!(paint_uv_set(2, true), Some(1));
+        assert_eq!(paint_uv_set(1, false), Some(0));
+        assert_eq!(paint_uv_set(0, false), None);
     }
 
     #[test]

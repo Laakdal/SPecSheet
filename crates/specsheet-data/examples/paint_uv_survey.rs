@@ -2,15 +2,21 @@
 //! of truck paint pieces. For every `.pmd` under `vehicle/truck`, counts the
 //! `truckpaint` pieces (by effect of their first look's material) per number
 //! of UV sets and per presence of vertex colours, and averages the colours.
-//! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example paint_uv_survey
+//! Given model paths instead, prints each paint piece's UV range per set.
+//! Usage: ETS2_DIR=... cargo run --release -p specsheet-data --example paint_uv_survey [-- /vehicle/.../x.pmd ...]
 
 use std::collections::BTreeMap;
 
+use specsheet_archive::Vfs;
 use specsheet_data::GameInstall;
 use specsheet_formats::{mat::Material, pmd::Pmd, pmg::Pmg};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (vfs, _) = GameInstall::discover()?.mount()?;
+    let requested: Vec<String> = std::env::args().skip(1).collect();
+    if !requested.is_empty() {
+        return uv_ranges(&vfs, &requested);
+    }
     let mut models = Vec::new();
     let mut stack = vec!["vehicle/truck".to_owned()];
     while let Some(dir) = stack.pop() {
@@ -117,6 +123,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("first paint pieces with fewer than 2 UV sets:");
     for line in &short {
         println!("  {line}");
+    }
+    Ok(())
+}
+
+/// Prints, for each `truckpaint` piece of `models`, the min/max of every UV set.
+fn uv_ranges(vfs: &Vfs, models: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    for model in models {
+        let path = model.trim_start_matches('/');
+        let pmd = Pmd::parse(&vfs.read(path)?)?;
+        let pmg = Pmg::parse(&vfs.read(&path.replace(".pmd", ".pmg"))?)?;
+        let Some(look) = pmd.looks.first() else {
+            continue;
+        };
+        println!("== {model}");
+        for (index, piece) in pmg.pieces.iter().enumerate() {
+            let Some(material) = look.materials.get(piece.material as usize) else {
+                continue;
+            };
+            let effect = vfs
+                .read(material.trim_start_matches('/'))
+                .ok()
+                .and_then(|b| Material::parse(&b).ok())
+                .map_or_else(|| "?".to_owned(), |m| m.effect);
+            if !effect.contains("truckpaint") {
+                continue;
+            }
+            println!("piece {index} {material} {effect}");
+            for (set, uvs) in piece.uv_sets.iter().enumerate() {
+                let (mut lo, mut hi) = ([f32::MAX; 2], [f32::MIN; 2]);
+                for uv in uvs {
+                    for axis in 0..2 {
+                        lo[axis] = lo[axis].min(uv[axis]);
+                        hi[axis] = hi[axis].max(uv[axis]);
+                    }
+                }
+                println!(
+                    "  set {set}: u {:.3}..{:.3}  v {:.3}..{:.3}",
+                    lo[0], hi[0], lo[1], hi[1]
+                );
+            }
+        }
     }
     Ok(())
 }

@@ -80,7 +80,8 @@ pub struct PiecePaint {
     pub flip: FlipPaint,
     /// `airbrush`: the mask is a painted livery.
     pub airbrush: bool,
-    /// `alternate_uvset`: the mask uses the second UV set.
+    /// `alternate_uvset`: the paint samples the alternate UV set
+    /// ([`crate::render::paint_uv_set`]). Never for a listed part (F17).
     pub alternate_uvset: bool,
     /// `flipflake`: flakes and flip colour are drawn.
     pub flipflake: bool,
@@ -150,7 +151,7 @@ pub fn piece_paint(
             strength: paint.flip.strength,
         },
         airbrush: paint.airbrush,
-        alternate_uvset: paint.alternate_uvset,
+        alternate_uvset: paint.alternate_uvset && part.is_none(),
         flipflake: paint.flipflake,
     })
 }
@@ -284,6 +285,10 @@ mod tests {
         assert_eq!(paint.mask.as_ref().map(Mask::path), Some(PART_MASK));
         assert_eq!(paint.flake.uvscale, Some(16.0));
         assert_eq!(paint.flake.vratio, Some(0.5));
+        assert!(
+            !paint.alternate_uvset,
+            "a listed part never takes the alternate UV set (F17)"
+        );
     }
 
     #[test]

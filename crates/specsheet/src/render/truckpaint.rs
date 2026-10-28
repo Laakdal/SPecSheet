@@ -64,7 +64,6 @@ const NEUTRAL_PAINT: [f32; 3] = [0.6; 3];
 const COLORMASK: u32 = 1;
 const AIRBRUSH: u32 = 2;
 const FLIPFLAKE: u32 = 4;
-const ALTUV: u32 = 8;
 const MASK_TEXTURE: u32 = 16;
 const FLAKE_TEXTURE: u32 = 32;
 
@@ -112,13 +111,11 @@ impl MaterialExtension for TruckPaint {
     }
 }
 
-/// What a `truckpaint` `.mat` contributes: the flavours its effect names
-/// that the paint uses (`airbrush` is the paint job's choice) and its
-/// specular inputs.
+/// What a `truckpaint` `.mat` contributes: its specular inputs. The
+/// flavours it names (`airbrush`, `flipflake`, `altuv`) are replaced by the
+/// paint job's (research/evidence/rea-paint-variant.txt).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PaintSurface {
-    flipflake: bool,
-    altuv: bool,
     specular: [f32; 3],
     shininess: f32,
     fresnel: f32,
@@ -130,11 +127,7 @@ impl PaintSurface {
         if !info.paintable {
             return None;
         }
-        let tokens: Vec<&str> = info.effect.trim_end_matches(".rfx").split('.').collect();
-        let has = |token: &str| tokens.contains(&token);
         Some(Self {
-            flipflake: has("flipflake") || has("flipflakeuv"),
-            altuv: has("altuv"),
             specular: info.specular.unwrap_or(DEFAULT_SPECULAR),
             shininess: info.shininess.unwrap_or(DEFAULT_SHININESS),
             fresnel: info.fresnel.map_or(DEFAULT_FRESNEL, |f| f[0]),
@@ -151,6 +144,12 @@ pub enum Paint<'a> {
 }
 
 impl Paint<'_> {
+    /// True when the paint samples the alternate UV set
+    /// ([`specsheet_data::render::paint_uv_set`]).
+    pub fn alternate_uvset(&self) -> bool {
+        matches!(self, Paint::Job(job) if job.alternate_uvset)
+    }
+
     /// Identifies the paint in instance and material keys.
     pub fn key(&self) -> String {
         match self {
@@ -181,13 +180,13 @@ fn srgb_to_linear(c: f32) -> f32 {
     }
 }
 
-/// The uniform for `surface` painted with `paint`. `altuv` is the union of
-/// the `.mat`'s flavour and the paint job's flag (Altamira on the MAN TGX
-/// Euro 6 cab needs the `.mat`'s); `flipflake` likewise (Hypothesis, pending
-/// REA). Livery or colour mask is the paint job's `airbrush` alone: a `.mat`
-/// naming `airbrush` (the MAN TGX Euro 6 cab) still shows colour-mask jobs as
-/// colour masks, and a flipflake job is never a colour mask. Texture flags
-/// are set when the textures are bound.
+/// The uniform for `surface` painted with `paint`. The variant follows the
+/// paint job alone, as the game's paint-material builder does: livery
+/// (`airbrush`) or colour mask, never a colour mask with `flipflake`. A
+/// `.mat` naming `airbrush` (the MAN TGX Euro 6 cab) still shows colour-mask
+/// jobs as colour masks. `alternate_uvset` picks the mesh, not a flag
+/// ([`Paint::alternate_uvset`]). Texture flags are set when the textures are
+/// bound.
 pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform {
     let base = paint.base_color();
     let mut uniform = PaintUniform {
@@ -197,16 +196,12 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
         mask_b: rgb_w(base, 1.0),
         specular: rgb_w(surface.specular, surface.shininess),
         shading: Vec4::new(surface.fresnel, FLAKE_STRENGTH, 0.0, 0.0),
-        flags: if surface.altuv { ALTUV } else { 0 },
         ..default()
     };
     let Paint::Job(job) = paint else {
         return uniform;
     };
-    if job.alternate_uvset {
-        uniform.flags |= ALTUV;
-    }
-    let flipflake = job.flipflake || surface.flipflake;
+    let flipflake = job.flipflake;
     // The game never combines colormask with flipflake: a metallic job's
     // mask is used only as a livery.
     let mask = job.mask.as_ref().filter(|_| job.airbrush || !flipflake);
@@ -385,10 +380,8 @@ mod tests {
     use specsheet_core::AccessoryId;
     use specsheet_data::paint::{FlakePaint, FlipPaint};
 
-    fn surface(effect: &str) -> PaintSurface {
+    fn surface(_effect: &str) -> PaintSurface {
         PaintSurface {
-            flipflake: effect.contains("flipflake"),
-            altuv: effect.contains("altuv"),
             specular: [0.5; 3],
             shininess: 60.0,
             fresnel: 0.2,
@@ -427,8 +420,7 @@ mod tests {
         assert_eq!(u.base, rgb_w(NEUTRAL_PAINT, 1.0));
         assert_eq!(u.flags, 0);
         assert_eq!(u.specular, Vec4::new(0.5, 0.5, 0.5, 60.0));
-        let alt = paint_uniform(&surface("truckpaint.altuv"), &Paint::Color(None));
-        assert_eq!(alt.flags, ALTUV, "the .mat's flavour applies without a job");
+        assert!(!Paint::Color(None).alternate_uvset());
     }
 
     #[test]
@@ -443,7 +435,8 @@ mod tests {
             ..paint.clone()
         };
         let u = paint_uniform(&surface("truckpaint"), &Paint::Job(&livery));
-        assert_eq!(u.flags, COLORMASK | ALTUV);
+        assert_eq!(u.flags, COLORMASK);
+        assert!(Paint::Job(&livery).alternate_uvset());
         let airbrush = PiecePaint {
             airbrush: true,
             ..paint.clone()
@@ -453,16 +446,16 @@ mod tests {
     }
 
     #[test]
-    fn the_paint_job_not_the_mat_decides_livery_or_colour_mask() {
+    fn the_paint_job_not_the_mat_decides_the_variant() {
         // The MAN TGX Euro 6 cab's .mat names `airbrush`, yet Driving
         // Academy is a colour-mask job: drawn as a livery, its channel
         // weights showed as red and green stripes.
         let academy = job(Some(Mask::Texture("/m.tobj".to_owned())));
         let u = paint_uniform(
-            &surface("truckpaint.tsnmapuv.airbrush.altuv"),
+            &surface("truckpaint.tsnmapuv.airbrush.flipflake.altuv"),
             &Paint::Job(&academy),
         );
-        assert_eq!(u.flags, COLORMASK | ALTUV);
+        assert_eq!(u.flags, COLORMASK);
     }
 
     #[test]
@@ -525,7 +518,6 @@ mod tests {
             reflection_texture: None,
         };
         let s = PaintSurface::of(&info).expect("paint");
-        assert!(s.altuv && !s.flipflake);
         assert_eq!((s.fresnel, s.shininess), (0.3, DEFAULT_SHININESS));
         info.paintable = false;
         assert_eq!(PaintSurface::of(&info), None);

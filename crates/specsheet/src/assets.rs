@@ -79,13 +79,21 @@ pub struct GpuModel {
     pub pieces: Vec<(Handle<Mesh>, Handle<StandardMaterial>)>,
     /// Per piece: for a `truckpaint` material, what its `.mat` gives the
     /// paint; such pieces take the paint of the placement they belong to.
-    pub painted: Vec<Option<PaintSurface>>,
+    pub painted: Vec<Option<PaintPiece>>,
     /// The reflection cube (`texture_reflection`) of every reflective
     /// material, once per material; the viewer uses the most common one as
     /// its environment map.
     pub reflections: Vec<String>,
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
+}
+
+/// A `truckpaint` piece of a [`GpuModel`].
+pub struct PaintPiece {
+    pub surface: PaintSurface,
+    /// The piece's mesh for `alternate_uvset` paint jobs, whose paint UV
+    /// (`UV_1`) is another set; `None` when it is the same mesh.
+    pub alternate_mesh: Option<Handle<Mesh>>,
 }
 
 /// Bevy asset stores used while uploading.
@@ -137,14 +145,27 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
             warnings.push(format!("{}: piece {index} has no material", mesh.path));
             continue;
         };
-        let paint = mesh
+        let surface = mesh
             .materials
             .get(piece.material)
             .and_then(PaintSurface::of);
-        match piece_mesh(piece, paint.is_some()) {
-            Ok(m) => {
+        let alternate = match (&surface, &piece.alternate_paint_uvs) {
+            (Some(_), Some(uvs)) => Some(MeshPiece {
+                paint_uvs: Some(uvs.clone()),
+                ..piece.clone()
+            }),
+            _ => None,
+        };
+        match piece_mesh(piece, surface.is_some()).and_then(|m| {
+            let alternate = alternate.map(|p| piece_mesh(p, true)).transpose()?;
+            Ok((m, alternate))
+        }) {
+            Ok((m, alternate)) => {
                 pieces.push((stores.meshes.add(m), material.clone()));
-                painted.push(paint);
+                painted.push(surface.map(|surface| PaintPiece {
+                    surface,
+                    alternate_mesh: alternate.map(|m| stores.meshes.add(m)),
+                }));
             }
             Err(error) => warnings.push(format!("{}: piece {index}: {error}", mesh.path)),
         }
@@ -165,9 +186,10 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
     (Arc::new(model), warnings)
 }
 
-/// The GPU mesh of `piece`. Paint pieces also carry their vertex colours,
-/// doubled: the paint multiplies by twice the colour, so 0.5 is neutral
-/// (truckpaint-lighting.md §2). Other materials do not use them yet.
+/// The GPU mesh of `piece`. Paint pieces also carry their paint UV set as
+/// `UV_1` and their vertex colours, doubled: the paint multiplies by twice
+/// the colour, so 0.5 is neutral (truckpaint-lighting.md §2). Other
+/// materials do not use them yet.
 fn piece_mesh(piece: MeshPiece, painted: bool) -> Result<Mesh, String> {
     let count = piece.positions.len();
     if piece.normals.len() != count {
@@ -176,8 +198,9 @@ fn piece_mesh(piece: MeshPiece, painted: bool) -> Result<Mesh, String> {
     if piece.colors.as_ref().is_some_and(|c| c.len() != count) {
         return Err("colour count differs from position count".to_owned());
     }
-    if piece.uvs.as_ref().is_some_and(|uvs| uvs.len() != count)
-        || piece.uvs2.as_ref().is_some_and(|uvs| uvs.len() != count)
+    if [&piece.uvs, &piece.paint_uvs]
+        .into_iter()
+        .any(|uvs| uvs.as_ref().is_some_and(|uvs| uvs.len() != count))
     {
         return Err("UV count differs from position count".to_owned());
     }
@@ -194,7 +217,7 @@ fn piece_mesh(piece: MeshPiece, painted: bool) -> Result<Mesh, String> {
     if let Some(uvs) = piece.uvs {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
     }
-    if let Some(uvs) = piece.uvs2 {
+    if let Some(uvs) = piece.paint_uvs.filter(|_| painted) {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
     }
     if let Some(colors) = piece.colors.filter(|_| painted) {
@@ -627,7 +650,8 @@ mod tests {
             positions: vec![[0.0; 3]; 3],
             normals: vec![[0.0, 1.0, 0.0]; normals],
             uvs: None,
-            uvs2: None,
+            paint_uvs: None,
+            alternate_paint_uvs: None,
             colors: None,
             indices,
         };
@@ -640,6 +664,11 @@ mod tests {
             ..piece(vec![0, 1, 2], 3)
         };
         assert!(piece_mesh(short_colours, true).is_err());
+        let short_paint_uvs = MeshPiece {
+            paint_uvs: Some(vec![[0.0; 2]; 2]),
+            ..piece(vec![0, 1, 2], 3)
+        };
+        assert!(piece_mesh(short_paint_uvs, true).is_err());
     }
 
     #[test]
