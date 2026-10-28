@@ -258,6 +258,17 @@ Evidence: `research/evidence/paint-job-survey.txt` (S1–S10). Format details: [
 - **Unknown.** `color_variant[]` and `stock`; how mask tile coordinates map to UVs; the per-accessory files `accessory/<slot>/paint_job/` (127 of 131 name no installed paint job, S3); the shading maths (needs a clean-room spec).
 - **Test.** The real-install tests `every_paint_job_parses`, `paint_job_parts_resolve_by_unit_token`, `every_paint_mask_exists_or_is_a_constant`, `every_desktop_preset_loads_its_paint_colours` and `a_cabin_change_keeps_the_paint_job_design`.
 
+### F16: Executable strings for the tuning scene, post-processing, lift axles and paint effects (REA Evidence, static; uses Unknown)
+Evidence: `research/evidence/rea-search-batch2.{txt,json}` (`ev_f88b185e…`). These are strings only: which code reads them is not traced yet.
+- **Pins.** `pin_group`, `pin_look`, `pin_offset`, `pin_dir`, `pin_dir_uk` and `double_sided` sit together (`0x1421b7360`–`0x1421b73c0`). This is the reader of the `truck_config_scene.sii` pin arrays (F5) and the next target for pin placement.
+- **Tuning camera.** `ui_truck_scene_config` carries `camera_elevation_limit`, `camera_default_elevation`, `camera_default_azimuth`, `camera_default_zoom`, `camera_aim_y_bounds` and `camera_relative_bounds`. `ui_truck_scene_base_config` carries `camera_aim`, `camera_aim_lv`, `camera_fov_lv`, `light_environment`, `floor_reflection` and `cube_reflection`. The `_lv` keys are **Unknown** (a low-detail variant?).
+- **Floor reflection (Confirmed message).** The game forces `floor_reflection: false` on a scene that has "no parts to be customized for reflection". So the floor reflection needs a scene part to customise, presumably the `reflection` entry of `part_order[]` (F7).
+- **Reflection cubes.** The executable names `/material/environment/vehicle_reflection.tobj` itself, and never `ui_vehicle_reflection`. The flat UI cube is named only by the garage's own materials (`research/evidence/reflection-cubes.txt`).
+- **Post-processing.** A `pp_deferred_parameters` unit with `deferred_param_eye_adapt_factors`, `deferred_param_tonemap_params`, `deferred_param_bloom_params` and `deferred_param_color_correction`. Also `eye_adaptation_speed`, eye adaptation through `def.adapt.rfx`, a setting `r_color_correction`, and `env_factor_*` weather factors (sunlight, rain, wetness, fog). The tuning screen therefore likely runs the deferred pipeline with eye adaptation (Hypothesis).
+- **Lift axles.** Input actions `truck.lift_axle` / `truck.trailer.lift_axle`, the stick animations `lift_axle_stick_anim` / `lift_axle_trailer_stick_anim`, indicator colours, and the keys `liftable_axle` / `liftable_axles`. Nothing yet says whether the tuning screen shows them raised (F13 stays Unknown).
+- **Paint effects.** The effect suffixes `flipflake`, `altuv`, `colormask`, `airbrush` and `flipflakeuv` sit next to `%s/paint_job/accessory/%s.sii`, along with `alternate_flipflake_uvset` and `/paint_job/`. So the paint effect name is built from suffixes (Hypothesis, F15). Two hard-coded paths name single trucks, `kenworth.w900` and `volvo.fh16_2012` `/paint_job/%s`; their purpose is **Unknown**.
+- **Next.** `rea trace --query=<string>` resolves one string per run to its function (about 30–45 min each), then `rea function` decompiles it. In order: `pin_offset`, `camera_default_azimuth`, `deferred_param_tonemap_params`, `%s/paint_job/accessory/%s.sii`, `liftable_axles`.
+
 ## Open questions
 
 | Question | Next step |
