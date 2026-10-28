@@ -1,0 +1,82 @@
+Where the executable keeps pin data, and the code that creates pin buttons (F5)
+==============================================================================
+
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Static only: nothing was executed. Image base 0x140000000.
+
+1. REA trace of the string pin_offset
+-------------------------------------
+Command (Git Bash; S = %USERPROFILE%\rea-ets2; env as in CLAUDE.md):
+  npx -y rea-agents@6.4.0 trace <eurotrucks2.exe> --query=pin_offset \
+    --case-sensitive --provider ghidra --snapshot "$S/eurotrucks2.snapshot" \
+    --format json > "$S/trace-pin-offset.json"
+  (2026-10-28 13:51-14:27)
+Evidence ID: ev_a43d92aef59653949dec4130b75090861194802aaf7d5857477d99947192a0f6
+Result: one string, 0x1421b7398 "pin_offset". Two references, both from
+data, none from code: 0x142c39ba0 and 0x142c86a98.
+
+2. The data at those references: attribute descriptor tables
+------------------------------------------------------------
+Read from the file with a short Python script (PE section table maps
+addresses to file offsets). Each entry is 40 bytes:
+  [class descriptor pointer, field offset, value type, 0, name pointer]
+Type values seen: 0x39 a single bool, 0x3a a bool array, 0x4 a string or
+token array, 0xa a float3 array; 0x2 (fallback) is Unknown.
+(Type meanings are our reading from the keys' values in the .sii files.)
+
+Table A, class 0x141d27eb0. The same table holds `fallback`, which is a key of
+accessory_truck_data (every /def/vehicle/truck/<truck>/data.sii):
+  field   type  name
+  0x1b8   0x2   fallback
+  0x1e0   0x39  use_non_wheel_pin_data_from_model
+  0x1e8   0x4   pin_group
+  0x210   0x4   pin_look
+  0x238   0xa   pin_offset
+  0x260   0xa   pin_dir
+  0x288   0xa   pin_dir_uk
+  0x2b0   0x3a  double_sided
+
+Table B, class 0x141d3c1c0: ui_truck_scene_config (camera_aim_y_bounds,
+mouse_pan_rotation_angle, ..., interior_only follow in the same table):
+  0x2d0   0x4   pin_group
+  0x2f8   0x4   pin_look
+  0x320   0xa   pin_offset
+  0x348   0xa   pin_dir
+  0x370   0xa   pin_dir_uk
+  0x398   0x3a  double_sided
+  0x3c0   0x4   interior_only
+
+So pin data can come from two places: the tuning scene
+(/def/truck_config_scene.sii, /def/trailer_adjust_scene.sii) and each truck's
+own accessory_truck_data, which also has a switch
+use_non_wheel_pin_data_from_model.
+
+3. Which game files set these keys (all .sii under /def, 1.60.1.7)
+------------------------------------------------------------------
+Searched every unit under /def for pin_group and
+use_non_wheel_pin_data_from_model:
+  - /def/truck_config_scene.sii (ui_truck_scene_config): the 65 entries in
+    pin-table.txt.
+  - /def/trailer_adjust_scene.sii (ui_truck_scene_config): the trailer's own
+    pin table.
+  - /def/vehicle/truck/renault.t/data.sii and renault.etech_t/data.sii
+    (accessory_truck_data): one entry each, pin_group f_light_top.
+  - No file sets use_non_wheel_pin_data_from_model, so every truck runs on its
+    default (value Unknown; the name says non-wheel pins can take their data
+    from "the model").
+
+4. Code that creates pin buttons
+--------------------------------
+The pin button templates btn.custom_accn and btn.custom_accs exist as strings
+(n/s presumably normal/selected). The pin_look values
+acc_hub, acc_cover and acc_nuts do not occur in the executable, so the code
+probably builds "btn." + look + "n"/"s" at run time (Hypothesis).
+A scan of .text for RIP-relative references, with containing functions from
+.pdata, gives:
+  btn.custom_accn  referenced at 0x140fcd0bd in FUN_140fcce14 (855 bytes)
+  btn.custom_accs  referenced at 0x140fcd0cd in FUN_140fcce14
+                   and at 0x140fbd350 in FUN_140fbd120 (794 bytes)
+  /def/trailer_adjust_scene.sii  at 0x140fb8ab4 in FUN_140fb8930
+Next: rea function on FUN_140fcce14 (pin creation), then on whatever it shows
+places the pins.
