@@ -602,10 +602,10 @@ fn sync_truck(
             };
             (instance_key(p), (p, part))
         })
-        .chain(cockpit.map(|c| {
+        .chain(cockpit.into_iter().chain(&studio.interior_parts).map(|p| {
             (
-                format!("cockpit|{}", instance_key(c)),
-                (c, ViewPart::Cockpit),
+                format!("cockpit|{}", instance_key(p)),
+                (p, ViewPart::Cockpit),
             )
         }))
         .collect();

@@ -104,6 +104,8 @@ pub struct Studio {
     pub placements: Vec<Placement>,
     /// The interior's full cockpit, shown in the interior view.
     pub cockpit: Option<Placement>,
+    /// Interior-only accessories on the cockpit, shown with it.
+    pub interior_parts: Vec<Placement>,
     /// Bumped whenever `placements` or the paint colour change.
     pub truck_generation: u64,
     pub options: Option<SlotOptions>,
@@ -140,6 +142,7 @@ impl Studio {
         self.overview = Some(view::overview(game, session));
         self.placements = session.assembly().placements.clone();
         self.cockpit = session.assembly().cockpit.clone();
+        self.interior_parts = session.assembly().interior_parts.clone();
         self.truck_generation += 1;
         if let Some(options) = &self.options {
             self.options = Some(view::slot_options(game, session, &options.slot));
