@@ -32,20 +32,20 @@ Then fog: `out.rgb = Cfog + τ·(rgb − Cfog)`. No sun, ambient or specular ter
 
 | Input | Status | Stand-in (our choice, not the game's) |
 |---|---|---|
-| `ML` (material luminosity, from `luminance_output`) | U: the conversion is engine-side | the rule below |
+| `ML` (material luminosity, from `luminance_output`) | C, below | `o = (1, 1, 1, 1)` |
 | `f` (flipsheet frame) | U | frame 0: `f = 0` |
 
-**Luminosity factor `ℓ = ML.rgb · ML.a`** (this rule is our choice, shared with [dif-lum.md](dif-lum.md); the engine's conversion is U):
+**Luminosity (C, `research/evidence/exposure-tonemap-data.txt` §9).** The engine computes `ML.a = s · o.a` and `ML.rgb = o.rgb`, where `o` is an engine object it holds per draw (contents not decoded; stand-in `o = (1, 1, 1, 1)`), and `s` comes from the material's luminance pair `(x, y)` = (`luminance_output`, `luminance_night`) (H for the pairing; the engine reads one two-value slot):
 
-| `luminance_output` | Seen in | `ℓ` |
-|---|---|---|
-| −1 | 13 of 15 sampled garage-scene materials, e.g. the unlit background domes (`research/evidence/shader-spec-glass-lamp-lum.txt`) | 1. These surfaces are visible in the game, so −1 cannot reach the shader raw; it is a sentinel (H, strong). |
-| 0 | the default; 2 scene `dif.lum` materials | 0: no colour (black) |
-| > 0 (nits, up to 5000 on trucks) | a few | U; stand-in 1 |
+1. `x = 0` becomes 50 (nits); `y = 0` becomes `x`.
+2. `t` = the scene's night blend, 0 on the tuning screen (C).
+3. `v = x` if `x = y`; otherwise `exp(lerp(ln x, ln y, t))` for `x > 0` and `lerp(x, y, t)` for `x ≤ 0`.
+4. **`x > 0` (physical nits):** `s = v · p · 0.001`, with `p` the scene's `limited_pre_exposure` (0.0973 on the tuning screen, 1 in the world).
+5. **`x ≤ 0` (relative):** `s = |v|`, with no pre-exposure. The usual −1 gives `s = 1`.
 
-So for the garage backgrounds, `rgb = B.rgb · Kd` (`· c2` with `vcol`). `unlit.tex` draws the background domes of several garage scenes, so this choice is visible.
+So the garage-scene materials with −1 draw at full strength, and the default 0 means 50 nits (`s` ≈ 0.0049 on the tuning screen), not black.
 
-**Next step:** the parked REA run in TASKS (engine-filled material inputs) settles `ML`.
+So for the garage backgrounds (−1), `rgb = B.rgb · Kd` (`· c2` with `vcol`). `unlit.tex` draws the background domes of several garage scenes, so this matters on screen.
 
 ## Sources
 

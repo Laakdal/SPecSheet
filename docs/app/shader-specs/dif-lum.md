@@ -38,8 +38,8 @@ There is no reflection term.
 ## 4. Emission (forward, C)
 
 Inputs:
-- `ML` (rgba): the engine's material luminosity, filled from the `.mat` input `luminance_output` (nits, default 0). How the engine converts nits into the four components is U.
-- `Cb[0…15]`: the engine's backlight colour table, 16 rgb entries (U).
+- `ML` (rgba): the engine's material luminosity, from the `.mat` inputs `luminance_output` and `luminance_night` (§6).
+- `Cb[0…15]`: the engine's backlight colour table, 16 rgb entries (§6). If the drawn object's backlight array is empty, every entry is zero and there is no emission (C); what the garage scenes' arrays hold is U.
 - The backlight tile: `j = min(floor(u0) + 4·floor(v0), 15)`, from the integer parts of UV0. The texture itself is sampled with the full UV0, so tiles repeat the texture.
 
 Steps:
@@ -57,21 +57,21 @@ Steps:
 
 | Input | Status | Stand-in (our choice, not the game's) |
 |---|---|---|
-| `ML` from `luminance_output` (and `luminance_night`) | U: the nits-to-uniform scale, and whether `luminance_night` applies by time of day, are engine-side. Truck `dif.lum` materials all set `luminance_output`, from −1 to 2000 (`material-survey.txt`, 63 of 63). | the rule below; never pass the nits through raw |
-| `Cb` (backlight table) | U: dashboard and interior backlight colours | white, (1, 1, 1) in every entry |
+| `ML` from `luminance_output` and `luminance_night` | C, below. Truck `dif.lum` materials all set `luminance_output`, from −1 to 2000 (`material-survey.txt`, 63 of 63). | `o = (1, 1, 1, 1)` |
+| `Cb` (backlight table) | C: copied from a colour array held by the drawn object, each rgb × `limited_pre_exposure`; entries past its length are zero (`research/evidence/exposure-tonemap-data.txt` §9). Its contents are U. | white, (1, 1, 1) in every entry |
 | `mremap` | H, as dif-spec §3.3 | (1, 0) |
 
-**Luminosity factor `ℓ = ML.rgb · ML.a`** (this rule is our choice, shared with [unlit.md](unlit.md); the engine's conversion is U):
+**Luminosity (C, `research/evidence/exposure-tonemap-data.txt` §9).** The engine computes `ML.a = s · o.a` and `ML.rgb = o.rgb`, where `o` is an engine object it holds per draw (contents not decoded; stand-in `o = (1, 1, 1, 1)`), and `s` comes from the material's luminance pair `(x, y)` = (`luminance_output`, `luminance_night`) (H for the pairing; the engine reads one two-value slot):
 
-| `luminance_output` | Seen in | `ℓ` |
-|---|---|---|
-| −1 | 13 of 15 sampled garage-scene materials, e.g. the unlit background domes (`research/evidence/shader-spec-glass-lamp-lum.txt`) | 1. These surfaces are visible in the game, so −1 cannot reach the shader raw; it is a sentinel (H, strong). |
-| 0 | the default; 2 scene `dif.lum` materials | 0: no emission |
-| > 0 (nits, up to 5000 on trucks) | a few | U; stand-in 1 |
+1. `x = 0` becomes 50 (nits); `y = 0` becomes `x`.
+2. `t` = the scene's night blend, 0 on the tuning screen (C).
+3. `v = x` if `x = y`; otherwise `exp(lerp(ln x, ln y, t))` for `x > 0` and `lerp(x, y, t)` for `x ≤ 0`.
+4. **`x > 0` (physical nits):** `s = v · p · 0.001`, with `p` the scene's `limited_pre_exposure` (0.0973 on the tuning screen, 1 in the world).
+5. **`x ≤ 0` (relative):** `s = |v|`, with no pre-exposure. The usual −1 gives `s = 1`.
 
-So `emission = B.rgb · ℓ · m` (with `lvcol`, also `· c2 · c.a`). This matters in the garage: the night-city, under-bridge and hangar scenes use `dif.lum` for lit windows and signs.
+So the garage-scene materials with −1 draw at full strength, and the default 0 means 50 nits (`s` ≈ 0.0049 on the tuning screen), not black. The emission is then `emission = B.rgb · Cb[j] · ML.rgb · ML.a · m` (with `lvcol`, also `· c2 · c.a`). This matters in the garage: the night-city, under-bridge and hangar scenes use `dif.lum` for lit windows and signs.
 
-**Next step:** the parked REA run in TASKS (engine-filled material inputs) settles `ML` and `Cb`.
+**Next step:** the engine object `o` and the backlight array contents (U).
 
 ## Sources
 

@@ -72,13 +72,13 @@ As dif-spec §5.5 for plain `add.env` (linear fresnel `F = sat(fb + fs·(1 − N
 
 | Input | Status | Stand-in (our choice, not the game's) |
 |---|---|---|
-| `Cl` (lamp colour table) | U: the engine writes it from the vehicle's light state | All zero: the tuning screen shows the truck with its lights off (H, to check against a screenshot). The `lamp_preview_color`/`lamp_preview_mask` `.mat` inputs exist for editor preview only. |
-| `γ` (lamp contrast) | U | 1.0 |
+| `Cl` (lamp colour table) | C: copied from a colour array held by the drawn object, each rgb × the scene's `limited_pre_exposure` (0.0973 on the tuning screen); entries past the array's length are zero (`research/evidence/exposure-tonemap-data.txt` §9). How the array follows the light state is U. | All zero: the tuning screen shows the truck with its lights off (H, to check against a screenshot). The `lamp_preview_color`/`lamp_preview_mask` `.mat` inputs exist for editor preview only. |
+| `γ` (lamp contrast) | C: `1 + 3·n`, with `n` a scene-light-block value that the tuning scene writes as 0, so **γ = 1** there | 1.0 |
 | `g`, `mremap`, `M` | as dif-spec §3.3 | as dif-spec |
 
 With the stand-ins, `glow = 0`, and lamps render exactly as `dif.spec.add.env` (or `dif.spec` without `add.env`).
 
-**Next step:** the parked REA run in TASKS (engine-filled material inputs) shows how the engine fills `Cl` and `γ`, and whether the tuning screen lights anything.
+**Next step:** whether the tuning screen fills the drawn truck's lamp array (lights on) is open; a reference screenshot settles it.
 
 ## Sources
 

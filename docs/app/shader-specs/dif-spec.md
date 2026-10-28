@@ -68,8 +68,8 @@ Each `.mat` names its attributes as below (`research/evidence/material-survey.tx
 | `specular` | rgb | (1, 1, 1) | all | Specular colour `Ks` |
 | `shininess` | float | 4.0 | all | Blinn-Phong exponent `p` |
 | `additional_ambient` | float | 0.0 | all | Weight `ka` of the scene's additional ambient colour (§5.6). Values seen: −0.25 to 3. |
-| `env_factor` | rgb | (1, 1, 1) | `add.env`, `nofresnel` | Reflection tint `Ke` |
-| `fresnel` | 2 floats | (0.2, 0.9) | `add.env` (not `nofresnel`) | (bias `fb`, scale `fs`). The table labels the pair "(bias, scale)" (C). That the first is the additive bias is H, strong: the formula has exactly one additive and one multiplicative constant. |
+| `env_factor` | rgb | (1, 1, 1) | `add.env`, `nofresnel` | Reflection tint. The engine clamps it to [0, 5] per component when it applies the `.mat` (C), and uploads `Ke = env_factor ⊙ specular`: the material-block row is the product of two material colour slots, the second of which is `specular` (C); that the first carries `env_factor` is H, strong (the uniform table lists exactly `fresnel`, `env_factor` and `specular` as that block's inputs). `research/evidence/exposure-tonemap-data.txt` §9. |
+| `fresnel` | 2 floats | (0.2, 0.9) | `add.env` (not `nofresnel`) | (bias `fb`, scale `fs`). The table labels the pair "(bias, scale)" (C). For this family (effect flags 0) the engine uploads the pair raw (C, `research/evidence/exposure-tonemap-data.txt` §9), so `fb` is the first value and `fs` the second. |
 | `reflection` | float | 0.0 | written to the G-buffer only | Not used by the material's own colour. (H) It weights the engine's screen-space or planar reflections. Ignore it for now. |
 | `queue_bias` | int | 0 | `decal`, `over` | Draw-order bias, engine-side |
 
@@ -110,8 +110,8 @@ Every vector below is in eye (view) space. World space works the same, except fo
 | `Csun_d`, `Csun_s` | Sun diffuse and sun specular colours (separate colours) |
 | `Camb`, `Aenv` | Ambient colour (rgb) and a scalar, the scene reflection visibility. They come together in one 4-vector. |
 | `Cadd` | The scene's "additional ambient" colour, scaled per material by `ka` |
-| `M` | 3×3 rotation applied to the reflection vector before the cube lookup. (H) It is the eye-to-world (cube) rotation. |
-| `g` | An engine-supplied scalar tied to the reflection cube, multiplying the reflection strength. It has no `.mat` input. (H) It is a per-cube brightness, 1.0 by default. It may be the exposure of the game's dark cubes that [materials.md](../materials.md) lists as Unknown; it matters for chrome. |
+| `M` | 3×3 matrix applied to the reflection vector before the cube lookup. Rows 0 and 1 are the camera object's first two matrix rows, and **row 2 is its third row negated** (C, `research/evidence/exposure-tonemap-data.txt` §9). (H) The camera rows are the eye-to-world rotation, so the cube is sampled at `(w.x, w.y, −w.z)` for a world direction `w`: z mirrored, x not. |
+| `g` | An engine-supplied scalar multiplying the reflection strength (C, `research/evidence/exposure-tonemap-data.txt` §9): the scene light block's `environment_conditional_mult`, or 1.0 when the material's cube is in an engine-held set (H: the engine-rendered cubes). The tuning scene writes that multiplier as 1.0, so **`g = 1` on the tuning screen** (C). It is not a per-cube exposure. |
 | `mremap = (ms, mb)` | Specular-mask remap, scale and bias, used by the plain (non-`weight`, non-`oclu`) variants only. It has no `.mat` input. (H) It is (1, 0) normally; with `asafew` it stretches alpha 32/255…1 to 0…1, following the wiki's description of `asafew` (alpha 0 to 32 is opacity, 32 to 255 is specular). |
 | fog | Two fog colours, a direction, density, start distance, height plane and gradient (§5.7) |
 | material tag | An engine bit, 1 = interior. It only steers interior light masks in the deferred pass. Ignore it. |
@@ -326,9 +326,8 @@ Whether the tuning scene substitutes `showroom_cube` or `ui_vehicle_reflection` 
 
 - **H:** the PMG UV set behind each UV slot is the piece's routing nibble for that slot (§3.2, [models.md](../../formats/models.md)). Slot *n* = vertex attribute 8 + *n* is C.
 - **H:** the engine's specular-mask remap is (1, 0) normally and the `asafew` stretch otherwise. It could be settled from the executable.
-- **H:** `M` is the eye-to-world rotation, and `g` is a per-cube brightness, 1 by default. Both are engine-set; the executable could settle them. The x/z mirroring of the cube against wgpu is U.
+- **C:** `g = 1` on the tuning screen, and `M`'s third row is negated (§3.3). **H:** `M` is otherwise the eye-to-world rotation, so the cube lookup mirrors world z only. Check it once on screen against the garage cube.
 - **U:** which path, deferred or forward, renders opaque trucks in the tuning screen. This decides whether §7.4's ambient shaping is part of the target look.
-- **H:** `fresnel` = (bias, scale) in that order.
 - **U:** the meaning of the normal-map technique condition. **H:** it is a quality option.
 - **U:** the light-list pass (spot and point lights), the shadow-map variants, the fog pass, tonemapping.
 - **U:** what `reflection` drives (only written to the G-buffer).

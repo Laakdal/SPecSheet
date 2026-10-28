@@ -114,7 +114,7 @@ When the histogram is empty, both bins are 0. Every pass read for this spec uses
 | `low_intensity_factors (a, b)`, `low_intensity_color` | Low-light tint (§4.2) | (H) `a` = `low_intensity_minimum`, `b` = 1/(`low_intensity_maximum` − `low_intensity_minimum`) |
 | `color_correction` (`.xyz`, `.w`) | Balance offset, saturation (`col` flavour) | (H) `color_balance`, `color_saturation`. The grayscale climates have saturation 0, which fits. |
 
-The scene file's `pre_exposure` is not a uniform of any deferred shader (C: searched all 716 deferred GLSL fragment shaders). Where it enters is U; §8 gives the two candidate placements and their consequences.
+The scene file's `pre_exposure` is not a uniform of any deferred shader (C: searched all 716 deferred GLSL fragment shaders). It enters on the CPU, scaling only emissive inputs (§8.3).
 
 ### 4.2 Order of operations (C)
 
@@ -240,7 +240,7 @@ The CPU fills this block; its fields and UI values are in `exposure-tonemap-data
 - all 716 deferred GLSL fragment objects;
 - the forward and G-buffer objects of `dif.spec.add.env` and `truckpaint`.
 
-The block reaches the GPU only through the combined light inputs below, after CPU arithmetic the shaders cannot show.
+The block reaches the GPU only through the combined light inputs below. The CPU arithmetic is now read for the forward and material inputs (`exposure-tonemap-data.txt` §9, static disassembly of the uniform callbacks).
 
 ### 8.1 What the shaders receive (C)
 
@@ -254,7 +254,7 @@ The block reaches the GPU only through the combined light inputs below, after CP
 | `additional_ambient_color` | `Cadd` | adds `Cadd·ka` |
 
 Two properties decide where any pre-exposure can go (C):
-- The reflection term (`Cenv·g·…·sat(Aenv)` or `sat(Aenv·occ)`) contains **no light colour**. Scaling `Camb`, `Csun_d` and `Csun_s` leaves reflections unchanged. (H) Emissive and lamp outputs behave the same way; they were not read.
+- The reflection term (`Cenv·g·…·sat(Aenv)` or `sat(Aenv·occ)`) contains **no light colour**. Scaling `Camb`, `Csun_d` and `Csun_s` leaves reflections unchanged. Emissive and lamp outputs contain no light colour either.
 - `occ` is a ratio of luminances of `Csun_d` and `Camb`, so a common scale on the lights cancels inside it.
 
 ### 8.2 Field mapping
@@ -263,23 +263,21 @@ Two properties decide where any pre-exposure can go (C):
 |---|---|
 | `ambient`, `diffuse`, `specular` | Become `Camb`, `Csun_d`, `Csun_s`. (H, strong) These are the only light-colour inputs, and the triplets correspond one to one. |
 | `environment` (`light_environment`) | Becomes `Aenv`, the 4th component of the ambient row. (H, strong) The deferred name is `ambient_environment`, and it is the only environment scalar. |
-| `environment_conditional_mult` (1) | No shader input (C). (H) Multiplies `Aenv` on the CPU. |
-| `diffspec_conditional_mult` (1) | No shader input (C). (H) Multiplies `Csun_d` and `Csun_s` on the CPU. |
+| `environment_conditional_mult` (1) | No shader input. It **becomes `g`** (`texture_reflection_modulator`) for materials whose cube is not engine-held (C, `exposure-tonemap-data.txt` §9). It does not multiply `Aenv`. |
+| `diffspec_conditional_mult` (1) | No shader input. The forward light rows are `Csun_d·m` and `Csun_s·m` with this `m` (C, `exposure-tonemap-data.txt` §9). |
 | `light_source_visibility` (1) | No shader input (C). (H) A sun visibility multiplying the sun terms on the CPU. Inside the shader, sun visibility is only the deferred clip-plane, shadow and interior factors. |
 | `aurora_diffuse` | (H, strong) Becomes the deferred aurora colour. |
-| `limited_pre_exposure` (0.0973 on the tuning screen, 1 in the world) | No shader input (C). Where the CPU applies it is U (§8.3). |
-| `ec_adjustment` (0) | No shader input (C). (H) An exposure compensation in stops, folded into `T0.x` or the `F0` limits. |
+| `limited_pre_exposure` (0.0973 on the tuning screen, 1 in the world) | No shader input. The CPU multiplies **only emissive inputs** by it: the lamp colour table, the backlight colour table, and material luminance given in nits (× 0.001). The forward light rows and `g` do not read it (C, `exposure-tonemap-data.txt` §9; §8.3). |
+| `ec_adjustment` (0) | No shader input. The material callbacks use this field as a night factor `n`: lamp contrast `1 + 3n`, and the day-to-night blend of material luminance (C, `exposure-tonemap-data.txt` §9). Whether it also enters the exposure is U. |
 
-### 8.3 Pre-exposure placements and their consequences
+### 8.3 Where pre-exposure goes (C for the forward inputs)
 
-The shaders cannot say where `limited_pre_exposure = p` is applied (U). They do fix what each placement would do:
-- **Into the light colours** (`Camb`, `Csun_d`, `Csun_s`, presumably `Cadd`, all × p):
-  - Lit diffuse and specular scale by p; reflections and emissive surfaces do not.
-  - With adaptation active and within its limits, `E` grows by about 1/p. Lit surfaces then look the same, while reflections and emissives brighten by 1/p relative to them.
-  - With a fixed exposure, lit surfaces dim by p.
-- **Into the exposure** (`T0.x` or `E` × p): every term scales together.
+The forward and material callbacks settle it (`exposure-tonemap-data.txt` §9):
+- **The light colours are not pre-exposed.** The forward rows carry `Camb`, `Csun_d·m` and `Csun_s·m` with `m = diffspec_conditional_mult` (1 on the tuning screen). On the tuning screen the scene's `light_ambient`, `light_diffuse` and `light_specular` therefore reach the shader unscaled.
+- **Emissive inputs are pre-exposed.** Lamp and backlight colours are × `p`, and luminance in nits is × `p · 0.001`. Relative luminance (`luminance_output < 0`) is not.
+- So a UI scene's `p` brings emissive sources, given in absolute units, down to the level of its lights. The exposure itself still comes from the tonemap's `E` (§3–§4). Whether the UI path meters the histogram or uses a fixed `E` is still U, and so is the deferred light object's filling (the deferred sun pass reads another copy of the lights).
 
-Next step: trace the readers of block offset `+0x48` into the per-frame constant upload (F16).
+For the implementer: use the scene's light colours as they are, scale emissives as above, and leave exposure to the tonemap.
 
 ### 8.4 Exposure modes, compensation, debug overlay
 

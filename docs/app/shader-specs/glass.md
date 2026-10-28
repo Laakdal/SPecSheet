@@ -41,8 +41,8 @@ There is no G-buffer pass and no shadow pass.
 | `additional_ambient` | 0.0 | `ka` | yes |
 | `specular` | (1, 1, 1) | `Ks` | yes |
 | `shininess` | 4.0 | `p` | yes |
-| `fresnel` | (0.2, 0.9) | first value `F0` | first value only (H: it is the first value, matching dif-spec's reading of the same slot as the bias) |
-| `env_factor` | (1, 1, 1) | — | **not read by the shader (C)**. Glass `.mat` files set it up to 24 (`material-survey.txt`). Whether the engine folds it into `g` is U. |
+| `fresnel` | (0.2, 0.9) | — | Glass carries the effect flag that selects the constant **`F0 = 0.07`** (C, `research/evidence/exposure-tonemap-data.txt` §9). Only a `fresnel` whose second value is −1 overrides it, with `F0 = clamp(first value, 0, 1)`. |
+| `env_factor` | (1, 1, 1) | — | **Not read (C):** neither the shader nor `g` uses it ([dif-spec.md](dif-spec.md) §3.3). Glass `.mat` files set it up to 24; the engine clamps it to 5 and the glass shader ignores it. |
 | `queue_bias` | 0 | — | draw order, engine-side |
 
 Measured ranges on truck glass (`material-survey.txt`, 144 materials): `glass_tint_opacity` −0.01…0.92, `fresnel` first value 0…1.5, `shininess` 0…250, `specular` up to 1.3.
@@ -105,11 +105,8 @@ The engine applies the buffer later, in a pass we have not read. Skip it: it is 
 
 | Input | Status | Stand-in for our renderer (our choice, not the game's) |
 |---|---|---|
-| `g` (reflection modulator) | U, engine-set; also the open question in dif-spec §3.3 | 1.0 |
-| Whether `env_factor` scales glass reflections through `g` | U. It matters: glass sets it up to 24. | Ignore `env_factor`, as the shader does |
-| `M`, `Aenv`, the light colours | engine, as dif-spec §3.3 and [tonemap.md](tonemap.md) §8 | as for dif.spec |
-
-**Next step:** the parked REA run in TASKS (engine-filled material inputs) settles `g` and the `env_factor` question.
+| `g` (reflection modulator) | C: 1.0 on the tuning screen ([dif-spec.md](dif-spec.md) §3.3) | 1.0 |
+| `M`, `Aenv`, the light colours | engine, as dif-spec §3.3 (z-mirrored cube lookup) and [tonemap.md](tonemap.md) §8 | as for dif.spec |
 
 ## Sources
 

@@ -350,6 +350,32 @@ Facts only (D13); the format side is in [formats/paint.md](formats/paint.md).
   - Which UV set is sampled when the model lacks the one named above (1-set and 2-set cabs).
   - How the shader combines the constants, and whether it clamps `flip_strength` (D13: needs a clean-room spec).
 
+### F18: How the engine fills the material and light uniforms (Confirmed, static disassembly)
+Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: string xrefs, `.pdata` extents and capstone listings, kept out of the repository). Facts only (D13); the shader-side meaning is in the specs under [app/shader-specs/](app/shader-specs/).
+- **Registration.** `FUN_1403dcf80` binds each material uniform name to a CPU callback that fills it per draw. The light object every callback reads has the layout of `eutpp_scene_light` (F16, `exposure-tonemap-data.txt` §7).
+- **Forward lights.** The rows are ambient with `environment`, the sun direction, then diffuse and specular × `diffspec_conditional_mult`. **`limited_pre_exposure` is not applied to them.** On the tuning screen the scene's light colours reach the shader unscaled.
+- **Pre-exposure scales emissive inputs only:**
+  - lamp and backlight colour tables (copied from the drawn object, × `limited_pre_exposure`, zero past the array's end);
+  - material luminance given in nits: × `limited_pre_exposure` × 0.001.
+
+  Negative `luminance_output` is relative (|value|, so −1 gives 1), and 0 means 50 nits. Day and night values blend in log space by a night factor that the tuning scene sets to 0.
+- **Reflection modulator** (`g`): the scene's `environment_conditional_mult`, 1.0 on the tuning screen. It is 1.0 for cubes in an engine-held set, and 9999 without a reflection texture.
+- **Envmap matrix.** The camera's rotation rows with the **third row negated**: cube lookups mirror world z (Hypothesis that the rows are eye→world).
+- **Fresnel by effect flags** (the `.rfx` `flags:` field):
+  - flags 0 (`dif.spec` family): the `.mat` pair raw;
+  - `0x10000` (truckpaint): F0 = 0.035;
+  - `0x18000` (glass): F0 = 0.07;
+  - `0x8000`: F0 = 0.14.
+
+  A `.mat` `fresnel` whose second value is −1 overrides the constant with its clamped first value.
+- **Reflection tint.** The material block's colour row is the product of two material colour slots, the second being `specular`, so `Ke = env_factor ⊙ specular` (Hypothesis, strong, for the first slot). The engine clamps `diffuse`, `specular` and `env_factor` to [0, 5] when it applies a `.mat`.
+- **Lamp contrast** = 1 + 3·(night factor), so 1 on the tuning screen.
+- **Unknown.**
+  - The per-draw object behind `material_luminosity`'s colour.
+  - The contents of the lamp and backlight arrays in the garage.
+  - The deferred light object's filling.
+  - Whether the UI path meters the histogram for exposure.
+
 ## Open questions
 
 | Question | Next step |

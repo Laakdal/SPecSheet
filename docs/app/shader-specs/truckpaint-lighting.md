@@ -47,7 +47,7 @@ Implement the forward model. It is the only lighting these effects contain. How 
 
 **Environment reflection** `E` (C):
 1. Reflection vector in eye space: `R = x_eye − 2·N·(N·x_eye)`. The position is not normalised here.
-2. Rotate `R` into cube space with the 3×3 envmap matrix of the second material block, which is engine-set (H: eye space to world space).
+2. Rotate `R` into cube space with the 3×3 envmap matrix of the second material block: the camera's rotation rows with the **third row negated** ([dif-spec.md](dif-spec.md) §3.3, C). (H) Eye space to world space with world z mirrored.
 3. **Distance widening:** multiply the rotated vector's y component by `1 + 20·sat((|x_eye|² − 1)/90000)`.
    - Below 1 m from the eye nothing changes. The full factor 21 is reached at 300 m.
    - At tuning-screen distances, about 5–10 m, the factor is about 1.0–1.02.
@@ -55,9 +55,10 @@ Implement the forward model. It is the only lighting these effects contain. How 
 5. **Fresnel (Schlick):** `F = sat(F0 + (1 − F0)·(1 − sat(N·R̂))⁵)`.
    - `R̂ = R / |x_eye|`, so `N·R̂ = N·V`.
    - `F0` is the 3rd component of the material block's fresnel row, the only component read (26 of 26 objects).
+   - **Its value (C, `research/evidence/exposure-tonemap-data.txt` §9):** truckpaint effects carry the effect flag that selects the constant **`F0 = 0.035`**. Only a `.mat` whose `fresnel` second value is −1 overrides it, with `F0 = clamp(first value, 0, 1)`. The usual `{0.2, 0.9}` therefore does **not** give 0.2.
 6. **Strength:** `k_env = μ · B.a · m_spec · F`.
-   - `μ` is the scalar uniform `texture_reflection_modulator`, engine-set (U).
-   - The material's "environment" colour row is read by **none** of the 26 fragment objects. So the `.mat` `env_factor` does not reach truckpaint as a colour (C). Whether `μ` is derived from it is U.
+   - `μ` is the scalar uniform `texture_reflection_modulator`: the scene's environment multiplier, **1.0 on the tuning screen** (C, [dif-spec.md](dif-spec.md) §3.3 `g`).
+   - The material's "environment" colour row is read by **none** of the 26 fragment objects. So the `.mat` `env_factor` does not reach truckpaint (C), and `μ` is not derived from it (C).
 7. `E = c_env · k_env`.
 
 ## 5. Forward lighting
@@ -104,7 +105,7 @@ So in the deferred path the environment reflection reaches the screen as emitted
 
 ## 8. Unknown, with the next step
 
-- **Which `.mat` `fresnel` component becomes `F0`.** Seen mats hold `{0.2, 0.9}`, and only one value is read. Next step: the REA run named in truckpaint.md §7; add `fresnel` to its regex.
-- **`μ`, the envmap matrix, `(a_w, b_w)` and `e_amb`.** All engine-set; same REA run.
+- **Settled:** `F0` = 0.035 (§4 step 5), `μ` = 1 on the tuning screen, and the envmap matrix's z flip (§4 step 2). `e_amb` is the scene's `light_environment` ([tonemap.md](tonemap.md) §8).
+- **`(a_w, b_w)`.** Engine-set; its callback copies two fields of a per-material record that was not decoded (U).
 - **Vertex colour.** Its value on meshes without one, and its colour space. Next step: check a truckpaint PMG's vertex streams with our PMG reader.
 - **The deferred light pass**, including shadows, the reflection-strength use and any normalisation. It lives outside the truckpaint effects. Next step: a separate spec of the deferred lighting effect (`/effect/deferred/`), if parity requires it.
