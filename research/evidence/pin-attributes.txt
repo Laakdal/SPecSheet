@@ -110,3 +110,45 @@ of SSE float instructions and of the immediates 10000 / 11000 (pin id bases):
 Hypothesis: FUN_140fcba50 places pins on screen each frame (projection
 maths, both pin kinds); FUN_140fcf210 builds the acc_info_t list.
 Next: rea function on FUN_140fcba50.
+
+7. REA function on FUN_140fcba50: the per-frame pin update
+-----------------------------------------------------------
+Command: rea function <exe> --procedure=0x140fcba50, 2026-10-28 15:35-16:07.
+Evidence ID: ev_bf0e8de26835092b47f556aecf12bdd878eaaeb29890e59041b56786817a3820
+FUN_140fcba50, 4,125 bytes, one argument (the tuning screen). Callers:
+FUN_140fc0bf0 and FUN_140fe0fc0 (pin select). The decompilation stays outside
+the repository (%USERPROFILE%\rea-ets2\function-pin-update.json). Our
+observations, in our own words:
+  - Two passes over two acc_info_t arrays on the screen object: the first
+    (+0x208) gives buttons 10000 + i (accessory pins), the second (+0x230)
+    buttons 11000 + i (hookup pins).
+  - Each 0x40-byte record holds a pose (position and rotation) at +0x1c. It
+    is combined with the truck's transform to give the pin's world position
+    and orientation. So the pin's 3D point and facing are fixed when the
+    record is built (pin_offset/pin_dir are applied there, not here).
+  - Opacity (Confirmed): d = the cosine between the pin's facing axis (its
+    rotation applied to a unit axis) and the camera's axis;
+    alpha = clamp((d - 0.1) / 0.9, 0, 1), i.e. invisible at about 84 degrees
+    and fully opaque facing the camera. In one camera/scene mode (a class
+    check) alpha is forced to 1. The alpha is written to the button as a
+    two-digit hex string ("%02X" at 0x1420d3e2c), so pins fade, not pop.
+  - Projection: the world point goes through the 3D camera. The pin is hidden
+    when the projected depth is outside [-1, 1] or alpha <= 0. Screen
+    position: x = (ndc_x + 1) / 2 * width - x offset, y = (ndc_y + 1) / 2 *
+    height (the screen's size fields).
+  - Size: the button is a square centred on that point, 32 x 32 px, or
+    36 x 36 px when a button state bit is set (Hypothesis: hovered).
+  - Record flag +0x3c: a second element (64 x 64 px around the pin) pulses,
+    alpha = |sin(t)| * 255 * pin alpha, t advancing 10 per second
+    (Hypothesis: the highlight on a newly available accessory).
+  - The active pin (record id equal to the screen's current one) carries
+    button 8005 (0x1f45, btn.remove_acc in ui/truck_configuration_center.sii)
+    beside it; button 8005 is hidden when there is no active pin.
+  - Accessory pins whose record +0x18 is not -1 are shown only when the
+    entry's +0x18 equals the screen's +0x350 (Hypothesis: the open group or
+    tab). Hookup pins are always shown.
+  - Not in this function: any merging of nearby pins on screen, and any
+    depth test against the truck's geometry. Pins hide only by facing,
+    projection depth and group.
+Next: FUN_140fcf210, the likely builder of the records (base point,
+pin_offset, pin_dir, double_sided, use_non_wheel_pin_data_from_model).
