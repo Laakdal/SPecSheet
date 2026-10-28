@@ -701,3 +701,46 @@ fn every_slot_with_a_choice_is_reachable_on_the_tuning_screen() {
         failures.join("\n")
     );
 }
+
+#[test]
+fn choosing_an_interior_chooses_the_drive_side() {
+    use specsheet_core::AccessoryKind;
+    use specsheet_data::assembly::Drive;
+    use specsheet_data::session::GameSession;
+    use specsheet_data::view;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let mut failures = Vec::new();
+    let mut checked = 0;
+    for truck in view::trucks(&game) {
+        let mut session = game.start_truck(&truck.id).expect("truck");
+        let uk = session
+            .catalog()
+            .accessories()
+            .find(|a| a.kind == AccessoryKind::Interior && a.left_hand_traffic)
+            .map(|a| a.id.clone());
+        let Some(uk) = uk else { continue };
+        if session.select(&game, &uk).is_err() {
+            continue; // not suitable for this preset's cabin
+        }
+        checked += 1;
+        if session.drive() != Drive::Right {
+            failures.push(format!("{}: {uk} left the truck LHD", truck.id));
+        }
+        // Back to LHD: the interior follows to its EU twin.
+        session.set_drive(&game, Drive::Left);
+        let interior = session
+            .config()
+            .selections()
+            .values()
+            .filter_map(|id| session.catalog().accessory(id))
+            .find(|a| a.kind == AccessoryKind::Interior);
+        if interior.is_some_and(|a| a.left_hand_traffic) {
+            failures.push(format!("{}: LHD kept the UK interior", truck.id));
+        }
+    }
+    assert!(checked > 0, "no truck offers a UK interior");
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}

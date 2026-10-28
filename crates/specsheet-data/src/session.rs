@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use specsheet_core::{
-    Accessory, AccessoryId, ChangeSet, ConfigError, Configuration, Hookup, Incompatibility, SlotId,
-    TruckCatalog, TruckId,
+    Accessory, AccessoryId, AccessoryKind, ChangeSet, ConfigError, Configuration, Hookup,
+    Incompatibility, SlotId, TruckCatalog, TruckId,
 };
 
 use crate::assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
@@ -191,6 +191,19 @@ impl TruckSession {
         let changes = self
             .config
             .select(&self.catalog, &availability, accessory)?;
+        // Choosing an interior chooses the drive side: the game lists the
+        // UK (`left_hand_traffic`) interiors beside the EU ones (F10).
+        if let Some(interior) = self
+            .catalog
+            .accessory(accessory)
+            .filter(|a| a.kind == AccessoryKind::Interior)
+        {
+            self.drive = if interior.left_hand_traffic {
+                Drive::Right
+            } else {
+                Drive::Left
+            };
+        }
         self.reassemble(game);
         Ok(changes)
     }
@@ -232,8 +245,26 @@ impl TruckSession {
     }
 
     /// Switches between left- and right-hand drive models.
+    /// Switches between left- and right-hand drive; the selected interior
+    /// is swapped for its twin for that side when it has one.
     pub fn set_drive(&mut self, game: &GameSession, drive: Drive) {
         self.drive = drive;
+        let twin = self
+            .config
+            .selections()
+            .values()
+            .filter_map(|id| self.catalog.accessory(id))
+            .find(|a| {
+                a.kind == AccessoryKind::Interior && a.left_hand_traffic != (drive == Drive::Right)
+            })
+            .and_then(|a| a.drive_twin.clone());
+        if let Some(twin) = twin {
+            let availability = |config: &Configuration| {
+                slot_availability(game.fs(), game.models(), &self.catalog, config, drive)
+            };
+            // An incompatible twin keeps the current interior.
+            let _ = self.config.select(&self.catalog, &availability, &twin);
+        }
         self.reassemble(game);
     }
 
