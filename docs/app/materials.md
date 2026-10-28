@@ -103,7 +103,7 @@ Seen working (MAN TGX Euro 6, Scania S): paint, plastic and chrome share one lig
 - **Mask factor:** the colour mask's alpha and the base alpha scale the specular and the reflection.
 
 **Settled by our data** (`research/evidence/paint-vertex-streams.txt`, example `paint_uv_survey`, 7,740 truck models):
-- **Paint UV (Confirmed on screen).** Sets count from 0, as the spec says: the mask and flakes use PMG UV set 1, and `alternate_uvset` jobs use set 2 (`specsheet_data::render::paint_uv_set`).
+- **Paint UV (Confirmed on screen).** The mask and flakes read UV slot 1, and `alternate_uvset` jobs UV slot 2 (truckpaint.md §2). Each piece's routing (PMG piece +8) names the stored set for each slot (`specsheet_data::render::paint_uv_sets`); pieces without routing fall back to sets 1 and 2 (`paint_uv_set`). Seen on the Actros 2014 flag decal (slot 2 = set 2) and on the DAF 2021 XF with Golden Edge, where slot 2 reads set 1 and the old fixed set 2 showed no livery (`research/evidence/pmg-uv-routing.txt`).
   - Test: Bulgarian Flag Decal (`alternate_uvset`) on the Actros 2014 Gigaspace cab, whose paint piece has 3 sets. From set 2 the flag lands on the door; from set 1 it does not show.
   - Our first reading (mask on set 0, a `.mat`'s `altuv` moving it to set 1) also lined up Altamira and Driving Academy on the MAN and Actros cabs. Those `.mat`s name `altuv` and the jobs don't, so both readings land on set 1 there.
   - A mesh without the set falls back to its last one (Hypothesis). 393 of 1,725 paint pieces lack set 1, among them the Scania S cab (only set 0), whose masks line up.
