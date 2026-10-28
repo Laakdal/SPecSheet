@@ -147,6 +147,12 @@ cargo run --release -p specsheet-formats --example profile_mods -- "<home>/profi
 
 # Saves: decode every save (ScsC, text, binary) and compare binary against text field kinds
 cargo run --release -p specsheet-formats --example save_check -- "<home>/profiles"
+
+# Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --zips adds the ZIP mods of a folder as candidates; --list adds folders, replaced game files, unnamed contents
+cargo run --release -p specsheet-data --example mod_names -- [--list] [--zips "<home>/mod"] "<home>/mod/<package>.scs" ...
+
+# Mod writer: a test package (manifest + description, no game files) as <dir>/specsheet_test.scs; refuses if it exists
+cargo run --release -p specsheet-data --example mod_write -- <dir>
 ```
 
 ## Debugging tips

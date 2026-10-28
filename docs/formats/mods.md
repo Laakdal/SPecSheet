@@ -52,6 +52,8 @@ Entry table: `count` × 32-byte records, sorted by hash (Confirmed, 20 files):
 - **Path key.** CityHash64 v1.0.3 of the path without a leading slash, as in v2. With a non-zero salt, the decimal text of the salt is prepended (`18708manifest.sii` for salt `0x4914`) (Confirmed: `manifest.sii` resolves in 20 of 20 files; no other form does).
 - **Directory listing.** Text with one name per line; sub-directories are prefixed `*`. Lines end in `\n` or `\r\n` (Confirmed).
 - **No root listing.** The root directory (key of ``) is missing from all 20 files, so a v1 mod cannot be walked from the root. Its files are reachable only by known path (Confirmed). Deeper listings exist.
+- **Listings are optional altogether.** One package (`NG Sound.scs`, 91 entries) has no directory entry at all (Confirmed). The game does not need names, since it looks files up by full path, but a tool that lists a package has only hashes.
+- **Name recovery (`mod_names`).** Names are recovered by hashing candidate paths and keeping those in the index, so a guess can only miss, never mis-name. Candidates: every path of the mounted game, parents and listings, paths mentioned inside any entry, the manifest's icon and description, and file conventions (same-stem `.pmg`, `.tobj`, `.mat`; addon units at `accessory/<slot>/<name>.sii`). Across the 21 v1 packages, 164,645 of 170,765 entries get a name with the game's paths, and 167,421 when the other mod packages' files are candidates too: a v1 package's names often sit in another package, such as a model package used by a separate definitions package (Confirmed, `research/evidence/mod-name-recovery.txt`).
 - **Listing encoding.** Some listings are not UTF-8 (22 of 106 in one package; names with bytes like `0xb9` beside Polish words, probably Windows-1250: Hypothesis). The reader decodes them lossily, so such a name cannot be hashed back to its entry.
 - **Reader check (Confirmed).** `HashFsV1Archive` opens all 20 packages. The entry count equals the game log's in every one, and all 170,674 entries read to their declared size (`mod_probe`, derivation section 6).
 
@@ -78,14 +80,14 @@ Entry table: `count` × 32-byte records, sorted by hash (Confirmed, 20 files):
 
 ## `manifest.sii`
 
-Plain SII, one `mod_package : <unit name>` unit. Attributes seen across 54 manifests:
+Plain SII, one `mod_package : <unit name>` unit. The unit name is dot-prefixed (`.name`) in 28 of 31 ZIP manifests; CRLF and LF line ends both occur. Attributes seen across 54 manifests:
 
 | Attribute | Use | Status |
 |---|---|---|
 | `package_version` | free string shown in the mod manager and log | Confirmed |
 | `display_name` | shown name; falls back to the package name | Confirmed (log warning) |
 | `author` | free string | Confirmed |
-| `category[]` | mod-manager categories; invalid or missing values fall back to defaults | Confirmed (log warnings) |
+| `category[]` | mod-manager categories; invalid or missing values fall back to defaults. Values seen: `tuning_parts`, `truck`, `map`, `graphics`, `sound`, `other` | Confirmed (log warnings) |
 | `icon`, `description_file` | root-relative files | Confirmed (present in all 54); `.jpg`-only icons and `.txt`-only descriptions are Hypothesis (exe strings) |
 | `compatible_versions[]` | game-version globs (`"1.60.*"`); no array means compatible; an array with no matching glob makes the mod "Incompatible" | Confirmed in both directions: of 54 manifests, exactly the 2 without a glob matching 1.60.1.7 are the 2 the log calls incompatible |
 | `dlc_dependencies[]` | DLC package names; a missing one marks the mod incompatible | Hypothesis (exe string; every dependency here is installed) |
@@ -107,7 +109,17 @@ Plain SII, one `mod_package : <unit name>` unit. Attributes seen across 54 manif
 
 ## Writing a mod package
 
-Nothing in this project writes mods. From the observations above:
+`ZipWriter` and `write_new_package` (`specsheet-archive`) and `mod_manifest` (`specsheet-formats`) write new packages (D18); the example `mod_write` builds a test package. From the observations above:
 - The game loads a ZIP (stored or deflate) or a HashFS archive placed in `<home>/mod/`, with the overriding files at their game paths.
+- A ZIP needs no directory records to mount: a package with none mounts and its top-level folders resolve (Confirmed, `research/evidence/mod-writer-checks.txt`). That nested folders list without them is a Hypothesis. Our writer emits none.
+- The package name is the file stem, so a new package must not share a stem with an existing one (the game warns about duplicated package names).
+- Our output is a standard ZIP: Python's strict `zipfile` reader checks every CRC of the test package without error (Confirmed). Whether the game lists and mounts it is not yet checked.
+- ZIP stores every name in its central directory, so a package we write can never lose its names the way a v1 package without listings does. Any future v1 output must write the root listing and every listing below it.
 - `manifest.sii` at the root is optional: without it the game uses default information (`No_Driver`). It is needed for a display name, an icon and version gating.
 - To take effect, the package must be enabled for a profile. The player does this in the in-game mod manager, so a tool that writes a package never has to touch the encrypted profile.
+
+## `.soundref` (sound mods)
+
+- A text file linking a sound slot to an FMOD bank event. One `key=value` per line: `source="/sound/truck/<bank>.bank#<event path>"` in all 37 of one package, and `position_offset=x;y;z` in 8 (Confirmed on that package, `mod-name-recovery.txt` section 5).
+- Truck sound includes (`sound*.sui`) list slots as `sounds[]: "<slot>|/def/.../x.soundref"`.
+- The game ships `.soundref` files too (for example `engine/sound_590s_engine.soundref`); whether they use the same keys is Unknown.

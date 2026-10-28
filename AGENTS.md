@@ -66,8 +66,8 @@ A change is done when all of these hold:
 
 | Crate | Owns | Never |
 |---|---|---|
-| `specsheet-archive` | `.scs` indexing, decompression, packed textures, layered VFS | parses file contents |
-| `specsheet-formats` | byte parsers: SII, PMD, PMG, MAT, tokens | touches archives or paths |
+| `specsheet-archive` | `.scs` and mod-package indexing, decompression, packed textures, layered VFS; building new ZIP packages | parses file contents |
+| `specsheet-formats` | byte parsers: SII, PMD, PMG, MAT, tokens; the `manifest.sii` writer | touches archives or paths |
 | `specsheet-core` | catalog, rules, configuration state | does I/O or reads formats |
 | `specsheet-data` | install discovery, catalog loading, assembly, scenes, render data, `session` orchestration, `view` display data | knows about UI or GPU APIs |
 | `specsheet` (`crates/specsheet`) | Bevy renderer, egui UI, background jobs, settings, dev script | decides compatibility or parses game files |
@@ -81,9 +81,10 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Feature | Code | Tests |
 |---|---|---|
 | `.scs` archives, path hashing, layered VFS | `specsheet-archive/src/{hashfs,city,vfs}.rs` | unit tests in those files; every `real_install::*` mount |
-| Mod packages: ZIP, HashFS v1 | `specsheet-archive/src/{zip,hashfs_v1}.rs` | unit; example `mod_probe` over a mod folder |
+| Mod packages: ZIP, HashFS v1; writing new ZIP packages | `specsheet-archive/src/{zip,hashfs_v1,zip_write}.rs`; manifests in `specsheet-formats/src/mod_manifest.rs` | unit; examples `mod_probe` over a mod folder, `mod_write` (test package) |
 | Packed textures, GDeflate | `specsheet-archive/src/{texture,gdeflate}.rs` | unit tests in those files |
 | SII definitions | `specsheet-formats/src/sii.rs` | unit; `real_install::every_vehicle_definition_parses` |
+| Mod file names in HashFS v1 packages without listings | `specsheet-data/src/mod_names.rs`; scanner in `specsheet-formats/src/paths.rs` | unit; example `mod_names` over v1 packages |
 | Profiles and saves: ScsC, binary SII | `specsheet-formats/src/{scsc,bsii}.rs` | unit; examples `profile_mods`, `save_check` |
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
 | UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |

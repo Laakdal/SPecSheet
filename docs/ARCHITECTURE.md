@@ -21,8 +21,8 @@ A standalone desktop app that reads the user's ETS2 installation, assembles a tr
 
 | Crate | Responsibility | May depend on |
 |---|---|---|
-| `specsheet-archive` | Read-only `.scs` access: indexing, decompression, packed textures, layered VFS | std, flate2, gdeflate |
-| `specsheet-formats` | Byte-level parsers for SII, PMD, PMG, MAT. No I/O | std |
+| `specsheet-archive` | Read-only `.scs` and mod-package access: indexing, decompression, packed textures, layered VFS. Builds new ZIP mod packages (D18) | std, thiserror, flate2, gdeflate |
+| `specsheet-formats` | Byte-level parsers for SII, BSII, ScsC, PMD, PMG, MAT; the `manifest.sii` writer; a scanner for paths files mention. No I/O | std, thiserror, flate2, aes, cbc |
 | `specsheet-core` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation. No I/O, no game formats | serde |
 | `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; resolves slot availability from model locators; assembles render-ready meshes; `view` turns a session into display data (labels, markers, verdict reasons) | all of the above |
 | `crates/specsheet` | The application: Bevy renderer, egui UI, background jobs, settings. Converts `specsheet-data` meshes and textures to GPU assets; holds no tuning rules | specsheet-data, specsheet-core, bevy, bevy_egui |
@@ -46,8 +46,8 @@ crates/
   specsheet-gameui/     the game's UI files laid out (independent of trucks)
   specsheet-truck/      the tuning domain: catalog, configuration, rules, paint jobs, hookups (was specsheet-core)
   specsheet-data/       loading game data: install, catalog/, models, scenes, paint
-  specsheet-formats/    byte parsers: SII, BSII, ScsC, PMD/PMG, MAT
-  specsheet-archive/    archives: HashFS v2/v1, ZIP, packed textures, VFS
+  specsheet-formats/    byte parsers: SII, BSII, ScsC, PMD/PMG, MAT; manifest writer
+  specsheet-archive/    archives: HashFS v2/v1, ZIP (read and write), packed textures, VFS
   specsheet-core/       foundation: ids, maths (Vec3, Transform, Aabb), colour, units; no domain logic
   specsheet-research/   the research tools now spread over three crates' examples/
 xtask/                  repository tasks: check, layers, guard, real, parity, version-port
