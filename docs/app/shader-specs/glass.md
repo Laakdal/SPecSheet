@@ -96,7 +96,7 @@ So `glass_tint_opacity 0` with a white tint leaves the background unchanged, and
 
 `glass.tsnmap.distort` adds a third pass that writes into the engine's distortion buffer, not into colour (C):
 - it takes the eye-space refraction of the view ray through the mapped normal with a relative index of 0.6595 (about 1/1.516, crown glass);
-- it outputs the refracted ray's screen-space xy, divided by depth and scaled by the first `distortion_strength` value; the second value is passed through;
+- it outputs the refracted ray's screen-space xy (y flipped), divided by a vertex-stage value that was not decoded (H: depth) and scaled by the first `distortion_strength` value; the second value is passed through;
 - its weight is `(1 − F)·ν` times a vertex-stage factor that was not decoded.
 
 The engine applies the buffer later, in a pass we have not read. Skip it: it is four models.
@@ -109,7 +109,7 @@ The engine applies the buffer later, in a pass we have not read. Skip it: it is 
 | Whether `env_factor` scales glass reflections through `g` | U. It matters: glass sets it up to 24. | Ignore `env_factor`, as the shader does |
 | `M`, `Aenv`, the light colours | engine, as dif-spec §3.3 and [tonemap.md](tonemap.md) §8 | as for dif.spec |
 
-**Next step:** add `texture_reflection_modulator` to the parked REA regex (the code that fills it, per material).
+**Next step:** the parked REA run in TASKS (engine-filled material inputs) settles `g` and the `env_factor` question.
 
 ## Sources
 

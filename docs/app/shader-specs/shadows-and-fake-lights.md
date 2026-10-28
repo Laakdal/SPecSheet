@@ -40,7 +40,7 @@ So the effect darkens what is under it: `dst ← dst·(1 − B.r)` without fog.
 ## 3. `fakeshadow` (C, engine use U)
 
 - One pass, "fake shadow colour": depth "less" with depth write on, **front faces culled**, no blend.
-- It writes a grey value `0.5 + 0.5·(z/w)`, taken from the uncorrected projection of the vertex, into all four channels.
+- It writes a grey value `0.5 + 0.5·z` into all four channels, where `z` is the vertex's clip-space z from the uncorrected projection, interpolated and **not** divided by w.
 - The engine uses it as the contour from which its shadow volumes start (the wiki: it outlines the vehicle and wheels). That use is U, not read.
 - `a` and `nocull` variants exist.
 

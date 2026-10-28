@@ -17,7 +17,7 @@ Each effect has two passes with identical surface maths (C, 6 of 6 pairs compare
 | `airbrush` | Adds the mask texture as a livery. Its RGB is painted over the paint colour by its A. |
 | `flipflake` | Adds the flip colour (view-angle colour shift) and flakes (noise-driven specular). |
 | `flipflakeuv` | Like `flipflake`, but the flake noise uses UV set 2. |
-| `altuv` | The mask and the flakes use UV set 2 instead of UV set 1. Only the vertex stage changes. On the plain variant it changes nothing: `eut2.truckpaint.altuv` names exactly the objects of `eut2.truckpaint`. |
+| `altuv` | The mask and the flakes use UV slot 2 instead of UV slot 1. Only the vertex stage changes. On the plain variant it changes nothing: `eut2.truckpaint.altuv` names exactly the objects of `eut2.truckpaint`. |
 | `tsnmap` / `tsnmapuv` | Adds a tangent-space normal map; see the lighting page. Both carry a fallback technique, with the same variant minus the normal map, that is used when the condition `nmap` is false (H: a graphics setting). |
 
 Combinations that exist (directory listing, `docs/formats/paint.md`):
@@ -41,7 +41,7 @@ Truck `.mat` files usually name only the base, e.g. `eut2.truckpaint` or `eut2.t
 
 Name order: base, then `tsnmap`/`tsnmapuv`, then `airbrush`/`colormask`, then `flipflake`/`flipflakeuv`, then `altuv`.
 
-Constraint (C, listing): `flipflakeuv` never appears with `altuv`. It is therefore a different choice from `alternate_uvset`: the mask (if any) stays on UV set 1 and only the flakes move to set 2. Which paint-job or model property selects it is U.
+Constraint (C, listing): `flipflakeuv` never appears with `altuv`. It is therefore a different choice from `alternate_uvset`: the mask (if any) stays on UV slot 1 and only the flakes move to slot 2. Which paint-job or model property selects it is U.
 
 Skinned, `shadow` and `asafew.a` variants exist but were not read (§7).
 
@@ -58,10 +58,10 @@ Skinned, `shadow` and `asafew.a` variants exist but were not read (§7).
 | `texture_reflection` (cube) | `.mat` (`/material/environment/vehicle_reflection.tobj` in all 4 mats seen) | reflection vector | all |
 
 UV routing (C, from the vertex stages):
-- **UVp** (paint UV) is mesh UV set 1. With `altuv` it is set 2.
-- **UVf** (flake UV) equals UVp. With `flipflakeuv` it is set 2. In `airbrush.flipflakeuv` the mask stays on set 1 and the flakes use set 2.
+- **UVp** (paint UV) is UV slot 1 (vertex attribute 9). With `altuv` it is slot 2 (attribute 10) (C, read in `airbrush` and `airbrush.altuv`).
+- **UVf** (flake UV) equals UVp. With `flipflakeuv` it is slot 2. In `airbrush.flipflakeuv` the mask stays on slot 1 and the flakes use slot 2 (C).
+- Which PMG set feeds slots 1 and 2 is the piece's routing nibble for that slot (H, [models.md](../../formats/models.md); [dif-spec.md](dif-spec.md) §3.2). On most paint pieces that is set 1 and set 2, which §8 confirmed on screen; on pieces routed otherwise (e.g. routing `0xf2fff110`: slot 2 reads set 1) the two readings differ.
 - **UVn** is UV slot 6, the "UV Normal" stream (vertex attribute 14; [dif-spec.md](dif-spec.md) §3.2). The PMG set behind it is the piece's routing nibble 6 (H, [models.md](../../formats/models.md)).
-- (H) "UV set *n*" means the PMG's *n*-th UV set, counted from 0.
 - **Transforms.** In the vertex stage each UV set gets an engine-set scale and bias (C).
   - The PMG stores UVs as plain `f32` pairs (`docs/formats/models.md`, `pmg.rs`). So (H) that scale and bias is identity for our data, and we apply no transform.
   - The fragment stage adds no tile offset or scale to the mask (C). Where a mask tile sits is decided entirely by the mesh's UVs. This fits `paint.md`: "a tile is already cut for its model".

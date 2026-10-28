@@ -78,7 +78,7 @@ As dif-spec §5.5 for plain `add.env` (linear fresnel `F = sat(fb + fs·(1 − N
 
 With the stand-ins, `glow = 0`, and lamps render exactly as `dif.spec.add.env` (or `dif.spec` without `add.env`).
 
-**Next step:** add `lamp_color_array|lamp_contrast` to the parked REA regex. It shows how the engine fills the table and whether the tuning screen lights anything.
+**Next step:** the parked REA run in TASKS (engine-filled material inputs) shows how the engine fills `Cl` and `γ`, and whether the tuning screen lights anything.
 
 ## Sources
 

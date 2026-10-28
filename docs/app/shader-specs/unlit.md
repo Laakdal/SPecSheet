@@ -32,10 +32,20 @@ Then fog: `out.rgb = Cfog + τ·(rgb − Cfog)`. No sun, ambient or specular ter
 
 | Input | Status | Stand-in (our choice, not the game's) |
 |---|---|---|
-| `ML` (material luminosity, from `luminance_output`, default 0) | U: the conversion and its behaviour at the default are engine-side. If the default reached the shader as 0, every unlit material without `luminance_output` would be black, so the engine probably substitutes a value (H). | `ML.rgb · ML.a = 1` |
+| `ML` (material luminosity, from `luminance_output`) | U: the conversion is engine-side | the rule below |
 | `f` (flipsheet frame) | U | frame 0: `f = 0` |
 
-**Next step:** the REA regex for `material_luminosity` in [dif-lum.md](dif-lum.md) §6 settles this too.
+**Luminosity factor `ℓ = ML.rgb · ML.a`** (this rule is our choice, shared with [dif-lum.md](dif-lum.md); the engine's conversion is U):
+
+| `luminance_output` | Seen in | `ℓ` |
+|---|---|---|
+| −1 | 13 of 15 sampled garage-scene materials, e.g. the unlit background domes (`research/evidence/shader-spec-glass-lamp-lum.txt`) | 1. These surfaces are visible in the game, so −1 cannot reach the shader raw; it is a sentinel (H, strong). |
+| 0 | the default; 2 scene `dif.lum` materials | 0: no colour (black) |
+| > 0 (nits, up to 5000 on trucks) | a few | U; stand-in 1 |
+
+So for the garage backgrounds, `rgb = B.rgb · Kd` (`· c2` with `vcol`). `unlit.tex` draws the background domes of several garage scenes, so this choice is visible.
+
+**Next step:** the parked REA run in TASKS (engine-filled material inputs) settles `ML`.
 
 ## Sources
 

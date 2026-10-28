@@ -44,7 +44,7 @@ Inputs:
 
 Steps:
 1. `Lv = Cb[j] · ML.rgb` and `La = ML.a` (vertex stage).
-2. **Emission weight** `m = sat(ms·B.a + mb)²`. It uses the same remap `mremap = (ms, mb)` as dif-spec §3.3 (the uniform table names it "alpha to weight factors"), and the result is **squared**.
+2. **Emission weight** `m = sat(ms·B.a + mb)²`. It uses the same remap `mremap = (ms, mb)` as dif-spec §3.3, and the result is **squared**.
 3. `emission = B.rgb · Lv · (m · La)`.
 4. With `lvcol`: multiply `emission` further by `c2` (rgb) and by `c.a`.
 
@@ -57,13 +57,21 @@ Steps:
 
 | Input | Status | Stand-in (our choice, not the game's) |
 |---|---|---|
-| `ML` from `luminance_output` (and `luminance_night`) | U. Truck `dif.lum` materials all set `luminance_output`, from −1 to 2000 nits (`material-survey.txt`, 63 of 63). The nits-to-uniform scale, and whether `luminance_night` applies by time of day, are engine-side. | `ML = 0`: no emission. That is daylight, and the tuning screen is a daylight scene (H). Do **not** pass the nits through raw: 2000 would blow out. |
+| `ML` from `luminance_output` (and `luminance_night`) | U: the nits-to-uniform scale, and whether `luminance_night` applies by time of day, are engine-side. Truck `dif.lum` materials all set `luminance_output`, from −1 to 2000 (`material-survey.txt`, 63 of 63). | the rule below; never pass the nits through raw |
 | `Cb` (backlight table) | U: dashboard and interior backlight colours | white, (1, 1, 1) in every entry |
 | `mremap` | H, as dif-spec §3.3 | (1, 0) |
 
-With the stand-ins, `dif.lum` renders as its lit surface only (§3).
+**Luminosity factor `ℓ = ML.rgb · ML.a`** (this rule is our choice, shared with [unlit.md](unlit.md); the engine's conversion is U):
 
-**Next step:** add `material_luminosity|luminosity_color_array|luminance_output|luminance_night` to the parked REA regex.
+| `luminance_output` | Seen in | `ℓ` |
+|---|---|---|
+| −1 | 13 of 15 sampled garage-scene materials, e.g. the unlit background domes (`research/evidence/shader-spec-glass-lamp-lum.txt`) | 1. These surfaces are visible in the game, so −1 cannot reach the shader raw; it is a sentinel (H, strong). |
+| 0 | the default; 2 scene `dif.lum` materials | 0: no emission |
+| > 0 (nits, up to 5000 on trucks) | a few | U; stand-in 1 |
+
+So `emission = B.rgb · ℓ · m` (with `lvcol`, also `· c2 · c.a`). This matters in the garage: the night-city, under-bridge and hangar scenes use `dif.lum` for lit windows and signs.
+
+**Next step:** the parked REA run in TASKS (engine-filled material inputs) settles `ML` and `Cb`.
 
 ## Sources
 
