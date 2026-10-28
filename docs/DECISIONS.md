@@ -48,9 +48,9 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - Show every slot. Rejected: unusable.
 - This is a design choice consistent with F4/F5, not a reproduction of the game's pin placement.
 
-### D8: Only base game and DLC archives are mounted
+### D8: Only base game and DLC archives are mounted (partly superseded by D15)
 - Mods (`Documents/Euro Truck Simulator 2/mod`) use HashFS v1 and ZIP, and change data arbitrarily.
-- Mods are out of scope for the prototype.
+- Mods are out of scope for the prototype. Since D15, mod containers and profiles are read, but still nothing is mounted.
 
 ### D9: Rule repair is our design
 - **Context:** the definitions say what is compatible, not how the game repairs a configuration after a base-part change.
@@ -111,6 +111,20 @@ Each entry records the context, the decision and the alternatives considered. Ne
 - **Alternatives:**
   - Bevy's own image types. Rejected: they don't expose PNG decoding outside the asset system.
   - A separate tool crate. Rejected: the runner re-runs the app binary itself, and keeping it in the binary avoids a second build target.
+
+### D15: Read mod containers and profiles; mount nothing yet
+- **Context:** the user asked for mod packages and their profile's mod list to be readable (F14, `docs/formats/mods.md`, `docs/formats/profiles.md`).
+- **Decision:**
+  - `specsheet-archive` gets its own tolerant ZIP reader (`zip.rs`). Like D2, we own the reader: a stock reader (Python's `zipfile`) refuses a package the game loads (encryption bit set, wrong CRCs), and we need the game's tolerance, measured on 33 packages. The `zip` crate was not tried.
+  - `specsheet-formats` decrypts ScsC profiles (`scsc.rs`) with the RustCrypto `aes` 0.8 and `cbc` 0.1 crates (MIT or Apache-2.0, pure Rust, no `unsafe` in our code). The AES key is a format constant from sii-decode-rs (MIT), taken as a fact and confirmed on 4 profiles.
+  - `specsheet-formats` reads binary SII saves (`bsii.rs`) into the same `SiiDocument` as text. The layout is cross-checked against sii-decode-rs (MIT) and confirmed on our own bytes (`research/evidence/bsii-derivation.txt`).
+  - Profiles, saves and the mod folder are only read. Nothing in the project writes to them.
+  - `specsheet-archive` also reads HashFS v1 (`hashfs_v1.rs`), a module separate from the v2 reader. It was written from our byte observations only (`research/evidence/hashfs-v1-derivation.txt`), with no community code and no part of the v2 reader (D13).
+  - Mounting mods into the `Vfs` and their priority come later, after the priority question in F14 is answered.
+- **Alternatives:**
+  - The `zip` crate. Not chosen: tolerance for scrambled headers would have to be patched in, and the reader is about 300 lines.
+  - Depending on sii-decode-rs. Rejected: it is not on crates.io, and it pulls in a logger and a parser framework.
+  - Implementing AES ourselves. Rejected: a reviewed crate is safer than our own cipher code.
 
 ### D16: One design system for the screens the game doesn't have
 - **Context:** besides the 1:1 tuning screen, the app needs its own screens: home, truck picker, settings, configurations, mods and profiles, parity, about. The user chose Horizon's method (horizon-rust/horizon, MIT) for them.

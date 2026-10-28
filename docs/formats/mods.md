@@ -1,0 +1,113 @@
+# Mod packages (`/home/mod`, Steam Workshop)
+
+What a mod package contains and how the game finds, gates and mounts it. Status labels are explained in [../ASSET_FORMATS.md](../ASSET_FORMATS.md). The runtime behaviour is finding F14 in [../REVERSE_ENGINEERING.md](../REVERSE_ENGINEERING.md). Evidence: `research/evidence/mod-loader-survey.txt` (55 local packages, 77 Workshop items, the game log, `eurotrucks2.exe` strings).
+
+The app reads all three containers: ZIP (`ZipArchive`, `zip.rs`), HashFS v1 (`HashFsV1Archive`, `hashfs_v1.rs`) and HashFS v2 (`Archive`), all in `crates/specsheet-archive/src/`. Nothing is mounted yet (D15 in [../DECISIONS.md](../DECISIONS.md)).
+
+## Where packages come from
+
+| Source | Location | Package |
+|---|---|---|
+| Local | `<home>/mod/`; the home directory is `Documents/Euro Truck Simulator 2` unless the game runs with `-homedir` | each file is one package; its file stem is the package name |
+| Workshop | `<steam>/steamapps/workshop/content/227300/<published id>/` | `versions.sii` picks a sub-folder or a `.zip`/`.scs` in the item folder |
+
+- The game opens every local file at start-up, reads its manifest and closes it again (Confirmed, log).
+- Workshop items come from a Steam query for the subscribed items, not from a folder scan (Confirmed, log: "Received list of the steam workshop subscribed mods").
+- In the log, Workshop packages are named `mod_workshop_package.<id as 16 hex digits>` (Confirmed: `00000000CE19853F` = item `3457779007`).
+
+## Container: decided by content
+
+The extension means nothing. `SCS#` goes to the `hashfs` driver and `PK\3\4` to the `zipfs` driver. 28 of the 33 ZIP packages here are named `.scs` (Confirmed, every file against the driver the log names for it).
+
+### HashFS v2
+Identical to the game's own archives ([hashfs.md](hashfs.md)). Both v2 mods here open with `Archive::open`, root listing and manifest included (Confirmed).
+
+### HashFS v1
+
+Every field below is derived from our own hex dumps of 20 packages: `research/evidence/hashfs-v1-derivation.txt` (sections 1–5, with annotated bytes). The reader `HashFsV1Archive` was written from that file.
+
+Header (little-endian, 0x14 bytes):
+
+| Offset | Type | Field | Status |
+|---|---|---|---|
+| 0x00 | `[4]u8` | magic `SCS#` | Confirmed |
+| 0x04 | u16 | version = 1 | Confirmed |
+| 0x06 | u16 | salt (0 in 19 of 20 files) | Confirmed |
+| 0x08 | `[4]u8` | hash method `CITY` | Confirmed |
+| 0x0C | u32 | entry count (equals the count the game logs) | Confirmed |
+| 0x10 | u32 | entry table offset (usually `0x1000`; at the end of the file in one) | Confirmed |
+
+Entry table: `count` × 32-byte records, sorted by hash (Confirmed, 20 files):
+
+| Offset | Type | Field | Status |
+|---|---|---|---|
+| +0 | u64 | path hash | Confirmed |
+| +8 | u64 | data offset | Confirmed |
+| +16 | u32 | flags | see below |
+| +20 | u32 | CRC | Unknown whether the game checks it |
+| +24 | u32 | size | Confirmed |
+| +28 | u32 | stored size | Confirmed |
+
+- **Flags.** Bit 0 marks a directory (Confirmed). Bit 1 marks zlib-compressed content (Confirmed: every flagged entry inflates to exactly `size`, every unflagged one has `stored == size`). Bit 2 is set on every entry of one producer's packages, with no visible effect (Unknown).
+- **Path key.** CityHash64 v1.0.3 of the path without a leading slash, as in v2. With a non-zero salt, the decimal text of the salt is prepended (`18708manifest.sii` for salt `0x4914`) (Confirmed: `manifest.sii` resolves in 20 of 20 files; no other form does).
+- **Directory listing.** Text with one name per line; sub-directories are prefixed `*`. Lines end in `\n` or `\r\n` (Confirmed).
+- **No root listing.** The root directory (key of ``) is missing from all 20 files, so a v1 mod cannot be walked from the root. Its files are reachable only by known path (Confirmed). Deeper listings exist.
+- **Listing encoding.** Some listings are not UTF-8 (22 of 106 in one package; names with bytes like `0xb9` beside Polish words, probably Windows-1250: Hypothesis). The reader decodes them lossily, so such a name cannot be hashed back to its entry.
+- **Reader check (Confirmed).** `HashFsV1Archive` opens all 20 packages. The entry count equals the game log's in every one, and all 170,674 entries read to their declared size (`mod_probe`, derivation section 6).
+
+### ZIP
+- Only stored (0) and deflate (8) occur in 33 packages; none needs ZIP64 (Confirmed). The game's reader also handles ZIP64 records (Confirmed, its error strings). Whether it accepts other methods is Unknown.
+- **Deliberately malformed archives exist.** One package sets the encryption bit on every central-directory entry and gives both headers wrong CRCs. Its local headers also carry a wrong method. Its data is still plain deflate at `local header + 30 + name + extra` and inflates to the central-directory size (Confirmed). The game opens it without a zipfs error (Confirmed, log).
+  - Hypothesis: the game takes names, method and sizes from the central directory and the data offset from the local header, and checks neither the encryption bit nor the CRC.
+  - An off-the-shelf ZIP library refuses such a package.
+- **Our reader (`ZipArchive`)** does what the game tolerates:
+  - names, method and sizes come from the central directory, the data offset from the local header (`+ 30 + name + extra`);
+  - the encryption bit and both CRCs are ignored;
+  - methods 0 and 8 are read, and any other method fails only that entry;
+  - ZIP64 end records and extra fields are honoured;
+  - directories are implied by file paths, since ZIPs need no directory records.
+  - Confirmed on all 33 ZIP packages: the record count equals the game's "Created, N entries" in every one, and every file reads to its declared size (0 failures), the malformed package included.
+
+## Package layout
+
+- **Ordinary:** `manifest.sii`, an icon (`.jpg`) and a description (`.txt`) at the root, then the game's own tree (`def/`, `vehicle/`, `material/`, …). A mod overrides a game file by storing the same path.
+- **Multi-folder:** `manifest.sii` and the icon at the root, and the content in `base/` and `dlc_<name>/` folders. Each folder becomes its own device (Confirmed, one "mounted to mod pool" line per folder). That `base/def/x.sii` is then seen as `/def/x.sii` is a Hypothesis.
+  - `base/` is always mounted.
+  - A `dlc_<name>/` folder is mounted only when that DLC is installed (Confirmed: of 17 `dlc_*` folders, the two that match no installed DLC were skipped at profile load).
+- **No manifest:** the game creates default information (Confirmed, log).
+
+## `manifest.sii`
+
+Plain SII, one `mod_package : <unit name>` unit. Attributes seen across 54 manifests:
+
+| Attribute | Use | Status |
+|---|---|---|
+| `package_version` | free string shown in the mod manager and log | Confirmed |
+| `display_name` | shown name; falls back to the package name | Confirmed (log warning) |
+| `author` | free string | Confirmed |
+| `category[]` | mod-manager categories; invalid or missing values fall back to defaults | Confirmed (log warnings) |
+| `icon`, `description_file` | root-relative files | Confirmed (present in all 54); `.jpg`-only icons and `.txt`-only descriptions are Hypothesis (exe strings) |
+| `compatible_versions[]` | game-version globs (`"1.60.*"`); no array means compatible; an array with no matching glob makes the mod "Incompatible" | Confirmed in both directions: of 54 manifests, exactly the 2 without a glob matching 1.60.1.7 are the 2 the log calls incompatible |
+| `dlc_dependencies[]` | DLC package names; a missing one marks the mod incompatible | Hypothesis (exe string; every dependency here is installed) |
+| `mp_mod_optional` | multiplayer: clients may join without the mod | Hypothesis (name only) |
+
+## Workshop `versions.sii`
+
+- One `package_version_info : .<name>` unit per variant, with `package_name` and optional `compatible_versions[]` (Confirmed, 77 items).
+- `package_name` names a sub-folder or a `.zip`/`.scs` file in the item folder. Folders are mounted as directory devices (Confirmed, log).
+- Variants without `compatible_versions` (`.latest`, `.universal`) act as the fallback (Hypothesis: the game warns about "Duplicated version info with no compatible_versions array").
+
+## Activation and order
+
+- Packages are mounted only when a profile is selected, into a separate **mod pool** (Confirmed, log).
+- The active list is stored per profile (`active_mods`). Its order is the mount order: the log prints "Active N mods" and then mounts each mod in that same order (Confirmed for all 57 active mods).
+- The list is `active_mods[]` in `profile.sii`, entries `"<package name>|<display name>"`, index 0 mounted first (Confirmed; [profiles.md](profiles.md)).
+- Which mod wins when two store the same path, and how the mod pool ranks against the scs pool: Unknown (REA question in F14).
+- `/home/mods_info.sii` is game-written plain SII: `info[]` holds `"<package name>|<number>"` for every known package (Confirmed). What the number means is Unknown.
+
+## Writing a mod package
+
+Nothing in this project writes mods. From the observations above:
+- The game loads a ZIP (stored or deflate) or a HashFS archive placed in `<home>/mod/`, with the overriding files at their game paths.
+- `manifest.sii` at the root is optional: without it the game uses default information (`No_Driver`). It is needed for a display name, an icon and version gating.
+- To take effect, the package must be enabled for a profile. The player does this in the in-game mod manager, so a tool that writes a package never has to touch the encrypted profile.

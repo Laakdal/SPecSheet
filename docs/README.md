@@ -24,6 +24,9 @@ Docs are organised by topic. Each fact has one home: `formats/` describes what g
   - [formats/effects.md](formats/effects.md): `effect.scs` shaders
   - [formats/ui.md](formats/ui.md): `/ui/` layouts, templates, fonts, UI icons
   - [formats/ui-truck-config.md](formats/ui-truck-config.md): the truck tuning screen's widget tree
+  - [formats/mods.md](formats/mods.md): mod packages (HashFS v1, ZIP, manifests, Workshop)
+  - [formats/profiles.md](formats/profiles.md): player profiles (ScsC decryption, `active_mods`)
+  - [formats/bsii.md](formats/bsii.md): binary SII in save files
   - [formats/paint.md](formats/paint.md): paint jobs, per-part paint, masks
 
 ## The app

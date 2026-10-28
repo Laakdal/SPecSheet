@@ -251,6 +251,27 @@ Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chass
 - **Unknown.**
   - Whether the tuning screen shows liftable axles raised or lowered. The app shows them lowered. To settle: a reference screenshot (docs/PARITY.md) or REA on `liftable_axle`.
 
+### F14: How the game finds, gates and mounts mods (Confirmed sequence, Unknown priority)
+Evidence: `research/evidence/mod-loader-survey.txt` (game log, `eurotrucks2.exe` strings, the example `mod_probe` over 55 local packages, 77 Workshop items). Formats are in [formats/mods.md](formats/mods.md).
+
+- **Discovery (Confirmed).**
+  - At start-up, after base and DLC archives, the game opens every file in `/home/mod` and reads its `manifest.sii`.
+  - It picks the driver by content (`SCS#` → hashfs, `PK` → zipfs), never by extension.
+  - DLC archives are logged "Created and validated" with a SHA-256; mods never are.
+  - Workshop items come from a Steam query; `versions.sii` picks the variant.
+- **Gating (Confirmed).**
+  - A mod is "Incompatible" when it has a `compatible_versions[]` array and no glob in it matches the game version. Checked in both directions: of 54 manifests, exactly the two without a 1.60 glob are the two the log flags.
+  - Hypothesis (exe string only): a missing `dlc_dependencies[]` DLC also marks a mod incompatible.
+  - In multi-folder packages, `dlc_<name>/` folders for DLC that isn't installed are skipped.
+- **Mounting (Confirmed).**
+  - Nothing is mounted until a profile is selected.
+  - Then the game logs "Active N mods (local, workshop)" and mounts each active mod, in that order, into a separate mod pool. Base and DLC stay in the scs and core pools.
+- **Unknown.**
+  - Which of two mods wins for the same path: the first or the last in the active list.
+  - How the mod pool ranks against the scs pool.
+  - Next step: REA `function` on the code referencing `0x142112188` (`[mods] Active %Iu mods`) and `0x1420bcaa8` (`[ufs] disabling pool lookup`). The string addresses come from `research/evidence/rea-search-mod-loader.txt`.
+- **Profile list (Confirmed, since resolved).** The active list is `active_mods[]` in the `ScsC`-encrypted `profile.sii`, read with `scsc::sii_text`. Index 0 is mounted first ([formats/profiles.md](formats/profiles.md)).
+
 ### F15: Paint jobs: one unit, a token-named per-part file, masks cut per cabin (Confirmed data, Hypothesis on unlisted parts)
 Evidence: `research/evidence/paint-job-survey.txt` (S1–S10). Format details: [formats/paint.md](formats/paint.md). No shader code was read (D13).
 
@@ -281,6 +302,7 @@ Evidence: `research/evidence/rea-search-batch2.{txt,json}` (`ev_f88b185e…`). T
 
 | Question | Next step |
 |---|---|
+| Mod priority (first or last active mod wins; mod pool vs scs pool) | REA: the function logging `[mods] Active %Iu mods` and the `[ufs]` pool lookup (F14) |
 | Exact slot-to-locator matching rule (suffixes `_s`, `_sl`, digits) | REA: decompile the caller of `0x1421c2f90` (F8) |
 | How pins are positioned, and which slot tokens use fixed tabs instead | REA: string search for `pin_offset`/`pin_dir`/`pin_group`, decompile the reader; and the writer of the token table `0x14350cc00` |
 | DLC mount priority | Runtime log does not show it; low impact (DLCs rarely override base files) |

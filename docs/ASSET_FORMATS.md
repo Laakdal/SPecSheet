@@ -20,6 +20,9 @@ Evidence files live in `research/evidence/`.
 | [formats/models.md](formats/models.md) | PMD descriptors, PMG geometry and locators, tokens, `.mat` materials |
 | [formats/effects.md](formats/effects.md) | `effect.scs`: `.rfx` effect → shader map, `.vso`/`.fso` shaders |
 | [formats/ui.md](formats/ui.md) | `/ui/` layout SII (widget units, 1440×900 coordinates, templates, markup), SDF `.font`, UI `.mat`, accessory icon paths |
+| [formats/mods.md](formats/mods.md) | Mod packages: HashFS v1 and ZIP containers, `manifest.sii`, Workshop `versions.sii`, multi-folder packages, activation |
+| [formats/profiles.md](formats/profiles.md) | Player profiles: the ScsC container (AES-256-CBC + zlib), `active_mods` |
+| [formats/bsii.md](formats/bsii.md) | Binary SII in saves: structure and unit blocks, ids, name tokens, value types |
 | [formats/ui-truck-config.md](formats/ui-truck-config.md) | The truck tuning screen (`truck_configuration_*.sii`, filter dialog): widget trees, runtime-filled containers, captions |
 | [formats/paint.md](formats/paint.md) | Paint jobs: `accessory_paint_job_data`, per-part `simple_paint_job_data` files, masks and `shared_` constants, preset colours |
 
@@ -31,4 +34,4 @@ Evidence files live in `research/evidence/`.
 | `/ui/` layouts, `.font` | Documented in [formats/ui.md](formats/ui.md); parsed as plain SII, no layout or font model yet |
 | `.pmc` collision | Not needed |
 | `.pma` animation | Not needed for the static preview |
-| HashFS v1, ZIP | Community mods only; mods are not mounted |
+| Mods in the `Vfs` | HashFS v1 (`HashFsV1Archive`) and ZIP (`ZipArchive`) mod packages are read ([formats/mods.md](formats/mods.md)), but no mod is mounted |

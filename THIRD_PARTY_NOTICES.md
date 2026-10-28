@@ -39,6 +39,7 @@ These were consulted to cross-check format facts that our own tools had observed
 
 - **TruckLib** (`TruckLib.HashFs`, `TruckLib.Models`, `TruckLib.Sii`) and **Extractor** by sk-zk, under **GPL-2.0**: HashFS, model and SII layouts. SPecSheet is MIT, so its code must not copy or translate code from these projects. Only facts such as field offsets and magic numbers may be taken from them. The model, texture and archive code that had been written with them as a reference was rewritten clean-room from our own byte evidence (D13). No code derived from them remains.
 - **GisDeflate** by sk-zk (MIT): the GDeflate tile-stream header.
+- **sii-decode-rs** by Fangyi Zhou (MIT): the ScsC container layout and its AES-256 key, and the binary SII (BSII) layout and value-type table, all confirmed against our own profiles and saves (`research/evidence/profile-scsc-survey.txt`, `bsii-derivation.txt`). No code was taken.
 
 ## Euro Truck Simulator 2
 

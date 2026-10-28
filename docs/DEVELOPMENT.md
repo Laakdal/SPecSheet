@@ -138,6 +138,15 @@ cargo run --release -p specsheet-data --example wheel_fit -- profile /vehicle/tr
 
 # Axles: wheel-locator pairs per axle vs. the chassis' powered/steerable/liftable arrays (F13)
 cargo run --release -p specsheet-data --example axle_survey
+
+# Mod packages (no ETS2_DIR): container by content, HashFS v1 header/entries/keys, manifest fields (F14)
+cargo run --release -p specsheet-archive --example mod_probe -- "<home>/mod"
+
+# Profile: decrypt (ScsC) or read plain text, list active_mods in order
+cargo run --release -p specsheet-formats --example profile_mods -- "<home>/profiles/<hex name>/profile.sii"
+
+# Saves: decode every save (ScsC, text, binary) and compare binary against text field kinds
+cargo run --release -p specsheet-formats --example save_check -- "<home>/profiles"
 ```
 
 ## Debugging tips
