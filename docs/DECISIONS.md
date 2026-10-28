@@ -97,7 +97,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
 - **Context:** SPecSheet is MIT. Some format code was written while reading sk-zk's TruckLib (GPL-2.0), and the materials work would follow the game's own shaders (SCS's code, no license). Facts (offsets, layouts, the maths) are free to use; copied or translated code is not.
 - **Decision (the user's choice):** rewrite or write such code clean-room. Interface stubs and our own evidence go to an agent that has never seen the source code, and the result must match the old behaviour on the whole install.
   - Phase 1: `pmd.rs`, `pmg.rs`, `texture.rs`. Done: output identical to the old code for all 278,633 models and textures in the install (`research/evidence/cleanroom-phase1.txt`).
-  - Phase 2: `hashfs.rs`, after byte-level evidence for its layout (`hashfs.md` facts were only functionally confirmed).
+  - Phase 2: `hashfs.rs`. Done: its layout was first derived from the game's bytes (`hashfs-layout-derivation.txt`), and the reader's index, listings and sampled contents are identical to the old reader on all 116 archives (`research/evidence/cleanroom-phase2.txt`).
   - Shaders: a spec agent writes `docs/app/shader-specs/<effect>.md` (maths in prose and equations); a different agent writes the WGSL from it. Visual parity against reference screenshots.
 - **Provenance of the rest:** `city.rs` ports Google's CityHash v1.0.3 (MIT, notice in `THIRD_PARTY_NOTICES.md`); `gdeflate.rs` follows GisDeflate's stream header (MIT, notice included) and decodes with libdeflate; `read_at.rs` is unreviewed; everything else is our own work.
 - **Alternatives:**

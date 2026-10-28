@@ -57,6 +57,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 - **Licensing:** the model (PMD/PMG) and texture code was rewritten clean-room from our own evidence (D13), with output identical to before on every model and texture in the game. The parsers now also bound UV sets, total decoded geometry and variant values against hostile files.
+- **Licensing:** the HashFS archive reader was also rewritten clean-room, from a new byte-level derivation of the format (D13), and reads every archive identically. No code derived from GPL sources remains.
 - PMG locators without a hookup no longer report an empty hookup string, and a piece whose stored vertex stride disagrees with its streams is rejected instead of misread. Both were found by re-deriving the model layout from our own byte dumps.
 - The docs listed sk-zk's TruckLib references as MIT. They are GPL-2.0, so SPecSheet (MIT) takes only facts from them, never code.
 - Right-hand drive shows the right-hand-drive interior (each interior's UK twin, paired for all 219 units).

@@ -75,7 +75,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [ ] DXGI 67 (R9G9B9E5_SHAREDEXP, skyboxes and HDR UI images) is missing from `pixel_layout`, so those textures do not unpack. Needed only if the app renders skyboxes.
 - [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
 - [x] Clean-room rewrite, phase 1 (D13): `pmd.rs`, `pmg.rs` and `texture.rs` rewritten from interface stubs and our own evidence by an agent that never saw TruckLib or the old code. Output identical to the old code for all 278,633 models and textures in the install (`research/evidence/cleanroom-phase1.txt`), plus three resource-exhaustion guards.
-- [ ] Clean-room rewrite, phase 2 (D13, the user's order): `hashfs.rs`. First derive the HashFS v2 layout from annotated hex dumps (`hashfs.md` facts were only functionally confirmed), then implement it with a second fresh agent.
+- [x] Clean-room rewrite, phase 2 (D13): `hashfs.rs` rewritten by a second fresh agent from a byte-level derivation of the HashFS v2 layout (`hashfs-layout-derivation.txt`). Identical to the old reader on all 116 archives (`cleanroom-phase2.txt`). It corrected the old doc: the header ends at 0x34, record 0x06 is on .pmg only, and 547 entries appear in no listing.
 
 ## Next
 
