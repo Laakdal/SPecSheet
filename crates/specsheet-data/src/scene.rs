@@ -208,6 +208,20 @@ pub struct Scene {
     pub light_diffuse: Option<[f32; 3]>,
     pub light_specular: Option<[f32; 3]>,
     pub light_environment: Option<f32>,
+    /// Exposure the scene asks for (`pre_exposure`; only the Halloween hub
+    /// sets it, to 1.0). How the engine applies it is Unknown.
+    pub pre_exposure: Option<f32>,
+    /// Cube that fills the engine's vehicle reflection slot in this scene
+    /// (`vehicle_reflection`), e.g. the hangar's own cube map. Materials that
+    /// name `/material/environment/vehicle_reflection.tobj` sample that slot
+    /// (Hypothesis, research/evidence/exposure-tonemap-data.txt section 4).
+    pub vehicle_reflection: Option<String>,
+    /// `cube_reflection`: Hypothesis, the engine renders a reflection cube of
+    /// the scene itself at runtime (F16).
+    pub cube_reflection: bool,
+    /// `floor_reflection`: the floor mirrors the truck; the game forces it off
+    /// when the scene has no parts to customise for reflection (F16).
+    pub floor_reflection: bool,
     pub fog_color: Option<[f32; 3]>,
     pub fog_density: Option<f32>,
     pub truck_position: [f32; 3],
@@ -283,6 +297,13 @@ fn scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> Scene {
         light_diffuse: vec3("light_diffuse"),
         light_specular: vec3("light_specular"),
         light_environment: unit.get_f32("light_environment"),
+        pre_exposure: unit.get_f32("pre_exposure").filter(|v| v.is_finite()),
+        vehicle_reflection: unit
+            .get_str("vehicle_reflection")
+            .filter(|path| !path.is_empty())
+            .map(str::to_owned),
+        cube_reflection: unit.get_bool("cube_reflection").unwrap_or(false),
+        floor_reflection: unit.get_bool("floor_reflection").unwrap_or(false),
         fog_color: vec3("fog_color"),
         fog_density: unit.get_f32("fog_density"),
         truck_position: vec3("truck_position").unwrap_or([0.0; 3]),
@@ -441,6 +462,36 @@ hookups_exterior_only[]: sunshld
         assert!(tuning.pins[1].double_sided && !tuning.pins[0].double_sided);
         assert_eq!(tuning.interior_only, vec!["carpet".to_owned()]);
         assert_eq!(tuning.hookups_exterior_only, vec!["sunshld".to_owned()]);
+    }
+
+    #[test]
+    fn reads_the_scene_reflection_keys() {
+        // `/def/desktop/config.hangar.sii` and `/def/truck_config_scene.sii`
+        // (research/evidence/exposure-tonemap-data.txt).
+        let src = br#"SiiNunit
+{
+ui_truck_scene_base_config : hangar.config {
+vehicle_reflection: "/model/ui/hangar/hangar_cubemap.tobj"
+pre_exposure: 1.0
+}
+ui_truck_scene_base_config : plain.config {
+cube_reflection: true
+floor_reflection: true
+}
+}"#;
+        let doc = sii::parse("/def/s.sii", src).expect("parse");
+        let fs = GameFs::new(specsheet_archive::Vfs::new());
+        let mut units = doc.units_of_class("ui_truck_scene_base_config");
+        let hangar = scene_from_unit(&fs, "/def/s.sii", units.next().expect("hangar"));
+        assert_eq!(
+            hangar.vehicle_reflection.as_deref(),
+            Some("/model/ui/hangar/hangar_cubemap.tobj")
+        );
+        assert_eq!(hangar.pre_exposure, Some(1.0));
+        assert!(!hangar.cube_reflection && !hangar.floor_reflection);
+        let plain = scene_from_unit(&fs, "/def/s.sii", units.next().expect("plain"));
+        assert_eq!((plain.vehicle_reflection, plain.pre_exposure), (None, None));
+        assert!(plain.cube_reflection && plain.floor_reflection);
     }
 
     #[test]
