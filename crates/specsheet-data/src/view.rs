@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use specsheet_core::{AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId};
+use specsheet_core::{Accessory, AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId};
 
 use crate::assembly::Drive;
 use crate::session::{GameSession, SlotOption, TruckSession};
@@ -206,7 +206,9 @@ pub struct TruckOverview {
 pub struct OptionView {
     pub id: AccessoryId,
     pub name: String,
-    /// Icon name under `/material/ui/accessory/` (see `ui::accessory_icon`).
+    /// The tile template's icon argument `%1`, spliced into
+    /// `<img src=/material/ui/accessory/%1>`: an icon name, or for a paint
+    /// job the game's thumbnail markup (`icon_argument`).
     pub icon: Option<String>,
     pub price: Option<i64>,
     pub unlock_level: Option<i64>,
@@ -287,7 +289,62 @@ fn selected_icon(session: &TruckSession, slot: &SlotId) -> Option<String> {
         .config()
         .selected(slot)
         .and_then(|id| session.catalog().accessory(id))
-        .and_then(|a| a.icon.clone())
+        .and_then(icon_argument)
+}
+
+/// The game's paint-parameter defaults for colours a paint job leaves out
+/// (F17): base white, flip red, flake green.
+const DEFAULT_BASE: [f32; 3] = [1.0, 1.0, 1.0];
+const DEFAULT_FLIP: [f32; 3] = [1.0, 0.0, 0.0];
+const DEFAULT_FLAKE: [f32; 3] = [0.0, 1.0, 0.0];
+
+/// What the tile template's `<img src=/material/ui/accessory/%1>` takes as
+/// `%1` for `accessory`: its icon, or for a paint job without one the markup
+/// the game builds from the job's own colours (F17): one tinted
+/// `color_icon.mat`, or for `flipflake` jobs base, flip and flake layers
+/// under the `clr_3.mat` overlay.
+fn icon_argument(accessory: &Accessory) -> Option<String> {
+    if let Some(icon) = accessory.icon.as_deref().filter(|i| !i.is_empty()) {
+        return Some(if accessory.paint.is_some() {
+            format!("{icon}.mat")
+        } else {
+            icon.to_owned()
+        });
+    }
+    let paint = accessory.paint.as_deref()?;
+    let base = ui_color(
+        paint
+            .base_color
+            .or(accessory.base_color)
+            .unwrap_or(DEFAULT_BASE),
+    );
+    if !paint.flipflake {
+        return Some(format!("color_icon.mat color={base}"));
+    }
+    let flip = ui_color(paint.flip.color.unwrap_or(DEFAULT_FLIP));
+    let flake = ui_color(paint.flake.color.unwrap_or(DEFAULT_FLAKE));
+    Some(format!(
+        "clr_0.mat color={base}><offset hshift=-256>\
+         <img src=/material/ui/clr_1.mat color={flip}><offset hshift=-256>\
+         <img src=/material/ui/clr_2.mat color={flake}><offset hshift=-256>\
+         <img src=/material/ui/clr_3.mat"
+    ))
+}
+
+/// A linear colour as UI markup text, as the game writes it (F17): each
+/// channel clamped to 0–1, sRGB-encoded, ×255 truncated, printed
+/// `FF` + blue + green + red.
+fn ui_color(linear: [f32; 3]) -> String {
+    let [r, g, b] = linear.map(|c| {
+        let c = c.clamp(0.0, 1.0);
+        let srgb = if c <= 0.003_130_8 {
+            12.92 * c
+        } else {
+            1.055 * c.powf(1.0 / 2.4) - 0.055
+        };
+        (srgb * 255.0) as u8
+    });
+    format!("FF{b:02X}{g:02X}{r:02X}")
 }
 
 fn selected_name(game: &GameSession, session: &TruckSession, slot: &SlotId) -> Option<String> {
@@ -399,7 +456,7 @@ fn option_view(game: &GameSession, option: &SlotOption<'_>) -> OptionView {
     OptionView {
         id: option.accessory.id.clone(),
         name: game.localization().resolve(&option.accessory.name),
-        icon: option.accessory.icon.clone(),
+        icon: icon_argument(option.accessory),
         price: option.accessory.price,
         unlock_level: option.accessory.unlock_level,
         selected: option.selected,
@@ -429,6 +486,68 @@ fn describe(game: &GameSession, reason: &Incompatibility) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use specsheet_core::{Flake, Flip, ModelRef, PaintJob};
+
+    fn paint_job(icon: Option<&str>, paint: PaintJob) -> Accessory {
+        Accessory {
+            id: AccessoryId::from("x.t.paint_job"),
+            slot: SlotId::from("paint_job"),
+            kind: AccessoryKind::PaintJob,
+            def_path: "/def/t/paint_job/x.sii".to_owned(),
+            name: "x".to_owned(),
+            icon: icon.map(str::to_owned),
+            price: None,
+            unlock_level: None,
+            model: ModelRef::default(),
+            suitable_for: Vec::new(),
+            conflict_with: Vec::new(),
+            defaults: Vec::new(),
+            requires: Vec::new(),
+            base_color: paint.base_color,
+            wheel: None,
+            left_hand_traffic: false,
+            drive_twin: None,
+            paint: Some(Box::new(paint)),
+        }
+    }
+
+    #[test]
+    fn paint_jobs_without_an_icon_show_their_own_colours() {
+        let plain = PaintJob {
+            base_color: Some([0.5, 0.25, 1.0]),
+            ..PaintJob::default()
+        };
+        // sRGB, ×255 truncated (0.5 → 187.5 → BB; 1.0 → 254.99998 in f32
+        // → FE), written FF BB GG RR.
+        assert_eq!(
+            icon_argument(&paint_job(None, plain.clone())).as_deref(),
+            Some("color_icon.mat color=FFFE88BB")
+        );
+        assert_eq!(
+            icon_argument(&paint_job(Some("academy"), plain)).as_deref(),
+            Some("academy.mat"),
+            "an icon wins"
+        );
+        let metallic = PaintJob {
+            flipflake: true,
+            flip: Flip {
+                color: Some([0.0, 0.0, 1.0]),
+                strength: None,
+            },
+            flake: Flake::default(),
+            ..PaintJob::default()
+        };
+        // Missing colours take the game's defaults: base white, flake green.
+        assert_eq!(
+            icon_argument(&paint_job(None, metallic)).as_deref(),
+            Some(
+                "clr_0.mat color=FFFEFEFE><offset hshift=-256>\
+                 <img src=/material/ui/clr_1.mat color=FFFE0000><offset hshift=-256>\
+                 <img src=/material/ui/clr_2.mat color=FF00FE00><offset hshift=-256>\
+                 <img src=/material/ui/clr_3.mat"
+            )
+        );
+    }
 
     #[test]
     fn base_parts_use_fixed_tabs_and_accessories_get_pins() {
