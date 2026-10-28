@@ -1,0 +1,348 @@
+HashFS v2 layout derived from the game's own bytes (clean-room re-derivation)
+==========================================================================
+
+Input: ETS2 1.60.1.7 (version.scs/version.sii: version "1.60.1.7"), all 115
+`.scs` archives in the install directory, opened read-only. No third-party
+code and no earlier implementation of hashfs.rs were used. Only the
+project's own `city_hash_64` (CityHash64 v1.0.3, city.rs) was called, to
+test path keys.
+
+Commands
+--------
+The probes were throwaway scripts kept outside the repository (scratchpad).
+Their logic is summarised under "Probes" at the end, so the checks can be
+re-run. <game> = D:/Steam Library/steamapps/common/Euro Truck Simulator 2
+
+  xxd -l 256 <game>/version.scs ; xxd -s -400 <game>/version.scs
+  python -I p1.py <game>/version.scs              # header + inflated tables
+  python -I p2.py <game>/{version,def,effect,core,base_cfg,base}.scs
+                                                  # record combos + samples
+  python -I p3.py <game>/{version,def,effect,core,base}.scs
+                                                  # payload sizes from tiling
+  python -I p4.py <game>/*.scs                    # table-only aggregate, all 115
+  python -I p5.py <game>/*.scs                    # blob tiling, all 115
+  for a in <game>/*.scs; do rprobe "$a"; done | (per-extension lines with
+     records 0x05/0x06/0x07, and .pmd/.pmg/.pma/.rfx; summed)
+  python -I -c "<header sweep, see Probes>"       # header bytes, all 115
+  rprobe --dump --inflate <game>/{version,core,def,effect}.scs
+  rprobe --inflate <game>/base.scs <game>/base_vehicle.scs
+  for a in <game>/*.scs; do rprobe "$a"; done     # all 115, zlib <=1 MiB
+  # After the reader was written (crates/specsheet-archive/src/hashfs.rs):
+  cargo run --release -p specsheet-archive --example survey -- <game>/*.scs
+  readall <game>/{version,def,effect,dlc_actros_tuning,dlc_daf_xd,base_vehicle}.scs
+
+Totals over all 115 archives: 656,591 entries, 40,379,677,634 bytes.
+
+Labels: Confirmed = checked against the bytes, with a check that would fail
+if the layout were wrong. Hypothesis = consistent with the bytes, but not
+proven. Unknown = not established.
+
+
+D:1 Header
+----------
+version.scs, first 0x80 bytes (file is 12,757 = 0x31d5 bytes):
+
+  00000000: 5343 5323 0200 0000 4349 5459 0200 0000  SCS#....CITY....
+  00000010: 2400 0000 0a00 0000 2500 0000 8031 0000  $.......%....1..
+  00000020: 0000 0000 b031 0000 0000 0000 8000 0000  .....1..........
+  00000030: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+  ... zero up to 0x7f ...
+  00000080: 4509 815f 8c41 3215 dc6f abb6 c0a8 6210  E.._.A2..o....b.
+
+Annotated (little-endian):
+  0x00 [4]u8  "SCS#"                magic
+  0x04 u16    0x0002                version 2
+  0x06 u16    0x0000                salt 0
+  0x08 [4]u8  "CITY"                hash method
+  0x0c u32    2                     entry count
+  0x10 u32    0x24 = 36             entry table stored size (bytes)
+  0x14 u32    0x0a = 10             metadata table size in u32 words
+  0x18 u32    0x25 = 37             metadata table stored size (bytes)
+  0x1c u64    0x3180                entry table offset
+  0x24 u64    0x31b0                metadata table offset
+  0x2c u64    0x80                  see below
+  0x34..0x7f  zero
+
+Checks:
+- 0x3180 + 36 = 0x31a4. 12 zero bytes pad to 0x31b0. 0x31b0 + 37 = 0x31d5 =
+  EOF. Both offsets and both stored sizes are exactly right. (Confirmed)
+- The entry table inflates to 32 bytes = 2 x 16, and the metadata table to
+  40 bytes = 10 words x 4. So 0x0c counts entries and 0x14 counts words.
+  (Confirmed; all 115 archives: inflated sizes are exact, p4 "inflated sizes
+  exact": (True, True) 115.)
+- Header sweep, all 115 archives: magic SCS#, version 2, salt 0, method
+  CITY, u64 at 0x2c = 0x80, bytes 0x34..0x7f all zero: 115/115.
+- The u64 at 0x1c exceeds 32 bits in base.scs (entry table at 0x268a552b0
+  in a 10,349,477,809-byte file). So the offsets are 64-bit. (Confirmed)
+- HEADER LENGTH: the last field is the u64 at 0x2c (8 bytes: 80 00 00 00 00
+  00 00 00), so the fields span 0x00..0x34 = 52 bytes. "0x2C bytes" in the
+  old hashfs.md is wrong. (Confirmed) The bytes 0x34..0x7f are zero
+  padding in every archive.
+- 0x2c: 0x80 in all 115 archives. A non-zero, high-entropy block starts at
+  0x80: 596 bytes (0x80..0x2d3) in 113 archives, 595 in one, and 595 from
+  0x81 in one (its first byte happens to be 0). Nothing in the header gives
+  its length, and nothing else points into it. Hypothesis: 0x2c is the
+  offset of an opaque block, probably a signature. Its content is Unknown,
+  and a reader doesn't need it.
+- The first blob starts at exactly 0x1000 in every archive (p5: lowest
+  blob offset 0x1000 in 115/115).
+
+
+D:2 Entry table
+---------------
+version.scs entry table, inflated (32 bytes):
+
+  E0: 8d 91 39 63 50 38 d3 02 | 00 00 00 00 | 01 00 | 04 00
+      hash 0x02d338506339918d   meta idx 0    count 1  flags 0x4
+  E1: 4f 40 90 2f 3b 6a e1 9a | 05 00 00 00 | 01 00 | 01 00
+      hash 0x9ae16a3b2f90404f   meta idx 5    count 1  flags 0x1
+
+Layout: 16 bytes = u64 hash, u32 index of the entry's first metadata word,
+u16 metadata record count, u16 flags. (Confirmed, see D:3: the index and
+count tile the metadata table exactly in all 115 archives.)
+
+- Storage: the table sits at the header's offset and is zlib. All 115
+  entry and metadata tables start 78 da, and (CMF*256+FLG) % 31 == 0 holds
+  for all of them (p4). CMF low nibble 8 = deflate. No archive stores a
+  table raw, and nothing in the header flags it. Raw tables: Unknown.
+  (zlib storage Confirmed)
+- Placement (p4, 115/115): entry table offset % 16 == 0. Metadata table
+  offset % 16 == 0, and it starts less than 16 bytes after the entry table
+  ends (the padding is zero in version.scs; elsewhere not checked). The
+  metadata table ends exactly at EOF. Every blob lies below the entry
+  table. (Confirmed)
+- Order: every entry table is sorted ascending by hash, and all hashes are
+  unique (p4: (True, True) 115). (Confirmed. The reader sorts anyway.)
+- Flags (p4, all 656,591 entries):
+    (has a 0x81 record, flags): (no, 0x0) 435,861; (no, 0x4) 176,790;
+                                (yes, 0x1) 1; (yes, 0x5) 43,939
+  Bit 0 is set exactly on the entries with a directory record. (Confirmed:
+  the bit and the 0x81 record always agree.)
+  Bit 2: per archive, it is set on all files (5 archives, e.g. def.scs),
+  on none (3), or on some (107). In DLCs it tracks text definitions (.sii,
+  .sui, .soundref, .guids, .bank). In base_vehicle.scs it is set on no file,
+  .sii included. Meaning: Unknown. It is not needed for reading: entries with
+  0x0 and 0x4 read identically. The reader decides the kind from the
+  records, which always agree with bit 0.
+
+
+D:3 Metadata table and records
+------------------------------
+version.scs metadata table, inflated (10 words):
+
+  W0: 80000001                         E0 record header: type 0x80, data @1
+  W1: 10002169 0000443a 00000000 00000100      payload (4 words, D:4)
+  W5: 81000006                         E1 record header: type 0x81, data @6
+  W6: 00000010 00000010 00000000 00000317      payload
+
+Record header = one u32: type in bits 24-31, index of its payload's first
+word in bits 0-23. An entry's `count` record headers are consecutive,
+starting at its metadata index. (Confirmed)
+
+Tiling check (p3/p4). Collect every header block start (meta index) and
+every payload start. Sort them. Each payload's length is then the distance
+to the next start, so the lengths are DERIVED, not assumed. Results over
+all 115 archives:
+  - each header block is exactly `count` words long: 656,591/656,591
+  - the first payload directly follows the entry's headers: 656,591/656,591
+  - the first start is word 0, and the last payload ends at the table's end
+  - derived payload lengths, one value per type, with no exceptions:
+      0x01: 2 (138,581)   0x02: 1 (138,581)   0x05: 8 (4,116)
+      0x06: 2 (70,109)    0x07: 2 (8,970)     0x80: 4 (474,070)
+      0x81: 4 (43,940)    0x84: 4 (138,581)
+  (Payload sizes Confirmed for all eight types. 0x81 counts one more
+  payload than entries flagged 0x5, because of the version.scs root,
+  flags 0x1.)
+
+Record combinations (p4, (flags, record types), all 115 archives):
+  0x0  80             214,085      plain file
+  0x4  80             176,790      plain file
+  0x0  80+05            4,116      .pma (animation) files
+  0x0  80+06           70,109      .pmg (geometry) files
+  0x0  80+07            8,970      effect.scs .rfx files
+  0x0  01+02+84       138,581      .tobj packed textures
+  0x5  81              43,939      directories
+  0x1  81                   1      version.scs root
+No other combination and no other record type occurs. (Confirmed)
+
+Extension attribution (rprobe per-extension lines over all 115 archives,
+summed): .pma 0x80+05: 4,116; .pmg 0x80+06: 70,109; .rfx 0x80+07: 8,970;
+.pmd 0x80 (no extra record): 70,106. These equal the p4 totals for
+0x05/0x06/0x07, so each extra record type occurs on that one extension only.
+.pmd files never carry 0x06. (Confirmed)
+
+Type meanings:
+- 0x80 plain file: payload is a blob (D:4). All 474,070 resolve to the
+  listed file names, and they inflate to the recorded sizes. (Confirmed)
+- 0x81 directory: payload is a blob holding the listing (D:5). (Confirmed)
+- 0x84 texture surface blob: payload is a blob holding the GDeflate
+  surface data (D:4). (Confirmed)
+- 0x01 image: 2 words, e.g. base.scs `000300ff 098004e8` (256x4, 9 mips,
+  DXGI 78). Decoded by texture.rs and byte-confirmed in
+  texture-unpack-derivation.txt. Exact sizes also confirm the bit fields.
+  (Confirmed)
+- 0x02 sample: 1 word, e.g. `00000127`. Byte-confirmed in
+  texture-unpack-derivation.txt ("Method (sample record, 0x02)"). (Confirmed)
+- 0x05: 8 words, only on .pma (4,116), e.g. base.scs
+  model/mover/characters/animations/man/work/whl_chnge_01.pma:
+    00000000 41d51111 5b11fba9 7e8b4d66 3f69ea3b bd365cbc 3f46a0a2 3caf3950
+  In base.scs and base_vehicle.scs, word 0 is 0x0 (2,336) or 0x6 (456). Words 1 and 4-7 read as
+  plausible floats (0x41d51111 = 26.63). Meaning: Unknown. The file content
+  reads as a plain 0x80 blob either way.
+- 0x06: 2 words, only on .pmg (70,109). Zero in most cases (base 34,196,
+  base_vehicle 8,679). Non-zero in the rest (base 2,755, base_vehicle 185),
+  e.g. `6b09a378 31517dde`. As a u64, no non-zero value equals any entry's
+  hash. Meaning: Unknown.
+- 0x07: 2 words, only on effect.scs .rfx (8,970), e.g. `00000408 00000000`,
+  `00000010 00000001`, `00020000 00000000`. Word 1 is 0 (5,869), 1 (2,173),
+  2 (514) or 3 (414). Meaning: Unknown.
+- 0x05/0x06/0x07 never change how the entry is read. All 8,970 effect.scs
+  .rfx entries and every .pma/.pmg read as plain files that inflate to their
+  recorded size (readall: effect.scs 24,371 files, base_vehicle.scs 32,159
+  files, 0 errors). (Confirmed)
+
+
+D:4 Blob location (4 payload words of 0x80, 0x81 and 0x84)
+---------------------------------------------------------
+Annotated, version.scs:
+  version.sii  10002169 0000443a 00000000 00000100
+               w0: bit 28 set, stored size 0x2169 = 8,553
+               w1: size 0x443a = 17,466
+               w2: 0
+               w3: 0x100 -> offset 0x100 x 16 = 0x1000
+               -> 0x1000 + 8,553 = 0x3169. Zero padding follows up to
+                  0x3170. Inflating 0x1000..0x3169 gives 17,466 bytes
+                  starting "SiiNunit\n{\nfs_pack_set : ..." (Confirmed)
+  root         00000010 00000010 00000000 00000317
+               raw, 16 stored, 16 bytes, at 0x317 x 16 = 0x3170, which is
+               the listing visible in the tail dump:
+  00003165: 7d66 7854 0000 0000 0000 0001 0000 000b  }fxT............
+  00003175: 7665 7273 696f 6e2e 7369 6978 da...      version.siix..
+               (0x3170: 01 00 00 00 | 0b | "version.sii", then the entry
+               table's 78 da at 0x3180)
+
+Fields:
+- w0 bits 0-27 = stored size, w1 bits 0-27 = size, w3 = offset / 16.
+  (Confirmed) Archive-wide: every blob of 656,591 lies inside
+  [0x1000, entry table offset). p5, all 115 archives: sorted by offset,
+  the 656,591 blobs never overlap (0 overlaps). The largest gap between two
+  blobs is 15 bytes, and so is the largest gap between the last blob and
+  the entry table. So the 16-byte unit and the stored sizes tile the data
+  area from 0x1000 to the entry table. (The gap bytes are zero in
+  version.scs; elsewhere not checked.)
+  The largest recorded size is 44,744,708 bytes, well within 28 bits.
+- w2: 0 on every blob in all 115 archives (p4). Meaning Unknown. Ignored.
+- Flags in w0 bits 28-31 vs w1 bits 28-31, all 115 archives (p4):
+    0x80: (0,0) 3,839    (1,0) 470,231
+    0x81: (0,0) 16,192   (1,0) 27,748
+    0x84: (0,3) 104      (3,3) 138,477
+  w0 bit 28 = compressed. (Confirmed: every raw blob has stored == size
+  (0 mismatches); every compressed 0x80/0x81 blob inflated to exactly its
+  recorded size (zlib), 496,297 checked with 1,682 > 1 MiB skipped in the
+  all-archive pass. base.scs and base_vehicle.scs were inflated completely
+  with 0 failures: 143,689 + 35,178.)
+  w0 bit 29 is set only on compressed 0x84 blobs, i.e. GDeflate.
+  (Confirmed: all 138,477 such blobs start with GDeflate stream id 4 / ~4.
+  The size implied by the tile header, (tiles-1) x 64 KiB + last tile size,
+  equals w1 bits 0-27 for all of them.)
+  w1 bits 28-29 are set on EVERY 0x84 blob, raw (104) or compressed, e.g.
+  raw `00156210 30156210 00000000 1549f2bf`
+  (material/terrain/iberia/soil_stones2_nrm_ibe.tobj) and raw
+  `00000200 30000200 00000000 055fb27a`
+  (material/custom/trucklight_attn_128.tobj). They are never set on 0x80
+  or 0x81. Meaning Unknown. Masking them off gives the exact size (GDeflate
+  check above, and raw textures have stored == size).
+- Codec: zlib for 0x80/0x81 (bit 28), GDeflate for 0x84 (bits 28+29).
+  Raw when w0 bits 28-31 are 0. (Confirmed)
+
+
+D:5 Directory listing
+---------------------
+def.scs root (17 bytes): 02 00 00 00 | 07 04 | "/custom" "/def"
+def.scs custom (83 bytes): 07 00 00 00 | 08 0b 0f 09 0b 0a 08 |
+   "city.sii" "country.sii" "editor_data.sii" "model.sii" "overlay.sii"
+   "prefab.sii" "sign.sii"
+effect.scs root (12 bytes): 01 00 00 00 | 07 | "/effect"
+
+Layout: u32 count, count x u8 name lengths, then the names back to back
+(no separators). A name starting with "/" is a sub-directory; the rest of
+the name is the directory name. (Confirmed)
+
+Checks (rprobe, walking breadth-first from the root, all 115 archives):
+- 43,895 listings, each of exactly 4 + count + sum(lengths) bytes; 0 with
+  trailing or missing bytes.
+- 655,931 listed names (43,782 with "/", 612,149 without). Every one
+  resolves by hash to an entry: 0 unresolved. Its kind matches the marker
+  (a "/" name has a 0x81 record, the others don't): 0 kind mismatches.
+- 656,044 of 656,591 entries are reachable from a root listing. The other
+  547 are entries no listing names:
+    core.scs: root lists 0 names (4-byte listing 00 00 00 00); 20 files +
+    1 directory unlisted. locale.scs: no root entry at all; 478 files + 44
+    directories unlisted. base_cfg.scs: no root; its single file is
+    unlisted. base.scs: 1 file, base_share.scs: 2 files unlisted (all
+    flags 0x4, 0x80 only).
+  So listings are not exhaustive. "Every listed name resolves" holds;
+  "every entry is listed" does not. (Confirmed)
+
+
+D:6 Path hash
+-------------
+- The root entry's key is 0x9ae16a3b2f90404f = city_hash_64(b""). That is
+  CityHash's k2 constant, which it returns for empty input, so the root
+  path is "". (Confirmed)
+- version.sii's key 0x02d338506339918d = city_hash_64(b"version.sii")
+  (Confirmed; unit test `hashfs::tests::hashes_paths_like_the_game`).
+- Keys are hashes of the full path from the root, without a leading "/",
+  joined with "/": all 655,931 listed names resolve that way (D:5).
+  Path-length classes cover every CityHash branch:
+  <=16: 8,349, 17-32: 110,175, 33-64: 354,042, >64: 183,365. (Confirmed)
+
+
+Reader results (crates/specsheet-archive/src/hashfs.rs, written from the above)
+-------------------------------------------------------------------------------
+- survey over all 115 archives: 656,591 entries, 0 listed-but-missing,
+  0 skipped. 1,421 sampled textures read through read_texture, 6 of which
+  fail unpack only because DXGI 67 is deliberately unsupported (texture.rs).
+- readall (every listed entry read via read / read_texture):
+    version.scs 1 file; def.scs 64,636 files (106,936,146 bytes);
+    effect.scs 24,371 files (252,756,711 bytes);
+    dlc_actros_tuning.scs 1,518 files + 339 textures;
+    dlc_daf_xd.scs 1,643 files + 537 textures;
+    base_vehicle.scs 32,159 files + 17,862 textures (20,199,833,728 bytes).
+  0 errors.
+
+
+Probes (logic, so the checks can be re-run)
+-------------------------------------------
+Header sweep (python one-liner): for every *.scs, unpack '<4sHH4sIIIIQQQ'
+  at 0; check that 0x34..0x80 is zero; record the non-zero span from 0x80.
+p1.py: header unpack as above; zlib.decompress(file[eoff:eoff+ets]) and
+  file[moff:moff+mts]; print 16-byte entries as '<QIHH' and words as u32.
+p2.py: per entry, read `count` header words from the metadata index;
+  type = w >> 24, data index = w & 0xffffff; tally (flags, types), and print
+  4 words at each data index.
+p3.py / p4.py: as p2, plus: starts = {meta index: header block,
+  data index: payload}. Sort the starts. Payload length = next start - this
+  start (the last one ends at the table's end). Tally (type, length). Check
+  that each header block's length equals its count. Tally the blob words
+  (w0 >> 28, w1 >> 28, w2) per type, offset = w3 * 16, and check
+  0x1000 <= offset and offset + (w0 & 0x0fffffff) <= entry table offset.
+  Tally table CMF/FLG bytes and the zlib header check, sort order and
+  uniqueness of hashes, table alignment and end-of-file placement, and the
+  file-flag bit 2 spread per archive.
+p5.py: per archive, collect (w3 * 16, w0 & 0x0fffffff) of every
+  0x80/0x81/0x84 payload. Sort them, then count overlaps and record the
+  largest gap, the lowest offset, and the gap from the last blob to the
+  entry table offset.
+rprobe (Rust, own raw parser; calls only specsheet_archive::city_hash_64):
+  the same table parse, then a breadth-first walk from hash(""). Decode
+  each 0x81 blob (zlib if w0 bit 28) as u32 count + u8 lengths + names, and
+  check the exact length. For each name, strip a leading "/" (= directory),
+  join it to the parent with "/", hash it, and look it up; check that the
+  kind matches. Tally unnamed entries, payloads of 0x05/0x06/0x07 (0x06 as
+  a u64 vs every named hash), and blob flags. Inflate zlib blobs and
+  compare with w1 & 0x0fffffff. For GDeflate blobs, read the 8-byte stream
+  header (id 4, ~4, u16 tiles, u32 last-tile size in bits 2-19) and compare
+  the implied size.
+readall (Rust, public API only): walk the listings, call read() or
+  read_texture() on every listed file, and count the errors.
