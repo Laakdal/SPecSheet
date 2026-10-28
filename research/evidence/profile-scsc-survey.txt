@@ -1,0 +1,79 @@
+Profile ScsC survey (docs/formats/profiles.md)
+==============================================
+
+Commands (all read-only; profile files are never written):
+  cargo run --release -p specsheet-formats --example profile_mods -- \
+      "<home>/profiles/<hex name>/profile.sii" ...
+  python -I <scratch>/scsc_probe.py <key source> <eurotrucks2.exe> <profile.sii> <out>
+      (stdlib zlib + the `cryptography` package; first look, before the Rust
+      decoder existed)
+
+Subject: the 4 profiles of the test install, <home>\profiles (home
+relocated with -homedir), ETS2 1.60.1.7, here called Profile A to D. Folder
+names are the profile name as hex of its UTF-8 bytes; the 4 folders use
+lowercase (2) and uppercase (2) hex digits, and each decodes to a readable
+name (example form: "Profile" would be 50726f66696c65). Profile content is
+the user's own data; only counts are quoted.
+
+Key source: sii-decode-rs (MIT, https://github.com/fangyi-zhou/sii-decode-rs),
+taken as a fact (32 bytes), not code. The 32 bytes do not occur contiguously in
+eurotrucks2.exe (sha256 b7dffe6b...b3f8): a byte search finds 0 matches, so how
+the game stores the key is Unknown.
+
+
+1. Container layout
+-------------------
+All 4 profile.sii start with "ScsC". Reading the rest as
+  0x00 "ScsC" | 0x04 32 bytes | 0x24 IV (16 bytes) | 0x34 u32 size | 0x38 body
+gives, per profile (file bytes / body bytes / body % 16 / declared size):
+  Profile A    824,472 / 824,416 / 0 / 6,753,797
+  Profile B      4,776 /   4,720 / 0 /    25,533
+  Profile C      5,048 /   4,992 / 0 /    26,382
+  Profile D      7,992 /   7,936 / 0 /    35,503
+AES-256-CBC with that key and IV turns every body into a zlib stream (first
+bytes 78 9c) that inflates to exactly the declared size. The bytes after the
+zlib stream are PKCS#7 padding (Profile A: 4 bytes of 0x04). A wrong layout or
+key could not produce a valid zlib stream of the exact size, so this is the
+check. The 32-byte field at 0x04 was not verified (Unknown; the reference
+calls it an HMAC).
+
+
+2. Payload
+----------
+All 4 payloads start with "SiiNunit" (SII text, CRLF line ends), with one
+unit of class user_profile. None is binary SII (BSII).
+specsheet_formats::sii::parse reads all 4 without errors.
+
+active_mods (array of "<package name>|<display name>"):
+  Profile A 57, Profile B 16, Profile C 23, Profile D 132 entries.
+  Package names are file stems of /home/mod files, or
+  mod_workshop_package.<published file id, 16 hex digits> for Workshop items.
+  Profile A's list, in index order, equals the game log's "[mods] Active local
+  mod / Active workshop mod" list for the same profile, compared in full
+  (Workshop hex ids converted to decimal): 57/57 equal. The log list in turn
+  equals the mount order (mod-loader-survey.txt section 6). So
+  active_mods[0] is the first mod mounted.
+
+Non-ASCII text is stored as \xNN escapes of UTF-8 bytes, e.g. a Workshop
+display name "\xe3\x83\x88\xe3\x83\xa9...". Before the fix in sii.rs the
+parser dropped the backslash ("xe3x83x88..."); it now decodes them
+(test sii::tests::decodes_hex_byte_escapes_as_utf8).
+
+
+3. Plain-text profiles
+----------------------
+Players decrypt and edit profiles with community tools, and the game then
+finds SiiN text in place of ScsC (Hypothesis that the game loads it; not
+tested here, since nothing writes to the profiles). scsc::sii_text passes SiiN
+through unchanged: a decrypted copy of Profile A gives the same 57-entry list as
+the encrypted file.
+
+
+4. Saves use the same container
+-------------------------------
+All 86 save/*/game.sii of the 4 profiles, read-only, with the same decrypt +
+size check (Python survey):
+  79 ScsC: 47 decrypt to SiiN, 32 to BSII; all 79 inflate to the declared size
+   7 plain SiiN on disk (not encrypted; who wrote them that way is not known)
+  largest payload: 12.0 MiB
+BSII has no parser here yet, so scsc::sii_text returns BinarySii for those 32.

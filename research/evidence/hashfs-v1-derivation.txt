@@ -1,0 +1,102 @@
+HashFS v1 layout, derived from our own bytes (docs/formats/mods.md "HashFS v1")
+==============================================================================
+
+Provenance: every field below comes from hex dumps of the user's mod
+packages (<home>\mod, 20 HashFS v1 files), made with
+`od` and checked with our own probe. No community code (TruckLib, Extractor)
+and no part of our HashFS v2 reader was used. The reader
+crates/specsheet-archive/src/hashfs_v1.rs was written from this file.
+Third-party content is not reproduced beyond a few bytes per field.
+
+Commands (Git Bash, read-only):
+  od -An -tx1 -N 20 <pkg>                       header
+  od -An -tx1 -j <table offset> -N 64 <pkg>     first entry records
+  od -An -tx1 -j <entry offset> -N 8 <pkg>      start of an entry's data
+  cargo run --release -p specsheet-archive --example mod_probe -- <mod dir>
+
+
+1. Header (0x14 bytes)
+----------------------
+promods-eu-model3-v283.scs:
+  53 43 53 23 | 01 00 | 00 00 | 43 49 54 59 | 89 1a 00 00 | 00 10 00 00
+  "SCS#"        ver 1   salt 0  "CITY"        count 6793    table 0x1000
+Add-On MAN TG3 2020 by Gloover.scs:
+  53 43 53 23 | 01 00 | 14 49 | 43 49 54 59 | 86 1d 00 00 | c0 0f 6d 52
+  "SCS#"        ver 1   salt    "CITY"        count 7558    table 0x526d0fc0
+                        0x4914                              (file is 0x5270c080
+                                                             bytes: 0x526d0fc0 +
+                                                             7558 x 32 ends exactly
+                                                             at the end of the file)
+The count equals the game's log line "[hashfs] <pkg>: Created, N entries"
+for all 20 files (6793 and 7558 here). The table offset is 0x1000 in 19
+files. Bytes after 0x14 up to the first data are zero in those 19.
+
+
+2. Entry records (32 bytes each)
+--------------------------------
+promods-eu-model3-v283.scs, table at 0x1000, first two records:
+  36 88 3d 2f 04 1b 1d 00 | 11 43 eb 10 00 00 00 00 | 04 00 00 00 | c2 1e 3e 81 | f0 55 01 00 | f0 55 01 00
+  +0  u64 hash              +8  u64 offset 0x10eb4311 +16 flags 4  +20 (crc?)    +24 size      +28 stored
+                                                                                 87536         87536
+  0f 95 aa 06 ac e9 1d 00 | ea 2b 28 05 00 00 00 00 | 04 00 00 00 | ea 47 69 ac | da 00 00 00 | da 00 00 00
+The data at the first record's offset starts "DDS |", a raw DDS texture of
+87,536 bytes: offset +8 and size +24 are right, and flag bit 2 (value 4)
+does not mean compression.
+
+Add-On MAN TG3 2020 by Gloover.scs, first record at 0x526d0fc0:
+  8f 78 6f e5 bc 93 04 00 | 40 df 07 00 00 00 00 00 | 02 00 00 00 | 0a 5b e7 12 | 3c 01 00 00 | bb 00 00 00
+  hash                      offset 515904             flags 2       (crc?)        size 316      stored 187
+The data at offset 515904 starts 78 9c (a zlib header), and inflates to
+exactly 316 bytes: flag bit 1 = zlib, +28 = stored (compressed) size,
++24 = inflated size.
+
+Hashes are in ascending order in all 20 tables (probe: sorted=true).
+The +20 word was not checked against anything; whether it is a CRC, and
+whether the game checks it, is Unknown.
+
+
+3. Flags
+--------
+Across all 20 files (probe), with what the data shows:
+  PNG packs       {0, 1}      stored == size for every entry
+  Gloover pack    {0, 2, 3}   7,556 compressed entries; each inflates to `size`
+  ProMods packs   {4, 5}      stored == size for every entry; data is raw
+                              (the DDS above)
+  -> bit 0 (1) = directory: in every producer the bit-0 entries hold
+     listings (section 4), the others hold file data.
+  -> bit 1 (2) = zlib-compressed.
+  -> bit 2 (4) = unknown, no effect on reading.
+
+
+4. Directory listings
+---------------------
+zzPNG_PE_BUGFIX.scs, record with flags 1, offset 0x6a03, size 21:
+  "7718b0c3f07d29d0.mat\n"       one file name per line, '\n' ends
+Gloover, flags 3 (directory + zlib), inflated:
+  "*flare\r\n\r\n"               '*' prefixes a sub-directory; CRLF and a
+                                 trailing empty line in this producer
+ProMods (flags 5): "*at\n*be\n...2b_fork.pmd\n..." (mixed dirs and files)
+Some PNG listings are not valid UTF-8 (e.g. 22 of 106 in zPNG_PE_SPRING):
+names with bytes such as 0xb9 next to Polish words, probably Windows-1250
+(Hypothesis). The reader decodes listings lossily.
+
+
+5. Path keys
+------------
+key = CityHash64 v1.0.3 (our city_hash_64) of the path without a leading
+slash; with a non-zero salt, of the salt's decimal text followed by the path.
+  salt 0:       "manifest.sii" resolves in all 19 files
+  salt 0x4914:  "18708manifest.sii" resolves; "manifest.sii", the salt as
+                two raw bytes + path, and "/manifest.sii" do not
+  root (""):    no entry in any of the 20 files, salted or not; the root
+                listing is omitted, so packages cannot be walked from the top
+Probe candidates tried per file: "", "/", "manifest.sii", "/manifest.sii",
+"def", "/def", each plain, with decimal salt and with binary salt.
+
+
+6. Whole-package check with the reader (HashFsV1Archive, mod_probe)
+-------------------------------------------------------------------
+All 20 files open. Every entry of every file reads (read_entry), with the
+inflated or stored length equal to `size`: 170,674 entries, 0 failures.
+manifest.sii reads from all 20. root_listing=false for all 20.
+  entries per file = the game log's count, in all 20.

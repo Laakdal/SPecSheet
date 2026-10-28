@@ -1,0 +1,315 @@
+Mod loader survey (finding F14, docs/formats/mods.md)
+=====================================================
+
+Sources (all read-only):
+  - The user's mod folder: <home>\mod (55 files; the home dir is relocated
+    with -homedir, so this is "/home/mod" to the game).
+  - Steam Workshop content: <steam>\steamapps\workshop\content\227300 (77 items).
+  - The game's own log: <home>\game.log.txt, one session of ETS2 1.60
+    (paths in the log name another drive letter; same install).
+  - String inventory of bin\win_x64\eurotrucks2.exe (1.60.1.7, sha256
+    b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8), grep of
+    printable runs; nothing was executed.
+  - Our probe: cargo run --release -p specsheet-archive --example mod_probe -- <mod dir>
+  - Python zipfile/zlib (stdlib) over the ZIP packages, read-only.
+Mod contents (third-party data) are not reproduced; only attribute names,
+version-gating values, counts and header bytes are quoted.
+
+
+1. Container is chosen by content, not by extension
+---------------------------------------------------
+First 4 bytes of each file in /home/mod, against the driver the game logged
+for it at start-up ("[hashfs] X: Created" or "[zipfs] X: Created"):
+
+  magic        files   driver in log   extensions seen
+  SCS# v1        20    [hashfs]        .scs
+  SCS# v2         2    [hashfs]        .scs
+  PK\3\4         33    [zipfs]         .scs (28) and .zip (5)
+
+Every file matched: no PK file was logged as hashfs, no SCS# file as zipfs.
+So a ".scs" mod is very often a plain ZIP.
+
+
+2. HashFS v1 (our observations, mod_probe)
+------------------------------------------
+Header, first 0x14 bytes, e.g.
+  PNG_PE_BASE_1.scs        53 43 53 23 01 00 00 00 43 49 54 59 96 08 00 00 00 10 00 00
+  Add-On MAN TG3 ... .scs  53 43 53 23 01 00 14 49 43 49 54 59 86 1d 00 00 c0 0f 6d 52
+  = magic "SCS#", u16 version 1, u16 salt, "CITY", u32 entry count,
+    u32 entry-table offset. Entry counts equal the counts the game logged
+    (2198, 7558, 56403, ...) for all 20 files.
+  19 files: salt 0, table at 0x1000. One file: salt 0x4914, table at the end
+  of the file (0x526d0fc0 in a 1,383,121,024-byte file).
+
+Entry table: count x 32-byte records, sorted ascending by hash in all 20:
+  +0 u64 hash, +8 u64 offset, +16 u32 flags, +20 u32 crc (not checked),
+  +24 u32 size, +28 u32 stored size.
+  No record points past the end of its file.
+
+Flags per producer:
+  flags {0,1}   (PNG packs)         stored == size for every entry
+  flags {0,2,3} (Gloover pack)      every flag-2/3 entry has stored != size and
+                                    inflates with zlib to exactly `size`
+  flags {4,5}   (ProMods packs)     stored == size for every entry
+  -> bit 0 = directory (its content is a listing, in all three producers),
+     bit 1 = zlib-compressed, bit 2 unknown (set on every ProMods entry).
+
+Directory listing: text, one name per line, sub-directories prefixed "*".
+  Line ends are "\n" (PNG, ProMods) or "\r\n" with a trailing empty line
+  (Gloover). Example: "*flare\r\n\r\n".
+
+Path key: CityHash64 (our city_hash_64, v1.0.3) of the path without a leading
+slash, as in v2. With a non-zero salt, the key is the hash of the salt's
+decimal text followed by the path ("18708manifest.sii" for salt 0x4914).
+  "manifest.sii" resolves in 20/20 files with this rule; no other candidate
+  form (salt as 2 raw bytes, leading "/") resolves.
+  The root directory ("" key) is absent in all 20 files, so v1 mods cannot be
+  listed from the root; files are reachable only by known path. Directory
+  entries further down do exist.
+  manifest.sii is plain SII in all 20 and gives the same attribute set as the
+  ZIP manifests (section 4).
+
+
+3. HashFS v2 mods open with the existing reader
+-----------------------------------------------
+  ETS2_Pack_Sounds_by_CAACBR.scs                  Archive::open ok, 5068 entries,
+                                                  root listing + manifest.sii read
+  Jan_Mues_Accessory_Pack_for_Scania_PGR_Series   Archive::open ok, 634 entries,
+                                                  root listing + manifest.sii read
+  Both have salt 0, like the game's own archives.
+
+
+4. ZIP packages
+---------------
+  33 ZIP files. Compression methods in the central directory: only 0 (stored)
+  and 8 (deflate). No ZIP64 (all offsets and sizes < 4 GiB).
+  32 open with Python zipfile. One (Project_Ultimate_Weather_2.0.scs) is
+  deliberately malformed:
+    - central directory: general-purpose flag bit 0 (encrypted) on all 11
+      entries, method 8, CRCs that match nothing;
+    - local headers: flag 0, method 1, a different CRC that also matches
+      nothing; the sizes match the central directory;
+    - the data after each local header (30 + name + extra) is plain raw
+      deflate and inflates to exactly the central-directory size.
+    The game logged it "Created, 11 entries" with no zipfs error, so the game
+    ignores the encryption bit and CRCs (Hypothesis: it takes the method from
+    the central directory and does not verify CRC).
+  Layout of a package root:
+    - ordinary: manifest.sii, icon (.jpg), description (.txt), then def/,
+      vehicle/, material/, model/, ...;
+    - multi-folder (3 files): manifest.sii and icon at the root, plus base/ and
+      dlc_<name>/ folders holding the content.
+  One package (No_Driver.scs) has no manifest.sii; the log says:
+    "[mod] Mod package 'No_Driver' does not contain a manifest file
+     'manifest.sii', creating default information set."
+
+manifest.sii (unit "mod_package : <name>") attribute names seen across the
+ZIP, v1 and v2 manifests:
+  package_version, display_name, author, category[], icon, description_file,
+  compatible_versions[], dlc_dependencies[], mp_mod_optional
+  Log warnings that match missing or invalid fields:
+    "No display_name defined in X. Using package name instead."
+    "No valid categories defined for X. Setting defaults."
+    "Unknown category '' defined for X. Ignoring."
+
+
+5. Version gating explains both "Incompatible mod" warnings
+-----------------------------------------------------------
+  "[mods] Incompatible mod - Add-On MAN TG3 2020 by Gloover"
+      manifest compatible_versions: "1.57.*", "1.58.*", "1.59.*"
+  "[mods] Incompatible mod - Project_Ultimate_Weather_2.0"
+      manifest compatible_versions: "1.58.*", "1.59.*"
+  The game is 1.60.1.7. Checked in both directions over all 54 manifests
+  (fnmatch of "1.60.1.7" against each compatible_versions glob; no array =
+  compatible): exactly these two do not match, and these two are exactly the
+  mods the log calls incompatible.
+    without compatible_versions: 24 ZIP manifests
+    with a 1.60.* glob: 7 ZIP (Sanax DEF lists 1.58-1.60, the rest 1.60),
+      19 v1 (PNG 1.58-1.60, ProMods 1.60)
+    without a 1.60 glob: Gloover MAN (v1), Project_Ultimate_Weather (ZIP)
+
+
+6. Load sequence in the log
+---------------------------
+  00:00:01.79  base archives -> core and scs pools; home dir -> "user pool"
+  00:00:01.80  every dlc_*.scs: "[hashfs] dlc_x.scs: Created and validated,
+               N entries (<sha256>)"  (mods are never "validated")
+  00:00:03.88  every file in /home/mod opened in name order, manifest read,
+               warnings above; then closed ("Unmounted") at 00:00:22
+  00:00:04.24  "[mod_package_manager] Requesting Steam Workshop content.."
+  00:00:17.15  "Received list of the steam workshop subscribed mods.
+               (received 77 mods total, 77 loaded, 0 scheduled for download)"
+  00:00:25.14  "[ufs] scs pool: 110 packs" (base + DLC)
+  00:04:09.53  "New profile selected: '<Profile A>'"
+  00:04:10.88  "[mods] Active 57 mods (local: 34, workshop: 23)" followed by one
+               line per active mod, then each one in that same order:
+               (all 57: the "has been mounted" package names, Workshop hex ids
+               converted, equal the active list in order)
+               "[fs] device <path> mounted to mod pool." and
+               "[mod_package_manager] Mod "<display_name>" has been mounted.
+                (package_name: <file stem>, version: <package_version>,
+                 source: User mods)"
+  The active list starts with the ProMods packages and ends with
+  CargoMarketStutterFix and a Workshop mod. The list and its order come from
+  the profile (profile.sii, which is ScsC-encrypted here; not read).
+
+Multi-folder packages at profile load (Sanax_volvo_fh_2022_p_DEF.scs):
+  start-up scan requested 18 sub-directories: base + 17 dlc_* folders;
+  profile load mounted 16 devices for the same file: base + 15 dlc_* folders.
+  The two skipped are dlc_schoch and dlc_xmas, the only two whose names match
+  no installed DLC (installed: dlc_hs_schoch, dlc_christmas).
+  -> base/ is always mounted; dlc_<name>/ is mounted only when that DLC is
+     installed (Confirmed for this case; ownership vs. installation not
+     separated, since every installed DLC is owned here).
+
+
+7. Workshop items
+-----------------
+  Every one of the 77 item folders has versions.sii. Units are
+  "package_version_info : .<name>" with package_name and optional
+  compatible_versions[]. Typical names: .latest, .universal, .<NNN>_content.
+  The package a unit names is a sub-folder (mounted as a directory device,
+  e.g. ".../2487007069/universal mounted to mod pool.") or a .zip/.scs file
+  in the item folder (".../3732555345/universal.scs mounted to mod pool.").
+  Item folder contents across all 77 items, digits replaced by N:
+    77 versions.sii, 39 N_content, 30 universal, 16 N, 15 universal.zip,
+    11 N_content.zip, 3 universal.scs, 3 latest.zip, ...
+  In the log, Workshop packages are named mod_workshop_package.<16 hex digits>
+  (the published file id in hex: 0x00000000CE19853F = 3457779007).
+
+
+8. Strings in eurotrucks2.exe that name the same machinery
+----------------------------------------------------------
+  /home/mod/   /home/mod/%s   /manifest.sii   /versions.sii   /home/mods_info.sii
+  [mods] Game is running in pure mode, skipping loading of mods.
+  [mods] Skipping mount of the mod '%s', package limit of %Iu reached.
+  [mods] Mod '%s' dependency DLC '%s' is missing. Marking mod as incompatible.
+  [mods] Active %Iu mods (local: %Iu, workshop: %Iu)
+  [mod_package_manager] Unable to find best matching version for Steam Workshop mod. ...
+  [mod_package_manager] Duplicated version info with no compatible_versions array defined in %s/versions.sii.
+  [mod_package_manager] Mod "%s" has been mounted. (package_name: %s, version: %s, source: %s)
+  [zipfs] Unsupported compression method used: %u for record #%u - %s from '%s'.
+  [zipfs] Failed to read ZIP64 end of central directory from '%s'.
+  [zipfs] Failed to parse ZIP64 extra field for record #%u - %s from '%s'.
+  [zipfs] Created, requested subdirectory: %s, %I64u entries (%u entries in requested subdirectory)
+  [active_mods_data] Duplicated package name found in save container (package_name: %s).
+  attribute/unit names: mod_package, package_version, compatible_versions,
+    dlc_dependencies, package_version_info, active_mods, mods_info,
+    mod_workshop_package.
+  Source path: ...\prism\src\gamesup\package\mod_package_manager.cpp
+  -> The zipfs reader knows ZIP64; which methods besides 0/8 it accepts is
+     Unknown (REA question).
+
+/home/mods_info.sii (plain SII, game-written): unit mods_info with an info[]
+array of "<package name>|<number>" strings, one per known package (240 here).
+
+
+9. Raw probe output (HashFS packages; ZIP lines omitted)
+--------------------------------------------------------
+Add-On MAN TG3 2020 by Gloover.scs: hashfs v1
+    v1 salt=0x4914 method=CITY entries=7558 table@0x526d0fc0 sorted=true flags=[0, 2, 3] past_end=0
+    key hits: ["\"manifest.sii\"/decimal"]
+    flags=0: 2 entries, 0 with stored != size
+    flags=2: 7549 entries, 7549 with stored != size
+    flags=3: 7 entries, 7 with stored != size
+ETS2_Pack_Sounds_by_CAACBR.scs: hashfs v2
+    v2 opened by Archive: 5068 entries
+    root dirs=["automat", "def", "material", "sound", "vehicle", "zee_dc13_ng_g5_badges"] files=["description.txt", "ets2_sounds.jpg", "manifest.sii"]
+Jan_Mues_Accessory_Pack_for_Scania_PGR_Series.scs: hashfs v2
+    v2 opened by Archive: 634 entries
+    root dirs=["automat", "def", "material", "texture", "vehicle"] files=["manifest.sii", "mod_description.txt", "mod_icon.jpg"]
+PNG_PE_BASE_1.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=2198 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 1859 entries, 0 with stored != size
+    flags=1: 339 entries, 0 with stored != size
+PNG_PE_BASE_2.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=484 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 471 entries, 0 with stored != size
+    flags=1: 13 entries, 0 with stored != size
+PNG_PE_WEATHER_CLASSIC.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=246 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain", "\"def\"/plain"]
+    flags=0: 215 entries, 0 with stored != size
+    flags=1: 31 entries, 0 with stored != size
+PNG_PE_WEATHER_CLASSIC_FOGGY.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=26 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain", "\"def\"/plain"]
+    flags=0: 17 entries, 0 with stored != size
+    flags=1: 9 entries, 0 with stored != size
+promods-eu-assets-v283.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=56403 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=4: 55360 entries, 0 with stored != size
+    flags=5: 1043 entries, 0 with stored != size
+promods-eu-media-v283.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=21923 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain", "\"def\"/plain"]
+    flags=4: 20431 entries, 0 with stored != size
+    flags=5: 1492 entries, 0 with stored != size
+promods-eu-model1-v283.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=22577 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=4: 21369 entries, 0 with stored != size
+    flags=5: 1208 entries, 0 with stored != size
+promods-eu-model2-v283.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=30031 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=4: 29629 entries, 0 with stored != size
+    flags=5: 402 entries, 0 with stored != size
+promods-eu-model3-v283.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=6793 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=4: 6701 entries, 0 with stored != size
+    flags=5: 92 entries, 0 with stored != size
+promods-me-assets-v283.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=6332 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=4: 5856 entries, 0 with stored != size
+    flags=5: 476 entries, 0 with stored != size
+promods-tgs-assets-v162.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=12712 table@0x1000 sorted=true flags=[4, 5] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=4: 11353 entries, 0 with stored != size
+    flags=5: 1359 entries, 0 with stored != size
+zPNG_NORTH_EXPERIENCE.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=237 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 199 entries, 0 with stored != size
+    flags=1: 38 entries, 0 with stored != size
+zPNG_PE_AUTUMN.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=1158 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain", "\"def\"/plain"]
+    flags=0: 1037 entries, 0 with stored != size
+    flags=1: 121 entries, 0 with stored != size
+zPNG_PE_SPRING.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=596 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain", "\"def\"/plain"]
+    flags=0: 490 entries, 0 with stored != size
+    flags=1: 106 entries, 0 with stored != size
+zPNG_PE_SUMMER.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=515 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain", "\"def\"/plain"]
+    flags=0: 426 entries, 0 with stored != size
+    flags=1: 89 entries, 0 with stored != size
+zzPNG_PE_BUGFIX.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=134 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 70 entries, 0 with stored != size
+    flags=1: 64 entries, 0 with stored != size
+zzPNG_RealAirTraffic_[FreeAddon]_ETS2.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=301 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 206 entries, 0 with stored != size
+    flags=1: 95 entries, 0 with stored != size
+zzPNG_RealGenericLogos_[FreeAddon]_ETS2.scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=234 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 175 entries, 0 with stored != size
+    flags=1: 59 entries, 0 with stored != size
+zzPNG_StreetLamps_[FreeAddon].scs: hashfs v1
+    v1 salt=0x0000 method=CITY entries=216 table@0x1000 sorted=true flags=[0, 1] past_end=0
+    key hits: ["\"manifest.sii\"/plain"]
+    flags=0: 189 entries, 0 with stored != size
+    flags=1: 27 entries, 0 with stored != size

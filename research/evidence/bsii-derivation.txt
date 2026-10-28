@@ -1,0 +1,96 @@
+Binary SII (BSII) layout, checked on the user's saves (docs/formats/bsii.md)
+===========================================================================
+
+Provenance: the layout and type-id table are facts from sii-decode-rs (MIT,
+https://github.com/fangyi-zhou/sii-decode-rs), used as a cross-check only.
+Every field below is confirmed on our own bytes: hex dumps of decrypted
+saves, and our parser crates/specsheet-formats/src/bsii.rs (written fresh)
+run over all of them. Saves are the user's career data, so this file quotes
+type ids, structure and field names (the game's schema) and counts only:
+no values, no profile names, no paths. Saves are numbered save00..save31 in
+size order.
+
+Commands (read-only):
+  python -I <scratch>/... (stdlib zlib + cryptography): decrypt the ScsC
+      saves to scratch, dump bytes, count declared value types
+  cargo run --release -p specsheet-formats --example save_check -- "<home>/profiles"
+
+Subject: 86 save/*/game.sii of 4 profiles, ETS2 1.60.1.7. 79 are ScsC: 47
+decrypt to SiiN, 32 to BSII. 7 are plain SiiN. All 32 BSII files are version 3.
+
+
+1. Header and structure blocks (save00, smallest BSII)
+-------------------------------------------------------
+  42 53 49 49 | 03 00 00 00                    "BSII", u32 version 3
+  00 00 00 00 | 01 | 01 00 00 00 | 07 00 00 00 "economy"
+  block 0       valid  structure id 1  name length + name
+  39 00 00 00 | 04 00 00 00 "bank"            field: u32 value type 0x39,
+                                              string name
+  ... fields until a u32 0.
+An enum field (type 0x37) carries a table after its name:
+  structure gps_waypoint_storage, field direction:
+  37 00 00 00 | <name> | 03 00 00 00 | 02 00 00 00 | 03 00 00 00 "any" ...
+  type 0x37            table count 3  key 2         string
+Strings are u32 length + bytes.
+
+
+2. Unit blocks and the end marker
+---------------------------------
+save00's first unit block, at 0x2cbb: 01 00 00 00 | ff ...
+  u32 structure id (non-zero) | id (here 0xff: a nameless id, u64 follows)
+  then one value per field of that structure, in declared order.
+An id is: u8 part count n; n = 0 is null, n = 0xff a nameless u64, otherwise
+n encoded name tokens (u64 each, base 38 over "0-9a-z_", first character
+in the lowest digit, bit 63 ignored).
+End marker: u32 0 | u8 0 ("structure block, not valid"). In save00 the
+file ends right after it (last 5 bytes 00 00 00 00 00); the parser requires
+zero bytes after it, and all 32 files meet that.
+
+
+3. Value types declared in the 32 saves (field declarations, leading block run)
+-------------------------------------------------------------------------------
+  0x01 string 433       0x02 string[] 337    0x03 token 484     0x04 token[] 209
+  0x05 float 1744       0x06 float[] 225     0x07 float x2 32   0x09 float x3 349
+  0x11 int32 x3 151     0x12 int32 x3[] 128  0x18 float x4[] 32 0x19 float x8 198
+  0x1a float x8[] 128   0x25 int32 181       0x26 int32[] 32    0x27 uint32 3446
+  0x28 uint32[] 416     0x2b uint16 312      0x2c uint16[] 64   0x2f uint32 154
+  0x31 int64 419        0x32 int64[] 32      0x33 uint64 98     0x34 uint64[] 96
+  0x35 bool 846         0x36 bool[] 96       0x37 enum 79       0x39 id 1029
+  0x3a id[] 1129        0x3b id 224          0x3c id[] 96       0x3d id 391
+46 structures are defined before the first unit block. Any other type id
+makes the parser fail with an error naming it (none occurred).
+
+
+4. Whole-file checks (save_check)
+---------------------------------
+- All 32 BSII files parse from the header to the end marker with 0 bytes
+  left over. A wrong element size for any type in use would derail the
+  parse, so the sizes of all 32 type ids are confirmed.
+- Ids: 555,560 nameless references in the 32 files; every one names a unit
+  defined in the same file (100%). This confirms the id encoding. The text
+  form `_nameless.<16-bit groups in hex>` is shared by unit names and
+  references, so it is only internally consistent (Hypothesis that it
+  matches the game's text form).
+- Meaning, against the 54 text saves (47 decrypted + 7 plain): 482
+  structure.field names occur in the binary saves, all 482 also occur in
+  the text saves. For each, the kind of value (string, bool, integer,
+  float, name, n-tuple, scalar or array) agrees, except 12:
+    11 placements (player.truck_placement, player_job.source_placement, ...):
+       binary 8 floats, text 7 values `(x, y, z) (w; x, y, z)`; see 5.
+     1 player_job.online_job_id: binary uint64, text an integer or `nil`.
+       All 14 binary values are u64::MAX, so u64::MAX is probably written
+       as `nil` (Hypothesis).
+  Before this check the text parser could not read saves at all: it did
+  not accept the second tuple and the `;` of a placement (fixed, test
+  sii::tests::parses_placements_as_one_seven_item_tuple).
+
+
+5. Placements (type 0x19, 8 floats)
+-----------------------------------
+In all 316 placement values of the 32 files:
+- floats 4..7 form a unit quaternion (|q| = 1 within 1e-3); floats 3..6 do
+  not, so 4..7 is the rotation (text `(w; x, y, z)`).
+- float 3 is never a plain coordinate: always a whole number just above
+  2^23 (most common 8,390,656 = 2^23 + 0x800). It looks like packed data
+  in a float's mantissa, perhaps sector offsets for the position
+  (Unknown). The parser keeps all 8 floats unchanged.

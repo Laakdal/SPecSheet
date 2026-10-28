@@ -1,0 +1,155 @@
+REA string search for the mod loader (finding F14)
+==================================================
+
+Command (Git Bash, ~44 min incl. Ghidra auto-analysis):
+  REA_GHIDRA_STARTUP_TIMEOUT_MS=10800000 JAVA_HOME=... GHIDRA_INSTALL_DIR=... \
+  npx -y rea-agents@6.4.0 search <eurotrucks2.exe> --pattern='(?i)(\[mods?\]|mod_package|manifest\.sii|zipfs|...|\[ufs\]|pool)' \
+    --mode regex --provider ghidra --snapshot "$S/eurotrucks2.snapshot" --format json > "$S/search-mod-loader.json"
+  (S = %USERPROFILE%\rea-ets2; the full JSON record stays there)
+
+Evidence ID: ev_64c9a7a2a9e1e39cee94fd2cffb3c932fbda794e39383f659e10fd79bd8a4e8c
+Subject:     eurotrucks2.exe, ETS2 1.60.1.7, sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Provider:    Ghidra 12.1.4, default analyzers. Static only: nothing was executed.
+Result:      337 defined strings matched (string addresses only; no xrefs in this operation).
+
+0x1420a7858  [ufs] Failed to mount version info source
+0x1420a7888  [ufs] Pack set definition file %s was not found.
+0x1420a78c0  [ufs] Unable to open %s
+0x1420a78d8  [ufs] Failed to load pack set
+0x1420a78f8  [ufs] Pack set is for '%s' where '%s' was expected.
+0x1420a7930  [ufs] Pack set is not for platform '%s'.
+0x1420a7960  [ufs] Loaded pack set version %s created at %I64u
+0x1420a7998  [ufs] Loaded pack set version %s
+0x1420a79c0  [ufs] Unable to determine root directory
+0x1420a79f8  [ufs] Home directory: '%s'.
+0x1420a7a18  [ufs] Unable to create directory '%s'.
+0x1420a7a40  [ufs] Home directory mount failed!
+0x1420a7a68  [ufs] Failed to guard home device.
+0x1420a7a90  [ufs] Failed to get system path of temporary directory!
+0x1420a7ac8  [ufs] Temporary directory: '%s'.
+0x1420a7af0  [ufs] Temporary directory mount failed.
+0x1420a7b18  [ufs] Failed to guard temporary device.
+0x1420a7b40  [ufs] '%s' is not compatible with the current pack set
+0x1420a7b78  [ufs] Failed to guard effects device
+0x1420a7ba0  [ufs] Failed to guard mandatory device %s
+0x1420a7bf8  [ufs] Music directory: '%s'.
+0x1420a7c18  [ufs] Music directory mount failed.
+0x1420a7c40  [ufs] Failed to guard music device.
+0x1420a7c68  [ufs] Pictures directory: '%s'.
+0x1420a7c88  [ufs] Pictures directory mount failed.
+0x1420a7cb0  [ufs] Failed to guard screenshots device.
+0x1420a7ea8  [ufs] Failed to mount %s in read-write mode.
+0x1420b7518  [zipfs] %s: Unmounted
+0x1420b7530  [zipfs] error reading a non-directory entry (%s)
+0x1420b7568  [zipfs] error reading local header @ %I64u (%s)
+0x1420b7598  [zipfs] Too short file '%s'.
+0x1420b75c0  [zipfs] Failed to read the zip_central_dir_end structure in '%s'.
+0x1420b7608  [zipfs] Cannot find the zip_central_dir_end signature in '%s'.
+0x1420b7648  [zipfs] Invalid end signature in '%s'.
+0x1420b7670  [zipfs] Failed to read ZIP64 end of central directory from '%s'.
+0x1420b76b8  [zipfs] Invalid ZIP64 end signature in '%s'.
+0x1420b76e8  [zipfs] Invalid central directory offset in '%s'.
+0x1420b7720  [zipfs] Error reading central directory record #%u from '%s'.
+0x1420b7760  [zipfs] Central directory record #%u signature does not match in '%s'.
+0x1420b77b0  [zipfs] Central directory record #%u has malformed name in '%s'.
+0x1420b7800  [zipfs] Central directory record #%u has too long name, in file '%s'.
+0x1420b7848  [zipfs] Error reading name for record #%u from '%s'.
+0x1420b7880  [zipfs] Error reading extra field for record #%u from '%s'.
+0x1420b78c0  [zipfs] Failed to parse ZIP64 extra field for record #%u - %s from '%s'.
+0x1420b7910  [zipfs] Unsupported compression method used: %u for record #%u - %s from '%s'.
+0x1420b7960  [zipfs] Failed to process incompatible zip entry: %s
+0x1420b7998  [zipfs] Failed to find requested subdirectory: %s
+0x1420b79d0  [zipfs] %s: %s
+0x1420b79f0  [zipfs] %s%s: Created, %I64u entries
+0x1420b7a20  [zipfs] %s%s: Created, requested subdirectory: %s, %I64u entries (%u entries in requested subdirectory)
+0x1420bca30  [ufs] disabling pool lookup - %s device type not supported: %s
+0x1420bca70  [ufs] disabling pool lookup - incompatible hashes: %s
+0x1420bcaa8  [ufs] disabling pool lookup - non root mount: %s
+0x1420bcae0  [ufs] %s pool: %Iu packs, %Iu files, %Iu dirs
+0x1420bcb10  [fs] device %s mounted to %s pool.
+0x1420bcb38  [ufs] Error unmounting device: device not found!
+0x1420bccc8  [ufs] The table of UFS mounted devices is full.
+0x1420bf048  [hashfs] %s: %s
+0x1420fc7d8  [ufs] Failed to determine home directory!
+0x1420fc808  [ufs] Failed to mount mandatory devices!
+0x1420fc848  [ufs] Failed to mount home directory '%s'
+0x142111a60  [mods] Mod %s must be placed inside the mod root directory. Mod package name: %s
+0x142111ab8  [mods] Invalid mod manager %s name '%s' for package %s.
+0x142111af0  [mods] For %s names you can use only alpha-numeric both lower and uppercase characters underscores(_) and dots(.).
+0x142111b68  [mods] Cannot find '%s' mod %s. Using default.
+0x142111bb0  manifest.sii
+0x142111bc0  [mod] Mod package '%s' does not contain a manifest file '%s', creating default information set.
+0x142111cc0  [mods] No display_name defined in %s. Using package name instead.
+0x142111d30  [mods] Unknown category '%s' defined for %s. Ignoring.
+0x142111d68  [mods] No valid categories defined for %s. Setting defaults.
+0x142111da8  [mods] Incompatible mod - %s
+0x142111dd0  [mods] Mod '%s' dependency DLC '%s' is missing. Marking mod as incompatible.
+0x142111e20  [mods] Cannot find '%s' description file for mod '%s'.
+0x142111e60  [mods] Mod '%s' uses unsupported description extension. Currently supported extensions: .txt
+0x142111ed0  [mods] Too many categories defined for %s - limit %u. Using first %u.
+0x142111f20  [mods] Mod '%s' uses unsupported %s extension. Currently supported extensions: %s
+0x142111f90  [mods] Mod description file must be placed inside the mod root directory. Mod package name: %s
+0x1421120d0  [mods] Game is running in pure mode, skipping loading of mods.
+0x142112130  [mods] Skipping mount of the mod '%s', package limit of %Iu reached.
+0x142112188  [mods] Active %Iu mods (local: %Iu, workshop: %Iu)
+0x1421121c0  [mods] Active workshop mod ID %I64u (name: %s, version: %s, author: %s)
+0x142112208  [mods] Active local mod %s (name: %s, version: %s, author: %s)
+0x14212b7d0  [active_mods_data] Duplicated package name found in save container (package_name: %s).
+0x142135028  active_mods
+0x14226a4a0  [mods] Unable to mount package %s for loading of the icon.
+0x14226a560  [mods] Mod '%s' icon has invalid dimensions. (Required size %ux%upx. Image dimensions: %ux%upx).
+0x14226a680  [mods] The size (%I64u) of mod icon %s from mod package %s exceeds the limit (%I64u).
+0x14226a6f0  [mods] Mod icon contains unsupported icon format. Supported formats: .jpg
+0x14226a740  [mods] Cannot find mod icon %s for mod package %s.
+0x1422e1838  /%s.manifest.sii
+0x1422e4610  /home/mods_info.sii
+0x1422e4628  /versions.sii
+0x1422e4650  [mod_package_manager] Mod "%s" has been mounted. (package_name: %s, version: %s, source: %s)
+0x1422e46b0  [mod_package_manager] Package does not exists. (package_name: %s)
+0x1422e4708  /manifest.sii
+0x1422e4720  [mod_package_manager] Content of the Steam Workshop mod "%s" disappeared from hard drive. (package name: %s)
+0x1422e4790  [mod_package_manager] Steamworks unavailable
+0x1422e47c0  [mod_package_manager] Unable to save mods info (%s)
+0x1422e4800  ?handle_item_load@mod_package_manager_t@prism@@AEAAPEAVmod_package_u@2@_K@Z
+0x1422e4850  d:\buildbot\slaves\win_slave\final_build_ets2_160_windows_bin_steam_x64\build\prism\src\gamesup\package\mod_package_manager.cpp
+0x1422e48d0  [mod_package_manager] Failed to get Steam Workshop mod install path. (package name: %s, published file id: %I64u)
+0x1422e4990  [mod_package_manager] Steam Workshop mod is not installed. (package name: %s, published file id: %I64u)
+0x1422e4a00  [mod_package_manager] Unable to mount mod "%s". (package_name: %s, version: %s, source: %s)
+0x1422e4a60  mod_workshop_package.
+0x1422e4a80  [mod_package_manager] Unknown error occured while receiving detailed mod info. (errno: %X, published fileid: %I64u)
+0x1422e4af8  [mod_package_manager] Unable to extract mod "%s".
+0x1422e4b30  [mod_package_manager] Tried to add duplicated mod entry. (package name: %s)
+0x1422e4b80  [mod_package_manager] IO error while receiving detailed mod info. (published fileid: %I64u)
+0x1422e4be0  [mod_package_manager] Unable to open location "%s" for reading manifest. (package name: %s, published file id: %I64u)
+0x1422e4c60  [mod_package_manager] Unable to read Steam Workshop mod manifest. (package name: %s, published file id: %I64u, root path: "%s")
+0x1422e4ce0  [mod_package_manager] Failed to mount Steam Workshop mod "%s". (package name: %s, published file id: %I64u)
+0x1422e4d50  [mod_package_manager] Unable to find best matching version for Steam Workshop mod. (package name: %s, published file id: %I64u, install path: "%s")!
+0x1422e4df0  [mod_package_manager] Unable to mount mod - no version info available. (package_name: %s)
+0x1422e4e50  [mod_package_manager] Unable to mount Steam Workshop mod. (package_name: %s, path: %s)
+0x1422e4ea8  [mod_package_manager] Unable to query subscribed mods list!
+0x1422e4ef0  [mod_package_manager] Unable to get item install path. (package_name: %s)
+0x1422e4f50  [mod_package_manager] Requesting Steam Workshop content..
+0x1422e4f90  [mod_package_manager] An error has occured during downloading of the mod item. (errno: %X, file: %I64u)
+0x1422e5000  [mod_package_manager] Received list of the steam workshop subscribed mods. (received %Iu mods total, %u loaded, %u scheduled for download)
+0x1422e5090  [mod_package_manager] Incorrect characters found in folder name "%s" for version %s
+0x1422e50f0  [mod_package_manager] Duplicated version info with no compatible_versions array defined in %s/versions.sii.
+0x1422e5160  [mod_package_manager] Unable to find any version definition inside %s file (install_path: %s, published file id: %I64u)
+0x1422e51f0  [mod_package_manager] Incorrect Steam Workshop mod structure - missing %s. (install_path: %s, published file id: %I64u)
+0x1422e5270  [mod_package_manager] Unable to load %s file for Workshop package. (install_path: %s, published file id: %I64u)
+0x1422e52e0  [mod_package_manager] Unable to mount devices of Steam Workshop mod. (package_name: %s, path: %s)
+0x1422e5348  [mod_package_manager] Package '%s' is already mounted.
+0x1422e54c0  ?index_of@?$array_t@PEAV?$callback_2_t@XPEBVmod_package_u@prism@@PEBX@prism@@@prism@@QEBA_KQEBQEAV?$callback_2_t@XPEBVmod_package_u@prism@@PEBX@2@@Z
+0x1422e5560  ?remove@?$array_t@PEAV?$callback_2_t@XPEBVmod_package_u@prism@@PEBX@prism@@@prism@@QEAAPEAPEAV?$callback_2_t@XPEBVmod_package_u@prism@@PEBX@2@_K@Z
+0x1422e5600  ?index_of@?$array_t@PEAV?$callback_1_t@XPEBVmod_package_u@prism@@@prism@@@prism@@QEBA_KQEBQEAV?$callback_1_t@XPEBVmod_package_u@prism@@@2@@Z
+0x1422e5690  ?remove@?$array_t@PEAV?$callback_1_t@XPEBVmod_package_u@prism@@@prism@@@prism@@QEAAPEAPEAV?$callback_1_t@XPEBVmod_package_u@prism@@@2@_K@Z
+0x1422ecca8  compatible_versions
+0x1422ecd78  [mod_package] Unable to open description file for mod %s.
+0x1422ecdc0  [mod_package] Unable to allocate memory for package description.
+0x1422ece40  dlc_dependencies
+0x1422ece58  mod_package
+0x1422ece68  mod_package_u
+0x1422eceb0  [mod_package] Unable to read package description.
+0x1422ecef0  [mods] Invalid description content type for %s. File must be saved in utf8.
+0x1422ed078  mods_info_u
+0x1422ed098  mods_info
+0x142300c58  [ufs] Failed to determine application directory!
