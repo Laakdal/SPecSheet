@@ -157,6 +157,9 @@ cargo run --release -p specsheet-research --example save_check -- "<home>/profil
 # Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --others adds what the other packages of a folder hold or mention (cached per package in %LOCALAPPDATA%\dev.specsheet.app\mod-scan; --no-cache reads them all again); --paths adds one candidate per line of a file; --list adds folders, replaced game files, unnamed contents
 cargo run --release -p specsheet-research --example mod_names -- [--list] [--others "<home>/mod"] [--no-cache] [--paths <file>] "<home>/mod/<package>.scs" ...
 
+# Mod view: a v1 or ZIP package's folder tree (file counts, sizes, files that replace game files), or with --files every file; --filter keeps matching paths (* and ?)
+cargo run --release -p specsheet-research --example mod_view -- [--files] [--depth <n>] [--filter <pattern>] [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs"
+
 # Mod extraction (D19): write a v1 or ZIP package's files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites
 cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs" <absolute destination>
 
