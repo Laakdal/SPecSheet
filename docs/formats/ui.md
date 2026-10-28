@@ -97,7 +97,7 @@ Containers also carry `fitting: bool` (Hypothesis: the container sizes itself to
 - **Markup layout** (all Hypothesis). These rules make the geometry of `txt.window.bcg_rect4`, `btn.truck_grp` and `btn.truck_acc` add up exactly. They are implemented in `specsheet-data::ui::flow`, and the unit tests reproduce those three templates:
   - The cursor starts at the widget's top-left, with y pointing down inside the box. Units are reference units, and one texel is one unit.
   - `<ret>` returns the cursor to the origin; it does not start a new line. In `btn.truck_grp`'s selected state, `…</align><ret><img icon>` draws the icon over the background, not below it. `<br>` starts a new line.
-  - `<offset hshift= vshift=>` is absolute, measured from the margin's left edge and the box top. In `btn.truck_acc`, `<img height=22><ret><offset vshift=22><img height=74>` fills the 96-unit item exactly.
+  - `<offset hshift= vshift=>` moves the cursor by that much from where it is (Confirmed). In `btn.truck_acc`, `<img height=22><ret><offset vshift=22><img height=74>` fills the 96-unit item exactly. About 2,000 of the 4,180 offsets in `ui/*.sii` sit mid-line as spacing, e.g. `<img width=60><offset hshift=10><img width=60>` in `nonlinear_rank_desc.sii`, which would overlap if offsets were absolute. The game's layered paint thumbnail steps back over its 256-wide icon with `hshift=-256` (F17).
   - `<img left= right= top= bottom=>` with `pN` values select texels N. Reversed ranges mirror the texture: `left=p16 right=p0` is the mirrored corner. The texel span is the natural size.
   - `width`/`height` override the natural size. A negative value is the space remaining on the line (or below the cursor) minus N, and `xscale`/`yscale` `stretch|repeat` fill that space. With these rules, `bcg_rect4` comes out as a 4-unit top strip, a middle part and a 16-unit bottom strip that tile the box.
   - Edges of `<margin>` and `<align>`: a positive value is an absolute coordinate, while zero or negative is an inset from the far edge. Symmetric `<margin left=15 right=-15>` is the most common margin.
@@ -130,4 +130,8 @@ Containers also carry `fitting: bool` (Hypothesis: the container sizes itself to
   - Across all trucks, 5,848 of 5,851 distinct icon values resolve, and 5,844 of those `.mat` files name `<basename of p>.tobj` beside them. The other 4 share a sibling's texture, such as an `_r` exhaust using the `_l` image.
   - Icons are 256 × 64 (5,815), 64 × 64 (31, engine icons) or 512 × 128 (2). All are DXGI 91 (B8G8R8A8_SRGB) with one mip.
   - Across all of `/def/vehicle`, 8,960 of 9,006 resolve; 43 of the 46 misses are owned trailers.
-  - The tile template uses `<img src=/material/ui/accessory/%1>` with no extension. The exact string the engine passes as `%1` is a Hypothesis.
+  - The tile template uses `<img src=/material/ui/accessory/%1>` with no extension, and the engine splices markup into `%1` (Confirmed for paint jobs, F17, `research/evidence/rea-paint-apply.txt`). For a paint job:
+    - with an icon: `<icon>.mat`;
+    - without one (stock RAL colours): `color_icon.mat color=<base>`;
+    - without one and with `flipflake`: `clr_0.mat` (base), `/material/ui/clr_1.mat` (flip) and `clr_2.mat` (flake), each a tinted layer stepped back with `<offset hshift=-256>`, under an untinted `clr_3.mat`.
+    - The colours are the paint job's own, linear → sRGB, ×255 truncated, written `FF` + blue + green + red. `specsheet_data::view` builds this as the option's `icon`.
