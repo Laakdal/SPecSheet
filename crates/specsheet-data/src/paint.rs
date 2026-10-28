@@ -19,7 +19,12 @@ pub enum Mask {
     /// A `shared_RRGGBBAA` mask: a uniform colour, so no texture is needed.
     /// RGB sRGB-encoded, alpha linear, as [`shared_mask_color`] returns.
     /// `path` is the texture the game would load.
-    Constant { srgba: [f32; 4], path: String },
+    Constant {
+        /// The colour.
+        srgba: [f32; 4],
+        /// The texture path.
+        path: String,
+    },
 }
 
 impl Mask {
@@ -44,9 +49,13 @@ impl Mask {
 /// Flake parameters of a piece.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlakePaint {
+    /// Flake colour.
     pub color: [f32; 3],
+    /// Flake density.
     pub density: f32,
+    /// Flake shininess.
     pub shininess: f32,
+    /// Clear-coat roll-off.
     pub clearcoat_rolloff: f32,
     /// The part's `flake_uvscale`, else the paint job's.
     pub uvscale: f32,
@@ -59,7 +68,9 @@ pub struct FlakePaint {
 /// Flip parameters of a piece.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlipPaint {
+    /// Flip colour.
     pub color: [f32; 3],
+    /// Flip strength.
     pub strength: f32,
 }
 
@@ -75,13 +86,16 @@ pub struct PiecePaint {
     pub paint_job: AccessoryId,
     /// Index into the paint job's `parts` when one lists this accessory.
     pub part: Option<usize>,
+    /// Body colour.
     pub base_color: [f32; 3],
     /// The part's mask when a part lists the accessory, else the paint
     /// job's main mask (Hypothesis for unlisted accessories).
     pub mask: Option<Mask>,
     /// Colours for the mask's red, green and blue channels.
     pub mask_colors: [[f32; 3]; 3],
+    /// Flakes.
     pub flake: FlakePaint,
+    /// Flip colour.
     pub flip: FlipPaint,
     /// `airbrush`: the mask is a painted livery.
     pub airbrush: bool,

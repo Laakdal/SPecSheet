@@ -35,6 +35,7 @@ const WHEEL_GROUPS: &[&str] = &[
 /// A truck model available in the installation.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TruckSummary {
+    /// The truck's directory name, e.g. `scania.s_2016`.
     pub id: TruckId,
     /// Localisation keys of brand and series, e.g. `@@brand_scania@@`.
     pub info: Vec<String>,
@@ -44,7 +45,9 @@ pub struct TruckSummary {
 /// continues; these are reported so broken data is visible, not fatal.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LoadWarning {
+    /// The file it comes from.
     pub path: String,
+    /// What was wrong.
     pub message: String,
 }
 

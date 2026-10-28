@@ -13,22 +13,27 @@ pub struct GameFs {
 }
 
 impl GameFs {
+    /// The game's file system over a mounted `vfs`.
     pub fn new(vfs: Vfs) -> Self {
         Self { vfs }
     }
 
+    /// The mounted archives.
     pub fn vfs(&self) -> &Vfs {
         &self.vfs
     }
 
+    /// Whether the file `path` exists (leading slash optional).
     pub fn exists(&self, path: &str) -> bool {
         self.vfs.exists(normalize(path))
     }
 
+    /// The bytes of the file `path`.
     pub fn read(&self, path: &str) -> Result<Vec<u8>> {
         Ok(self.vfs.read(normalize(path))?)
     }
 
+    /// The files and subdirectories of `path`, across every archive.
     pub fn list_dir(&self, path: &str) -> Result<DirListing> {
         Ok(self.vfs.list_dir(normalize(path).trim_end_matches('/'))?)
     }

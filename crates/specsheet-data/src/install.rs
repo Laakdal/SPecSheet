@@ -66,6 +66,7 @@ impl GameInstall {
             .ok_or(GameDataError::InstallNotFound)
     }
 
+    /// The game directory.
     pub fn root(&self) -> &Path {
         &self.root
     }

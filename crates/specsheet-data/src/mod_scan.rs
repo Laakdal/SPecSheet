@@ -24,6 +24,7 @@ const SCANNED: &[&str] = &[".sii", ".sui", ".mat", ".tobj", ".pmd", ".soundref"]
 /// The candidates of a folder, and how they were obtained.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FolderScan {
+    /// Candidate game paths found in the folder's packages.
     pub paths: Vec<String>,
     /// Packages read in this call.
     pub scanned: usize,

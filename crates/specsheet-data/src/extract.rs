@@ -32,19 +32,37 @@ const MAX_PART: usize = 255;
 /// package on the test install unpacks to about 8.7 GB.
 pub const DEFAULT_MAX_BYTES: u64 = 64 << 30;
 
+/// Why an extraction was refused or stopped.
 #[derive(Debug, thiserror::Error)]
 pub enum ExtractError {
+    /// The destination is inside, or contains, a folder never written to.
     #[error("destination {dest} overlaps {protected}, which is never written")]
-    Protected { dest: PathBuf, protected: PathBuf },
+    Protected {
+        /// The requested destination.
+        dest: PathBuf,
+        /// The protected folder (the game install or the mod folder).
+        protected: PathBuf,
+    },
+    /// The destination has files and `skip_existing` is off.
     #[error("destination {0} is not empty; choose an empty folder or skip existing files")]
     NotEmpty(PathBuf),
     #[error("the archive would write {total} bytes, over the limit of {limit}")]
-    TooLarge { total: u64, limit: u64 },
+    /// The archive declares more bytes than the limit.
+    TooLarge {
+        /// Bytes it would write.
+        total: u64,
+        /// The limit.
+        limit: u64,
+    },
+    /// The destination is relative or contains `..`.
     #[error("destination {0} must be an absolute path without `..`")]
     BadDestination(PathBuf),
+    /// The operating system failed to write a file.
     #[error("I/O error on {path}: {source}")]
     Io {
+        /// The file involved.
         path: PathBuf,
+        /// The underlying error.
         #[source]
         source: std::io::Error,
     },
@@ -55,12 +73,16 @@ pub enum Archive<'a> {
     /// A HashFS v1 package with the names recovered for it
     /// ([`crate::mod_names::recover_v1_names`]).
     V1 {
+        /// The package.
         archive: &'a HashFsV1Archive,
+        /// Its recovered file names.
         names: &'a RecoveredNames,
     },
+    /// A ZIP package; its file names are stored.
     Zip(&'a ZipArchive),
 }
 
+/// How to extract.
 #[derive(Clone, Copy, Debug)]
 pub struct ExtractOptions {
     /// Count and plan only; write nothing.
@@ -85,7 +107,9 @@ impl Default for ExtractOptions {
 /// What an extraction did (or, in a dry run, would do).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Extracted {
+    /// Files written (or to be written).
     pub written: usize,
+    /// Existing files left alone.
     pub skipped: usize,
     /// Declared bytes of the files written (or to be written).
     pub bytes: u64,

@@ -4,6 +4,8 @@
 //! the game's UI files and the tuning session build on it in their own
 //! crates (`specsheet-assembly`, `specsheet-gameui`, `specsheet-session`).
 
+#![warn(missing_docs)]
+
 mod catalog;
 mod error;
 pub mod extract;
@@ -14,7 +16,11 @@ pub mod mod_names;
 pub mod mod_scan;
 pub mod model;
 pub mod paint;
+// `render` and `scene` are being changed on other branches; their field docs
+// follow once those land (TASKS.md, D17 leftovers).
+#[allow(missing_docs)]
 pub mod render;
+#[allow(missing_docs)]
 pub mod scene;
 
 pub use catalog::{

@@ -12,8 +12,11 @@ use crate::fs::GameFs;
 /// A parsed model: descriptor plus geometry.
 #[derive(Debug)]
 pub struct Model {
+    /// The `.pmd` path.
     pub path: String,
+    /// Looks, variants and part attributes.
     pub pmd: Pmd,
+    /// The geometry.
     pub pmg: Pmg,
 }
 
@@ -43,6 +46,7 @@ pub struct ModelCache {
 }
 
 impl ModelCache {
+    /// An empty cache.
     pub fn new() -> Self {
         Self::default()
     }

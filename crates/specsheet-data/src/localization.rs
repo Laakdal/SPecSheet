@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use crate::error::Result;
 use crate::fs::GameFs;
 
+/// The game's display strings for one language, by localisation key.
 #[derive(Clone, Debug, Default)]
 pub struct Localization {
     strings: HashMap<String, String>,
@@ -38,6 +39,7 @@ impl Localization {
         Ok(Self { strings })
     }
 
+    /// The string of `key` (without the `@@` marks).
     pub fn get(&self, key: &str) -> Option<&str> {
         self.strings.get(key).map(String::as_str)
     }
@@ -62,10 +64,12 @@ impl Localization {
         out
     }
 
+    /// Number of strings.
     pub fn len(&self) -> usize {
         self.strings.len()
     }
 
+    /// Whether no string was loaded.
     pub fn is_empty(&self) -> bool {
         self.strings.is_empty()
     }
