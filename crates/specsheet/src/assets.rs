@@ -180,11 +180,44 @@ const WATER_OPACITY: f32 = 0.6;
 const EMISSIVE_LUMINANCE: f32 = 40.0;
 /// Depth bias that keeps decals in front of the surface they sit on.
 const DECAL_DEPTH_BIAS: f32 = 8.0;
+/// Below this perceptual roughness Bevy's specular highlights alias.
+const MIN_ROUGHNESS: f32 = 0.089;
+
+/// Base colour and metalness of a reflecting material (an `env` effect with
+/// an `env_factor`). The game adds the environment reflection on top of a
+/// dark diffuse; chrome is diffuse 0.21 with a factor of 0.98
+/// (`research/evidence/material-survey.txt`). Here the factor's luminance
+/// becomes metalness, and the base colour blends from the diffuse towards
+/// the factor's colour by the same amount, so chrome reads as bright metal.
+fn reflective_surface(info: &MaterialInfo) -> Option<([f32; 3], f32)> {
+    if info.paintable
+        || info.emissive
+        || matches!(info.blend, BlendMode::Blend | BlendMode::Additive)
+    {
+        return None;
+    }
+    let factor = info.env_factor?;
+    let strength = (0.2126 * factor[0] + 0.7152 * factor[1] + 0.0722 * factor[2]).clamp(0.0, 1.0);
+    let base =
+        std::array::from_fn(|i| info.diffuse[i] * (1.0 - strength) + factor[i].min(1.0) * strength);
+    Some((base, strength))
+}
+
+/// Blinn-Phong exponent to perceptual roughness: the GGX alpha that matches
+/// exponent `n` is `sqrt(2 / (n + 2))`, and Bevy's perceptual roughness is
+/// the square root of alpha.
+fn roughness_from_shininess(n: f32) -> f32 {
+    (2.0 / (n.max(0.0) + 2.0))
+        .sqrt()
+        .sqrt()
+        .clamp(MIN_ROUGHNESS, 1.0)
+}
 
 /// The PBR stand-in for a game material. This is an approximation, not the
 /// game's shaders.
 pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> StandardMaterial {
-    let [r, g, b] = info.diffuse;
+    let reflective = reflective_surface(info);
+    let [r, g, b] = reflective.map_or(info.diffuse, |(base, _)| base);
     let tokens: Vec<&str> = info.effect.split('.').collect();
     let opacity = if tokens.contains(&"glass") {
         GLASS_OPACITY
@@ -209,8 +242,16 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
         },
         emissive_texture: texture.clone().filter(|_| info.emissive),
         base_color_texture: texture,
-        metallic: if info.paintable { 0.35 } else { 0.1 },
-        perceptual_roughness: if info.paintable { 0.35 } else { 0.6 },
+        metallic: match (info.paintable, reflective) {
+            (true, _) => 0.35,
+            (false, Some((_, metalness))) => metalness,
+            (false, None) => 0.1,
+        },
+        perceptual_roughness: match (info.paintable, reflective, info.shininess) {
+            (true, _, _) => 0.35,
+            (false, Some(_), Some(n)) => roughness_from_shininess(n),
+            _ => 0.6,
+        },
         alpha_mode,
         depth_bias: if info.decal { DECAL_DEPTH_BIAS } else { 0.0 },
         ..default()
@@ -405,6 +446,11 @@ mod tests {
             paintable: false,
             emissive: false,
             decal: false,
+            specular: None,
+            shininess: None,
+            env_factor: None,
+            fresnel: None,
+            reflection_texture: None,
         };
         let glass = material(&info("eut2.glass", BlendMode::Blend), None);
         assert_eq!(glass.alpha_mode, AlphaMode::Blend);
@@ -413,5 +459,49 @@ mod tests {
         assert_eq!(cutout.alpha_mode, AlphaMode::Mask(0.5));
         let glow = material(&info("eut2.dif.lum.add", BlendMode::Additive), None);
         assert_eq!(glow.alpha_mode, AlphaMode::Add);
+    }
+
+    #[test]
+    fn chrome_becomes_bright_metal_and_plain_materials_stay_dull() {
+        // A typical chrome (`research/evidence/material-survey.txt`).
+        let chrome_info = MaterialInfo {
+            path: String::new(),
+            effect: "eut2.dif.spec.weight.add.env.rfx".to_owned(),
+            blend: BlendMode::Opaque,
+            diffuse: [0.214041; 3],
+            base_texture: None,
+            paintable: false,
+            emissive: false,
+            decal: false,
+            specular: Some([1.0; 3]),
+            shininess: Some(70.0),
+            env_factor: Some([0.977402; 3]),
+            fresnel: Some([1.0, 1.0]),
+            reflection_texture: None,
+        };
+        let chrome = material(&chrome_info, None);
+        assert!((chrome.metallic - 0.977).abs() < 1e-3);
+        assert!(chrome.base_color.to_linear().red > 0.9);
+        assert!((chrome.perceptual_roughness - 0.408).abs() < 1e-3);
+
+        let plain = material(
+            &MaterialInfo {
+                env_factor: None,
+                ..chrome_info.clone()
+            },
+            None,
+        );
+        assert_eq!((plain.metallic, plain.perceptual_roughness), (0.1, 0.6));
+        assert!((plain.base_color.to_linear().red - 0.214041).abs() < 1e-6);
+
+        let glass = material(
+            &MaterialInfo {
+                effect: "eut2.glass.rfx".to_owned(),
+                blend: BlendMode::Blend,
+                ..chrome_info
+            },
+            None,
+        );
+        assert_eq!(glass.metallic, 0.1);
     }
 }

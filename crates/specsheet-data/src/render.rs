@@ -43,6 +43,18 @@ pub struct MaterialInfo {
     pub emissive: bool,
     /// Decals and overlays sit on other geometry and need depth biasing.
     pub decal: bool,
+    /// Specular colour (`specular`), linear RGB.
+    pub specular: Option<[f32; 3]>,
+    /// Specular exponent (`shininess`), 0 to a few hundred.
+    pub shininess: Option<f32>,
+    /// Strength of the environment reflection per channel (`env_factor`).
+    /// Chrome pairs a dark `diffuse` with a factor near 1
+    /// (`research/evidence/material-survey.txt`).
+    pub env_factor: Option<[f32; 3]>,
+    /// The two `fresnel` parameters of reflecting effects.
+    pub fresnel: Option<[f32; 2]>,
+    /// `.tobj` path of the reflection cube map (`texture_reflection`).
+    pub reflection_texture: Option<String>,
 }
 
 impl MaterialInfo {
@@ -56,6 +68,11 @@ impl MaterialInfo {
             paintable: false,
             emissive: false,
             decal: false,
+            specular: None,
+            shininess: None,
+            env_factor: None,
+            fresnel: None,
+            reflection_texture: None,
         }
     }
 
@@ -76,24 +93,28 @@ impl MaterialInfo {
         } else {
             BlendMode::Opaque
         };
-        let diffuse = material
-            .attribute("diffuse")
-            .and_then(MatValue::as_floats)
-            .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok())
-            .unwrap_or([1.0; 3]);
-        let base_texture = material
-            .texture("texture_base")
-            .and_then(|t| t.source.as_deref())
-            .map(|source| resolve_relative(path, source));
+        let floats = |key: &str| material.attribute(key).and_then(MatValue::as_floats);
+        let texture = |slot: &str| {
+            material
+                .texture(slot)
+                .and_then(|t| t.source.as_deref())
+                .map(|source| resolve_relative(path, source))
+        };
+        let rgb = |key: &str| floats(key).and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok());
         Self {
             path: path.to_owned(),
             effect: material.effect.clone(),
             blend,
-            diffuse,
-            base_texture,
+            diffuse: rgb("diffuse").unwrap_or([1.0; 3]),
+            base_texture: texture("texture_base"),
             paintable: has("truckpaint"),
             emissive: has("lamp") || has("lum") || has("light"),
             decal: has("decal") || has("over"),
+            specular: rgb("specular"),
+            shininess: floats("shininess").and_then(|v| v.first().copied()),
+            env_factor: rgb("env_factor"),
+            fresnel: floats("fresnel").and_then(|v| <[f32; 2]>::try_from(v.get(..2)?).ok()),
+            reflection_texture: texture("texture_reflection"),
         }
     }
 }
@@ -333,6 +354,36 @@ mod tests {
             BlendMode::Opaque
         );
         assert_eq!(material("eut2.water.rfx").blend, BlendMode::Blend);
+    }
+
+    #[test]
+    fn carries_shine_and_reflection_attributes() {
+        // A typical chrome (`research/evidence/material-survey.txt`).
+        let source = r#"effect : "eut2.dif.spec.weight.add.env.rfx" {
+            diffuse : { 0.214041 , 0.214041 , 0.214041 }
+            env_factor : { 0.977402 , 0.977402 , 0.977402 }
+            fresnel : { 1 , 1 }
+            shininess : 70
+            specular : { 1 , 1 , 1 }
+            texture : "texture_reflection" { source : "/material/environment/vehicle_reflection.tobj" }
+        }"#;
+        let mat = Material::parse(source.as_bytes()).expect("parse");
+        let m = MaterialInfo::from_material("/vehicle/truck/x/chrome.mat", &mat);
+        assert_eq!(m.specular, Some([1.0; 3]));
+        assert_eq!(m.shininess, Some(70.0));
+        assert_eq!(m.env_factor, Some([0.977402; 3]));
+        assert_eq!(m.fresnel, Some([1.0, 1.0]));
+        assert_eq!(
+            m.reflection_texture.as_deref(),
+            Some("/material/environment/vehicle_reflection.tobj")
+        );
+
+        let plain = material("eut2.dif.rfx");
+        assert_eq!(
+            (plain.specular, plain.shininess, plain.env_factor),
+            (None, None, None)
+        );
+        assert_eq!(plain.reflection_texture, None);
     }
 
     #[test]
