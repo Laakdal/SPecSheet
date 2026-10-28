@@ -177,3 +177,19 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - The `zip` crate. Not chosen: the writer is about 250 lines with `flate2`, and a fixed, minimal feature set keeps the output inside what the game is seen to accept.
   - HashFS v1 output. Not chosen: the game loads ZIP, and ZIP opens in any tool, so players can check a package.
   - Writing to a temporary file and renaming. Rejected: on Windows a rename replaces an existing file, and the game would load a stray temporary file as a mod, because it picks the reader by content.
+
+### D19: Extract archives to a folder the user chooses; never into the game, its home or the repo
+- **Context:** the user asked for the features of the community tool Extractor (sk-zk, GPL-2.0): listing and extracting mod packages and game archives, including HashFS v1 packages without listings. D15 kept the mod folder read-only; D18 only covers creating new packages. The user wants game archives accepted as input too, since players commonly extract them.
+- **Decision:**
+  - Extraction reads an archive (HashFS v2 or v1, ZIP) and writes its files to a destination folder the user names. The archive, the game install and the ETS2 home folder (`mod/`, profiles) are only read.
+  - The destination may not be inside the game install, the ETS2 home folder or this repository's working tree. Both sides are canonicalized before comparing (Windows paths are case-insensitive and may carry `\?\` or pass through junctions).
+  - Every file is created with `create_new`, so nothing is ever overwritten. A non-empty destination is refused unless the user asks to skip files that exist.
+  - Names from an archive are hostile input. A name that Windows cannot hold (reserved device names such as `CON` or `COM1` with any extension, a trailing dot or space, `<>:"|?*`, control characters, a part over 255 bytes) or that collides with another ignoring case is written under a safe name, and every such rename is listed in a mapping file at the destination root. References inside extracted files are not rewritten.
+  - Entries without a recovered name (`specsheet-data::mod_names`) go to `_unnamed/<hash>.<extension from content>`; entries that cannot be read are listed in `_unreadable.txt`, so they are never mistaken for real files.
+  - One entry is read and written at a time. A dry run prints the file count and total size first.
+  - The code is our own. From Extractor we take facts only (which paths exist, which naming rules hold), each confirmed on our own install before use (`research/evidence/`), as for TruckLib.
+  - Extracted files never enter this repository; the pre-commit guard already rejects game files.
+- **Alternatives:**
+  - Listing only. Not chosen: the user wants files on disk to inspect and edit.
+  - Rewriting references to renamed files, as Extractor does. Deferred: it edits file contents and needs its own decision.
+  - Refusing game archives as input. Not chosen by the user; reading them is what the app already does, and the install itself stays read-only.

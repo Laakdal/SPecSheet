@@ -154,8 +154,11 @@ cargo run --release -p specsheet-research --example profile_mods -- "<home>/prof
 # Saves: decode every save (ScsC, text, binary) and compare binary against text field kinds
 cargo run --release -p specsheet-research --example save_check -- "<home>/profiles"
 
-# Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --zips adds the ZIP mods of a folder as candidates; --list adds folders, replaced game files, unnamed contents
-cargo run --release -p specsheet-research --example mod_names -- [--list] [--zips "<home>/mod"] "<home>/mod/<package>.scs" ...
+# Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --others adds what the other packages of a folder hold or mention; --paths adds one candidate per line of a file; --list adds folders, replaced game files, unnamed contents
+cargo run --release -p specsheet-research --example mod_names -- [--list] [--others "<home>/mod"] [--paths <file>] "<home>/mod/<package>.scs" ...
+
+# Mod extraction (D19): write a v1 or ZIP package's files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites
+cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--others "<home>/mod"] "<home>/mod/<package>.scs" <absolute destination>
 
 # Mod writer: a test package (manifest + description, no game files) as <dir>/specsheet_test.scs; refuses if it exists
 cargo run --release -p specsheet-research --example mod_write -- <dir>

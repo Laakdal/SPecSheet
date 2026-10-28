@@ -26,7 +26,7 @@ layer 0   specsheet-core        foundation: ids, maths (Aabb, Transform), sRGB c
 | `specsheet-core` | Foundation types every crate shares: ids, `Aabb`, `Transform`, the sRGB conversion. No domain logic | serde |
 | `specsheet-theme` | Design tokens (colour roles in two appearances, type scale, spacing) with a WCAG contrast test | nothing |
 | `specsheet-archive` | Read-only `.scs` and mod-package access: indexing, decompression, packed textures, layered VFS. Builds new ZIP mod packages (D18) | std, thiserror, flate2, gdeflate |
-| `specsheet-formats` | Byte-level parsers for SII, BSII, ScsC, PMD, PMG, MAT; the `manifest.sii` writer; a scanner for paths files mention. No I/O | std, thiserror, flate2, aes, cbc |
+| `specsheet-formats` | Byte-level parsers for SII, BSII, ScsC, PMD, PMG, MAT; the `manifest.sii` writer; a scanner for paths files mention; content-type sniffing. No I/O | std, thiserror, flate2, aes, cbc |
 | `specsheet-truck` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation, paint jobs. No I/O, no game formats | specsheet-core, serde |
 | `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; models, scenes, render-ready meshes and textures, paint per part | layers 0–1 |
 | `specsheet-assembly` | Assembles a configuration into placements; slot availability from model locators; the game's pin bases (exterior, wheels, interior) | layers 0–2 |

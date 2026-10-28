@@ -106,7 +106,8 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | Mod packages: ZIP, HashFS v1; writing new ZIP packages | `specsheet-archive/src/{zip,hashfs_v1,zip_write}.rs`; manifests in `specsheet-formats/src/mod_manifest.rs` | unit; examples `mod_probe` over a mod folder, `mod_write` (test package) |
 | Packed textures, GDeflate | `specsheet-archive/src/{texture,gdeflate}.rs` | unit tests in those files |
 | SII definitions | `specsheet-formats/src/sii.rs` | unit; `real_install::every_vehicle_definition_parses` |
-| Mod file names in HashFS v1 packages without listings | `specsheet-data/src/mod_names.rs`; scanner in `specsheet-formats/src/paths.rs` | unit; example `mod_names` over v1 packages |
+| Mod file names in HashFS v1 packages without listings | `specsheet-data/src/mod_names.rs`; scanner in `specsheet-formats/src/paths.rs`; content types in `specsheet-formats/src/sniff.rs` | unit; example `mod_names` over v1 packages |
+| Extracting a package to a folder (D19) | `specsheet-data/src/extract.rs` | unit (temp folders); example `mod_extract` |
 | Profiles and saves: ScsC, binary SII | `specsheet-formats/src/{scsc,bsii}.rs` | unit; examples `profile_mods`, `save_check` |
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
 | UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
