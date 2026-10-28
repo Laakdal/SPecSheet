@@ -78,5 +78,35 @@ A scan of .text for RIP-relative references, with containing functions from
   btn.custom_accs  referenced at 0x140fcd0cd in FUN_140fcce14
                    and at 0x140fbd350 in FUN_140fbd120 (794 bytes)
   /def/trailer_adjust_scene.sii  at 0x140fb8ab4 in FUN_140fb8930
-Next: rea function on FUN_140fcce14 (pin creation), then on whatever it shows
-places the pins.
+(.pdata gives chunk starts; FUN_140fcce14 is a chunk of FUN_140fccdb0.)
+
+5. REA function on FUN_140fccdb0: it selects a pin, it does not place one
+------------------------------------------------------------------------
+Command: rea function <exe> --procedure=0x140fcce14 (resolved to
+FUN_140fccdb0, 0x140fccdb0-0x140fcd1ff, two ranges), 2026-10-28 15:00-15:28.
+Evidence ID: ev_6f37f791d2d22c81a2aecc5e05b6dfb9e0e35d0ca7a250a56196d656a84191ba
+The decompilation stays outside the repository
+(%USERPROFILE%ea-ets2unction-pin-create.json). Our observations:
+  - Arguments: the screen object and a pin index n. The screen keeps an array
+    of acc_info_t records, 0x40 bytes each (the array's bounds check names
+    array_t<acc_info_t>); n is checked against its count.
+  - It remembers n as the selected pin, shows the accessory's options, then
+    takes button 10000 + n and, if its template is btn.custom_accn, switches
+    it to btn.custom_accs. So "n" is the normal pin look and "s" the
+    selected one (Confirmed).
+  - Callers: FUN_140fbe840, FUN_140fbf860 (input handler, F5),
+    FUN_140fc1690, FUN_140fe1d80.
+
+6. Static triage of the code that uses acc_info_t
+-------------------------------------------------
+Functions referencing the array_t<acc_info_t> helpers' names (resolved to
+their root function through .pdata chained unwind info), with a rough count
+of SSE float instructions and of the immediates 10000 / 11000 (pin id bases):
+  FUN_140fcba50   4132 bytes  ~96 float ops  10000 x1  11000 x1
+  FUN_140fcf210  11475 bytes  ~41 float ops  10000 x2  11000 x1
+  FUN_140fc7590    868 bytes  ~29 float ops  10000 x3
+  FUN_140fbdd60, FUN_140fe0fc0, FUN_140fd25b0, FUN_140fccdb0 and five small
+  helpers: no float maths.
+Hypothesis: FUN_140fcba50 places pins on screen each frame (projection
+maths, both pin kinds); FUN_140fcf210 builds the acc_info_t list.
+Next: rea function on FUN_140fcba50.
