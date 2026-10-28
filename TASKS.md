@@ -96,7 +96,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
    - the game's lighting model in one shared WGSL module for truckpaint and `dif.spec`, with per-material cube sampling (dif-spec §5.5, agreed with 71);
-   - check the variant rule (the `.mat` flavours united with the paint job's) against 71's REA run on paint-effect selection;
+   - the paint constants: which paint-job value fills which constant and their defaults, and whether a `.mat`'s `flipflake` survives (71's REA run on the builder's caller); livery vs colour mask and `altuv` are settled (materials.md);
    - the `paint_job` slot UI and the colour picker.
 3. **Interior:** interior models and an interior camera; `hide_in`.
 4. **Wheels:** whether the tuning screen shows lift axles raised or lowered (reference screenshot or REA), the inner twin-tyre bead, `wheel_shift`. Axle variants are done (F13).
