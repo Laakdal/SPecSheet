@@ -16,10 +16,9 @@ pub mod mod_names;
 pub mod mod_scan;
 pub mod model;
 pub mod paint;
-// `render` and `scene` are being changed on other branches; their field docs
-// follow once those land (TASKS.md, D17 leftovers).
-#[allow(missing_docs)]
 pub mod render;
+// `scene` has another session's pending edits; its docs follow once those
+// land (TASKS.md, D17 leftovers).
 #[allow(missing_docs)]
 pub mod scene;
 

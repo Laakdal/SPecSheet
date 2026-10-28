@@ -18,6 +18,7 @@ use crate::model::Model;
 /// How a material is drawn, derived from its effect name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlendMode {
+    /// Drawn opaque.
     Opaque,
     /// Alpha-tested cut-out (`.a` effects).
     AlphaTest,
@@ -29,11 +30,16 @@ pub enum BlendMode {
     Hidden,
 }
 
+/// What the renderer needs from one `.mat`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MaterialInfo {
+    /// The `.mat` path.
     pub path: String,
+    /// The effect name, e.g. `eut2.dif.spec.add.env.rfx`.
     pub effect: String,
+    /// How it is drawn.
     pub blend: BlendMode,
+    /// The `.mat` `diffuse` colour.
     pub diffuse: [f32; 3],
     /// `.tobj` path of the base colour texture.
     pub base_texture: Option<String>,
@@ -142,8 +148,11 @@ impl MaterialInfo {
 /// One drawable piece: flat vertex attribute arrays plus CCW indices.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MeshPiece {
+    /// Index into [`MeshData::materials`].
     pub material: usize,
+    /// Vertex positions, model space.
     pub positions: Vec<[f32; 3]>,
+    /// Vertex normals.
     pub normals: Vec<[f32; 3]>,
     /// First UV set, if present.
     pub uvs: Option<Vec<[f32; 2]>>,
@@ -170,15 +179,22 @@ pub struct MeshPiece {
     /// the piece has a tangent stream. Reversing the winding (see `indices`)
     /// leaves them unchanged.
     pub tangents: Option<Vec<[f32; 4]>>,
+    /// Triangle-list indices, counter-clockwise front faces.
     pub indices: Vec<u32>,
 }
 
+/// One look and variant of a model, ready for upload ([`build_mesh`]).
 #[derive(Clone, Debug, PartialEq)]
 pub struct MeshData {
+    /// The `.pmd` path.
     pub path: String,
+    /// The look's materials.
     pub materials: Vec<MaterialInfo>,
+    /// The pieces of the chosen variant and parts.
     pub pieces: Vec<MeshPiece>,
+    /// Bounds, smallest corner.
     pub aabb_min: [f32; 3],
+    /// Bounds, largest corner.
     pub aabb_max: [f32; 3],
 }
 
@@ -328,43 +344,62 @@ fn load_material(fs: &GameFs, path: &str) -> Result<MaterialInfo> {
 /// GPU upload format of a texture.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextureFormat {
+    /// BC1 (DXT1).
     Bc1,
+    /// BC2 (DXT3).
     Bc2,
+    /// BC3 (DXT5).
     Bc3,
+    /// BC4, one channel.
     Bc4,
+    /// BC5, two channels (normal maps).
     Bc5,
+    /// Uncompressed RGBA, 8 bits per channel.
     Rgba8,
+    /// Uncompressed, one 8-bit channel.
     R8,
     /// R9G9B9E5_SHAREDEXP: linear HDR, three 9-bit mantissas sharing a
     /// 5-bit exponent (skyboxes, HDR UI images).
     Rgb9e5,
 }
 
+/// One mip level.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MipLevel {
+    /// Width in pixels.
     pub width: u32,
+    /// Height in pixels.
     pub height: u32,
+    /// The pixels, tightly packed.
     pub data: Vec<u8>,
 }
 
 /// A 2D texture ready for upload: tightly packed mip chain of face 0.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextureData {
+    /// Upload format.
     pub format: TextureFormat,
+    /// Colour data in sRGB (else linear).
     pub srgb: bool,
+    /// The mip chain, largest first.
     pub mips: Vec<MipLevel>,
+    /// Wrap along u (else clamp).
     pub repeat_u: bool,
+    /// Wrap along v (else clamp).
     pub repeat_v: bool,
 }
 
 /// A cube texture ready for upload: six faces in their stored order, each a
 /// tightly packed mip chain. The order is taken to be +x, −x, +y, −y, +z, −z
-/// (the DDS convention; y Confirmed, x/z mirroring Unknown, see
-/// `docs/formats/textures.md`).
+/// (the DDS convention; y Confirmed, see `docs/formats/textures.md`). The
+/// game's lookup mirrors world z (F18).
 #[derive(Clone, Debug, PartialEq)]
 pub struct CubeTextureData {
+    /// Upload format.
     pub format: TextureFormat,
+    /// Colour data in sRGB (else linear).
     pub srgb: bool,
+    /// Six faces, each a mip chain, largest first.
     pub faces: Vec<Vec<MipLevel>>,
 }
 
