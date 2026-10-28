@@ -21,6 +21,8 @@ use specsheet_data::render::{
 };
 use specsheet_data::session::GameSession;
 
+use crate::render::PaintSurface;
+
 /// One model as the viewer requests it. `parts` limits the model to the
 /// named parts (empty: all), as scene models do.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -75,9 +77,9 @@ pub fn load_model(game: &GameSession, key: &ModelKey) -> Result<ModelPayload, St
 /// A model uploaded to the GPU; instances share its meshes and materials.
 pub struct GpuModel {
     pub pieces: Vec<(Handle<Mesh>, Handle<StandardMaterial>)>,
-    /// Per piece: its material is a `truckpaint` one and takes the paint of
-    /// the placement it belongs to.
-    pub painted: Vec<bool>,
+    /// Per piece: for a `truckpaint` material, what its `.mat` gives the
+    /// paint; such pieces take the paint of the placement they belong to.
+    pub painted: Vec<Option<PaintSurface>>,
     /// The reflection cube (`texture_reflection`) of every reflective
     /// material, once per material; the viewer uses the most common one as
     /// its environment map.
@@ -138,8 +140,8 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         let paint = mesh
             .materials
             .get(piece.material)
-            .is_some_and(|info| info.paintable);
-        match piece_mesh(piece) {
+            .and_then(PaintSurface::of);
+        match piece_mesh(piece, paint.is_some()) {
             Ok(m) => {
                 pieces.push((stores.meshes.add(m), material.clone()));
                 painted.push(paint);
@@ -163,10 +165,16 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
     (Arc::new(model), warnings)
 }
 
-fn piece_mesh(piece: MeshPiece) -> Result<Mesh, String> {
+/// The GPU mesh of `piece`. Paint pieces also carry their vertex colours,
+/// doubled: the paint multiplies by twice the colour, so 0.5 is neutral
+/// (truckpaint-lighting.md §2). Other materials do not use them yet.
+fn piece_mesh(piece: MeshPiece, painted: bool) -> Result<Mesh, String> {
     let count = piece.positions.len();
     if piece.normals.len() != count {
         return Err("normal count differs from position count".to_owned());
+    }
+    if piece.colors.as_ref().is_some_and(|c| c.len() != count) {
+        return Err("colour count differs from position count".to_owned());
     }
     if piece.uvs.as_ref().is_some_and(|uvs| uvs.len() != count)
         || piece.uvs2.as_ref().is_some_and(|uvs| uvs.len() != count)
@@ -188,6 +196,13 @@ fn piece_mesh(piece: MeshPiece) -> Result<Mesh, String> {
     }
     if let Some(uvs) = piece.uvs2 {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
+    }
+    if let Some(colors) = piece.colors.filter(|_| painted) {
+        let doubled: Vec<[f32; 4]> = colors
+            .into_iter()
+            .map(|[r, g, b, a]| [2.0 * r, 2.0 * g, 2.0 * b, a])
+            .collect();
+        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, doubled);
     }
     mesh.insert_indices(Indices::U32(piece.indices));
     Ok(mesh)
@@ -263,14 +278,10 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
         },
         emissive_texture: texture.clone().filter(|_| info.emissive),
         base_color_texture: texture,
-        metallic: match (info.paintable, reflective) {
-            (true, _) => 0.35,
-            (false, Some((_, metalness))) => metalness,
-            (false, None) => 0.1,
-        },
-        perceptual_roughness: match (info.paintable, reflective, info.shininess) {
-            (true, _, _) => 0.35,
-            (false, Some(_), Some(n)) => roughness_from_shininess(n),
+        // Paint sets its own in the truckpaint shader.
+        metallic: reflective.map_or(0.1, |(_, metalness)| metalness),
+        perceptual_roughness: match (reflective, info.shininess) {
+            (Some(_), Some(n)) => roughness_from_shininess(n),
             _ => 0.6,
         },
         alpha_mode,
@@ -617,12 +628,18 @@ mod tests {
             normals: vec![[0.0, 1.0, 0.0]; normals],
             uvs: None,
             uvs2: None,
+            colors: None,
             indices,
         };
-        assert!(piece_mesh(piece(vec![0, 1, 2], 3)).is_ok());
-        assert!(piece_mesh(piece(vec![0, 1, 3], 3)).is_err());
-        assert!(piece_mesh(piece(vec![0, 1], 3)).is_err());
-        assert!(piece_mesh(piece(vec![0, 1, 2], 2)).is_err());
+        assert!(piece_mesh(piece(vec![0, 1, 2], 3), false).is_ok());
+        assert!(piece_mesh(piece(vec![0, 1, 3], 3), false).is_err());
+        assert!(piece_mesh(piece(vec![0, 1], 3), false).is_err());
+        assert!(piece_mesh(piece(vec![0, 1, 2], 2), false).is_err());
+        let short_colours = MeshPiece {
+            colors: Some(vec![[0.5; 4]; 2]),
+            ..piece(vec![0, 1, 2], 3)
+        };
+        assert!(piece_mesh(short_colours, true).is_err());
     }
 
     #[test]

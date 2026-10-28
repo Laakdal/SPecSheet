@@ -130,6 +130,10 @@ pub struct MeshPiece {
     /// Second UV set, if present: paint masks of `alternate_uvset` paint
     /// jobs use it (F15).
     pub uvs2: Option<Vec<[f32; 2]>>,
+    /// Vertex colours as RGBA in 0–1, if present: each stored byte / 255,
+    /// the lowest byte red (Hypothesis: truck paint pieces are grey, so the
+    /// order is untested; `paint_uv_survey`).
+    pub colors: Option<Vec<[f32; 4]>>,
     pub indices: Vec<u32>,
 }
 
@@ -195,6 +199,7 @@ pub fn build_mesh(
                 normals: piece.normals.clone(),
                 uvs: piece.uv_sets.first().cloned(),
                 uvs2: piece.uv_sets.get(1).cloned(),
+                colors: vertex_colors(&piece.colors),
                 indices,
             });
         }
@@ -207,6 +212,16 @@ pub fn build_mesh(
         aabb_max: model.pmg.aabb.max,
     };
     (mesh, warnings)
+}
+
+/// Packed RGBA8 vertex colours as floats; `None` for an absent stream.
+fn vertex_colors(packed: &[u32]) -> Option<Vec<[f32; 4]>> {
+    (!packed.is_empty()).then(|| {
+        packed
+            .iter()
+            .map(|c| c.to_le_bytes().map(|byte| f32::from(byte) / 255.0))
+            .collect()
+    })
 }
 
 fn load_material(fs: &GameFs, path: &str) -> Result<MaterialInfo> {
@@ -375,6 +390,13 @@ mod tests {
         );
         let mat = Material::parse(source.as_bytes()).expect("parse");
         MaterialInfo::from_material("/vehicle/truck/x/m.mat", &mat)
+    }
+
+    #[test]
+    fn vertex_colours_decode_lowest_byte_first() {
+        assert_eq!(vertex_colors(&[]), None);
+        let colors = vertex_colors(&[0xff00_80ff]).expect("colours");
+        assert_eq!(colors, [[1.0, 128.0 / 255.0, 0.0, 1.0]]);
     }
 
     #[test]

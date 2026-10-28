@@ -16,11 +16,11 @@ use bevy::render::settings::WgpuFeatures;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
 use specsheet_data::assembly::Placement;
-use specsheet_data::paint::PiecePaint;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
 use crate::assets::{self, GpuModel, ModelKey, ModelPayload, Stores};
+use crate::render::{Paint, PaintMaterials, TruckPaintMaterial};
 use crate::studio::{FrameSet, Studio};
 
 /// The truck, the scene, lights and the orbit camera.
@@ -545,9 +545,6 @@ pub struct TruckInstances {
     pub eye: Option<Vec3>,
     /// (truck generation, model-cache generation) last synced.
     synced: (u64, u64),
-    /// Paint materials by (unpainted material, paint): instances with the
-    /// same paint share them.
-    paint_materials: HashMap<(AssetId<StandardMaterial>, String), Handle<StandardMaterial>>,
     /// Truck-space bounds of the placed models.
     pub bounds: Option<(Vec3, Vec3)>,
 }
@@ -587,7 +584,7 @@ fn sync_truck(
     studio: Res<Studio>,
     mut cache: ResMut<ModelCache>,
     mut instances: ResMut<TruckInstances>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut paints: PieceMaterials,
     root: Single<Entity, With<TruckRoot>>,
 ) {
     let generations = (studio.truck_generation, cache.generation);
@@ -662,73 +659,46 @@ fn sync_truck(
         let entity = commands
             .spawn((transform, Visibility::default(), *part, ChildOf(*root)))
             .id();
-        let paint = paint_of(placement);
-        for ((mesh, material), painted) in model.pieces.iter().zip(&model.painted) {
-            let material = if *painted {
-                paint_material(&mut instances, &mut materials, material, &paint)
-            } else {
-                material.clone()
-            };
-            commands.spawn((
-                Mesh3d(mesh.clone()),
-                MeshMaterial3d(material),
-                ChildOf(entity),
-            ));
-        }
+        paints.spawn(&mut commands, &studio, entity, &model, &paint_of(placement));
         instances.entities.insert(key.clone(), entity);
     }
     instances.bounds = bounds;
 }
 
-/// The paint a placed accessory takes on its `truckpaint` pieces.
-enum Paint<'a> {
-    /// The paint job's resolved paint (`specsheet_data::paint`).
-    Job(&'a PiecePaint),
-    /// No paint job: the configuration's colour, if any.
-    Color(Option<[f32; 3]>),
+/// What spawning a model's pieces needs: `truckpaint` pieces get a paint
+/// material, the rest their `.mat`'s stand-in.
+#[derive(bevy::ecs::system::SystemParam)]
+struct PieceMaterials<'w> {
+    paints: ResMut<'w, PaintMaterials>,
+    standard: Res<'w, Assets<StandardMaterial>>,
+    materials: ResMut<'w, Assets<TruckPaintMaterial>>,
 }
 
-impl Paint<'_> {
-    /// Identifies the paint in instance and material keys.
-    fn key(&self) -> String {
-        match self {
-            Paint::Job(paint) => format!("{paint:?}"),
-            Paint::Color(color) => format!("color {color:?}"),
+impl PieceMaterials<'_> {
+    /// Spawns `model`'s pieces under `parent`, painted with `paint`.
+    fn spawn(
+        &mut self,
+        commands: &mut Commands,
+        studio: &Studio,
+        parent: Entity,
+        model: &GpuModel,
+        paint: &Paint<'_>,
+    ) {
+        for ((mesh, material), surface) in model.pieces.iter().zip(&model.painted) {
+            let mut piece = commands.spawn((Mesh3d(mesh.clone()), ChildOf(parent)));
+            match surface {
+                Some(surface) => piece.insert(MeshMaterial3d(self.paints.get(
+                    studio.game.as_ref(),
+                    &self.standard,
+                    &mut self.materials,
+                    material,
+                    surface,
+                    paint,
+                ))),
+                None => piece.insert(MeshMaterial3d(material.clone())),
+            };
         }
     }
-
-    /// The body colour. Game colours are linear (Coffee Brown is
-    /// (0.034, 0.023, 0.014)); without one the paint is a neutral grey.
-    fn base_color(&self) -> Color {
-        let color = match self {
-            Paint::Job(paint) => paint.base_color,
-            Paint::Color(color) => *color,
-        };
-        match color {
-            Some([r, g, b]) => Color::linear_rgb(r, g, b),
-            None => Color::linear_rgb(0.6, 0.6, 0.6),
-        }
-    }
-}
-
-/// `base` with the paint applied, shared by every piece with the same
-/// material and paint. Until the clean-room truckpaint material lands
-/// (D13), only the base colour is applied.
-fn paint_material(
-    instances: &mut TruckInstances,
-    materials: &mut Assets<StandardMaterial>,
-    base: &Handle<StandardMaterial>,
-    paint: &Paint<'_>,
-) -> Handle<StandardMaterial> {
-    let key = (base.id(), paint.key());
-    if let Some(handle) = instances.paint_materials.get(&key) {
-        return handle.clone();
-    }
-    let mut material = materials.get(base).cloned().unwrap_or_default();
-    material.base_color = paint.base_color();
-    let handle = materials.add(material);
-    instances.paint_materials.insert(key, handle.clone());
-    handle
 }
 
 /// The scene as last applied, and its model once spawned.
@@ -749,6 +719,7 @@ fn apply_scene(
     mut state: ResMut<SceneState>,
     mut cache: ResMut<ModelCache>,
     mut images: ResMut<Assets<Image>>,
+    mut paints: PieceMaterials,
     mut ambient: ResMut<GlobalAmbientLight>,
     camera: Single<(Entity, &mut Orbit, &mut Projection), With<Camera3d>>,
     mut sun: Single<(&mut DirectionalLight, &mut Transform), (With<Sun>, Without<TruckRoot>)>,
@@ -853,13 +824,7 @@ fn apply_scene(
             ChildOf(*scene_root),
         ))
         .id();
-    for (mesh, material) in &model.pieces {
-        commands.spawn((
-            Mesh3d(mesh.clone()),
-            MeshMaterial3d(material.clone()),
-            ChildOf(entity),
-        ));
-    }
+    paints.spawn(&mut commands, &studio, entity, &model, &Paint::Color(None));
     state.model_entity = Some(entity);
     **floor = Visibility::Hidden;
 }

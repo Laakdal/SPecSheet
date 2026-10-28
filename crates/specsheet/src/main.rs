@@ -8,6 +8,7 @@
 mod assets;
 mod hotspots;
 mod parity;
+mod render;
 mod script;
 mod settings;
 mod studio;
@@ -18,6 +19,7 @@ use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_egui::EguiPlugin;
 
+use crate::render::TruckPaintPlugin;
 use crate::script::ScriptPlugin;
 use crate::studio::StudioPlugin;
 use crate::ui::UiPlugin;
@@ -55,6 +57,7 @@ fn main() -> AppExit {
             EguiPlugin::default(),
             StudioPlugin,
             ViewerPlugin,
+            TruckPaintPlugin,
             UiPlugin,
             script,
         ))
