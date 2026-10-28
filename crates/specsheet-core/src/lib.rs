@@ -2,6 +2,8 @@
 //! slots and accessories; small 3D maths ([`Aabb`], [`Transform`]); the
 //! sRGB transfer function. No game formats, no domain rules, no I/O.
 
+#![warn(missing_docs)]
+
 pub mod colour;
 mod ids;
 pub mod math;

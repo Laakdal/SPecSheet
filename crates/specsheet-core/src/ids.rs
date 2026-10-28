@@ -12,10 +12,12 @@ macro_rules! string_id {
         pub struct $name(String);
 
         impl $name {
+            /// Wraps the game's string unchanged.
             pub fn new(value: impl Into<String>) -> Self {
                 Self(value.into())
             }
 
+            /// The game's string.
             pub fn as_str(&self) -> &str {
                 &self.0
             }

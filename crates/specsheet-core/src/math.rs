@@ -4,7 +4,9 @@
 /// Axis-aligned bounding box.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Aabb {
+    /// Smallest x, y and z.
     pub min: [f32; 3],
+    /// Largest x, y and z.
     pub max: [f32; 3],
 }
 
@@ -56,13 +58,16 @@ impl Aabb {
 /// y up, -z forward.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Transform {
+    /// Position, applied last.
     pub translation: [f32; 3],
     /// Unit quaternion `(x, y, z, w)`.
     pub rotation: [f32; 4],
+    /// Uniform scale, applied first.
     pub scale: f32,
 }
 
 impl Transform {
+    /// No translation, no rotation, scale 1.
     pub const IDENTITY: Self = Self {
         translation: [0.0; 3],
         rotation: [0.0, 0.0, 0.0, 1.0],
@@ -110,6 +115,7 @@ pub fn rotate(q: [f32; 4], v: [f32; 3]) -> [f32; 3] {
     ]
 }
 
+/// The axis-aligned box around `aabb`'s eight corners after `transform`.
 pub fn transform_aabb(aabb: &Aabb, transform: &Transform) -> Aabb {
     let corners = (0..8).map(|corner| {
         let local = [
