@@ -12,11 +12,15 @@ use specsheet_core::{AccessoryId, SlotId};
 /// One mountable hookup unit (`accessory_*hookup*_data : <id>.addon_hookup`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hookup {
+    /// The unit name.
     pub id: AccessoryId,
     /// Localisation key or literal display name.
     pub name: String,
+    /// The list icon (a UI material name).
     pub icon: Option<String>,
+    /// Price in the game's currency.
     pub price: Option<i64>,
+    /// Player level that unlocks it.
     pub unlock_level: Option<i64>,
     /// Model path, placed at the host position's locator.
     pub model: Option<String>,
@@ -27,6 +31,7 @@ pub struct Hookup {
 }
 
 impl Hookup {
+    /// Whether it can be mounted on the accessory in `host`.
     pub fn fits(&self, host: &SlotId) -> bool {
         self.hosts.contains(host)
     }

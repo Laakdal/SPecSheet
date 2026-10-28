@@ -17,15 +17,25 @@ pub const DEFAULT_FLAKE_NOISE: &str = "/material/custom/flake_noise.tobj";
 /// The game's paint-parameter defaults for values a paint job leaves out
 /// (F17, `research/evidence/rea-paint-apply.txt`): Confirmed for per-part
 /// units, a strong Hypothesis for paint-job attributes (`docs/formats/paint.md`).
+/// Default: Base colour.
 pub const DEFAULT_BASE_COLOR: [f32; 3] = [1.0, 1.0, 1.0];
+/// Default: Mask colours for the red, green and blue channels.
 pub const DEFAULT_MASK_COLORS: [[f32; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+/// Default: Flip colour.
 pub const DEFAULT_FLIP_COLOR: [f32; 3] = [1.0, 0.0, 0.0];
+/// Default: Flip strength.
 pub const DEFAULT_FLIP_STRENGTH: f32 = 0.27;
+/// Default: Flake colour.
 pub const DEFAULT_FLAKE_COLOR: [f32; 3] = [0.0, 1.0, 0.0];
+/// Default: Flake density.
 pub const DEFAULT_FLAKE_DENSITY: f32 = 1.0;
+/// Default: Flake shininess.
 pub const DEFAULT_FLAKE_SHININESS: f32 = 50.0;
+/// Default: Clear-coat roll-off of the flakes.
 pub const DEFAULT_FLAKE_CLEARCOAT_ROLLOFF: f32 = 2.2;
+/// Default: Flake noise UV scale.
 pub const DEFAULT_FLAKE_UVSCALE: f32 = 32.0;
+/// Default: Flake noise v stretch.
 pub const DEFAULT_FLAKE_VRATIO: f32 = 1.0;
 
 /// Metallic flakes of a paint job.
@@ -141,10 +151,13 @@ pub struct PaintJob {
     /// `flipflake`: flakes and flip colour are drawn.
     #[serde(default)]
     pub flipflake: bool,
+    /// Flake settings.
     #[serde(default)]
     pub flake: Flake,
+    /// Flip colour settings.
     #[serde(default)]
     pub flip: Flip,
+    /// Which colours the player cannot change.
     #[serde(default)]
     pub locks: PaintLocks,
     /// `stock` (meaning Unknown; 400 units write true, 320 false).

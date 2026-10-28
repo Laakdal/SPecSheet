@@ -2,6 +2,8 @@
 //! and UI: the accessory catalog of a truck, compatibility rules and the
 //! configuration state. Everything here is pure and unit-testable.
 
+#![warn(missing_docs)]
+
 mod catalog;
 mod config;
 mod hookup;

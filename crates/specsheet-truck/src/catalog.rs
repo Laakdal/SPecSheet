@@ -21,10 +21,15 @@ pub enum AccessoryKind {
     /// A wheel part (tyre, rim, hub, nuts, cover) attached at the chassis
     /// wheel locators; shared by all trucks.
     Wheel,
+    /// The cab interior (`interior` slot).
     Interior,
+    /// The engine (non-visual).
     Engine,
+    /// The gearbox (non-visual).
     Transmission,
+    /// The headlight set.
     HeadLights,
+    /// A paint job (`paint_job` slot).
     PaintJob,
     /// Anything else (non-visual or not yet supported).
     Other,
@@ -57,18 +62,24 @@ pub enum WheelPart {
 /// Model references of an accessory. Paths are absolute game paths.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModelRef {
+    /// The model seen from outside.
     pub exterior: Option<String>,
     /// Right-hand-drive replacement of `exterior`.
     pub exterior_uk: Option<String>,
+    /// The look of `exterior`.
     pub look: Option<String>,
+    /// The variant of `exterior`.
     pub variant: Option<String>,
+    /// The variant for right-hand drive.
     pub variant_uk: Option<String>,
     /// Interiors: the full cockpit seen from the driver's seat (`model`,
     /// `look`, `variant`); `exterior` is the light exterior-view model.
     #[serde(default)]
     pub cockpit: Option<String>,
+    /// The look of `cockpit`.
     #[serde(default)]
     pub cockpit_look: Option<String>,
+    /// The variant of `cockpit`.
     #[serde(default)]
     pub cockpit_variant: Option<String>,
     /// Right-hand-drive replacement of `cockpit` (`interior_model_uk`).
@@ -79,16 +90,23 @@ pub struct ModelRef {
 /// One purchasable/selectable part.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Accessory {
+    /// The unit name, e.g. `chrome.scania.s_2016.s_mirror`.
     pub id: AccessoryId,
+    /// The slot it fills.
     pub slot: SlotId,
+    /// What kind of part it is.
     pub kind: AccessoryKind,
     /// Definition file, e.g. `/def/vehicle/truck/x/accessory/s_mirror/stock.sii`.
     pub def_path: String,
     /// Localisation key or literal display name (`@@key@@` form).
     pub name: String,
+    /// The list icon (a UI material name).
     pub icon: Option<String>,
+    /// Price in the game's currency.
     pub price: Option<i64>,
+    /// Player level that unlocks it.
     pub unlock_level: Option<i64>,
+    /// The models it draws.
     pub model: ModelRef,
     /// The accessory is only allowed when at least one of these is selected.
     pub suitable_for: Vec<AccessoryId>,
@@ -127,6 +145,7 @@ impl Accessory {
 /// Every accessory of one truck plus the truck-level rules.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TruckCatalog {
+    /// The truck these accessories belong to.
     pub truck: TruckId,
     /// Localisation keys of brand and series (`info[]` of the truck data).
     pub info: Vec<String>,
@@ -142,6 +161,7 @@ pub struct TruckCatalog {
 }
 
 impl TruckCatalog {
+    /// A catalog of `accessories`, indexed by id and by definition path.
     pub fn new(
         truck: TruckId,
         info: Vec<String>,
@@ -175,6 +195,7 @@ impl TruckCatalog {
         self
     }
 
+    /// The hookup `id`, if it fits this truck.
     pub fn hookup(&self, id: &AccessoryId) -> Option<&Hookup> {
         self.hookups.get(id)
     }
@@ -185,10 +206,12 @@ impl TruckCatalog {
         self.hookups.values().filter(move |h| h.fits(&host))
     }
 
+    /// The accessory `id`.
     pub fn accessory(&self, id: &AccessoryId) -> Option<&Accessory> {
         self.accessories.get(id)
     }
 
+    /// Every accessory, in id order.
     pub fn accessories(&self) -> impl Iterator<Item = &Accessory> {
         self.accessories.values()
     }

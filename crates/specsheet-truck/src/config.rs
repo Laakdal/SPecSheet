@@ -32,6 +32,7 @@ pub use paint::PaintOverride;
 /// core (it needs model geometry); base/non-visual slots are always available.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SlotAvailability {
+    /// Addon slots with a matching locator.
     pub available: BTreeSet<SlotId>,
 }
 
@@ -40,11 +41,20 @@ pub struct SlotAvailability {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Incompatibility {
     /// None of `suitable_for` is selected.
-    NotSuitable { needs_one_of: Vec<AccessoryId> },
+    NotSuitable {
+        /// The accessories it is suitable for.
+        needs_one_of: Vec<AccessoryId>,
+    },
     /// Conflicts with a selected accessory.
-    ConflictsWith { accessory: AccessoryId },
+    ConflictsWith {
+        /// The selected accessory it conflicts with.
+        accessory: AccessoryId,
+    },
     /// The base models have no locator for this slot.
-    SlotUnavailable { slot: SlotId },
+    SlotUnavailable {
+        /// The slot without a locator.
+        slot: SlotId,
+    },
 }
 
 /// Why a hookup cannot go at a host position.
@@ -65,40 +75,63 @@ pub enum HookupProblem {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ConfigIssue {
+    /// A required slot is empty.
     MissingRequiredSlot {
+        /// The empty slot.
         slot: SlotId,
     },
+    /// A selection is not in the catalog.
     UnknownAccessory {
+        /// The unknown id.
         accessory: AccessoryId,
     },
+    /// A selection breaks a rule.
     Incompatible {
+        /// The selection.
         accessory: AccessoryId,
+        /// The rule it breaks.
         reason: Incompatibility,
     },
+    /// A mounted hookup does not fit.
     InvalidHookup {
+        /// The host slot.
         host: SlotId,
+        /// The host-model position.
         position: String,
+        /// The hookup.
         hookup: AccessoryId,
+        /// Why it does not fit.
         problem: HookupProblem,
     },
 }
 
+/// Why a change to a configuration was refused.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 pub enum ConfigError {
+    /// The accessory is not in the catalog.
     #[error("accessory {0} does not exist for this truck")]
     UnknownAccessory(AccessoryId),
+    /// The accessory breaks a rule.
     #[error("accessory {accessory} is not compatible: {reason:?}")]
     Incompatible {
+        /// The accessory.
         accessory: AccessoryId,
+        /// The rule it breaks.
         reason: Incompatibility,
     },
+    /// The slot must stay filled.
     #[error("slot {0} is required and cannot be emptied")]
     RequiredSlot(SlotId),
     #[error("hookup {hookup:?} cannot go at {host}/{position}: {problem:?}")]
+    /// The hookup change is not possible.
     Hookup {
+        /// The host slot.
         host: SlotId,
+        /// The host-model position.
         position: String,
+        /// The hookup, or `None` when emptying.
         hookup: Option<AccessoryId>,
+        /// Why not.
         problem: HookupProblem,
     },
 }
@@ -125,6 +158,7 @@ pub struct Configuration {
 }
 
 impl Configuration {
+    /// An empty configuration of `truck`.
     pub fn new(truck: TruckId) -> Self {
         Self {
             truck,
@@ -164,18 +198,22 @@ impl Configuration {
         parts.chain(hookups).fold(0i64, i64::saturating_add)
     }
 
+    /// The truck this configures.
     pub fn truck(&self) -> &TruckId {
         &self.truck
     }
 
+    /// The selected accessory of every filled slot.
     pub fn selections(&self) -> &BTreeMap<SlotId, AccessoryId> {
         &self.selections
     }
 
+    /// The accessory in `slot`.
     pub fn selected(&self, slot: &SlotId) -> Option<&AccessoryId> {
         self.selections.get(slot)
     }
 
+    /// Whether `accessory` is selected in any slot.
     pub fn is_selected(&self, accessory: &AccessoryId) -> bool {
         self.selections.values().any(|a| a == accessory)
     }
