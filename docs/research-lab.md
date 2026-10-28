@@ -1,0 +1,36 @@
+# Research lab
+
+How we find out how ETS2 works, and how a finding becomes something the code may rely on. The tools are in [DEVELOPMENT.md](DEVELOPMENT.md#research-tools); the findings are in [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md).
+
+## Sources, cheapest first
+
+1. **Game data, through our own tools.** The `examples/` of `specsheet-archive` and `specsheet-data` read the install read-only: `scs` (ls/cat/find/tex), `survey`, `model_info`, `def_stats`, `def_grep`, and the surveys `axle_survey`, `effect_usage`, `locator_check`, `wheel_fit` and others. Most questions end here.
+2. **The game's log**, `game.log.txt` in the game's home folder, for runtime behaviour such as mount order and errors.
+3. **The executable, through REA.** It answers engine conventions the data doesn't state: placement rules, camera maths, which effect variant is chosen. REA is expensive; see below.
+4. **SCS's public modding documentation** ([modding.scssoft.com](https://modding.scssoft.com/wiki/Main_Page)) describes behaviour, e.g. the [supported shaders](https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Supported_shaders). Cite it and paraphrase it; don't copy it.
+5. **Community code is a cross-check only, never a source.** TruckLib and Extractor are GPL-2.0, and this project is MIT. Take facts from them (offsets, magic numbers), never code (D13).
+
+The `ets2-researcher` subagent (`.claude/agents/ets2-researcher.md`) follows this order and returns labelled findings.
+
+## Rules
+
+- **Facts, not code (D13).** Code we didn't write never enters the repository: not community code, not decompiled code, not the game's shader code. Shader maths goes through a separate spec step (`docs/app/shaders.md`).
+- **Labels.** Every claim is **Confirmed** (verified on game files or game output), **Hypothesis** (consistent but unproven; say how many cases it covers) or **Unknown** (with the next step that would settle it). A rule that reproduces every case without proof of the engine's logic is a Hypothesis.
+- **Evidence before use.** A new fact goes into `research/evidence/<topic>.txt` first: the exact command at the top, then the results. Then it gets an F-entry in REVERSE_ENGINEERING.md or a section of `docs/formats/`. Only then may code rely on it.
+- **Excerpts only.** Evidence holds commands, counts, offsets and a few bytes per field: never whole game files, extracted shader text, or anything from the user's profiles or saves (names, IDs, paths, timestamps). The pre-commit guard refuses game files.
+- **Version.** Findings hold for `TESTED_GAME_VERSION` (`specsheet-data::install`). Executable addresses (`FUN_14…`, `0x14…`) are specific to that build; see [version-ports.md](version-ports.md).
+
+## REA on `eurotrucks2.exe`
+
+- **Setup and command:** the "REA on `eurotrucks2.exe`" notes in `CLAUDE.md` (CLI, environment variables, output folder). The MCP tools time out on this 51 MB binary, so use the CLI.
+- **Cost:** one Ghidra run takes 30–45 minutes and about 2 GB of memory. Other sessions' cold Bevy builds compete for memory, and Claude Code stops jobs when memory runs low. Announce a run to the other sessions and ask them to hold heavy builds until it ends.
+- **Batching:** one combined regex string search first (every open question's seed strings at once), then decompile only the functions it points to.
+- **Recording:** copy the cited results into `research/evidence/rea-*.txt` (or `.json`) with Evidence IDs, then write the F-entry. Decompiled code itself is never copied; describe what it does.
+- **Open targets:** the "Open questions" table in REVERSE_ENGINEERING.md and the REA items in TASKS.md.
+
+## From finding to code
+
+1. Evidence file.
+2. F-entry or format section, with a label.
+3. Code that cites the doc section, plus a real-install test that checks the rule on the whole install (e.g. `every_chassis_has_one_wheel_pair_per_declared_axle`).
+4. PARITY.md updated: matches the game, our design, or unknown.
