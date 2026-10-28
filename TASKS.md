@@ -7,7 +7,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] HashFS v2 reader, CityHash64 v1.0.3, GDeflate textures, layered VFS. Every entry of the surveyed archives is reachable.
 - [x] Mount order from `game.log.txt`.
 - [x] SII (with `@include`), PMD v4, PMG v0x15 and MAT parsers. Every `/def/vehicle` definition and every truck model parses (`real_install` tests).
-- [x] `specsheet-core`: catalog, rules (`suitable_for` globs, conflicts, defaults, required slots, slot availability) and repair. Unit tests pass, and all 26 game presets validate with 0 issues (`catalog_info`).
+- [x] `specsheet-truck`: catalog, rules (`suitable_for` globs, conflicts, defaults, required slots, slot availability) and repair. Unit tests pass, and all 26 game presets validate with 0 issues (`catalog_info`).
 - [x] Slot→locator rule measured: 626/626 preset addons resolve (`locator_check`).
 - [x] Wheel tyre offset (F9): tyres shifted by the rim's `tire_shift` and wheel locator yaw ignored. All 104 preset wheels fit their tyre within 6 mm (`real_install` test `every_preset_wheel_sits_in_its_tyre`).
 - [x] Assembly with wheels, hotspot anchors and the interior/exterior split.
@@ -39,7 +39,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 - [x] Interior exterior-view model at `ext_interior` (F10), empty-slot and wheel-group anchor flags. Real-install tests cover all 26 presets in both drives.
 
-- [x] **All-Rust app (D11):** Bevy 0.19 + bevy_egui 0.42 in `crates/specsheet` replaces Tauri + React + three.js. Display logic moved into `specsheet-data::view`. Seen working with `SPECSHEET_SCRIPT` screenshots and real mouse input (user32):
+- [x] **All-Rust app (D11):** Bevy 0.19 + bevy_egui 0.42 in `crates/specsheet` replaces Tauri + React + three.js. Display logic moved into `specsheet-session::view`. Seen working with `SPECSHEET_SCRIPT` screenshots and real mouse input (user32):
   - Scania S in the "Home at Last" garage, with markers and the parts list.
   - A marker click opens the slot (Main Mirrors).
   - Picking a light bar adds it on the roof.
@@ -58,7 +58,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] Truck paint material (D13, clean-room from `shader-specs/truckpaint.md`): `crates/specsheet/src/render/truckpaint.{rs,wgsl}` draws colour masks, airbrush liveries, flip colour, flakes and the doubled vertex colour per placed part. The `paint_uv_survey` example settled the vertex colours (`paint-vertex-streams.txt`). Paint samples PMG UV set 1, set 2 for `alternate_uvset` (Actros 2014 flag decal), with the variant flags from the paint job alone (F17). Seen working on the Scania S, MAN TGX Euro 6 and Actros 2014 (Driving Academy, Altamira, 770 Deep Red). Only the paint job's `airbrush` picks livery vs colour mask (the MAN cab's `.mat` names `airbrush`).
 
 - [x] **The game's truck configuration screen** (`truck.config`) is drawn from the install's layouts, templates, colours and icons (`docs/app/ui.md`):
-  - the markup layout engine (`specsheet-data::ui::flow`);
+  - the markup layout engine (`specsheet-gameui::flow`);
   - the 8 category tabs with the game's icons (F5);
   - accessory lists as the game's tiles with icons, prices, the owned ✓ and locked reasons;
   - pins only on the accessory tabs.
@@ -119,9 +119,10 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 10. **App shell (D16):** the `specsheet-theme` token crate with contrast tests, then the home, trucks, configurations, mods, parity, settings and about screens per [docs/app/design-system.md](docs/app/design-system.md). After the 1:1 tuning screen.
 11. **Docs per feature:** move each tuning feature's findings, rules and status into one `docs/features/<feature>.md` (wheels, interior, hookups, pins, scenes, paint). Shrink REVERSE_ENGINEERING.md to an index of F-numbers that link to them. Do it after the paint branch and the mod session's F14/D15 land.
-12. **Restructure (D17)** in a coordinated window, one step at a time, with every check passing after each:
-    - Phase A, safe now: `xtask` with `check` and `layers` (CI switches to `cargo xtask check`), `deny.toml`, `missing_docs` on the library crates.
-    - Phase B, after the paint and `dif.spec` materials: create the foundation `specsheet-core` and rename the domain crate to `specsheet-truck`; split out `assembly`, `session` and `gameui`; move the materials into `render`; move the tools into `research`; split `catalog.rs` and `config.rs`.
+12. **Restructure (D17)**, in staged passes with every check passing after each:
+    - Done (2026-10-28): `xtask` (`check`, `layers`, CI runs `layers`); `specsheet-core` → `specsheet-truck`; `specsheet-data` → `-data`, `-assembly`, `-gameui`, `-session`; tools → `specsheet-research`.
+    - Next: `specsheet-render` (materials and shaders out of the app) at the `dif.spec` stopping point; the foundation `specsheet-core` (ids, maths, colour: unifies `Aabb`/`Transform`); split `catalog.rs` and `config.rs`.
+    - Practices still to adopt: `deny.toml` (cargo-deny), `missing_docs` on the library crates.
 
 ## Blockers and notes
 
