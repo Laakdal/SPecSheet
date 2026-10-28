@@ -186,6 +186,10 @@ pub struct MeshData {
 const NORMAL_UV_SLOT: usize = 6;
 /// The UV slot `texture_mult` samples.
 const MULT_UV_SLOT: usize = 1;
+/// The UV slots truck paint reads its mask through, without and with
+/// `alternate_uvset` (truckpaint.md §2).
+const PAINT_UV_SLOT: usize = 1;
+const ALTERNATE_PAINT_UV_SLOT: usize = 2;
 
 /// The PMG UV set, counted from 0, that truck paint samples on a mesh with
 /// `sets` UV sets: set 1, or set 2 for `alternate_uvset` paint jobs
@@ -196,6 +200,22 @@ const MULT_UV_SLOT: usize = 1;
 pub fn paint_uv_set(sets: usize, alternate: bool) -> Option<usize> {
     let wanted = if alternate { 2 } else { 1 };
     sets.checked_sub(1).map(|last| last.min(wanted))
+}
+
+/// The UV sets truck paint samples on a piece: the mask on the set routed to
+/// UV slot 1, and with `alternate_uvset` the set routed to slot 2 (the paint
+/// shader reads its mask through those slots, truckpaint.md §2; the routing
+/// is the piece's +8 field, `research/evidence/pmg-uv-routing.txt`). A slot
+/// the piece doesn't route falls back to [`paint_uv_set`].
+pub fn paint_uv_sets(
+    slot1: Option<usize>,
+    slot2: Option<usize>,
+    sets: usize,
+) -> (Option<usize>, Option<usize>) {
+    (
+        slot1.or_else(|| paint_uv_set(sets, false)),
+        slot2.or_else(|| paint_uv_set(sets, true)),
+    )
 }
 
 /// Builds the drawable mesh of `model` for one look and variant, limited
@@ -247,8 +267,16 @@ pub fn build_mesh(
                 .collect();
             let painted = materials.get(material).is_some_and(|m| m.paintable);
             let sets = if painted { piece.uv_sets.len() } else { 0 };
-            let paint_set = paint_uv_set(sets, false);
-            let alternate_set = paint_uv_set(sets, true).filter(|&set| Some(set) != paint_set);
+            let (paint_set, alternate_set) = if painted {
+                paint_uv_sets(
+                    piece.uv_set_for_slot(PAINT_UV_SLOT),
+                    piece.uv_set_for_slot(ALTERNATE_PAINT_UV_SLOT),
+                    sets,
+                )
+            } else {
+                (None, None)
+            };
+            let alternate_set = alternate_set.filter(|&set| Some(set) != paint_set);
             let slot_uvs = |slot| {
                 piece
                     .uv_set_for_slot(slot)
@@ -473,6 +501,18 @@ mod tests {
         assert_eq!(paint_uv_set(2, true), Some(1));
         assert_eq!(paint_uv_set(1, false), Some(0));
         assert_eq!(paint_uv_set(0, false), None);
+    }
+
+    #[test]
+    fn paint_follows_the_pieces_uv_routing() {
+        // 0xf0fff210 (the Actros 2014 Gigaspace cab): slot 1 = set 1,
+        // slot 2 = set 2, as the fixed rule.
+        assert_eq!(paint_uv_sets(Some(1), Some(2), 3), (Some(1), Some(2)));
+        // 0xf2fff110 (e.g. the DAF 2021 UK door): slot 2 reads set 1, where
+        // the fixed rule took set 2, the normal-map set.
+        assert_eq!(paint_uv_sets(Some(1), Some(1), 3), (Some(1), Some(1)));
+        // Unrouted slots fall back to the fixed rule.
+        assert_eq!(paint_uv_sets(None, None, 3), (Some(1), Some(2)));
     }
 
     #[test]
