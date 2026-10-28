@@ -1,0 +1,93 @@
+Pin table of the truck configuration screen (F5)
+================================================
+
+Source: /def/truck_config_scene.sii in the mounted 1.60.1.7 install (def.scs),
+the config_path of the tuning screen's scene widget. Read with:
+  ETS2_DIR=<game dir> MSYS_NO_PATHCONV=1 cargo run --release -p specsheet-archive     --example scs -- cat /def/truck_config_scene.sii
+and tabulated by hand. The parallel arrays pin_group / pin_look / pin_offset /
+pin_dir / pin_dir_uk / double_sided have 65 entries. Values below are our
+tabulation of those numbers. The app parses the same arrays into
+specsheet_data::scene::TuningScene::pins.
+
+Axes are truck space: x right (negative = left side), y up, z backward
+(negative = forward).
+
+A. Wheel pins (12 entries)
+--------------------------
+group     look        offset               pin_dir      pin_dir_uk   double_sided
+f_tire    custom_acc  (-0.1, 0.4, 0)       (-1, 0, 0)   (-1, 0, 0)   true
+r_tire    custom_acc  (-0.3, 0.4, 0)       (-1, 0, 0)   (-1, 0, 0)   true
+f_rim     custom_acc  (-0.1, 0, 0)         (-1, 0, 0)   (-1, 0, 0)   true
+r_rim     custom_acc  (-0.3, 0, 0)         (-1, 0, 0)   (-1, 0, 0)   true
+f_disc    custom_acc  (-0.1, 0.25, 0)      (-1, 0, 0)   (-1, 0, 0)   true
+r_disc    custom_acc  (-0.3, 0.25, 0)      (-1, 0, 0)   (-1, 0, 0)   true
+f_hub     acc_hub     (-0.1, 0, 0)         (-1, 0, 0)   (-1, 0, 0)   true
+r_hub     acc_hub     (-0.12, 0, 0)        (-1, 0, 0)   (-1, 0, 0)   true
+f_cover   acc_cover   (-0.18, 0, 0.15)     (-1, 0, 0)   (-1, 0, 0)   true
+r_cover   acc_cover   (-0.25, 0, 0.15)     (-1, 0, 0)   (-1, 0, 0)   true
+f_nuts    acc_nuts    (-0.18, 0, -0.15)    (-1, 0, 0)   (-1, 0, 0)   true
+r_nuts    acc_nuts    (-0.05, 0, -0.15)    (-1, 0, 0)   (-1, 0, 0)   true
+
+Per axle, relative to the first entry's point:
+  tire  +0.40 up        disc  +0.25 up        rim, hub  at the centre
+  cover +0.15 backward  nuts  0.15 forward
+  x: front -0.1 (cover, nuts -0.18); rear -0.3 (hub -0.12, cover -0.25, nuts -0.05).
+Every wheel pin faces -x (left) in both directions and is double_sided.
+
+B. Wheel slots without a pin entry
+----------------------------------
+The truck catalog has 7 wheel slots per axle (specsheet-data catalog.rs
+WHEEL_GROUPS): tire, disc, rim, hub, nuts, cover, wheel. f_wheel and r_wheel
+(complete wheels) have no pin_group entry. The app's single front-wheel
+marker showed the count 7 (screenshot 2026-10-28, Scania S), i.e. all seven
+slots stacked on one point.
+
+C. The other 53 entries, grouped by (offset, pin_dir, double_sided)
+-------------------------------------------------------------------
+offset (0, 0, -1.2)       dir (-1, 0, 0)   double_sided false: exhaust_l
+offset (0, 0, -1.2)       dir (1, 0, 0)    double_sided false: exhaust_r
+offset (0, 0, 0)          dir (-1, 0, -1)  double_sided false: flag_l, l_horn
+offset (0, 0, 0)          dir (0, 0, -1)   double_sided false: intlight_bck
+offset (0, 0, 0)          dir (0, 0, 0)    double_sided false: s_guard
+offset (0, 0, 0)          dir (0, 0, 1)    double_sided false: air_tank, r_bumper, r_chs_cover, r_mudflap
+offset (0, 0, 0)          dir (0, 1, -1)   double_sided false: r_grill
+offset (0, 0, 0)          dir (1, 0, -1)   double_sided false: flag_r, r_horn
+offset (0, 0, 0)          dir (1, 0, 0)    double_sided false: cab_door [uk (-1, 0, 0)], codrv_seat [uk (-1, 0, 0)], s_mirror [uk (-1, 0, 0)]
+offset (0, 0.3, 0)        dir (0, 0, 0)    double_sided false: beacon
+offset (-0.8, 0, 0)       dir (0, 0, 0)    double_sided true : f_light_mid
+offset (-0.9, 0, 0)       dir (0, 0, 0)    double_sided true : f_light_bmp, f_light_top
+offset (-1, 0, 0)         dir (-1, 0, 0)   double_sided true : s_deflector, s_strip, sideskrt_bar
+offset (-1, 0, 0)         dir (-1, 0, 1)   double_sided true : r_light
+offset (-1, 0, 0)         dir (0, 0, -1)   double_sided true : hl_guard
+offset (-1, 0, 0)         dir (0, 0, 0)    double_sided true : f_light_chs
+offset (-1, 0, 0)         dir (0, 0, 1)    double_sided true : m_mudflap
+offset (-1.1, 0, 0)       dir (-1, 0, -1)  double_sided true : f_turn_light
+offset (-1.15, 0, 0)      dir (-1, 0, 0)   double_sided true : s_badge
+offset (-1.2, 0, 0)       dir (-1, 0, -1)  double_sided true : cor_def, s_reflector
+offset (-1.2, 0, 0)       dir (-1, 0, 0)   double_sided true : b_detector, markers, sideskirt, tank
+offset (-1.25, -0.3, 0)   dir (-1, 0, 0)   double_sided true : doorstep
+offset (-1.25, 0, 0)      dir (-1, 0, 0)   double_sided true : cab_doorstep, doorhndl, doortrim, hoodlatch, s_panel, windowtrim
+offset (-1.3, 0, 0)       dir (-1, 0, 0)   double_sided true : f_fender_cab, f_fender_chs, f_fendr_cab, f_fendr_chs, f_fender, r_fender, r_fendr_top
+offset (-1.35, 0, 0)      dir (-1, 0, -1)  double_sided true : mir_guard, mirror
+offset (0, 0, 0)          dir (-1, 0, 0)   double_sided true : cabdefl, r_deflector
+
+pin_dir_uk differs from pin_dir only for: cab_door, codrv_seat, s_mirror (x flipped:
+the driver's side). pin_look counts: {'custom_acc': 59, 'acc_hub': 2, 'acc_cover': 2, 'acc_nuts': 2}.
+Offsets of double_sided entries outside the wheels are mostly x -0.8 to -1.35:
+about half a truck's width, so their base point is not the slot's own side
+locator (a fender locator at x about -1.2 plus -1.3 would land 2.5 m out).
+Pattern: every entry with double_sided false has x offset 0, and every
+double_sided entry outside the wheels has x between -0.8 and -1.35, except
+cabdefl and r_deflector (offset 0). The double_sided slots are left/right
+pairs (fenders, lights, steps, mirrors, side skirts); the single-sided ones sit
+on one side or the centre line (exhausts, horns, flags, beacon, rear bumper).
+Hypothesis: a double_sided pin starts from the centre of the slot's left and
+right locators (x about 0) and the x offset puts it on the truck's side,
+mirrored to the side facing the camera. The wheel pins do not fit this (x
+-0.1 from the centre line would sit inside the truck), which matches D: they
+start from a wheel locator. REA on the pin reader decides both.
+
+D. Observation in the game (the user, 2026-10-28)
+-------------------------------------------------
+On the tuning screen the rim pin sits at the wheel's locator on the truck, and
+the tyre pin is the tire entry's pin_offset added to that point.
