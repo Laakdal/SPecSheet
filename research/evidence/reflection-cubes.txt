@@ -1,0 +1,65 @@
+Reflection cube textures: layout and per-face colour (ETS2 1.60.1.7)
+====================================================================
+
+Command (install opened read-only):
+  ETS2_DIR=<game> cargo run --release -p specsheet-archive --example scs -- tex <path>
+`tex` prints the image and sample records. Then, per face, the colour of the
+smallest mip: for BC formats, the mean of the block's two RGB565 endpoints,
+sRGB-encoded and approximate.
+
+Observations:
+- All four cubes are 6-face BC1 sRGB (DXGI 72) with the cube flag set. They
+  are 512^2 (vehicle_reflection) or 256^2, with a full mip chain.
+- Face order (Confirmed for the y axis): in every non-uniform cube, face 2
+  is the brightest and bluest (sky) and face 3 the darkest and brownish
+  (ground). This matches the stored order +x, -x, +y, -y, +z, -z with +y up,
+  i.e. the D3D/DDS convention and the order wgpu expects. Whether the x/z faces
+  are mirrored relative to wgpu is not testable this way (Unknown).
+- ui_vehicle_reflection.tobj (named by the garage scene's own materials, by no
+  truck material): all six faces are the same flat grey (0.258, 0.246, 0.210),
+  i.e. a neutral cube without detail.
+- The cubes are dark on average: sRGB means of about 0.3-0.7 per face, so
+  linear means of about 0.07-0.45.
+
+Output
+------
+== /material/environment/vehicle_reflection.tobj
+ImageMeta { width: 512, height: 512, mip_count: 10, dxgi_format: 72, is_cube: true, face_count: 6, pitch_alignment: 256, image_alignment: 512 }
+SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+1086984 decompressed bytes
+face 0: smallest-mip colour [0.645, 0.659, 0.661]
+face 1: smallest-mip colour [0.355, 0.405, 0.452]
+face 2: smallest-mip colour [0.613, 0.706, 0.806]
+face 3: smallest-mip colour [0.371, 0.381, 0.355]
+face 4: smallest-mip colour [0.484, 0.508, 0.548]
+face 5: smallest-mip colour [0.419, 0.444, 0.452]
+== /material/environment/fuzzy_reflection/fuzzy_reflection.tobj
+ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 72, is_cube: true, face_count: 6, pitch_alignment: 256, image_alignment: 512 }
+SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+300552 decompressed bytes
+face 0: smallest-mip colour [0.484, 0.484, 0.484]
+face 1: smallest-mip colour [0.274, 0.286, 0.290]
+face 2: smallest-mip colour [0.484, 0.508, 0.532]
+face 3: smallest-mip colour [0.258, 0.254, 0.242]
+face 4: smallest-mip colour [0.355, 0.357, 0.371]
+face 5: smallest-mip colour [0.290, 0.302, 0.306]
+== /material/environment/showroom_cube/reflection.tobj
+ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 72, is_cube: true, face_count: 6, pitch_alignment: 256, image_alignment: 512 }
+SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+300552 decompressed bytes
+face 0: smallest-mip colour [0.694, 0.698, 0.694]
+face 1: smallest-mip colour [0.677, 0.683, 0.677]
+face 2: smallest-mip colour [0.823, 0.825, 0.823]
+face 3: smallest-mip colour [0.258, 0.254, 0.258]
+face 4: smallest-mip colour [0.742, 0.738, 0.742]
+face 5: smallest-mip colour [0.661, 0.667, 0.661]
+== /material/environment/ui_vehicle_reflection.tobj
+ImageMeta { width: 256, height: 256, mip_count: 9, dxgi_format: 72, is_cube: true, face_count: 6, pitch_alignment: 256, image_alignment: 512 }
+SampleMeta { mag_linear: true, min_linear: true, address_u: ClampToEdge, address_v: ClampToEdge }
+300552 decompressed bytes
+face 0: smallest-mip colour [0.258, 0.246, 0.210]
+face 1: smallest-mip colour [0.258, 0.246, 0.210]
+face 2: smallest-mip colour [0.258, 0.246, 0.210]
+face 3: smallest-mip colour [0.258, 0.246, 0.210]
+face 4: smallest-mip colour [0.258, 0.246, 0.210]
+face 5: smallest-mip colour [0.258, 0.246, 0.210]
