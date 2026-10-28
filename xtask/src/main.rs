@@ -67,11 +67,26 @@ fn main() -> ExitCode {
     }
 }
 
+/// The repository the command was run in. `cargo run` sets
+/// `CARGO_MANIFEST_DIR` for the process; the compile-time value would point
+/// at whichever worktree last built this binary in a shared target
+/// directory. Outside cargo, the nearest ancestor of the current directory
+/// that holds `xtask/Cargo.toml`.
 fn workspace_root() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    manifest
-        .parent()
-        .map_or(manifest.clone(), Path::to_path_buf)
+    let manifest = std::env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from);
+    let current = std::env::current_dir().unwrap_or_default();
+    root_from(manifest.as_deref(), &current)
+}
+
+fn root_from(manifest: Option<&Path>, current: &Path) -> PathBuf {
+    if let Some(root) = manifest.and_then(Path::parent) {
+        return root.to_path_buf();
+    }
+    current
+        .ancestors()
+        .find(|dir| dir.join("xtask").join("Cargo.toml").is_file())
+        .unwrap_or(current)
+        .to_path_buf()
 }
 
 /// The "Done means" checks, stopping at the first failure.
@@ -273,6 +288,18 @@ impl Manifest {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_root_comes_from_the_running_checkout() {
+        let worktree = Path::new("/work/tree-b");
+        assert_eq!(
+            root_from(Some(&worktree.join("xtask")), Path::new("/elsewhere")),
+            worktree
+        );
+        let here = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let repo = here.parent().expect("xtask sits in the repository");
+        assert_eq!(root_from(None, &here.join("src")), repo);
+    }
 
     #[test]
     fn reads_the_name_and_every_kind_of_dependency() {
