@@ -55,7 +55,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] Right-hand-drive interiors: UK twins paired for all 219 units (F10).
 - [x] Volvo "FH6" name and missing side mirrors explained as game data (F12).
 - [x] Paint-job data model (F15): every paint job's masks, colours, flags, flake/flip and per-part units (token-keyed files, `acc_list` resolved), all six preset colours as `PaintOverride`, family re-pick on a cabin change, and `piece_paint` per placed part; real-install tests cover all 19,998 paint jobs, masks and the 26 presets.
-- [x] Truck paint material (D13, clean-room from `shader-specs/truckpaint.md`): `crates/specsheet/src/render/truckpaint.{rs,wgsl}` draws colour masks, airbrush liveries, flip colour, flakes and the doubled vertex colour per placed part. The `paint_uv_survey` example settled the vertex colours (`paint-vertex-streams.txt`). Paint samples PMG UV set 1, set 2 for `alternate_uvset` (Actros 2014 flag decal), with the variant flags from the paint job alone (F17). Seen working on the Scania S, MAN TGX Euro 6 and Actros 2014 (Driving Academy, Altamira, 770 Deep Red). Only the paint job's `airbrush` picks livery vs colour mask (the MAN cab's `.mat` names `airbrush`).
+- [x] Truck paint material (D13, clean-room from `shader-specs/truckpaint.md`): `crates/specsheet-render/src/truckpaint.{rs,wgsl}` draws colour masks, airbrush liveries, flip colour, flakes and the doubled vertex colour per placed part. The `paint_uv_survey` example settled the vertex colours (`paint-vertex-streams.txt`). Paint samples PMG UV set 1, set 2 for `alternate_uvset` (Actros 2014 flag decal), with the variant flags from the paint job alone (F17). Seen working on the Scania S, MAN TGX Euro 6 and Actros 2014 (Driving Academy, Altamira, 770 Deep Red). Only the paint job's `airbrush` picks livery vs colour mask (the MAN cab's `.mat` names `airbrush`).
 
 - [x] **The game's truck configuration screen** (`truck.config`) is drawn from the install's layouts, templates, colours and icons (`docs/app/ui.md`):
   - the markup layout engine (`specsheet-gameui::flow`);
@@ -100,7 +100,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
-   - the game's lighting: the shared module (`render/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). Next: the reflection strength and cube (the engine's vehicle_reflection slot, F17 §4, with 71), normal maps (needs tangents), then the output scale against the game's tone mapping (F16, spec in progress);
+   - the game's lighting: the shared module (`specsheet-render/src/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). Next: the reflection strength and cube (the engine's vehicle_reflection slot, F17 §4, with 71), normal maps (needs tangents), then the output scale against the game's tone mapping (F16, spec in progress);
    - align with the game's paint application (F17, done by REA): locked colours win (done, a9cc0b2); effect flags from the paint job and UV sets 1/2 (done); the engine defaults for missing paint values (done). Still open: the UV set used when a model lacks it, and two caller paths;
    - the `paint_job` slot UI and the colour picker.
 3. **Interior:** interior models and an interior camera; `hide_in`.
@@ -119,10 +119,10 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 10. **App shell (D16):** the `specsheet-theme` token crate with contrast tests, then the home, trucks, configurations, mods, parity, settings and about screens per [docs/app/design-system.md](docs/app/design-system.md). After the 1:1 tuning screen.
 11. **Docs per feature:** move each tuning feature's findings, rules and status into one `docs/features/<feature>.md` (wheels, interior, hookups, pins, scenes, paint). Shrink REVERSE_ENGINEERING.md to an index of F-numbers that link to them. Do it after the paint branch and the mod session's F14/D15 land.
-12. **Restructure (D17)**, in staged passes with every check passing after each:
-    - Done (2026-10-28): `xtask` (`check`, `layers`, CI runs `layers`); `specsheet-core` → `specsheet-truck`; `specsheet-data` → `-data`, `-assembly`, `-gameui`, `-session`; tools → `specsheet-research`.
-    - Next: `specsheet-render` (materials and shaders out of the app) at the `dif.spec` stopping point; the foundation `specsheet-core` (ids, maths, colour: unifies `Aabb`/`Transform`); split `catalog.rs` and `config.rs`.
-    - Practices still to adopt: `deny.toml` (cargo-deny), `missing_docs` on the library crates.
+12. **Restructure (D17):** the target tree is in place (2026-10-28: core, theme, archive, formats, truck, data, assembly, gameui, session, render, research, app; `xtask` check/layers/guard/real/parity/version-port). Still to do:
+    - split `specsheet-data/src/catalog.rs` and `specsheet-truck/src/config.rs` into modules;
+    - bundle the theme's fonts (OFL) and build the app's own screens on the tokens (D16);
+    - `deny.toml` (cargo-deny) and `missing_docs` on the library crates.
 
 ## Blockers and notes
 
