@@ -22,9 +22,11 @@
 //!   package's extensions;
 //! - variants of found names by word swaps learned from the game
 //!   ([`learn_word_swaps`]), and a vehicle folder's files tried in the
-//!   other vehicle folders of its kind.
+//!   other vehicle folders of its kind;
+//! - names that sort between an unnamed file's named neighbours in packing
+//!   order, built from words of paths with the same extension.
 
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
 use specsheet_archive::{city_hash_64, DirListing, EntryV1, HashFsV1Archive, Vfs};
 use specsheet_formats::{paths, sii};
@@ -292,6 +294,7 @@ fn recover_with(
     let mut search = Search::new(limits);
     search.extend(["manifest.sii", "versions.sii"]);
     let mut vehicles = Vehicles::default();
+    let mut words: Option<Words> = None;
     search.extend(candidates.into_iter().inspect(|p| vehicles.note(p)));
     let mut names = BTreeMap::new();
     let mut scanned: HashSet<u64> = HashSet::new();
@@ -318,6 +321,7 @@ fn recover_with(
             neighbour_guesses(package, &names, &mut search);
             swap_guesses(&names, swaps, &mut search);
             vehicle_guesses(&names, &mut vehicles, &mut search);
+            gap_guesses(package, &names, &mut words, &mut search);
             drain(package, &mut search, &mut names);
         }
         if names.len() == before {
@@ -479,6 +483,150 @@ fn vehicle_guesses(names: &BTreeMap<u64, String>, vehicles: &mut Vehicles, searc
             if other != own {
                 search.push(&format!("def/vehicle/{kind}/{other}/{rest}"));
             }
+        }
+    }
+}
+
+/// Words of the candidates' folder and file names, split at `_` and `.`,
+/// by the extension of the path they come from, for [`gap_names`]: a gap
+/// between two `.sui` files is filled with words of `.sui` paths.
+#[derive(Default)]
+struct Words(HashMap<String, BTreeSet<String>>, usize);
+
+/// Longest word kept, and most words kept (a bound against hostile
+/// candidates).
+const MAX_WORD: usize = 64;
+const MAX_WORDS: usize = 1_000_000;
+/// Guesses per gap.
+const MAX_GAP_GUESSES: usize = 20_000;
+
+impl Words {
+    fn note(&mut self, path: &str) {
+        let file = path.rsplit('/').next().unwrap_or(path);
+        let Some((_, ext)) = file.split_once('.') else {
+            return;
+        };
+        let set = self.0.entry(ext.to_owned()).or_default();
+        for word in path.split(['/', '_', '.']) {
+            if !word.is_empty()
+                && word.len() <= MAX_WORD
+                && self.1 < MAX_WORDS
+                && !set.contains(word)
+            {
+                set.insert(word.to_owned());
+                self.1 += 1;
+            }
+        }
+    }
+}
+
+/// Names that sort strictly between two files of one folder: their shared
+/// leading `_` words, one more word, and their shared extension
+/// (`sound.sui` < `sound_2024.sui` < `sound_effects.sui`).
+fn gap_names(before: &str, after: &str, words: &Words) -> Vec<String> {
+    let split = |path: &str| -> (String, String) {
+        match path.rsplit_once('/') {
+            Some((dir, file)) => (format!("{dir}/"), file.to_owned()),
+            None => (String::new(), path.to_owned()),
+        }
+    };
+    let ((dir, low), (dir_after, high)) = (split(before), split(after));
+    let (Some((stem_low, ext)), Some((stem_high, ext_high))) =
+        (low.split_once('.'), high.split_once('.'))
+    else {
+        return Vec::new();
+    };
+    // A package that is not sorted may pack a later name first.
+    if dir != dir_after || ext != ext_high || low >= high {
+        return Vec::new();
+    }
+    let shared: Vec<&str> = stem_low
+        .split('_')
+        .zip(stem_high.split('_'))
+        .take_while(|(a, b)| a == b)
+        .map(|(a, _)| a)
+        .collect();
+    let lead = if shared.is_empty() {
+        String::new()
+    } else {
+        format!("{}_", shared.join("_"))
+    };
+    // Words whose name can fall in the gap: from the low name's next word
+    // (or the start) up to the high name's rest (or the end).
+    let from = low
+        .strip_prefix(&lead)
+        .map_or("", |rest| rest.split(['_', '.']).next().unwrap_or(""));
+    let to = match high.strip_prefix(&lead) {
+        Some(rest) => rest.to_owned(),
+        None if high > lead => char::MAX.to_string(),
+        None => return Vec::new(),
+    };
+    let mut out = Vec::new();
+    if from > to.as_str() {
+        return out;
+    }
+    let range = (
+        std::ops::Bound::Included(from),
+        std::ops::Bound::Included(to.as_str()),
+    );
+    let Some(set) = words.0.get(ext) else {
+        return out;
+    };
+    for word in set.range::<str, _>(range) {
+        let name = format!("{lead}{word}.{ext}");
+        if low < name && name < high {
+            out.push(format!("{dir}{name}"));
+            if out.len() == MAX_GAP_GUESSES {
+                break;
+            }
+        }
+    }
+    out
+}
+
+/// For each unnamed file packed between two named files of one folder, the
+/// names that sort between theirs (packers sort a folder's names;
+/// `research/evidence/mod-name-recovery.txt` section 12). The words come
+/// from every path queued so far; they are gathered once, and only when a
+/// package has such a gap.
+fn gap_guesses(
+    package: &impl Package,
+    names: &BTreeMap<u64, String>,
+    words: &mut Option<Words>,
+    search: &mut Search,
+) {
+    let order: Vec<Option<&String>> = package
+        .packing_order()
+        .iter()
+        .map(|h| names.get(h))
+        .collect();
+    let mut gaps = Vec::new();
+    let mut before = None;
+    for (i, name) in order.iter().enumerate() {
+        if name.is_some() {
+            before = *name;
+            continue;
+        }
+        if let (Some(low), Some(high)) = (before, order[i + 1..].iter().flatten().next()) {
+            gaps.push((String::clone(low), String::clone(high)));
+        }
+    }
+    if gaps.is_empty() {
+        return;
+    }
+    let words = words.get_or_insert_with(|| {
+        let mut words = Words::default();
+        for path in search.seen.iter().chain(names.values()) {
+            words.note(path);
+        }
+        words
+    });
+    for (low, high) in gaps {
+        for guess in gap_names(&low, &high, words) {
+            if search.is_full() {
+                return;
+            }
+            search.push(&guess);
         }
     }
 }
@@ -841,6 +989,57 @@ mod tests {
                 "def/vehicle/truck/scania.t/interior/sound.sui"
             ]
         );
+    }
+
+    #[test]
+    fn guesses_names_that_sort_between_packed_neighbours() {
+        // Packed between sound.sui and sound_effects.sui (names sorted), so
+        // the name sorts between them; "2024" is a word another path uses.
+        let mut package = Fake::default()
+            .file("f/sound.sui", b"a")
+            .file("f/sound_2024.sui", b"b")
+            .file("f/sound_effects.sui", b"c");
+        package.order = ["f/sound.sui", "f/sound_2024.sui", "f/sound_effects.sui"]
+            .map(str::to_owned)
+            .to_vec();
+        let result = recover(
+            &package,
+            [
+                "f/sound.sui".to_owned(),
+                "f/sound_effects.sui".to_owned(),
+                "def/vehicle/truck/volvo.fh_2024/x.sui".to_owned(),
+            ],
+        );
+        assert_eq!(
+            named(&result),
+            ["f/sound.sui", "f/sound_2024.sui", "f/sound_effects.sui"]
+        );
+    }
+
+    #[test]
+    fn gap_names_keep_to_the_gap() {
+        let mut words = Words::default();
+        for w in ["2024", "alpha", "dash", "effects", "zeta", "a.b"] {
+            words.note(&format!("x/{w}/y.sui"));
+        }
+        // Words of other extensions do not fill a .sui gap.
+        words.note("x/beta/y.pmd");
+        let guesses = gap_names("f/sound.sui", "f/sound_effects.sui", &words);
+        assert_eq!(
+            guesses,
+            [
+                "f/sound_2024.sui",
+                "f/sound_a.sui",
+                "f/sound_alpha.sui",
+                "f/sound_b.sui",
+                "f/sound_dash.sui"
+            ]
+        );
+        // Different folders: no gap.
+        assert!(gap_names("f/sound.sui", "g/sound_effects.sui", &words).is_empty());
+        // An unsorted package packs a later name first: no gap, no panic.
+        assert!(gap_names("f/sound_zeta.sui", "f/sound_alpha.sui", &words).is_empty());
+        assert!(gap_names("f/sound_dash_x.sui", "f/sound_alpha.sui", &words).is_empty());
     }
 
     #[test]
