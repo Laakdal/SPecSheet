@@ -1,0 +1,61 @@
+Provenance: docs/app/shader-specs/tonemap.md (clean-room spec step, D13)
+=====================================================================
+
+Date: 2026-10-28. Game: ETS2 1.60.1.7, effect.scs of that install (read-only).
+No shader text is recorded here or anywhere in the repository. Extracted text was
+kept in the session scratchpad only (outside the repo) and is not committed.
+
+Commands (Git Bash):
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2"
+  CARGO_TARGET_DIR=<scratchpad>/target cargo build --release -j 2 -p specsheet-research --example scs
+  MSYS_NO_PATHCONV=1 scs ls /effect/deferred                 (post-process effect folders)
+  MSYS_NO_PATHCONV=1 scs ls /effect/deferred/<folder>        (def_tonemap: 160 .rfx)
+  MSYS_NO_PATHCONV=1 scs cat /effect/deferred/<folder>/<effect>.rfx   (glsl technique -> _shd objects)
+  MSYS_NO_PATHCONV=1 scs cat /effect/deferred/_shd/<hash>.glsl.{fso,vso} > <scratchpad>
+  then printable runs: tr -c '\11\12\15\40-\176' '\n'   (GLSL 330 text inside the SHDO container)
+
+Observation: for every object listed below (22 fragment, 7 vertex), md5 of the object bytes equals the hash in its file name.
+
+Effect (.rfx under /effect/deferred/)          GLSL fragment object (_shd/)        bytes
+def_tonemap/def.tonemap.rfx                    90149c2927622360c21eb22691ed7b45    20,779
+def_tonemap/def.tonemap.col.rfx                f274d17a3679abb688960808c04f7fd7    22,369
+def_tonemap/def.tonemap.col.drr.grad.rfx       ca3e0d76057e043eeac0846a68649042    49,229  (inputs and drr/grad steps only)
+def_tonemap/def.tonemap.col.shaft.rfx          16b6422ce82d6438a21acbe70991d77d    22,720  (inputs only)
+def_tonemap/def.tonemap.dist.rfx               8f01dfd341ff9654a9316659743e26fe    21,655  (inputs only)
+def_tonemap/def.tonemap.dof.rfx                d510e5cf1c2827ab4d854d3be36c031e    29,190  (inputs only)
+def_adapt/def.adapt.rfx                        7e4e58afe5c33e88e372dcdb87c7a051    46,491
+def_histogram/def.histogram.rfx                8b0df3eaee99e33dc4841d3dfb613340     9,660  (state compute_add.rs)
+def_bloom_init/def.bloom.init.rfx              4096eb18ac47833f00952775f78d2f27     9,945
+def_downsample/def.downsample.4x4.rgb_blum.rfx 89c70bd4569959a22572713c7944810a    16,824
+def_downsample/def.downsample.4x4.lumlog.rfx   30101c603ce9a690a3a8324a20391f07     9,624
+def_downsample/def.downsample.4x4.exp.rfx      1a7717644465d974f5712699ae4796f4     9,575
+def_downsample/def.downsample.4x4.expmax.rfx   dd8e6013198090046174d434e42da611    11,378
+def_downsample/def.downsample.2x2.lumlog.rfx   52a1739d92de49d3342f805177e99b07     9,258
+def_downsample/def.downsample.bilinear.lumlog.rfx 258509c85776859af4b431fe3f6539f3  9,301  (extracted, not used in spec)
+def_downsample/def.downsample.4x4.gray.rfx     3a55a41d65be5e3c8e14fd00ab009be6     9,504  (extracted, not used in spec)
+def_dual_filter/def.dual_filter.downsample.rfx 5745598976c2ad458985384167dccbdb    11,892
+def_dual_filter/def.dual_filter.upsample.rfx   c70597ec57a3ad132737ec248fcf7769    13,807
+def_hdr_overlay/def.hdr.overlay.rfx            f73742e2594916f84d3b61621745a921   322,436  (extracted, not read)
+post_scene_fx/post_scene_fx.convolve_horizontal.rfx 9bae3eda5f61a508e1ae1af9bb9c7ec4 9,792
+def_taa/def.taa.tonemap.rfx                    712cf326e661c421a73e74edba53bbe9    (forward map only)
+def_smaa/def.smaa.edge.detect.high.rfx         78da1421bb597b08c141a8988741d60c    (sRGB encode check only)
+  + vertex 3df8e454714f0c3dfbff3484bdeeca71 (def.taa.tonemap, 11,770 bytes): exposure texel fetch only
+
+GLSL vertex objects read (_shd/)                                 bytes
+a7dd3ddce69a436ac925da5597363019 (def.tonemap, def.tonemap.col)  11,902  (fetches the adapted exposure texel)
+30035c6dcbf51bd4328412054dc070ff (def.adapt)                     10,623
+817353f539984367178568b15e2ba879 (def.histogram)                 18,566  (histogram accumulation lives here)
+564dcb26436ad68fba845284e1cd4aff (def.bloom.init)                11,757
+2db935c7dcfe18a07681b29814f1de82 (def.downsample.4x4.rgb_blum)   13,881  (tap offsets, bloom limit)
+a42d67a28974d48990c74c3fa74fb9df (def.downsample.4x4.lumlog)     12,026  (extracted only)
+
+Scans over the whole deferred set:
+- scs ls /effect/deferred/_shd | grep glsl.fso -> 716 objects. All were extracted and searched.
+- sRGB transfer constants (12.92 / 1/2.4) occur in 7 objects. Mapped through all 526 deferred
+  .rfx files, they belong only to def.debug.show.{linear,overdraw,rgb_range,rgb_range.split}
+  and def.smaa.edge.detect.{low,medium,high,ultra}.
+- No deferred shader declares a pre_exposure uniform. The name occurs only as a shader-local
+  in the drr/dof tonemap flavours.
+- Effects whose shaders use deferred_param_{tonemap_params,eye_adapt_factors,bloom_params,
+  color_correction}: def.adapt, def.bloom.init, def.hdr.overlay, def.smaa.neighbour,
+  def.taa.{compute*,luma_sharpen,tonemap,tonemap_invert}, and the def.tonemap family.
