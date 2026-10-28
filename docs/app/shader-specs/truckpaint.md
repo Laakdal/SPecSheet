@@ -150,3 +150,13 @@ The flakes change **only the specular colour and the specular power** of the sun
 - Whether `D_blk` in the plain variant is `base_color` or `base_color ⊙ .mat diffuse`. Settled by the REA run, or by a parity screenshot of a plain-colour cab.
 - What the engine feeds a paint UV the mesh lacks (§2, "Missing UV set"). Next step: a parity screenshot of a Scania S masked cab against our render with the mask sampled at UV0. Or add the binding of UV sets to vertex inputs to the REA regex above.
 - The variants not read: `skinned` (135), `shadow` (132) and `asafew.a` (132). `asafew.a` is used on real trucks: the Volvo FH 2024 has a `tsnmapuv.asafew.a` paint material. (H) It is the alpha-tested form of the same maths, and `shadow` and `skinned` change only the pass setup or the vertex skinning. Next step: a second spec pass over one `asafew.a` effect and one `shadow` effect, diffed against the variants above.
+
+## 8. Implementation notes
+
+Added by the implementer from our own data and screenshots, not from the shaders; the maths above is unchanged. Details: [../materials.md](../materials.md#truck-paint-eut2truckpaint), `research/evidence/paint-vertex-streams.txt`.
+
+- **UV sets (C, our data):** "UV set *n*" counts from the base UV set. The mask uses PMG set 0, and `altuv` uses set 1, not the sets 1 and 2 guessed in §2. Counting from 0, 393 of 1,725 paint pieces would lack their set; this way, 1 does. Liveries line up on 2- and 3-set cabs.
+- **Vertex colour (C, our data):** every truckpaint piece has a colour stream, so the "mesh without one" case in the lighting page does not arise for paint. The colours are grey, with a mean of 0.326.
+- **Variant selection:**
+  - Airbrush versus colormask follows the paint job's `airbrush` alone (C, on screen): a `.mat` naming `airbrush` still draws colour-mask jobs as colormask.
+  - `flipflake` and `altuv` are taken as the union of the `.mat`'s flavours and the paint job's flags (H, pending REA).

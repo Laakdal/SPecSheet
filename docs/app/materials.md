@@ -59,14 +59,20 @@ This is an approximation, not the game's shaders.
   - flip: the facing/averted blend of P and the flip colour.
 - **Albedo** = base texture × `.mat` diffuse × paint colour × 2 × vertex colour.
 - **Constant masks** (`shared_RRGGBBAA`) enter as linear RGB with linear alpha.
-- **Flakes:** the noise at `(u·s, v·s·r)` changes only the highlight's colour and its power (`τ`, coverage `c`).
+- **Flakes:** the noise at `(u·s, v·s·r)` changes only the highlight's colour and its power (`τ`, coverage `c`). Under Bevy's lighting no sparkle is visible yet (770 Deep Red, close view). Check it again once the spec's Blinn-Phong highlight replaces PBR.
 - **Mask factor:** the colour mask's alpha and the base alpha scale the specular and the reflection.
 
 **Settled by our data** (`research/evidence/paint-vertex-streams.txt`, example `paint_uv_survey`, 7,740 truck models):
-- **Mask UV (Confirmed by fit).** The mask uses PMG UV set 0, and alternate-UV paint uses set 1 (`MeshPiece::uvs2`, Bevy `UV_1`). The spec's guess that sets count from 0 (mask on set 1, alternate UVs on set 2) would leave 393 of 1,725 paint pieces without their set; this reading leaves 1. A piece without set 1 falls back to set 0.
+- **Mask UV (Confirmed).** The mask uses PMG UV set 0, and alternate-UV paint uses set 1 (`MeshPiece::uvs2`, Bevy `UV_1`).
+  - The spec's guess that sets count from 0 (mask on set 1, alternate UVs on set 2) would leave 393 of 1,725 paint pieces without their set; this reading leaves 1.
+  - Liveries line up on cabs where the two readings differ: the MAN TGX Euro 6 `cab_xl` (2 sets, `altuv`) and the Actros 2014 (3 sets).
+  - A piece without set 1 falls back to set 0.
 - **Vertex colours (Confirmed).** Every paint piece has a colour stream, so the spec's "mesh without one" case does not arise for paint. The mean is grey 0.326, so 2 × colour ≈ 0.65 darkens paint about 35% compared with before. The colours are uploaded doubled, and only on paint meshes. Byte order: lowest byte red, a **Hypothesis**; only 464 of 2.8M vertices are not grey.
 
-**Variant choice (Hypothesis).** The flags are the union of the `.mat`'s effect flavours (`airbrush`, `flipflake`, `altuv`) and the paint job's (`airbrush`, `flipflake`, `alternate_uvset`). A mask makes the paint a colour mask unless it is airbrush. Many `.mat`s already name flavours (e.g. 72 `eut2.truckpaint.altuv` pieces), so the engine does not only append them from the paint job, as the spec guesses. `flipflakeuv` is not implemented: what selects it is Unknown, and the flakes use the mask's UV.
+**Variant choice.**
+- **Livery or colour mask (Confirmed on screen):** only the paint job's `airbrush` decides. With a mask, the paint is a livery if the job says `airbrush`, else a colour mask. The MAN TGX Euro 6 cab's `.mat` names `airbrush`, yet its Driving Academy job draws correctly only as a colour mask; drawn as a livery, the mask's channel weights showed as red and green stripes.
+- **`flipflake` and `altuv` (Hypothesis):** the union of the `.mat`'s flavours and the paint job's flags (`flipflake`, `alternate_uvset`). Many `.mat`s name these themselves (e.g. 72 `eut2.truckpaint.altuv` pieces), so the engine does not only append them from the paint job, as the spec guesses. 71's REA run on paint-effect selection should settle it.
+- **`flipflakeuv`:** not implemented. What selects it is Unknown, and the flakes use the mask's UV.
 
 **Ours, in place of the spec's Unknowns** (constants at the top of `truckpaint.rs`):
 
