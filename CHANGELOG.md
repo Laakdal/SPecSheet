@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Changed
+- **Paint reflections are as strong as the game's:** painted panels now use the game's own reflection strength at head-on angles instead of the material's fresnel value, so glossy paint mirrors its surroundings much less when seen face-on.
 - **Alternate-UV paint jobs land where the game puts them on every truck:** paint now reads each model's own UV routing, so liveries such as Golden Edge on the DAF 2021 XF show on the cab and doors.
 - **Paint jobs render like the game's:** two-tone colour masks, airbrush liveries (logos, stripes, the 770 designs) and metallic flip colours that shift with the viewing angle. Each part takes its own paint, and the game's baked shading on painted panels is applied, so paint looks darker than before. The lighting is still an approximation. Metallic flakes are wired in but not visible yet.
 - **Metallic flakes show:** paint jobs that leave out a flake or flip value now take the game's defaults instead of zero, so flake patterns appear in the highlights (e.g. Under Wraps' gift wrap on the MAN TGX Euro 6). Missing mask colours default to red, green and blue as in the game.
