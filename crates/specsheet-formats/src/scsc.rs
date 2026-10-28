@@ -19,18 +19,30 @@ use flate2::read::ZlibDecoder;
 /// Errors produced while opening an SII container.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum ScscError {
+    /// Neither the ScsC magic nor SII text.
     #[error("not an ScsC container or SII text (magic {0:02x?})")]
     UnknownMagic([u8; 4]),
+    /// The header is shorter than its fixed size.
     #[error("truncated ScsC header")]
     Truncated,
+    /// The encrypted body is not a multiple of the AES block size.
     #[error("ScsC body of {0} bytes is not whole AES blocks")]
     PartialBlock(usize),
+    /// The declared plain size is over the reader's limit.
     #[error("ScsC declared size {0} exceeds limit")]
     TooLarge(u32),
+    /// The decrypted payload is not valid zlib.
     #[error("ScsC payload does not inflate: {0}")]
     Inflate(String),
+    /// The inflated size differs from the declared size.
     #[error("ScsC payload inflated to {actual} bytes, declared {declared}")]
-    SizeMismatch { declared: u32, actual: usize },
+    SizeMismatch {
+        /// The size in the header.
+        declared: u32,
+        /// The inflated size.
+        actual: usize,
+    },
+    /// The payload is binary SII, which this function does not parse.
     #[error("binary SII (BSII) is not supported")]
     BinarySii,
 }
@@ -114,10 +126,13 @@ pub fn sii_text(bytes: &[u8]) -> Result<Vec<u8>, ScscError> {
 /// Errors produced by [`document`].
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum DocumentError {
+    /// The container could not be opened.
     #[error(transparent)]
     Container(#[from] ScscError),
+    /// The SII text does not parse.
     #[error(transparent)]
     Text(#[from] crate::sii::SiiError),
+    /// The binary SII does not parse.
     #[error(transparent)]
     Binary(#[from] crate::bsii::BsiiError),
 }

@@ -3,6 +3,8 @@
 //! Every parser takes bytes (never touches archives or the disk) and treats
 //! its input as untrusted: malformed data yields an error, never a panic.
 
+#![warn(missing_docs)]
+
 mod binary;
 pub mod bsii;
 pub mod mat;

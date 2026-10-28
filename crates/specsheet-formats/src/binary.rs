@@ -6,11 +6,14 @@ use crate::token::Token;
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("{what}: {message}")]
 pub struct FormatError {
+    /// The format, e.g. `pmg`.
     pub what: &'static str,
+    /// What is wrong, and where.
     pub message: String,
 }
 
 impl FormatError {
+    /// An error in format `what`.
     pub fn new(what: &'static str, message: impl Into<String>) -> Self {
         Self {
             what,

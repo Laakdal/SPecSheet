@@ -23,6 +23,7 @@ const MAX_UV_SETS: usize = 8;
 /// variant through the matching `.pmd`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Part {
+    /// The part's name.
     pub name: String,
     /// Indices into `Pmg::pieces`.
     pub pieces: std::ops::Range<usize>,
@@ -33,8 +34,11 @@ pub struct Part {
 /// A named transform in the model, e.g. an accessory attachment point.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Locator {
+    /// The locator's name, e.g. a slot name.
     pub name: String,
+    /// Position in model space.
     pub position: [f32; 3],
+    /// Uniform scale.
     pub scale: f32,
     /// Rotation quaternion in `(w, x, y, z)` order.
     pub rotation_wxyz: [f32; 4],
@@ -54,6 +58,7 @@ pub struct Piece {
     /// set that feeds UV slot `n`; `0xf` leaves the slot unused. See
     /// [`Piece::uv_set_for_slot`].
     pub uv_routing: u32,
+    /// Bounds of the piece's vertices.
     pub aabb: Aabb,
     /// Required: a piece without a position stream is an error.
     pub positions: Vec<[f32; 3]>,
@@ -80,12 +85,18 @@ impl Piece {
     }
 }
 
+/// A parsed `.pmg` model geometry.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pmg {
+    /// Bounds of the whole model.
     pub aabb: Aabb,
+    /// The parts, in file order.
     pub parts: Vec<Part>,
+    /// Every locator; parts index into it.
     pub locators: Vec<Locator>,
+    /// Every piece; parts index into it.
     pub pieces: Vec<Piece>,
+    /// Number of skinning bones (0 for rigid models).
     pub bone_count: u32,
 }
 

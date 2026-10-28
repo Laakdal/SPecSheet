@@ -20,24 +20,45 @@ use crate::sii::{Attribute, SiiDocument, Slot, Unit, Value};
 /// Errors produced while reading binary SII.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum BsiiError {
+    /// The data does not start with `BSII`.
     #[error("not binary SII (missing `BSII` magic)")]
     NotBinary,
+    /// A BSII version this reader does not handle.
     #[error("unsupported BSII version {0}")]
     UnsupportedVersion(u32),
+    /// The data ends inside a record.
     #[error("BSII truncated at byte {0}")]
     Truncated(usize),
     #[error("unit at byte {at} uses undefined structure {id}")]
-    UnknownStructure { at: usize, id: u32 },
+    /// A unit names a structure id no earlier block defined.
+    UnknownStructure {
+        /// Byte offset of the unit.
+        at: usize,
+        /// The structure id.
+        id: u32,
+    },
     #[error("field `{structure}.{field}` has unsupported value type {type_id:#x}")]
+    /// A structure field of a value type this reader does not handle.
     UnknownValueType {
+        /// The structure's name.
         structure: String,
+        /// The field's name.
         field: String,
+        /// The value type code.
         type_id: u32,
     },
+    /// An encoded (token) string with an invalid character.
     #[error("bad encoded string at byte {0}")]
     BadEncodedString(usize),
     #[error("count {count} at byte {at} exceeds the remaining data")]
-    CountTooLarge { at: usize, count: u32 },
+    /// An array or string count larger than the data left.
+    CountTooLarge {
+        /// Byte offset of the count.
+        at: usize,
+        /// The count.
+        count: u32,
+    },
+    /// Data after the closing block.
     #[error("{0} bytes after the end marker")]
     TrailingBytes(usize),
 }

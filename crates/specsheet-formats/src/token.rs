@@ -6,6 +6,8 @@ use std::fmt;
 const ALPHABET: &[u8; 38] = b"\x000123456789abcdefghijklmnopqrstuvwxyz_";
 const MAX_LEN: usize = 12;
 
+/// A game token: up to 12 characters of `0-9`, `a-z` and `_`, packed
+/// base 38 into a `u64`.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Token(pub u64);
 

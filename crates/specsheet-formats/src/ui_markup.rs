@@ -8,20 +8,26 @@
 
 use std::fmt;
 
+/// One piece of UI markup: a tag or a run of text.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Node {
     /// An opening or standalone tag (`<img …>`, `<ret>`, `<align …>`).
     Open {
+        /// The tag name.
         name: String,
+        /// The attributes, in order.
         attrs: Vec<Attr>,
     },
     /// A closing tag (`</align>`).
     Close(String),
+    /// Text between tags.
     Text(String),
 }
 
+/// One `key=value` attribute of a tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Attr {
+    /// The attribute name.
     pub key: String,
     /// The raw token; empty for a bare key (`<nowrap>` style flags).
     pub value: String,
@@ -41,10 +47,12 @@ impl Node {
     }
 }
 
+/// A tag that does not parse.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MarkupError {
     /// Byte offset of the `<` that starts the bad tag.
     pub offset: usize,
+    /// What is wrong.
     pub message: &'static str,
 }
 

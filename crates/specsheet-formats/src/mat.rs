@@ -22,11 +22,14 @@ const WHAT: &str = "mat";
 /// A scalar, string or `{ … }` tuple value.
 #[derive(Clone, Debug, PartialEq)]
 pub enum MatValue {
+    /// A number or a quoted string, as written.
     Text(String),
+    /// The items of a `{ … }` tuple, as written.
     Tuple(Vec<String>),
 }
 
 impl MatValue {
+    /// The value as one number.
     pub fn as_f32(&self) -> Option<f32> {
         match self {
             MatValue::Text(t) => t.parse().ok(),
@@ -34,6 +37,7 @@ impl MatValue {
         }
     }
 
+    /// The value as numbers: a tuple's items, or a single number.
     pub fn as_floats(&self) -> Option<Vec<f32>> {
         match self {
             MatValue::Tuple(items) => items.iter().map(|i| i.parse().ok()).collect(),
@@ -41,6 +45,7 @@ impl MatValue {
         }
     }
 
+    /// The value as text.
     pub fn as_str(&self) -> Option<&str> {
         match self {
             MatValue::Text(t) => Some(t),
@@ -56,18 +61,23 @@ pub struct MatTexture {
     pub name: String,
     /// Path of the `.tobj`, absolute or relative to the material file.
     pub source: Option<String>,
+    /// The block's other attributes, in file order.
     pub attributes: Vec<(String, MatValue)>,
 }
 
+/// A parsed `.mat` material file.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Material {
     /// Shader effect, e.g. `eut2.truckpaint.rfx`.
     pub effect: String,
+    /// The material's attributes, in file order.
     pub attributes: Vec<(String, MatValue)>,
+    /// The texture blocks, in file order.
     pub textures: Vec<MatTexture>,
 }
 
 impl Material {
+    /// Parses a `.mat` file (both the `effect` and the older `material` form).
     pub fn parse(bytes: &[u8]) -> Result<Self, FormatError> {
         let text = String::from_utf8_lossy(bytes);
         let mut lexer = Lexer::new(&text);
@@ -121,6 +131,7 @@ impl Material {
         })
     }
 
+    /// The value of attribute `key`.
     pub fn attribute(&self, key: &str) -> Option<&MatValue> {
         self.attributes
             .iter()
@@ -128,6 +139,7 @@ impl Material {
             .map(|(_, v)| v)
     }
 
+    /// The texture block bound to shader slot `slot`.
     pub fn texture(&self, slot: &str) -> Option<&MatTexture> {
         self.textures.iter().find(|t| t.name == slot)
     }

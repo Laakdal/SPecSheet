@@ -15,14 +15,18 @@ const VISIBLE: &str = "visible";
 /// A look: for each material slot of the model, the material path to use.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Look {
+    /// The look's name, e.g. `default`.
     pub name: String,
+    /// Material path per material slot.
     pub materials: Vec<String>,
 }
 
 /// A declared part attribute (in game data this is `visible`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct AttributeDef {
+    /// The attribute's name.
     pub name: String,
+    /// The stored type code.
     pub kind: u32,
     /// Where this attribute's value sits inside a variant's value block, in bytes.
     pub offset: u32,
@@ -31,14 +35,20 @@ pub struct AttributeDef {
 /// A variant: one value per declared attribute, in declaration order.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Variant {
+    /// The variant's name, e.g. `default`.
     pub name: String,
+    /// One value per declared attribute.
     pub values: Vec<u32>,
 }
 
+/// A parsed `.pmd` model descriptor: looks, variants and part attributes.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pmd {
+    /// The looks, in file order.
     pub looks: Vec<Look>,
+    /// The variants, in file order.
     pub variants: Vec<Variant>,
+    /// The declared part attributes.
     pub attributes: Vec<AttributeDef>,
     /// One range per part, in the same order as the matching `.pmg`'s parts:
     /// the indices into `attributes` that belong to that part.

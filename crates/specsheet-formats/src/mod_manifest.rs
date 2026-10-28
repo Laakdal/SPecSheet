@@ -10,6 +10,7 @@ use std::fmt::Write;
 /// Errors produced while building a manifest.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum ManifestError {
+    /// The unit name is not a valid SII token.
     #[error("unit name `{0}` is not 1 to 12 characters of `a-z`, `0-9`, `_`")]
     InvalidUnitName(String),
 }
@@ -19,8 +20,11 @@ pub enum ManifestError {
 pub struct ModManifest {
     /// The unit name without its leading dot.
     pub unit_name: String,
+    /// `package_version`.
     pub package_version: String,
+    /// `display_name`, shown in the mod manager.
     pub display_name: String,
+    /// `author`.
     pub author: String,
     /// Mod-manager categories; the game falls back to defaults for invalid
     /// ones.

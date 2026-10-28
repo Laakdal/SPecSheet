@@ -25,20 +25,30 @@ const MAX_INCLUDE_DEPTH: usize = 16;
 /// Errors produced while reading SII text.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum SiiError {
+    /// The text does not follow the SII grammar.
     #[error("{file}:{line}: {message}")]
     Syntax {
+        /// The file being parsed.
         file: String,
+        /// 1-based line number.
         line: usize,
+        /// What was expected.
         message: String,
     },
+    /// An `@include` target could not be loaded.
     #[error("include `{include}` from `{file}` failed: {reason}")]
     Include {
+        /// The including file.
         file: String,
+        /// The included path.
         include: String,
+        /// Why loading failed.
         reason: String,
     },
+    /// Includes nest deeper than the limit, usually a cycle.
     #[error("include depth exceeded at `{0}` (cycle?)")]
     IncludeDepth(String),
+    /// The data is not SII text (no `SiiNunit`).
     #[error("`{0}` is not a text SII file")]
     NotText(String),
 }
@@ -46,6 +56,7 @@ pub enum SiiError {
 /// A parsed SII file: an ordered list of units.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SiiDocument {
+    /// The units, in file order.
     pub units: Vec<Unit>,
 }
 
@@ -64,23 +75,33 @@ impl SiiDocument {
 /// One `class : name { ... }` block.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Unit {
+    /// The unit's class, e.g. `accessory_addon_data`.
     pub class: String,
+    /// The unit's name, e.g. `chrome.scania.s_2016.s_mirror`.
     pub name: String,
+    /// The attributes, in file order.
     pub attributes: Vec<Attribute>,
 }
 
 /// How an attribute key addresses its value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Slot {
+    /// `key: value`.
     Scalar,
+    /// `key[]: value`, appended to the array.
     Append,
+    /// `key[n]: value`.
     Index(usize),
 }
 
+/// One `key: value` line of a unit.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Attribute {
+    /// The key without its array suffix.
     pub key: String,
+    /// How the key addresses its value.
     pub slot: Slot,
+    /// The value.
     pub value: Value,
 }
 
@@ -88,8 +109,11 @@ pub struct Attribute {
 /// `&hex` floats) are kept verbatim; typed accessors interpret them.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
+    /// A quoted string, unescaped.
     String(String),
+    /// A bare token: number, identifier, unit reference or `&hex` float.
     Token(String),
+    /// The items of a `( … )` tuple.
     Tuple(Vec<String>),
 }
 
@@ -108,14 +132,17 @@ impl Unit {
         self.get(key).and_then(Value::as_str)
     }
 
+    /// A scalar attribute as a float (decimal or `&hex`).
     pub fn get_f32(&self, key: &str) -> Option<f32> {
         self.get(key).and_then(Value::as_f32)
     }
 
+    /// A scalar attribute as an integer.
     pub fn get_i64(&self, key: &str) -> Option<i64> {
         self.get(key).and_then(Value::as_i64)
     }
 
+    /// A scalar `true`/`false` attribute.
     pub fn get_bool(&self, key: &str) -> Option<bool> {
         self.get(key).and_then(Value::as_bool)
     }
@@ -148,6 +175,7 @@ impl Unit {
 }
 
 impl Value {
+    /// The text of a string or token.
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Value::String(s) | Value::Token(s) => Some(s),
@@ -155,6 +183,7 @@ impl Value {
         }
     }
 
+    /// A token as a float (decimal or `&hex`).
     pub fn as_f32(&self) -> Option<f32> {
         match self {
             Value::Token(t) => parse_float(t),
@@ -162,6 +191,7 @@ impl Value {
         }
     }
 
+    /// A token as an integer.
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             Value::Token(t) => t.parse().ok(),
@@ -169,6 +199,7 @@ impl Value {
         }
     }
 
+    /// A `true`/`false` token.
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Value::Token(t) if t == "true" => Some(true),
@@ -207,6 +238,7 @@ pub fn parse_float(token: &str) -> Option<f32> {
 /// Resolves `@include` targets. Paths passed in are absolute game paths
 /// (`/def/...`) computed relative to the including file.
 pub trait IncludeLoader {
+    /// The bytes of the absolute game path `path`, or why they are missing.
     fn load(&self, path: &str) -> Result<Vec<u8>, String>;
 }
 
