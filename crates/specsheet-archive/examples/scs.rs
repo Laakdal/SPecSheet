@@ -4,6 +4,7 @@
 //!   cargo run --release --example scs -- ls <dir>
 //!   cargo run --release --example scs -- cat <file>
 //!   cargo run --release --example scs -- find <dir> <substring>
+//!   cargo run --release --example scs -- tex <file.tobj>   (image and sample records)
 
 use std::io::Write;
 
@@ -55,7 +56,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         ["cat", path] => std::io::stdout().write_all(&vfs.read(path)?)?,
         ["find", root, needle] => find(&vfs, root, needle)?,
-        _ => eprintln!("usage: scs ls <dir> | cat <file> | find <dir> <substring>"),
+        ["tex", path] => {
+            let texture = vfs.read_texture(path)?;
+            println!("{:?}
+{:?}", texture.image, texture.sample);
+            println!("{} decompressed bytes", texture.surfaces.len());
+        }
+        _ => eprintln!("usage: scs ls <dir> | cat <file> | find <dir> <substring> | tex <file>"),
     }
     Ok(())
 }
