@@ -113,10 +113,10 @@ impl MaterialExtension for TruckPaint {
 }
 
 /// What a `truckpaint` `.mat` contributes: the flavours its effect names
-/// and its specular inputs.
+/// that the paint uses (`airbrush` is the paint job's choice) and its
+/// specular inputs.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PaintSurface {
-    airbrush: bool,
     flipflake: bool,
     altuv: bool,
     specular: [f32; 3],
@@ -133,7 +133,6 @@ impl PaintSurface {
         let tokens: Vec<&str> = info.effect.trim_end_matches(".rfx").split('.').collect();
         let has = |token: &str| tokens.contains(&token);
         Some(Self {
-            airbrush: has("airbrush"),
             flipflake: has("flipflake") || has("flipflakeuv"),
             altuv: has("altuv"),
             specular: info.specular.unwrap_or(DEFAULT_SPECULAR),
@@ -182,10 +181,12 @@ fn srgb_to_linear(c: f32) -> f32 {
     }
 }
 
-/// The uniform for `surface` painted with `paint`. The variant is the union
-/// of the `.mat`'s flavours and the paint job's flags (Hypothesis: the spec
-/// guesses the engine appends flavours from the paint job, but many `.mat`s
-/// already name them). Texture flags are set when the textures are bound.
+/// The uniform for `surface` painted with `paint`. `flipflake` and `altuv`
+/// are the union of the `.mat`'s flavours and the paint job's flags
+/// (Hypothesis: many `.mat`s already name them). Livery or colour mask is
+/// the paint job's `airbrush` alone: a `.mat` naming `airbrush` (the MAN
+/// TGX Euro 6 cab) still shows colour-mask jobs as colour masks. Texture
+/// flags are set when the textures are bound.
 pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform {
     let base = paint.base_color();
     let mut uniform = PaintUniform {
@@ -205,7 +206,7 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
         uniform.flags |= ALTUV;
     }
     if let Some(mask) = &job.mask {
-        let airbrush = job.airbrush || surface.airbrush;
+        let airbrush = job.airbrush;
         uniform.flags |= if airbrush { AIRBRUSH } else { COLORMASK };
         let [r, g, b] = job.mask_colors.map(|c| rgb_w(c.unwrap_or(base), 1.0));
         (uniform.mask_r, uniform.mask_g, uniform.mask_b) = (r, g, b);
@@ -379,7 +380,6 @@ mod tests {
 
     fn surface(effect: &str) -> PaintSurface {
         PaintSurface {
-            airbrush: effect.contains("airbrush"),
             flipflake: effect.contains("flipflake"),
             altuv: effect.contains("altuv"),
             specular: [0.5; 3],
@@ -435,8 +435,27 @@ mod tests {
             alternate_uvset: true,
             ..paint.clone()
         };
-        let u = paint_uniform(&surface("truckpaint.airbrush"), &Paint::Job(&livery));
-        assert_eq!(u.flags, AIRBRUSH | ALTUV);
+        let u = paint_uniform(&surface("truckpaint"), &Paint::Job(&livery));
+        assert_eq!(u.flags, COLORMASK | ALTUV);
+        let airbrush = PiecePaint {
+            airbrush: true,
+            ..paint.clone()
+        };
+        let u = paint_uniform(&surface("truckpaint"), &Paint::Job(&airbrush));
+        assert_eq!(u.flags, AIRBRUSH);
+    }
+
+    #[test]
+    fn the_paint_job_not_the_mat_decides_livery_or_colour_mask() {
+        // The MAN TGX Euro 6 cab's .mat names `airbrush`, yet Driving
+        // Academy is a colour-mask job: drawn as a livery, its channel
+        // weights showed as red and green stripes.
+        let academy = job(Some(Mask::Texture("/m.tobj".to_owned())));
+        let u = paint_uniform(
+            &surface("truckpaint.tsnmapuv.airbrush.altuv"),
+            &Paint::Job(&academy),
+        );
+        assert_eq!(u.flags, COLORMASK | ALTUV);
     }
 
     #[test]
@@ -481,7 +500,7 @@ mod tests {
             reflection_texture: None,
         };
         let s = PaintSurface::of(&info).expect("paint");
-        assert!(s.airbrush && s.altuv && !s.flipflake);
+        assert!(s.altuv && !s.flipflake);
         assert_eq!((s.fresnel, s.shininess), (0.3, DEFAULT_SHININESS));
         info.paintable = false;
         assert_eq!(PaintSurface::of(&info), None);
