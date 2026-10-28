@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 - **Paint jobs render like the game's:** two-tone colour masks, airbrush liveries (logos, stripes, the 770 designs) and metallic flip colours that shift with the viewing angle. Each part takes its own paint, and the game's baked shading on painted panels is applied, so paint looks darker than before. The lighting is still an approximation. Metallic flakes are wired in but not visible yet.
+- **Alternate-UV paint jobs land where the game puts them:** decals such as the Bulgarian Flag Decal on the Actros 2014 now show on the door; paint uses the model's second UV set, and the third for alternate-UV jobs.
 - **Locked paint colours stay locked:** a paint job's locked colours now win over a preset's or save's own colours, as in the game.
 - **Interior view:** the Interior and Interior Accessories tabs now put you in the driver's seat, with the truck's full cockpit and your interior accessories (steering wheel, curtains, cab toys…) in place. Drag to look around. Interior accessories now have pins.
 - **The game's own tuning screen:** the app now draws ETS2's truck configuration screen from the game's layout files, templates, colours and icons in your install:
