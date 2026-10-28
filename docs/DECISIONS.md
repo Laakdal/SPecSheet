@@ -190,6 +190,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - An extraction is refused before anything is written when the declared sizes add up to more than a limit (64 GiB by default, set by the user), and stops if the bytes read pass it: entries that share data can declare far more than the archive holds. An entry is still held in memory whole (at most 2 GiB for ZIP); streaming it to disk needs a reader API we do not have yet.
   - The code is our own. From Extractor we take facts only (which paths exist, which naming rules hold), each confirmed on our own install before use (`research/evidence/`), as for TruckLib.
   - Extracted files never enter this repository; the pre-commit guard already rejects game files.
+  - The scan of a mod folder for name candidates may be cached in a folder the caller names (the tools use `%LOCALAPPDATA%\dev.specsheet.app\mod-scan`). A cache file holds only paths, is keyed by a package's name, size and modification time, and is safe to delete.
 - **Alternatives:**
   - Listing only. Not chosen: the user wants files on disk to inspect and edit.
   - Rewriting references to renamed files, as Extractor does. Deferred: it edits file contents and needs its own decision.
