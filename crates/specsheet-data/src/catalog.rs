@@ -152,7 +152,8 @@ pub fn load_catalog(fs: &GameFs, truck: &TruckId) -> Result<(TruckCatalog, Vec<L
 }
 
 /// Gives every interior the exterior-view model of its right-hand-drive
-/// twin as `exterior_uk` / `variant_uk` (finding F10). The twin lives in the
+/// twin as `exterior_uk` / `variant_uk`, and links the two as each other's
+/// `drive_twin` (finding F10). The twin lives in the
 /// same directory and its file name is the interior's with one extra `uk`
 /// word (`uk_a.sii`, `a_uk.sii`, `standard_uk_low.sii` for `standard_low`).
 /// This pairs all 219 interiors of 1.60 one-to-one.
@@ -166,7 +167,7 @@ fn pair_uk_interiors(accessories: &mut [Accessory]) {
     };
     // EU key (directory, words without one `uk`) -> UK twin's model and variant.
     type Key = (String, Vec<String>);
-    let mut twins: HashMap<Key, (Option<String>, Option<String>)> = HashMap::new();
+    let mut twins: HashMap<Key, (Option<String>, Option<String>, AccessoryId)> = HashMap::new();
     for accessory in accessories
         .iter()
         .filter(|a| a.kind == AccessoryKind::Interior)
@@ -182,6 +183,7 @@ fn pair_uk_interiors(accessories: &mut [Accessory]) {
                 (
                     accessory.model.exterior.clone(),
                     accessory.model.variant.clone(),
+                    accessory.id.clone(),
                 ),
             );
         }
@@ -195,6 +197,17 @@ fn pair_uk_interiors(accessories: &mut [Accessory]) {
         };
         accessory.model.exterior_uk = twin.0.clone();
         accessory.model.variant_uk = twin.1.clone();
+        accessory.drive_twin = Some(twin.2.clone());
+    }
+    // The UK units point back at their EU twin.
+    let back: HashMap<AccessoryId, AccessoryId> = accessories
+        .iter()
+        .filter_map(|a| Some((a.drive_twin.clone()?, a.id.clone())))
+        .collect();
+    for accessory in accessories.iter_mut() {
+        if let Some(eu) = back.get(&accessory.id) {
+            accessory.drive_twin = Some(eu.clone());
+        }
     }
 }
 
@@ -465,6 +478,9 @@ fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Option<Accesso
             .and_then(|v| v.as_floats())
             .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok()),
         wheel: wheel_part(unit),
+        left_hand_traffic: kind == AccessoryKind::Interior
+            && unit.get_bool("left_hand_traffic").unwrap_or(false),
+        drive_twin: None,
     })
 }
 
@@ -533,6 +549,8 @@ mod tests {
             requires: Vec::new(),
             base_color: None,
             wheel: None,
+            left_hand_traffic: path.contains("uk"),
+            drive_twin: None,
         }
     }
 
@@ -558,6 +576,9 @@ mod tests {
         assert_eq!(uk(0), (Some("/ext.pmd"), Some("s_h_uk")), "uk_ prefix");
         assert_eq!(uk(2), (Some("/slp.pmd"), Some("cabin_uk")), "_uk suffix");
         assert_eq!(uk(4), (Some("/low_uk.pmd"), Some("uk")), "uk in the middle");
+        assert_eq!(items[0].drive_twin, Some(items[1].id.clone()));
+        assert_eq!(items[1].drive_twin, Some(items[0].id.clone()), "both ways");
+        assert_eq!(items[6].drive_twin, None);
         assert_eq!(uk(6), (None, None), "no twin");
     }
 

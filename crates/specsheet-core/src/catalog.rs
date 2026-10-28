@@ -91,6 +91,13 @@ pub struct Accessory {
     /// Wheel parts only: how the part takes part in the wheel assembly.
     #[serde(default)]
     pub wheel: Option<WheelPart>,
+    /// An interior for left-hand traffic (`left_hand_traffic: true`), so
+    /// right-hand drive. Choosing one sets the truck's drive side (F10).
+    #[serde(default)]
+    pub left_hand_traffic: bool,
+    /// The same interior for the other drive side (F10).
+    #[serde(default)]
+    pub drive_twin: Option<AccessoryId>,
 }
 
 impl Accessory {

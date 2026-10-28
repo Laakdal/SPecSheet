@@ -197,6 +197,8 @@ mod tests {
             requires: Vec::new(),
             base_color: None,
             wheel: Some(wheel),
+            left_hand_traffic: false,
+            drive_twin: None,
         }
     }
 

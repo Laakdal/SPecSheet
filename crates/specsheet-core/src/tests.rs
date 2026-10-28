@@ -23,6 +23,8 @@ fn accessory(id: &str, slot: &str, kind: AccessoryKind) -> Accessory {
         requires: Vec::new(),
         base_color: None,
         wheel: None,
+        left_hand_traffic: false,
+        drive_twin: None,
     }
 }
 
