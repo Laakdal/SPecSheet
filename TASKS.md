@@ -54,6 +54,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 - [x] Right-hand-drive interiors: UK twins paired for all 219 units (F10).
 - [x] Volvo "FH6" name and missing side mirrors explained as game data (F12).
+- [x] Paint-job data model (F15): every paint job's masks, colours, flags, flake/flip and per-part units (token-keyed files, `acc_list` resolved), all six preset colours as `PaintOverride`, family re-pick on a cabin change, and `piece_paint` per placed part; real-install tests cover all 19,998 paint jobs, masks and the 26 presets.
 
 - [x] **The game's truck configuration screen** (`truck.config`) is drawn from the install's layouts, templates, colours and icons (`docs/app/ui.md`):
   - the markup layout engine (`specsheet-data::ui::flow`);
@@ -83,7 +84,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure and whether UI scenes use `ui_vehicle_reflection.tobj` (REA), then normal maps and `texture_mult`.
-2. **Paint jobs:** masks, textures, flake/flip colours and the `paint_job` slot UI.
+2. **Paint jobs:** the data side is done (F15, `specsheet_data::paint::piece_paint`). Next: render masks, flakes and flip in `crates/specsheet` (needs a clean-room truckpaint spec, D13), then the `paint_job` slot UI and colour picker.
 3. **Interior:** interior models and an interior camera; `hide_in`.
 4. **Wheels:** whether the tuning screen shows lift axles raised or lowered (reference screenshot or REA), the inner twin-tyre bead, `wheel_shift`. Axle variants are done (F13).
 5. **UI fidelity:** the game screen is drawn from its layouts (see Done). Next:

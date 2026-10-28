@@ -25,6 +25,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 - **Reflections:** the truck's reflection cube from the game (e.g. `fuzzy_reflection.tobj`) replaces the grey gradient as the environment map, so chrome and paint reflect the game's own environment.
+- **Paint-job data:** every paint job now loads its mask, mask colours, airbrush/alternate-UV/flip-flake flags, flake and flip parameters and per-part masks; presets keep all six paint colours, a cabin change keeps the paint job's design, and `specsheet_data::paint::piece_paint` gives the effective paint of each placed part (not rendered yet).
 - Addon hookups (accessories on accessories: aux lights, beacons, horns, small lights): catalogue, configuration rules, placement on the host's `slot_NN` positions, and loading from game configs (`load_vehicle_config`).
 - **Archives:** read-only HashFS v2 (`.scs`) reader.
   - CityHash64 v1.0.3 path hashing.
