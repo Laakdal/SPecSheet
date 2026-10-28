@@ -58,8 +58,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ["find", root, needle] => find(&vfs, root, needle)?,
         ["tex", path] => {
             let texture = vfs.read_texture(path)?;
-            println!("{:?}
-{:?}", texture.image, texture.sample);
+            println!(
+                "{:?}
+{:?}",
+                texture.image, texture.sample
+            );
             println!("{} decompressed bytes", texture.surfaces.len());
         }
         _ => eprintln!("usage: scs ls <dir> | cat <file> | find <dir> <substring> | tex <file>"),
