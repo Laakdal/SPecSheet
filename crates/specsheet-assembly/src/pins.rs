@@ -38,6 +38,7 @@ const FORWARD: [f32; 3] = [0.0, 0.0, -1.0];
 /// A pin's base point: a locator in truck space.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PinBase {
+    /// Truck space (x right, y up, -z forward).
     pub position: [f32; 3],
     /// Rotation quaternion in `(w, x, y, z)` order.
     pub rotation_wxyz: [f32; 4],
@@ -59,6 +60,7 @@ pub struct PinBases {
 /// One dot on the truck.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pin {
+    /// The slot the pin opens.
     pub slot: SlotId,
     /// Truck space (x right, y up, -z forward).
     pub position: [f32; 3],

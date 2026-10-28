@@ -15,6 +15,8 @@
 //! * Pin bases: each exterior slot's first matching locator and every wheel
 //!   position, from which [`crate::pins`] builds the game's pins (F5).
 
+#![warn(missing_docs)]
+
 mod base;
 mod cockpit;
 mod hookups;
@@ -47,16 +49,25 @@ use wheels::wheel_placements;
 /// One model instance of the assembled truck.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Placement {
+    /// The slot the accessory fills.
     pub slot: SlotId,
+    /// The placed accessory.
     pub accessory: AccessoryId,
+    /// The `.pmd` path.
     pub model: String,
+    /// The look to draw.
     pub look: Option<String>,
+    /// The variant to draw.
     pub variant: Option<String>,
+    /// Where the model sits, in truck space.
     pub transform: Transform,
 }
 
+/// The assembled truck: every placed model plus what the tuning screen needs
+/// around it.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Assembly {
+    /// The exterior models.
     pub placements: Vec<Placement>,
     /// The selected interior's full cockpit, for the interior camera; not
     /// part of the exterior view. Its transform is the driver's eye point.
@@ -66,6 +77,7 @@ pub struct Assembly {
     pub interior_parts: Vec<Placement>,
     /// Hookup positions offered by each placed host accessory, by slot.
     pub hookup_positions: BTreeMap<SlotId, Vec<HookupPosition>>,
+    /// Which addon slots the base models can host.
     pub availability: SlotAvailability,
     /// Where the exterior pins start from (F5).
     pub pin_bases: PinBases,
@@ -76,8 +88,10 @@ pub struct Assembly {
 /// Right-hand-drive (UK) or left-hand-drive assembly.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Drive {
+    /// Left-hand drive, the default.
     #[default]
     Left,
+    /// Right-hand drive (UK).
     Right,
 }
 
