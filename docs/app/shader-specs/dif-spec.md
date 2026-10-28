@@ -116,6 +116,8 @@ Every vector below is in eye (view) space. World space works the same, except fo
 | fog | Two fog colours, a direction, density, start distance, height plane and gradient (§5.7) |
 | material tag | An engine bit, 1 = interior. It only steers interior light masks in the deferred pass. Ignore it. |
 
+`Camb`, `Aenv`, `Csun_d`, `Csun_s` and the aurora colour come from the CPU's global scene light block (`eutpp_scene_light`). The block's other fields have no shader input, and the reflection term carries no light colour: see [tonemap.md](tonemap.md) §8.
+
 ## 4. Texture lookups
 
 All lookups use ordinary filtered sampling with hardware mip selection and the sampler state of the `.tobj`. Nothing is selected by roughness.

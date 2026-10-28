@@ -114,7 +114,7 @@ When the histogram is empty, both bins are 0. Every pass read for this spec uses
 | `low_intensity_factors (a, b)`, `low_intensity_color` | Low-light tint (§4.2) | (H) `a` = `low_intensity_minimum`, `b` = 1/(`low_intensity_maximum` − `low_intensity_minimum`) |
 | `color_correction` (`.xyz`, `.w`) | Balance offset, saturation (`col` flavour) | (H) `color_balance`, `color_saturation`. The grayscale climates have saturation 0, which fits. |
 
-The scene file's `pre_exposure` is not a uniform of any deferred shader (C: searched all 716 deferred GLSL fragment shaders). Where it enters is U. (H) It goes into the CPU-side light colours or `T0.x`.
+The scene file's `pre_exposure` is not a uniform of any deferred shader (C: searched all 716 deferred GLSL fragment shaders). Where it enters is U; §8 gives the two candidate placements and their consequences.
 
 ### 4.2 Order of operations (C)
 
@@ -232,3 +232,64 @@ Next step: trace `deferred_param_tonemap_params` and `deferred_param_eye_adapt_f
   - Identity curve: in every segment `(α, β) = (1, 32)`, `(γ, δ) = (0, 1)`, `(μ, ν) = (1, −32)`, with `W = 1`, `T0.w = 0`, no bloom, low-light factors `a = −1, b = 1` (so `f = 1` always) and `k = 1`. Any colour with `max3 ≤ 1` must come out unchanged, up to the `ε` floor per channel (case A).
   - Fixed exposure: `F0 = (log2 5.555, log2 5.555, 0, 0)`. `E` must be 5.555 for every histogram.
 - **Numerics.** Keep the `ε`, 1e−5, 1e−4 and 0.05 floors exactly. They decide black and near-black behaviour.
+
+## 8. Scene light block (`eutpp_scene_light`)
+
+The CPU fills this block; its fields and UI values are in `exposure-tonemap-data.txt` §6–7. **No shader declares any of its fields** (C). The scan covered:
+- the engine and material uniform table (`/effect/def/uniforms.sui`) and the other interface tables;
+- all 716 deferred GLSL fragment objects;
+- the forward and G-buffer objects of `dif.spec.add.env` and `truckpaint`.
+
+The block reaches the GPU only through the combined light inputs below, after CPU arithmetic the shaders cannot show.
+
+### 8.1 What the shaders receive (C)
+
+| Input | Contents | Use |
+|---|---|---|
+| forward light row 0 `(rgb, w)` | ambient `Camb`, reflection visibility `Aenv` | `Ld = Camb + Csun_d·NL`; reflection × `sat(Aenv)` |
+| forward rows 1–3 | sun direction, sun diffuse `Csun_d`, sun specular `Csun_s` | forward sun term |
+| deferred sun light: `ambient_environment (rgb, w)`, `diffuse`, `specular` (spec variants) | the same quantities | `Ld = Camb·a + Csun_d·NL·vis`; `Evis = sat(Aenv·occ)` ([dif-spec.md](dif-spec.md) §7.4) |
+| deferred `aurora_diffuse`, aurora direction | aurora colour | deferred sun pass only: adds `C_aur·sat(N·L_aur)` when the direction's squared length is over 0.1. Neither forward object read has an aurora term. |
+| `texture_reflection_modulator` (`g`) | per-draw reflection scalar | reflection × `g` |
+| `additional_ambient_color` | `Cadd` | adds `Cadd·ka` |
+
+Two properties decide where any pre-exposure can go (C):
+- The reflection term (`Cenv·g·…·sat(Aenv)` or `sat(Aenv·occ)`) contains **no light colour**. Scaling `Camb`, `Csun_d` and `Csun_s` leaves reflections unchanged. (H) Emissive and lamp outputs behave the same way; they were not read.
+- `occ` is a ratio of luminances of `Csun_d` and `Camb`, so a common scale on the lights cancels inside it.
+
+### 8.2 Field mapping
+
+| Field (UI value) | Effect |
+|---|---|
+| `ambient`, `diffuse`, `specular` | Become `Camb`, `Csun_d`, `Csun_s`. (H, strong) These are the only light-colour inputs, and the triplets correspond one to one. |
+| `environment` (`light_environment`) | Becomes `Aenv`, the 4th component of the ambient row. (H, strong) The deferred name is `ambient_environment`, and it is the only environment scalar. |
+| `environment_conditional_mult` (1) | No shader input (C). (H) Multiplies `Aenv` on the CPU. |
+| `diffspec_conditional_mult` (1) | No shader input (C). (H) Multiplies `Csun_d` and `Csun_s` on the CPU. |
+| `light_source_visibility` (1) | No shader input (C). (H) A sun visibility multiplying the sun terms on the CPU. Inside the shader, sun visibility is only the deferred clip-plane, shadow and interior factors. |
+| `aurora_diffuse` | (H, strong) Becomes the deferred aurora colour. |
+| `limited_pre_exposure` (0.0973 on the tuning screen, 1 in the world) | No shader input (C). Where the CPU applies it is U (§8.3). |
+| `ec_adjustment` (0) | No shader input (C). (H) An exposure compensation in stops, folded into `T0.x` or the `F0` limits. |
+
+### 8.3 Pre-exposure placements and their consequences
+
+The shaders cannot say where `limited_pre_exposure = p` is applied (U). They do fix what each placement would do:
+- **Into the light colours** (`Camb`, `Csun_d`, `Csun_s`, presumably `Cadd`, all × p):
+  - Lit diffuse and specular scale by p; reflections and emissive surfaces do not.
+  - With adaptation active and within its limits, `E` grows by about 1/p. Lit surfaces then look the same, while reflections and emissives brighten by 1/p relative to them.
+  - With a fixed exposure, lit surfaces dim by p.
+- **Into the exposure** (`T0.x` or `E` × p): every term scales together.
+
+Next step: trace the readers of block offset `+0x48` into the per-frame constant upload (F16).
+
+### 8.4 Exposure modes, compensation, debug overlay
+
+- **One exposure mode (C).** `def.adapt` always meters the histogram. No "sun light value only" switch or exposure-compensation input exists in `def.adapt`, `def.tonemap*` or the bloom passes, and `F1.zw` is unused.
+- **Both settings are CPU-side (H).** Two shader-compatible mechanisms:
+  - **Sun-only exposure:** set `s_min = s_max` = the wanted stops with `g_lo = g_hi = 0`. §3.2 then returns that exposure whatever the histogram holds, the same way the `black`/`integrity` climates fix 5.555.
+  - **Compensation:** multiply `T0.x` by `2^ec`, or shift both limits.
+- **HDR debug overlay (`def.hdr.overlay`, C):**
+  - It draws `histogram_params[0]` as a pixel rectangle `(x, y, w, h)`: the metering area of §3.1.
+  - It tests the stops `log2(1/L)` against `F0.x` and `F0.y`, so the limits live in the same stops domain as `s`.
+  - It marks the bin of `1/E` as the effective middle grey.
+  - It flags outputs whose `value/W` is below 3.0329e−4 or above 0.99110. These are approximately the linear values of 8-bit sRGB codes 1 and 254. So `W` is display white, and the output is quantised as 8-bit sRGB (supports §4.6).
+  - Content drawn without the tonemap is scaled by a `ui_brightness_scale` (value U).

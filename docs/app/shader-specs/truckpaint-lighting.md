@@ -68,6 +68,8 @@ The scene supplies:
 - `D_sun` and `S_sun`: the sun's diffuse and specular colours;
 - `A_add`: an additional ambient colour.
 
+The CPU derives these from the global scene light block. The block's other fields (`limited_pre_exposure`, the conditional multipliers, `ec_adjustment`) never reach this shader as inputs, and the reflection `E` takes no light colour: see [tonemap.md](tonemap.md) §8.
+
 With `H = normalize(V + L)`, `n_l = sat(N·L)` and `n_h = sat(N·H)`:
 
 - specular lobe: `σ = (n_h > 0 ? n_h^p : 0) · sat(10·n_l)`. This is plain Blinn-Phong with no normalisation factor; the `sat(10·n_l)` gate fades it out at the terminator.
