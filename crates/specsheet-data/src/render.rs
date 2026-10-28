@@ -244,7 +244,8 @@ pub struct TextureData {
 
 /// A cube texture ready for upload: six faces in their stored order, each a
 /// tightly packed mip chain. The order is taken to be +x, −x, +y, −y, +z, −z
-/// (the DDS convention; Hypothesis, see `docs/formats/textures.md`).
+/// (the DDS convention; y Confirmed, x/z mirroring Unknown, see
+/// `docs/formats/textures.md`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct CubeTextureData {
     pub format: TextureFormat,

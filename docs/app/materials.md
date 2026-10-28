@@ -32,9 +32,9 @@ Glass, decals, lamps and paint keep their own rules.
 - `viewer::ReflectionCube` waits until every truck model has loaded, then counts the `texture_reflection` of the truck's reflective materials and takes the most common cube. For the Scania S this is `/material/environment/fuzzy_reflection/fuzzy_reflection.tobj`.
 - `render::load_cube_texture` loads all six faces on the async pool; `assets::cube_image` validates them: six square, power-of-two faces with identical mip chains, BC dimensions a multiple of 4, BC support on the GPU.
 - The cube goes on the camera as Bevy's `GeneratedEnvironmentMapLight`, which filters it on the GPU. Until it is ready, or when it fails validation, the hemispherical gradient stays.
-- Face order is taken as stored (+x, −x, +y, −y, +z, −z; Hypothesis).
+- Face order is taken as stored: +x, −x, +y, −y, +z, −z, the order wgpu expects. Sky up and ground down are Confirmed ([../formats/textures.md](../formats/textures.md)); x/z mirroring is Unknown.
 - **Exposure (ours):** the cube's mean luminance, from its smallest mip, is scaled to the gradient's (about 0.5), clamped to ×0.25–×4. The game's cubes are dark, and the base cubes hit the ×4 cap. How the game itself exposes them is **Unknown** (REA queued).
-- The garage scene's own materials use `/material/environment/ui_vehicle_reflection.tobj`, which no truck material names. Whether the game substitutes it for vehicle reflections in UI scenes is **Unknown** (REA queued).
+- The garage scene's own materials use `/material/environment/ui_vehicle_reflection.tobj`, which no truck material names. It is a flat grey cube: all six faces are (0.258, 0.246, 0.210) (`research/evidence/reflection-cubes.txt`). Whether the game substitutes it for vehicle reflections in UI scenes, which would give flat reflections on the tuning screen, is **Unknown** (REA queued).
 
 See [scenes.md](scenes.md) for the environment strength.
 

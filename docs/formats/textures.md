@@ -44,7 +44,9 @@ Surface data is a DirectStorage GDeflate stream:
 - `u32` tile offsets, where entry 0 is the compressed size of the last tile;
 - the 64 KiB tiles.
 
-After decompression, each mip level starts on the image alignment, and each row (each block row for BC formats) on the pitch alignment. Padding goes only *before* a mip or a row, so the data ends with the last row, unpadded. Mip levels are tightly ordered; faces are face-major (all mips of face 0 first: Hypothesis, the DDS order, which a size check cannot distinguish).
+After decompression, each mip level starts on the image alignment, and each row (each block row for BC formats) on the pitch alignment. Padding goes only *before* a mip or a row, so the data ends with the last row, unpadded. Mip levels are tightly ordered; faces are face-major (all mips of face 0 first, the DDS order; a size check cannot distinguish this, but read face-major, every reflection cube gives six coherent faces).
+
+**Cube face order** (`research/evidence/reflection-cubes.txt`): +x, −x, +y, −y, +z, −z with +y up, the D3D/DDS order. Confirmed for y: in every reflection cube, face 2 is the bright, blue sky and face 3 the dark ground. Whether x and z are mirrored relative to wgpu is **Unknown**.
 
 **Verification:** the `texture_layout` example matches the decompressed size exactly for every sampled texture whose format `pixel_layout` knows. `PackedTexture::unpack` follows the same model.
 
