@@ -179,3 +179,29 @@ enter the lighting or tonemap is therefore shader code (D13 spec scope).
 Debug strings in the executable describe automatic exposure from the scene
 histogram, with an option to "use only sun light value for exposure", and an
 "Exposure compensation" setting.
+
+8. Light-colour uniforms and two non-answers (static + one Ghidra run)
+- FUN_1413c9f90 also registers the light uniforms, among them
+  def_light_diffuse (cb 0x1413caf80), def_light_specular (0x1413caf10),
+  def_light_ambient_environment (0x1413caff0),
+  deferred_param_additional_ambient_color (0x1413c7eb0) and
+  def_light_ambient_light_directional_effect_strength (0x1413cb3c0).
+- def_light_diffuse and def_light_ambient_environment copy raw values from a
+  light object L (render context +0x18, then +0x58; skipped when its flag
+  word lacks 0x800 or L is not live):
+    def_light_diffuse = L+0x70..0x78 (vec3);
+    def_light_ambient_environment = L+0x60..0x6c (vec4: ambient rgb +
+    environment in w, matching the spec's ambient.w).
+  So whatever scales the light colours (limited_pre_exposure among others,
+  per the spec) does it when L is filled, not in the callbacks.
+- No function that loads the eutpp_scene_light pointer (0x1434e8258) also
+  writes L's colour offsets: the hand-over goes through a copy or a
+  virtual call (Unknown).
+- Ghidra on 0x14045dd90 (ev_8c2b1139b62f6a16669810a446f40f15951d4c214169fa1e1c8120abc1923b8a):
+  a constructor that zeroes a render object (including +0x1d4..+0x24c), with
+  seven callers. It is not the tonemap filler; offset matching alone misled
+  the static triage. 0x14086f430, which block-copies into the same offsets,
+  computes bounds with sin/cos (shadow or culling setup), so it is not the
+  filler either.
+Still open: which code fills L and R from eutpp_scene_light and sun_profile,
+i.e. whether limited_pre_exposure multiplies the light colours or the exposure.
