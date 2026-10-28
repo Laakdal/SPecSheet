@@ -13,22 +13,24 @@ How the app draws game materials. The effect files themselves are described in [
 | `add` not followed by `env` (e.g. `dif.lum.add`) | `Additive` | `AlphaMode::Add` (light shafts, glows) |
 | `a` | `AlphaTest` | `AlphaMode::Mask(0.5)` |
 | `truckpaint` | `paintable` | the truck paint material (below) |
+| `dif.spec…` (not paint, lamp, additive or `mult`) | — | the `dif.spec` material (below) |
 | `lamp`, `lum`, `light` | `emissive` | emissive = base texture × 40 |
 | `decal`, `over` | `decal` | `depth_bias` 8 |
-| an `env_factor` on an opaque or cut-out, non-paint, non-lamp material | `env_factor`, `shininess` | reflective metal (below) |
+| an `env_factor` on an opaque or cut-out material outside the paint and `dif.spec` materials (e.g. `baked.spec.add.env`, 20 uses) | `env_factor`, `shininess` | reflective metal (below) |
 
-**Reflective materials (chrome, polished metal).** The game draws chrome as a dark `diffuse` (about 0.21) plus an environment reflection scaled by `env_factor` (about 0.98), with `shininess` 70 and a `texture_reflection` cube (`research/evidence/material-survey.txt`). `assets::reflective_surface` turns that into PBR:
+**Reflective stand-ins.** The game draws chrome as a dark `diffuse` (about 0.21) plus an environment reflection scaled by `env_factor` (about 0.98), with `shininess` 70 and a `texture_reflection` cube (`research/evidence/material-survey.txt`). The `dif.spec` material does that itself; for the few reflecting materials still on a stand-in, `assets::reflective_surface` turns it into PBR:
 - metallic = the luminance of `env_factor`, clamped to 0–1;
 - base colour = `diffuse` blended towards the `env_factor` colour by the same amount, so chrome becomes a bright metal and a barely reflective part stays close to its diffuse;
 - perceptual roughness = `(2 / (shininess + 2))^¼`, the GGX roughness matching a Blinn-Phong exponent (70 → 0.41), clamped to at least 0.089.
 
-Glass, decals and lamps keep their own rules; paint has its own material.
+Glass, decals and lamps keep their own rules; paint and `dif.spec` have their own materials.
 
 - Colours in `.mat` (`diffuse`, `env_factor`) and paint jobs (`base_color`) are linear RGB, and are used as such. Paint values such as Coffee Brown (0.034, 0.023, 0.014) only make sense as linear. Textures flagged `_SRGB` are uploaded as `*UnormSrgb` formats.
-- `MaterialInfo` also carries `specular` and `fresnel`; only the paint material uses them. Per `.mat`, only `texture_base` is uploaded. Normal maps and `texture_mult` (baked AO) are ignored; paint masks and flake noise come from the paint job.
-- Other materials use metallic 0.1 and roughness 0.6.
+- `MaterialInfo` also carries `specular`, `fresnel` and `additional_ambient` for the game materials. Per `.mat`, the stand-in uploads only `texture_base`; the game materials also load the `.mat`'s reflection cube (`render::GameTextures`). Normal maps and `texture_mult` (baked AO) are ignored; paint masks and flake noise come from the paint job.
+- Other stand-ins use metallic 0.1 and roughness 0.6.
 
 **Environment map (the game's reflection cube).**
+- It lights the stand-ins only; the game materials sample their own `.mat` cube.
 - `viewer::ReflectionCube` waits until every truck model has loaded, then counts the `texture_reflection` of the truck's reflective materials and takes the most common cube. For the Scania S this is `/material/environment/fuzzy_reflection/fuzzy_reflection.tobj`.
 - `render::load_cube_texture` loads all six faces on the async pool; `assets::cube_image` validates them: six square, power-of-two faces with identical mip chains, BC dimensions a multiple of 4, BC support on the GPU.
 - The cube goes on the camera as Bevy's `GeneratedEnvironmentMapLight`, which filters it on the GPU. Until it is ready, or when it fails validation, the hemispherical gradient stays.
@@ -38,7 +40,23 @@ Glass, decals and lamps keep their own rules; paint has its own material.
 
 See [scenes.md](scenes.md) for the environment strength.
 
-This is an approximation, not the game's shaders.
+The stand-ins are an approximation, not the game's shaders.
+
+## `dif.spec` (`eut2.dif.spec*`)
+
+`render/difspec.{rs,wgsl}` draws the family from [shader-specs/dif-spec.md](shader-specs/dif-spec.md) (D13), on the shared lighting module (`render/game_lighting.wgsl`, see "Lighting" under truck paint):
+- **Surface (§5.3):** albedo = base texture × `diffuse` × 2 × vertex colour. The base alpha is the specular mask: plain variants use `sat(ms·B.a + mb)·specular`, `weight` uses `B.a · specular · 2 × vertex colour`.
+- **Sun (§5.4):** unnormalised Blinn-Phong with `shininess`, gated by `sat(10·N·L)`, or `N·L` for `weight`.
+- **Reflection (§5.5), `add.env` and `nofresnel`:** the `.mat`'s own `texture_reflection` × `env_factor` (× 2 × vertex colour with `weight`) × base alpha × fresnel × `sat(light_environment)`. The fresnel is linear, `sat(fb + fs·(1 − N·E))` from `fresnel` (bias, scale); `nofresnel` uses 1.
+- **Blending (§6):** `a` discards below 0.05; `over` blends with the lit colour and the base alpha; `decal` keeps the stand-in's depth bias.
+- **Defaults** for absent attributes, from the game's material-input table (§3.1): `specular` 1, `shininess` 4, `env_factor` 1, `fresnel` (0.2, 0.9), `additional_ambient` 0.
+- **Not drawn yet:** normal maps (`tsnmap`, `tsnmapuv`, `tsnmapuv2`; they need tangents), `oclu` (its texture on UV1 is ignored), and the `asafew` mask stretch.
+
+Ours, each a Hypothesis:
+- g, the cube brightness: 1. (ms, mb), the specular-mask remap: (1, 0).
+- Vertex alpha counts in the specular mask, since Bevy multiplies it into the base colour; the spec uses the base alpha alone there. Measured: 99.84 % of the family's 27.4 M vertices have alpha ≥ 250/255.
+
+Seen working (MAN TGX Euro 6, Scania S): paint, plastic and chrome share one lighting model; the chrome lettering and grille mesh reflect the truck's cube. The MAN's sun visor (`over`) now reads as smoked plastic, where the stand-in drew it dark. Surfaces facing away from the tuning scene's sun (`truck_config_scene.sii`: sun 1.2 from (0.9, −2, 1.2), ambient 0.3) get only the ambient and render nearly black (cab backs, chassis). Not modelled yet: the game's eye adaptation (a fixed exposure of 1/0.18 in its non-world sun profiles, Hypothesis), the deferred ambient shaping (§7.4) and the garage's other lights (`research/evidence/exposure-tonemap-data.txt`).
 
 ## Truck paint (`eut2.truckpaint*`)
 
@@ -95,7 +113,7 @@ The game copies these into the material unscaled.
 | F0 | the `.mat`'s first `fresnel` value, else 0.2 | lighting §8 |
 | μ, `texture_reflection_modulator` | 1 | lighting §4 |
 | (a_w, b_w), alpha to specular weight | (1, 0) | lighting §4 |
-| `specular`, `shininess` absent | 1, 130 (the old roughness 0.35) | — |
+| `specular`, `shininess` absent | 1, 4: the material-input table's defaults (dif-spec §3.1) | — |
 | no paint job and no colour | 0.6 grey | — |
 
 **Lighting: the game's forward model** ([truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) §4–5), from the shared module `render/game_lighting.wgsl`, which `dif.spec` will use too:
@@ -106,10 +124,10 @@ The game copies these into the material unscaled.
 The scene's light reaches every game material through one shared storage buffer (`render::GameLighting`), filled from the scene's `light_direction`, `light_diffuse`, `light_specular` (else the diffuse colour), `light_ambient` and `light_environment` (Aenv, Hypothesis), or the viewer's defaults.
 
 Ours, each a Hypothesis:
-- **Output scale 1.** The game's linear HDR goes straight into Bevy's ACES tonemapper. The game's eye adaptation and tone mapping are Unknown (F16). At 1, the MAN TGX Euro 6's white Driving Academy cab matches the unpainted parts beside it, which still use Bevy's lighting; at 1/π it drew grey.
+- **Output scale 1.** The game's linear HDR goes straight into Bevy's ACES tonemapper, without a reference. The game's eye adaptation and tone mapping are Unknown (F16); REA on its tonemap parameters is queued.
 - **Cube direction.** The reflected vector in world space, with z flipped as Bevy samples its environment cubes, which keeps the orientation the viewer's reflections had. The game's x/z mirroring is Unknown; if reflections look left/right flipped, suspect that.
 
-Seen working: Under Wraps now reads dark crimson like its thumbnail (brown under Bevy's lighting), with the forest cube of `vehicle_reflection.tobj` upright on the cab. Until `dif.spec` is ported, paint and its unpainted neighbours use different lighting models.
+Seen working: Under Wraps now reads dark crimson like its thumbnail (brown under Bevy's lighting), with the forest cube of `vehicle_reflection.tobj` upright on the cab.
 
 ## Texture upload
 
@@ -137,7 +155,7 @@ The game's shaders are readable GLSL inside `effect.scs` ([../formats/effects.md
 
 Order:
 1. `truckpaint`: the surface and the game's lighting are done (above).
-2. `dif.spec` on the shared lighting module, with per-material cube sampling (dif-spec §5.5), which replaces `ReflectionCube` and `reflective_surface` for those materials.
+2. `dif.spec` on the shared lighting module, with per-material cube sampling: done (above). Next for both: normal maps (tangents), then the output scale and ambient against the game's tone mapping.
 3. Glass.
 4. Lamp.
 
