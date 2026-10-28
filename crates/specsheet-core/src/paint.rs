@@ -56,8 +56,8 @@ pub struct Flip {
     pub strength: Option<f32>,
 }
 
-/// The `*_locked` flags. Hypothesis: a locked colour is fixed by the paint
-/// job and the game's colour picker does not offer it. Absent means false.
+/// The `*_locked` flags: a locked colour is the paint job's own, whatever
+/// the truck's saved colour says (Confirmed, F17). Absent means false.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PaintLocks {
     /// `base_color_locked`.

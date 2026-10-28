@@ -60,7 +60,8 @@ pub struct FlipPaint {
 }
 
 /// The effective paint of one placed accessory. Colours are the
-/// configuration's overrides where set, else the paint job's (F15). Which
+/// configuration's overrides where set, else the paint job's (F15); a colour
+/// the paint job locks is always the paint job's (F17). Which
 /// pieces of the accessory's model take it is decided by their material
 /// (`eut2.truckpaint*` effects).
 #[derive(Clone, Debug, PartialEq)]
@@ -109,18 +110,28 @@ pub fn piece_paint(
         .and_then(|p| p.mask.as_deref())
         .or(paint.mask.as_deref())
         .map(Mask::from_path);
+    // The truck's saved colour wins unless the paint job locks that colour
+    // (F17).
+    let locks = paint.locks;
+    let pick = |locked: bool, over: Option<[f32; 3]>, own: Option<[f32; 3]>| {
+        if locked {
+            own.or(over)
+        } else {
+            over.or(own)
+        }
+    };
     let mut mask_colors = paint.mask_colors;
-    for (color, over) in mask_colors.iter_mut().zip(colors.mask) {
-        *color = over.or(*color);
+    for ((color, over), locked) in mask_colors.iter_mut().zip(colors.mask).zip(locks.mask) {
+        *color = pick(locked, over, *color);
     }
     Some(PiecePaint {
         paint_job: job.id.clone(),
         part,
-        base_color: colors.base.or(paint.base_color).or(job.base_color),
+        base_color: pick(locks.base, colors.base, paint.base_color.or(job.base_color)),
         mask,
         mask_colors,
         flake: FlakePaint {
-            color: colors.flake.or(paint.flake.color),
+            color: pick(locks.flake, colors.flake, paint.flake.color),
             density: paint.flake.density,
             shininess: paint.flake.shininess,
             clearcoat_rolloff: paint.flake.clearcoat_rolloff,
@@ -135,7 +146,7 @@ pub fn piece_paint(
                 .unwrap_or_else(|| DEFAULT_FLAKE_NOISE.to_owned()),
         },
         flip: FlipPaint {
-            color: colors.flip.or(paint.flip.color),
+            color: pick(locks.flip, colors.flip, paint.flip.color),
             strength: paint.flip.strength,
         },
         airbrush: paint.airbrush,
@@ -148,8 +159,8 @@ pub fn piece_paint(
 mod tests {
     use super::*;
     use specsheet_core::{
-        Accessory, AccessoryKind, Flake, Flip, ModelRef, PaintJob, PaintOverride, PartPaint,
-        TruckId,
+        Accessory, AccessoryKind, Flake, Flip, ModelRef, PaintJob, PaintLocks, PaintOverride,
+        PartPaint, TruckId,
     };
 
     fn accessory(id: &str, slot: &str, kind: AccessoryKind) -> Accessory {
@@ -179,6 +190,10 @@ mod tests {
     const PART_MASK: &str = "/vehicle/truck/upgrade/paintjob/t/x/shared_ff000080.tobj";
 
     fn setup() -> (TruckCatalog, Configuration) {
+        setup_locked(PaintLocks::default())
+    }
+
+    fn setup_locked(locks: PaintLocks) -> (TruckCatalog, Configuration) {
         let mut job = accessory("x_a.t.paint_job", "paint_job", AccessoryKind::PaintJob);
         job.base_color = Some([0.5, 0.5, 0.5]);
         job.paint = Some(Box::new(PaintJob {
@@ -203,6 +218,7 @@ mod tests {
                 flake_vratio: Some(0.5),
                 ..PartPaint::default()
             }],
+            locks,
             ..PaintJob::default()
         }));
         let catalog = TruckCatalog::new(
@@ -292,6 +308,32 @@ mod tests {
         );
         assert_eq!(paint.flake.color, Some([0.4, 0.4, 0.4]));
         assert_eq!(paint.flip.color, Some([0.0, 0.0, 1.0]), "not overridden");
+    }
+
+    #[test]
+    fn locked_colours_win_over_overrides() {
+        let (catalog, mut config) = setup_locked(PaintLocks {
+            base: true,
+            mask: [true, false, false],
+            flake: false,
+            flip: true,
+        });
+        config.set_paint_override(PaintOverride {
+            base: Some([0.1, 0.1, 0.1]),
+            mask: [Some([0.2, 0.2, 0.2]), Some([0.3, 0.3, 0.3]), None],
+            flake: Some([0.4, 0.4, 0.4]),
+            flip: Some([0.5, 0.5, 0.5]),
+        });
+        let paint =
+            piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
+        assert_eq!(paint.base_color, Some([0.5, 0.5, 0.5]), "locked");
+        assert_eq!(
+            paint.mask_colors,
+            [Some([1.0, 0.0, 0.0]), Some([0.3, 0.3, 0.3]), None],
+            "only mask r is locked"
+        );
+        assert_eq!(paint.flake.color, Some([0.4, 0.4, 0.4]), "not locked");
+        assert_eq!(paint.flip.color, Some([0.0, 0.0, 1.0]), "locked");
     }
 
     #[test]
