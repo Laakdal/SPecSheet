@@ -1,0 +1,136 @@
+REA string search, batch 2: pins, tuning camera, exposure, lift axles, paint effects, reflections
+==================================================================================================
+
+Command (Git Bash; S = %USERPROFILE%\rea-ets2; about 30 min of Ghidra analysis):
+  npx -y rea-agents@6.4.0 search <eurotrucks2.exe> "--pattern=$(cat $S/next-search-regex.txt)" \
+    --mode regex --provider ghidra --snapshot "$S/eurotrucks2.snapshot" --format json \
+    > "$S/search-batch2.json"
+Pattern:
+(?i)(truck_config_scene|ui_truck_scene|camera_fov|camera_elevation_limit|camera_default_(azimuth|elevation|zoom)|camera_relative_bounds|camera_aim|tonemap_params|eye_adapt|bloom_params|color_correction|deferred_parameters|liftable_axle|lift_axle|colormask|altuv|flipflake|airbrush|paint_job/accessory|/paint_job/|ui_vehicle_reflection|vehicle_reflection|cube_reflection|floor_reflection|light_environment|env_factor|pin_offset|pin_dir|pin_group|pin_look|double_sided)
+
+Evidence ID: ev_f88b185e18af5da4fb07eb7efbd6c31edd4803712f89e5842bcd046484e9fcea
+Subject:     eurotrucks2.exe, ETS2 1.60.1.7 (sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8)
+Provider:    Ghidra 12.1.4. Defined strings only: no references were traced, nothing was executed.
+
+Observations (strings and their neighbourhood only; which code uses them is Unknown):
+- Pins: pin_group, pin_look, pin_offset, pin_dir, pin_dir_uk, double_sided lie
+  together at 0x1421b7360-0x1421b73c0, the reader of the truck_config_scene pin
+  arrays (F5).
+- Tuning camera: ui_truck_scene_config(_u) holds camera_elevation_limit,
+  camera_default_elevation, camera_default_azimuth, camera_default_zoom,
+  camera_aim_y_bounds, camera_relative_bounds (0x14225aa50-0x14225aaf0).
+  ui_truck_scene_base_config(_u) holds camera_aim, camera_aim_lv, camera_fov_lv,
+  light_environment, floor_reflection, cube_reflection (0x142238558-0x142238890).
+  camera_fov is a separate string (0x14217f9e0).
+- Floor reflection: "Enforcing 'floor_reflection: false' in '%s' scene - there
+  are no parts to be customized for reflection." So floor_reflection needs scene
+  parts to customise for reflection, presumably the `reflection` part in
+  part_order[] (F7).
+- Reflection cubes: the executable contains
+  "/material/environment/vehicle_reflection.tobj" and "vehicle_reflection", but
+  no string "ui_vehicle_reflection". The engine names the vehicle cube itself;
+  the UI cube is only named by game data.
+- Post-processing: pp_deferred_parameters(_u) with
+  deferred_param_eye_adapt_factors, deferred_param_tonemap_params,
+  deferred_param_bloom_params, deferred_param_color_correction;
+  eye_adaptation_speed, eye_adaptation_time_delta, the effect
+  "def.adapt.rfx" for eye adaptation, a setting r_color_correction, and
+  env_factor_* weather factors (sunlight, rain, wetness, fog).
+- Lift axles: input actions truck.lift_axle(.indicator) and
+  truck.trailer.lift_axle(.indicator), animations lift_axle_stick_anim and
+  lift_axle_trailer_stick_anim, indicator colours lift_axle(_trailer)_active_color
+  and lift_axle(_trailer)_passive_color, the definition keys liftable_axle and
+  liftable_axles, and the texts @@o_im_lift_axle@@ and @@tdt_lift_axles@@.
+- Paint: effect suffixes flipflake, altuv, colormask, airbrush, flipflakeuv lie
+  together (0x1421a5220-0x1421a5428), next to "%s/paint_job/accessory/%s.sii";
+  also "alternate_flipflake_uvset" and "/paint_job/". Two hard-coded paths name
+  single trucks: "/def/vehicle/truck/kenworth.w900/paint_job/%s" and
+  "/def/vehicle/truck/volvo.fh16_2012/paint_job/%s" (purpose Unknown).
+
+Next: `rea trace <exe> --query=<string>` resolves one string to its referencing
+function per run (about 30-45 min each). Then `rea function` decompiles it.
+
+All hits (address, value)
+-------------------------
+0x1420eb770 glColorMask
+0x1420ec3e8 glColorMaski
+0x1420f9c70 env_factor
+0x1420fc010 TK_ENV_FACTOR
+0x142110b80 /material/environment/vehicle_reflection.tobj
+0x142110d48 vehicle_reflection
+0x142111738 truck.lift_axle
+0x142111748 truck.lift_axle.indicator
+0x142111768 truck.trailer.lift_axle
+0x1421119e8 truck.trailer.lift_axle.indicator
+0x142113cd8 r_color_correction
+0x14212a040 ?index_of@?$array_t@V?$owner_ptr_t@Vui_truck_scene_base_config_u@prism@@@prism@@@prism@@QEBA_KQEBV?$owner_ptr_t@Vui_truck_scene_base_config_u@prism@@@2@@Z
+0x14213a4c0 color_correction
+0x142147b78 /def/vehicle/truck/kenworth.w900/paint_job/%s
+0x142150bc0 /def/vehicle/truck/volvo.fh16_2012/paint_job/%s
+0x14215ff30 liftable_axle
+0x142165d88 env_factor_fog_offset
+0x142165de0 env_factor_sunlight
+0x142165df8 env_factor_wetness
+0x142165e10 env_factor_rain
+0x142165e20 env_factor_fog_density
+0x14217f9e0 camera_fov
+0x1421a2228 lift_axle_stick_anim
+0x1421a2240 lift_axle_trailer_stick_anim
+0x1421a5220 flipflake
+0x1421a522c altuv
+0x1421a52a0 %s/paint_job/accessory/%s.sii
+0x1421a5408 colormask
+0x1421a5418 airbrush
+0x1421a5428 flipflakeuv
+0x1421b3d48 alternate_flipflake_uvset
+0x1421b7360 pin_group
+0x1421b7370 pin_look
+0x1421b7398 pin_offset
+0x1421b73a8 pin_dir
+0x1421b73b0 pin_dir_uk
+0x1421b73c0 double_sided
+0x1421b9b88 lift_axle|
+0x1421ba978 lift_axle_trailer_active_color
+0x1421ba998 lift_axle_trailer_passive_color
+0x1421baba0 lift_axle_active_color
+0x1421babb8 lift_axle_passive_color
+0x1421d2028 eye_adaptation_speed
+0x1421d3638 liftable_axles
+0x142232ed0 @@o_im_lift_axle@@
+0x142232ee8 @@o_im_lift_axle_op_tooltip@@
+0x142233840 @@o_im_lift_axle_trailer_op_tooltip@@
+0x142233e38 @@o_im_lift_axle_trailer@@
+0x142238558 light_environment
+0x142238590 camera_aim
+0x1422385b8 camera_aim_lv
+0x1422385c8 camera_fov_lv
+0x1422385d8 ui_truck_scene_base_config
+0x1422385f8 ui_truck_scene_base_config_u
+0x142238758 ui_truck_scene_base
+0x142238770 ui_truck_scene_base_u
+0x1422387c0 Enforcing 'floor_reflection: false' in '%s' scene - there are no parts to be customized for reflection.
+0x142238878 floor_reflection
+0x142238890 cube_reflection
+0x14223bf78 /paint_job/
+0x142253f08 @@tdt_lift_axles@@
+0x14225a960 Invalid unit in config file '%s'. Should be ui_truck_scene_config.
+0x14225a9a8 ui_truck_scene_config_u
+0x14225a9c0 ui_truck_scene_config
+0x14225aa50 camera_elevation_limit
+0x14225aa78 camera_default_elevation
+0x14225aa98 camera_default_azimuth
+0x14225aac0 camera_default_zoom
+0x14225aad8 camera_aim_y_bounds
+0x14225aaf0 camera_relative_bounds
+0x14225ab60 ui_truck_scene_u
+0x14225ab78 ui_truck_scene
+0x1422b36b8 eye_adapt_drawer.initialize("def.adapt.rfx")
+0x1422b4150 eye_adaptation_time_delta
+0x1422b43d0 pp_deferred_parameters
+0x1422b4418 pp_deferred_parameters_u
+0x1422b4b80 deferred_param_eye_adapt_factors
+0x1422b4ba8 deferred_param_tonemap_params
+0x1422b4c10 deferred_param_bloom_params
+0x1422b4c50 deferred_param_color_correction
+0x142303620 -physx_trimesh_double_sided
+0x1423038c0 [physx] @%u: Failed to parse -physx_trimesh_double_sided command line parameter: Invalid bool flag "%s".
