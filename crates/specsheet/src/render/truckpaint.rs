@@ -181,12 +181,13 @@ fn srgb_to_linear(c: f32) -> f32 {
     }
 }
 
-/// The uniform for `surface` painted with `paint`. `flipflake` and `altuv`
-/// are the union of the `.mat`'s flavours and the paint job's flags
-/// (Hypothesis: many `.mat`s already name them). Livery or colour mask is
-/// the paint job's `airbrush` alone: a `.mat` naming `airbrush` (the MAN
-/// TGX Euro 6 cab) still shows colour-mask jobs as colour masks. Texture
-/// flags are set when the textures are bound.
+/// The uniform for `surface` painted with `paint`. `altuv` is the union of
+/// the `.mat`'s flavour and the paint job's flag (Altamira on the MAN TGX
+/// Euro 6 cab needs the `.mat`'s); `flipflake` likewise (Hypothesis, pending
+/// REA). Livery or colour mask is the paint job's `airbrush` alone: a `.mat`
+/// naming `airbrush` (the MAN TGX Euro 6 cab) still shows colour-mask jobs as
+/// colour masks, and a flipflake job is never a colour mask. Texture flags
+/// are set when the textures are bound.
 pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform {
     let base = paint.base_color();
     let mut uniform = PaintUniform {
@@ -205,7 +206,11 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
     if job.alternate_uvset {
         uniform.flags |= ALTUV;
     }
-    if let Some(mask) = &job.mask {
+    let flipflake = job.flipflake || surface.flipflake;
+    // The game never combines colormask with flipflake: a metallic job's
+    // mask is used only as a livery.
+    let mask = job.mask.as_ref().filter(|_| job.airbrush || !flipflake);
+    if let Some(mask) = mask {
         let airbrush = job.airbrush;
         uniform.flags |= if airbrush { AIRBRUSH } else { COLORMASK };
         let [r, g, b] = job.mask_colors.map(|c| rgb_w(c.unwrap_or(base), 1.0));
@@ -221,7 +226,7 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
             Mask::Texture(_) => Vec4::W,
         };
     }
-    if job.flipflake || surface.flipflake {
+    if flipflake {
         uniform.flags |= FLIPFLAKE;
         let flip = job.flip.strength.unwrap_or(0.0).clamp(0.0, MAX_FLIP_WEIGHT);
         uniform.flip = rgb_w(job.flip.color.unwrap_or(base), flip);
@@ -287,7 +292,9 @@ impl PaintMaterials {
         if let Paint::Job(job) = paint {
             let flags = paint_uniform(surface, paint).flags;
             if let Some(Mask::Texture(path)) = &job.mask {
-                self.request(game, &handle, path, Binding::Mask);
+                if flags & (COLORMASK | AIRBRUSH) != 0 {
+                    self.request(game, &handle, path, Binding::Mask);
+                }
             }
             if flags & FLIPFLAKE != 0 {
                 self.request(game, &handle, &job.flake.noise, Binding::FlakeNoise);
@@ -456,6 +463,24 @@ mod tests {
             &Paint::Job(&academy),
         );
         assert_eq!(u.flags, COLORMASK | ALTUV);
+    }
+
+    #[test]
+    fn a_flipflake_job_never_draws_a_colour_mask() {
+        // The game's paint-material builder sets colormask only without
+        // flipflake and airbrush (research/evidence/rea-paint-variant.txt).
+        let metallic = PiecePaint {
+            flipflake: true,
+            ..job(Some(Mask::Texture("/m.tobj".to_owned())))
+        };
+        let u = paint_uniform(&surface("truckpaint"), &Paint::Job(&metallic));
+        assert_eq!(u.flags, FLIPFLAKE);
+        let livery = PiecePaint {
+            airbrush: true,
+            ..metallic
+        };
+        let u = paint_uniform(&surface("truckpaint"), &Paint::Job(&livery));
+        assert_eq!(u.flags, AIRBRUSH | FLIPFLAKE);
     }
 
     #[test]
