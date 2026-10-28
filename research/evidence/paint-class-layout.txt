@@ -5,6 +5,7 @@ Command (read-only on the executable; ETS2 1.60.1.7,
 sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8):
   python -I tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" \
     flake_uvscale flip_strength alternate_flipflake_uvset acc_list paint_job_mask
+(an entry's field offset of -1 is printed as -1.)
 
 Method: each class's SII attributes are described by a table of 40-byte entries
 [class ptr, field offset, type, 0, name ptr] (layout from a peer's static scan;
@@ -13,9 +14,13 @@ printable string). The tool finds each key's string, every pointer to it, and
 prints the whole run of consecutive entries.
 
 Observed (Confirmed for the 1.60 executable):
-- Table 1 (class ptr 0x141d27240) = accessory_paint_job_data. Its 26 keys are
-  exactly the paint-job unit's attributes (docs/formats/paint.md), plus one more:
-  alternate_flipflake_uvset (bool, +0x1bf, right after alternate_uvset +0x1be).
+- Table 1 (class ptr 0x141d27240) = accessory_paint_job_data, 28 keys: the
+  paint-job unit's attributes (docs/formats/paint.md) plus three the data
+  survey had not listed:
+  - alternate_flipflake_uvset (bool, +0x1bf, right after alternate_uvset +0x1be);
+  - base_texture_override (path, +0x1c8);
+  - base_texture (path, field offset -1: no plain stored field, so code handles
+    it; meaning Unknown).
 - Table 2 (class ptr 0x141d271f0) = simple_paint_job_data: paint_job_mask
   +0x10, flake_uvscale +0x7c, flake_vratio +0x80, acc_list +0xb8.
 - Types seen: 9 = colour/float3 (all *_color), 5 = float, 1 = string/path
@@ -30,8 +35,9 @@ Observed (Confirmed for the 1.60 executable):
   +0x260 flake_shininess; +0x264 flake_clearcoat_rolloff; +0x268 flake_noise;
   +0x288 flipflake; +0x289 airbrush; +0x290 color_variant.
 - Game data: no accessory_paint_job_data unit under /def/vehicle sets
-  alternate_flipflake_uvset (def_grep: 0 units; the same search finds
-  flipflake at once). accessory_paint_job_data also has flake_vratio, which
+  alternate_flipflake_uvset, base_texture or base_texture_override (def_grep:
+  0 units each; the same search finds flipflake at once). The engine supports
+  them, but the base game doesn't use them. accessory_paint_job_data also has flake_vratio, which
   the data survey did not list for that class.
 
 Output
@@ -63,6 +69,8 @@ Output
    +0x01bf  type  57  alternate_flipflake_uvset
    +0x01c0  type  57  stock
    +0x0290  type  10  color_variant
+       -1  type   1  base_texture
+   +0x01c8  type   1  base_texture_override
 == table at file 0x2c35ea0 (va 0x142c37ca0), class ptr 0x141d271f0, found via 'flake_uvscale'
    +0x007c  type   5  flake_uvscale
    +0x0080  type   5  flake_vratio
