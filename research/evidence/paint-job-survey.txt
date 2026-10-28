@@ -1,0 +1,260 @@
+Paint-job survey: how ETS2 describes a truck paint job and how it reaches each painted part
+==========================================================================================
+
+Game: ETS2 1.60.1.7 (all base + DLC archives mounted by GameInstall::mount). Date: 2026-10-28.
+No shader code (.rfx/.glsl/.spv/.fso/.vso contents) was opened (D13). Effect FILE NAMES were listed only.
+
+Commands (Git Bash)
+-------------------
+  export MSYS_NO_PATHCONV=1 ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2"
+  T=<scratch target dir>; cargo build --release -p specsheet-archive --example scs -p specsheet-data --example def_stats --example def_grep
+  # [S1] whole-file reads quoted below as short excerpts
+  $T/release/examples/scs cat def/vehicle/truck/scania.s_2016/paint_job/{770s_met_a.sii,770s_met_settings.sui,color0.sii,color0m.sii,at_big_s_s_settings.sui}
+  $T/release/examples/scs cat def/vehicle/truck/scania.s_2016/paint_job/accessory/770s_met_a.sii
+  $T/release/examples/scs cat def/vehicle/truck/volvo.fh_2024/paint_job/{white.sii,academy_a.sii,academy_b.sii,academy_settings.sui,v_m_inb_settings.sui}
+  $T/release/examples/scs cat def/vehicle/truck_desktop/{scania_s_2016,volvo_fh_2024}.sii
+  $T/release/examples/scs ls vehicle/truck/upgrade/paintjob/volvo_fh_2024/academy
+  # [S2] attribute statistics (also: def_stats lists the same key counts)
+  paint_survey attrs                    # all 19,998 accessory_paint_job_data units
+  # [S3] link paint job -> paint_job/accessory/<x>.sii ; per-accessory override dirs
+  paint_survey link ; paint_survey link2
+  # [S4] acc_list resolution
+  paint_survey acclist
+  # [S5] masks: names, sizes, formats, implied atlas canvas
+  paint_survey masks ; paint_survey maskstats ; paint_survey vr2 ; paint_survey texmeta <tobj...>
+  # [S6] materials / UV sets
+  paint_survey mats /vehicle/truck/scania_2016 ; paint_survey mats /vehicle/truck/volvo_fh_2024
+  paint_survey mats /vehicle/truck/scania_2016 /vehicle/truck/volvo_fh_2024 /vehicle/truck/upgrade
+  paint_survey matdump /vehicle/truck/volvo_fh_2024/cabin/globe_xl_aero_2024.pmd /vehicle/truck/volvo_fh_2024/cabin/globe_aero_2024.pmd /vehicle/truck/scania_2016/cabin/cab_s_high.pmd /vehicle/truck/scania_2016/accessory/sunshld/stock.pmd /vehicle/truck/scania_2016/accessory/sideskirt/ss_6x2_p.pmd
+  paint_survey matwho flipflake /vehicle/truck/upgrade ; paint_survey matwho airbrush /vehicle/truck/upgrade
+  paint_survey coverage scania.s_2016 770s_met_a at_big_s_s_a m5_s_s_a ; paint_survey coverage volvo.fh_2024 academy_a v_m_inb_a
+  # [S7] effect variant names (directory listing of /effect/eut2/truckpaint, names only)
+  paint_survey effects | sed 's#.*/##; s#\.rfx$##' | awk -F. '{s="";for(i=1;i<=NF;i++){t=$i;if(t~/^(eut2|truckpaint|skinned|shadow|asafew|a)$/)continue;s=s"."t}print (s==""?"(none)":s)}' | sort | uniq -c
+  # [S8] presets (truck_company/_uk, truck_dealer/_uk, truck_desktop/_uk, truck_used/_uk)
+  paint_survey presets
+  # [S9] executable strings (no disassembly)
+  LC_ALL=C grep -a -o -E '[[:print:]]{4,}' "$ETS2_DIR/bin/win_x64/eurotrucks2.exe" | LC_ALL=C grep -E '%s/paint_job/accessory|flake_noise\.tobj|^(airbrush|altuv|colormask|flipflake|flipflakeuv|tsnmapuv)$'
+  LC_ALL=C grep -a -b -o -E '%s/paint_job/accessory/%s\.sii|flake_noise\.tobj' "$ETS2_DIR/bin/win_x64/eurotrucks2.exe"
+
+paint_survey is a scratch research tool (not in the repo): a standalone cargo package with path dependencies on
+specsheet-data / specsheet-formats / specsheet-archive. Source kept at
+C:\Users\Nightingale\AppData\Local\Temp\claude\C--Mudrock-s-Headquarters-Project-ETS2-Tuning-GUI\f79942f1-4f3c-437b-bf79-56931ee467d7\scratchpad\paint_survey\src\main.rs
+(it only uses GameFs::read_sii / list_dir, Vfs::read_texture + PackedTexture::unpack, Pmd/Pmg/Material::parse,
+and an inline BC1/BC3 block decoder). Promote it to crates/specsheet-data/examples/ if it should be rerunnable from the repo.
+
+
+[S1] Excerpts
+-------------
+scania.s_2016/paint_job/770s_met_a.sii          (one unit per file; 0 files of 19,998 hold >1 unit)
+  accessory_paint_job_data : 770s_met_a.scania.s_2016.paint_job
+  @include "770s_met_settings.sui"
+  paint_job_mask: "/vehicle/truck/upgrade/paintjob/scania_s_2016/770s_met/pjm_at_0x6144_size_2048x2048.tobj"
+  suitable_for[]: "highline.scania.s_2016.cabin"
+  (770s_met_b / _c: same include, other tile, other cabin)
+770s_met_settings.sui (excerpt): airbrush: true / base_color: (0.300544, 0.018504, 0.018504) /
+  color_variant[] x20 / flake_color, flake_density 0.7, flip_color, flip_strength 1.7, flipflake: true / part_type: "factory"
+color0.sii   (plain custom colour): unit color0.scania.s_2016.paint_job, base_color: (1, 1, 1), base_color_locked: false, no mask
+color0m.sii  (metallic custom): unit col0m_s_s_a.scania.s_2016.paint_job (file stem != unit token), base_color, flake_color,
+  flake_density 0.8, flake_shininess 30, flake_clearcoat_rolloff 4.5, flip_color, flip_strength 1.3, flipflake: true, *_locked: false
+volvo.fh_2024/paint_job/white.sii: base_color (0.752942 x3), base_color_locked: true, stock: true, part_type "factory"
+volvo.fh_2024 academy_a.sii -> mask .../volvo_fh_2024/academy/pjm_at_0x6144_size_2048x2048.tobj, suitable_for l2h3_aero
+volvo.fh_2024 academy_b.sii -> mask .../volvo_fh_2024/academy/pjm_at_0x4096_size_2048x2048.tobj, suitable_for l2h2_aero
+academy_settings.sui: NO airbrush, NO base_color; mask_r/g/b_color + mask_*_locked: false; flake/flip colours; color_variant x20
+v_m_inb_settings.sui (metallic, no mask): base_color, flake_* , flake_uvscale 24, flipflake: true, stock: true
+ls vehicle/truck/upgrade/paintjob/volvo_fh_2024/academy:
+  pjm_at_0x0_size_2048x2048 pjm_at_0x2048_size_2048x2048 pjm_at_0x4096_size_2048x2048 pjm_at_0x6144_size_2048x2048
+  pjm_at_2048x2373_size_1024x1024 pjm_at_2048x264_size_1024x1024 pjm_at_3072x3584_size_512x512 ... shared_000000ff shared_ff0000ff
+scania.s_2016/paint_job/accessory/770s_met_a.sii (excerpt):
+  simple_paint_job_data : .ovr0 { paint_job_mask: ".../770s_met/shared_00000000.tobj"  flake_uvscale: 8
+                                  acc_list[]: "exhaust_m.mg01"  acc_list[]: "r_bumper.duty_p" ... }
+  simple_paint_job_data : .ovr1 { ... flake_uvscale: 16  flake_vratio: 0.03125  acc_list[]: "sunshld.stock" ... }
+  (.ovr0 .. .ovr8)
+truck_desktop/scania_s_2016.sii:
+  vehicle_paint_job_accessory : .paint { mask_r_color (1,0,0) mask_g_color (0,1,0) mask_b_color (0,0,1)
+     flake_color (1,1,1) flip_color (0.045186,0.102242,0.407240) base_color (0.401978,0.571125,1)
+     data_path: "/def/vehicle/truck/scania.s_2016/paint_job/color0m.sii" }
+truck_desktop/volvo_fh_2024.sii:
+  vehicle_paint_job_accessory : .paint_job { data_path: "/def/vehicle/truck/volvo.fh_2024/paint_job/v_m_inb_a.sii" }
+
+
+[S2] accessory_paint_job_data attribute statistics (19,998 units, all trucks)
+-----------------------------------------------------------------------------
+key                      units   type     range / values
+name                     19998   string   "@@...@@"
+price                    19998   number   1000 .. 50000
+unlock                   19998   number   0 .. 30
+icon                     19474   string
+part_type                19974   token/string  aftermarket 18820, licensed 681, factory 473
+base_color               19550   tuple3   [0,1] each (448 units have none)
+base_color_locked         9736   bool     false 8861, true 875
+airbrush                 14942   bool     true 14937, false 5
+alternate_uvset           5487   bool     true 5487 (never written false)
+flipflake                 9526   bool     true 9526 (never written false)
+paint_job_mask           18137   string   .tobj path
+mask_r/g/b_color   11675/11844/11920 tuple3 [0,1]
+mask_r/g/b_locked    8611/8472/9035 bool  mostly false (true 102/49/2)
+flake_color/flip_color   15901   tuple3   [0,1]
+flake_color_locked/flip_color_locked 7370/7371 bool
+flake_density             6935   number   0 .. 2
+flake_shininess           8721   number   0 .. 60
+flake_clearcoat_rolloff  12574   number   2.24 .. 5.5
+flip_strength            12938   number   0.3 .. 2.7
+flake_uvscale             4707   number   1 .. 128
+flake_noise               2488   string   .tobj; "/material/custom/flake_noise.tobj" 1063, pattern tiles (flake_patternNN.dlc_metallics*, tile_christ*, ...) rest
+color_variant             2451   tuple3[] lengths {4: 841, 8: 873, 12: 442, 16: 214, 20: 81} (always a multiple of 4)
+suitable_for             18133   string[] lengths {0: 1865, 1: 16590, 2: 357, 3: 358, 4: 166, 5: 8, 6: 651, 7: 1, 8: 2}
+stock                      720   bool     true 400, false 320
+steam_inventory_id        1244   number   25 .. 172
+academy_reward              75   string   "academy_book_1"
+
+Feature combinations (count  airbrush alternate_uvset flipflake has-mask has-mask_rgb has-flake_color has-color_variant), excerpt:
+   4044  airbrush=T alt=- flipflake=T mask=Y mask_rgb=Y flake=Y cv=n
+   3259  airbrush=T alt=- flipflake=- mask=Y mask_rgb=Y flake=Y cv=n
+   1739  airbrush=- alt=- flipflake=- mask=Y mask_rgb=Y flake=Y cv=Y
+   1632  airbrush=T alt=T flipflake=- mask=Y mask_rgb=n flake=n cv=n
+   1387  airbrush=- alt=T flipflake=T mask=n mask_rgb=n flake=Y cv=n
+    155  airbrush=- alt=- flipflake=- mask=n mask_rgb=n flake=n cv=n     (plain colours)
+  Non-airbrush units with mask colours: 2,931; of these with flipflake: 0.
+color_variant: 4-colour group equal to (base, mask_r, mask_g, mask_b): 0 of 2,138 units that have all four (no group matches).
+
+
+[S3] Link from a paint-job unit to its per-part units
+-----------------------------------------------------
+exe string at file offset 35272864: "%s/paint_job/accessory/%s.sii"
+link matrix over 19,998 paint-job units (accessory/<file stem>.sii vs accessory/<unit-name first token>.sii):
+   15459  stem==token, both exist
+    1950  stem!=token, only the TOKEN file exists     (e.g. daf.xf color_m0.dlc_metallics2.sii -> paint00_met2.daf.xf.paint_job)
+       1  stem!=token, both exist
+       0  stem!=token, only the STEM file exists
+    1428  stem==token, no file
+    1160  stem!=token, no file
+  -> 17,410 linked by token, 0 by stem only. 2,588 paint jobs have no accessory file: old trucks (iveco.hiway 347,
+     iveco.stralis 608, man.tgx 613, renault.magnum 340, renault.premium 487) and plain/metallic colours elsewhere.
+Contents of paint_job/accessory/*.sii: only simple_paint_job_data, all nameless (".ovrN"): 127,662 units.
+simple units per linked file: 1..29 (mode 1: 3115 files, 7: 2106, 5: 2057).
+24 accessory files match no paint job (e.g. daf.xf chr_til3_d_a.sii, renault.t prm_1_a.sii).
+Every simple unit's mask lives in the same directory as its parent paint job's mask: 119,118 of 119,118.
+simple units with no paint_job_mask (flake_uvscale/vratio only): 8,409.
+Second, rarer mechanism: <truck>/accessory/<slot>/paint_job/<pj token>.<accessory token>.sii, one nameless
+simple_paint_job_data each (".simplepj" / ".paint_job"), no acc_list: 131 files in 5 dirs
+  (daf.xf r_bumper 54, daf.xf r_chs_cover 72, scania.r sideskirt 2, scania.streamline sideskirt 2, volvo.fh16_2012 sideskirt 1).
+  accessory token resolves in the slot: 131 of 131; pj token names an existing paint-job unit: 4 of 131
+  (e.g. scania.r sideskirt/paint_job/f_pir_shw.stock_6x.sii <-> unit f_pir_shw.scania.r.paint_job). 127 daf.xf
+  files name "good_01_a" etc., which match no installed paint-job unit.
+
+
+[S4] acc_list
+-------------
+entries resolving as "<slot>.<acc>" -> unit "<acc>.<truck>.<slot>": 560,896; unresolved 188 (mostly man.tgx_2020, e.g.
+"sideskirt.6x24_p", "mirror.paint"; also daf.xd "sideskirt.pnt_4x2", iveco.sway "sunshield.paint", renault.t "r_fender.4x2paintn")
+classes of resolved units: accessory_addon_data 552,947, accessory_addon_int_ui_data 5,218, accessory_chassis_data 2,731
+an entry repeated within one paint job's file: 0
+coverage (accessories whose look-0 model has a truckpaint material vs the paint job's acc_list):
+  scania.s_2016: 158 painted accessories (addon 106, cabin 3, chassis 1, interior 48)
+     770s_met_a: 64 listed, all painted; 94 painted not listed (addon 42, cabin 3, chassis 1, interior 48)
+     at_big_s_s_a: 60 listed / 98 not; m5_s_s_a: 64 / 94
+  volvo.fh_2024: 175 painted (addon 130, cabin 12, chassis 1, interior 32)
+     academy_a, v_m_inb_a: 51 listed, all painted; 124 painted not listed (addon 80, cabin 12, interior 32)
+  acc_list entries without a truckpaint material: 0 in all five paint jobs.
+
+
+[S5] Mask textures
+------------------
+distinct paint_job_mask paths: 49,457 (all .tobj). Name classes:
+  pjm_at_<x>x<y>_size_<w>x<h>.tobj : 13,101 used by paint jobs, 20,500 by simple units
+  shared_<RRGGBBAA>.tobj           : 4,820, used by simple units only
+  other (legacy names such as paintjob_001_daf.tobj, ..._r_bumpers_daf_xf.tobj): 2,503 paint-job + 8,533 simple
+pjm name <w>x<h> == texture size: 33,578 of 33,578 readable (27 referenced masks are missing from the install).
+implied canvas per mask directory (max x+w, max y+h): 4096x8192 1345, 3072x8192 877, 2048x8192 1519, ... ; tiles never overlap
+  (0 of 4,853 directories).
+texmeta:
+  scania_s_2016/770s_met/pjm_at_0x6144_size_2048x2048.tobj : 2048x2048, 12 mips, DXGI 78 (BC3 sRGB), clamp-to-edge U/V
+  scania_s_2016/770s_met/shared_00000000.tobj              : 4x4, 3 mips, DXGI 78, clamp-to-edge
+  volvo_fh_2024/academy/pjm_at_0x6144_size_2048x2048.tobj  : 2048x2048, 12 mips, DXGI 72 (BC1 sRGB), clamp-to-edge
+  volvo_fh_2024/academy/pjm_at_3072x4096_size_512x256.tobj : 512x256, 10 mips, DXGI 72, clamp-to-edge
+  /material/custom/flake_noise.tobj                         : 128x128, 8 mips, DXGI 91 (B8G8R8A8 sRGB), repeat U/V
+  /vehicle/truck/upgrade/paintjob/empty.tobj                : 64x64, 7 mips, DXGI 78
+mask DXGI format by group (paint-job masks): BC1 sRGB (72) and BC3 sRGB (78) throughout; 91/93 (8-bit BGRA/BGRX sRGB) only
+  on legacy-named masks (e.g. airbrush=1 alt_uv=1: 72 1036, 78 997, 91 272, 93 354).
+shared_RRGGBBAA: 4,816 paths (680 names); every one a uniform 4x4 texture; decoded RGB (BC1) or RGBA (BC3) equals the hex name
+  within 1.9/255 (565 quantisation): 4,816 of 4,816.
+flake_vratio on simple units with pjm_at_ masks: when written it equals tile h/w in 22,634 of 22,634; absent on 24,144 non-square
+  and 29,393 square tiles; also written on 4,966 simple units with no mask.
+mask content (2,486 masks sampled, mip <= 64 px, BC decoded): fraction of pixels at an RGB-cube corner (each channel <=55 or >=200)
+  airbrush=0 mask_rgb=0: 0.936 (n=38)      airbrush=0 mask_rgb=1: 0.899 (n=378) / 0.905 (alt, n=27)
+  airbrush=1 mask_rgb=0: 0.578 / 0.565     airbrush=1 mask_rgb=1: 0.612 (n=1091) / 0.541 (alt, n=155)
+pjm_at_ tile formats: DXGI 72 (BC1 sRGB) 17,378, DXGI 78 (BC3 sRGB) 16,200 (= 33,578); none 91/93. Full mip chains
+  (2048 -> 12 mips, 32 -> 6). shared_: 72 3,180 / 78 1,636, 4x4, 3 mips.
+alternate_uvset vs mask location (def_grep accessory_paint_job_data paint_job_mask 100000 | awk, 3-way split of 18,137 masks):
+  alt=false: own truck dir .../paintjob/<truck>/ 13,655; flat file directly in /vehicle/truck/upgrade/paintjob/ 382
+  alt=true : own truck dir 1,367;                       flat file 2,733
+  another truck's directory: 0 in both groups. (Flat names can still name another truck, e.g. scania.r f_pir_shw uses
+  paintjob_pirates_shipwrecks_mercedes_2014.tobj.)
+simple units without paint_job_mask: 8,409, all with a parent paint job that has no mask either (3,443 + 4,966);
+  every simple unit of a masked parent has its own mask (119,118). explicit flake_vratio only under airbrush parents.
+
+
+[S6] Painted materials and UV sets
+----------------------------------
+.mat effects containing "truckpaint" (look 0 of every model):
+  /vehicle/truck/scania_2016 (713 models): eut2.truckpaint.rfx 3 mats {1 uv: 116 pieces, 2 uv: 60}; .altuv 3 {2: 15};
+     .tsnmap 1 {2: 6}; .tsnmapuv 2 {2: 2, 3: 1}
+  /vehicle/truck/volvo_fh_2024 (212 models): eut2.truckpaint.rfx 1 {1: 2, 2: 8}; .tsnmapuv 1 {1: 23, 2: 7, 3: 47};
+     .tsnmapuv.airbrush 1 {3: 2}; .tsnmapuv.asafew.a 1 {2: 2}
+  with /vehicle/truck/upgrade: 118 distinct truckpaint materials. Some upgrade .mat files name a pre-composed variant
+  (e.g. eut2.truckpaint.flipflake.altuv.rfx on doorhandle_02.pmd) and then carry paint parameters with placeholder values:
+     paintjob_base_color (1,0,0), flake_color (1,1,0), flip_color (0,0,1), flake_uvscale 48, flake_vratio 0, ...,
+     texture_flakenoise /material/custom/flake_noise.tobj, texture_paintjob /vehicle/truck/upgrade/paintjob/empty.tobj;
+     one eut2.truckpaint.rfx mat carries paintjob_r_color/g/b_color.
+  Plain cabin materials carry no paint parameters: scania cab_s_high.pmd mat eut2.truckpaint.rfx has only
+  texture_base plain_grey.tobj + texture_reflection.
+per-piece UV ranges:
+  volvo globe_xl_aero_2024 (cabin l2h3_aero, tile 0x6144) piece 1, eut2.truckpaint.tsnmapuv, 3 UV sets:
+     uv0 u[-0.009,7.488] v[-1.916,3.000] | uv1 u[0.016,0.999] v[0.001,0.855] | uv2 u[0.016,0.094] v[0.955,1.000]
+  volvo globe_aero_2024 (cabin l2h2_aero, tile 0x4096) piece 1, same material:
+     uv0 u[-0.009,7.488] v[-1.916,3.000] | uv1 u[0.016,0.999] v[0.001,0.855] | uv2 u[0.024,0.094] v[0.955,1.000]
+  scania cab_s_high (highline, tile 0x6144) piece 1, eut2.truckpaint.rfx, 1 UV set: u[0.001,0.999] v[0.001,0.885]
+  scania sunshld/stock.pmd, eut2.truckpaint.rfx, 1 UV set: u[0.010,0.987] v[0.016,0.990]
+  scania sideskirt/ss_6x2_p.pmd, eut2.truckpaint.rfx, 1 UV set: u[0.011,0.815] v[0.014,0.974]
+  -> the two Volvo cabins have identical UV ranges but use tiles at different "atlas" positions.
+painted Scania S parts that are in NO acc_list share the cab's material file (/automat/14/14a950810c14dfc2.mat, eut2.truckpaint.rfx)
+  and lie inside the cab's UV square:
+  f_bumper/hgh_p.pmd piece 2, 2 UV sets: uv0 u[0.294,0.706] v[0.830,0.895] | uv1 u[0.294,0.706] v[0.927,0.992]
+  doorhndl/stock_p.pmd piece 0, 1 UV set: u[0.225,0.775] v[0.685,0.710]
+  (cab_s_high piece 1: u[0.001,0.999] v[0.001,0.885]; the strip v>0.885 is outside the cab's UVs)
+alternate_uvset units: 5,487; with paint_job_mask 4,100; with flake_noise 2,236 (of 2,488 flake_noise units, 2,236 are alt-uv).
+  scania.s_2016 has 82 alt-uv paint jobs (e.g. cn_dog_a with an own 2048 tile; m5_s_s_a metallic pattern without mask) although
+  its cab_s_high.pmd paint piece has a single UV set.
+
+
+[S7] Effect variant names in /effect/eut2/truckpaint (270 files, names only)
+-----------------------------------------------------------------------------
+After dropping eut2/truckpaint and the render-pass tokens (skinned 135, shadow 132, asafew.a 132), base x feature:
+  base in {(none), .tsnmap, .tsnmapuv} x feature in
+  {(none), .airbrush, .airbrush.altuv, .airbrush.flipflake, .airbrush.flipflake.altuv, .airbrush.flipflakeuv,
+   .colormask, .colormask.altuv, .flipflake, .flipflake.altuv, .flipflakeuv, .altuv}
+  (8 files each; .altuv alone 2 each). No airbrush+colormask, no colormask+flipflake, no flipflakeuv+altuv.
+exe standalone strings present: airbrush, altuv, colormask, flipflake, flipflakeuv, .tsnmapuv, eut2.truckpaint,
+  eut2pp_truckpaint, eut2pp_truckpaint_u. Also "/material/custom/flake_noise.tobj" (file offset 34784113, as ".../flake_noise.tobj").
+
+
+[S8] Presets (truck_company/_uk 148+148, truck_dealer/_uk 53+53, truck_desktop/_uk 26+26, truck_used/_uk 47+47)
+---------------------------------------------------------------------------------------------------------------
+vehicle_paint_job_accessory units: 548 (one per preset); data_path parses: 548 of 548 (always a /paint_job/*.sii FILE path)
+attribute sets: data_path only 258; base_color+data_path 46; base_color+data_path+mask_r/g/b 158;
+  base_color+data_path+flake_color+flip_color+mask_r/g/b 86
+mask colours exactly (1,0,0)/(0,1,0)/(0,0,1): 242 of 244 presets that write them; 242 of those point at a paint job with no mask colours.
+paint job suitable_for contains the preset's cabin: 168; paint job has no suitable_for: 380; mismatch: 0.
+other keys: none (refund appears only on trailer/traffic presets elsewhere in /def/vehicle).
+
+
+[S10] Save structure (player save, read only; class/attribute names and counts only)
+--------------------------------------------------------------------------------------
+  paint_survey save "<home>/profiles/<profile>/save/autosave/game.sii"   (scsc::document: ScsC -> SiiN or BSII)
+  paint_survey save "<home>/profiles/<profile>/save/1/game.sii"
+  autosave: 59 vehicle_paint_job_accessory units, all 59 with exactly
+     mask_r_color:tuple3, mask_g_color:tuple3, mask_b_color:tuple3, flake_color:tuple3, flip_color:tuple3, base_color:tuple3,
+     data_path:string, refund:number
+     referenced from vehicle.accessories[] 42, trailer.accessories[] 17; data_path -> /def/vehicle/truck/<truck>/paint_job/*.sii
+     or /def/vehicle/trailer_owned/<trailer>/...
+  save 1: 54 units, same 8 keys in all 54, referenced from vehicle.accessories[] 54.
