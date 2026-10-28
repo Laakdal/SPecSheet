@@ -21,7 +21,7 @@
 //! - the stems of the named files packed next to an unnamed one, with the
 //!   package's extensions.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use specsheet_archive::{city_hash_64, DirListing, EntryV1, HashFsV1Archive, Vfs};
 use specsheet_formats::{paths, sii};
@@ -30,6 +30,9 @@ use specsheet_formats::{paths, sii};
 /// textures reach hundreds of MB and name nothing). Listings too; the
 /// largest in 21 real packages is 87 KB.
 const MAX_SCAN: u32 = 1 << 20;
+/// Extensions tried per packing-order neighbour, the package's most used
+/// first; a bound against packages built to multiply guesses.
+const MAX_EXTENSIONS: usize = 64;
 
 /// Bounds on one package's search, so hostile content cannot grow it
 /// without end, set well above what the test install needs
@@ -193,6 +196,11 @@ impl Search {
         self.queue.push_back(path.to_owned());
     }
 
+    /// Whether no more paths can be queued.
+    fn is_full(&self) -> bool {
+        self.seen.len() >= self.limits.candidates || self.seen_bytes >= self.limits.candidate_bytes
+    }
+
     fn extend<S: AsRef<str>>(&mut self, paths: impl IntoIterator<Item = S>) {
         for path in paths {
             self.push(path.as_ref());
@@ -245,7 +253,7 @@ fn recover_with(
         }
         drain(package, &mut search, &mut names);
         if names.len() == before {
-            search.extend(neighbour_guesses(package, &names));
+            neighbour_guesses(package, &names, &mut search);
             drain(package, &mut search, &mut names);
         }
         if names.len() == before {
@@ -309,17 +317,24 @@ fn drain(package: &impl Package, search: &mut Search, names: &mut BTreeMap<u64, 
 /// often sorted by name, so the named files packed just before and after an
 /// unnamed one give its likely folder and stem (`research/evidence/
 /// mod-name-recovery.txt`, section 7). Each such `<folder>/<stem>` is tried
-/// with every extension the package's named files use.
-fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>) -> Vec<String> {
+/// with the [`MAX_EXTENSIONS`] extensions the package's named files use
+/// most. Guesses go straight into `search`, so its limits hold, and stop
+/// once it is full.
+fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>, search: &mut Search) {
     let split = |path: &str| -> Option<(usize, usize)> {
         let name_at = path.rfind('/').map_or(0, |i| i + 1);
         let dot = path[name_at..].find('.')?;
         Some((name_at, name_at + dot))
     };
-    let extensions: BTreeSet<&str> = names
-        .values()
-        .filter_map(|p| split(p).map(|(_, dot)| &p[dot + 1..]))
-        .collect();
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for path in names.values() {
+        if let Some((_, dot)) = split(path) {
+            *counts.entry(&path[dot + 1..]).or_default() += 1;
+        }
+    }
+    let mut extensions: Vec<(&str, usize)> = counts.into_iter().collect();
+    extensions.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(b.0)));
+    extensions.truncate(MAX_EXTENSIONS);
     let order: Vec<Option<&String>> = package
         .packing_order()
         .iter()
@@ -334,7 +349,6 @@ fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>) -> V
             last = *name;
         }
     }
-    let mut out = Vec::new();
     let mut next = None;
     for (i, name) in order.iter().enumerate().rev() {
         if name.is_some() {
@@ -342,13 +356,17 @@ fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>) -> V
             continue;
         }
         for neighbour in before[i].into_iter().chain(next) {
-            if let Some((_, dot)) = split(neighbour) {
-                let stem = &neighbour[..dot];
-                out.extend(extensions.iter().map(|ext| format!("{stem}.{ext}")));
+            let Some((_, dot)) = split(neighbour) else {
+                continue;
+            };
+            for (ext, _) in &extensions {
+                if search.is_full() {
+                    return;
+                }
+                search.push(&format!("{}.{ext}", &neighbour[..dot]));
             }
         }
     }
-    out
 }
 
 /// Where a generated material with these bytes lives: the game names every
@@ -595,6 +613,30 @@ mod tests {
             named(&result),
             ["dlc/a.dds", "dlc/a.pmd", "dlc/a.pmg", "m/x.dds"]
         );
+    }
+
+    #[test]
+    fn neighbour_guesses_keep_to_common_extensions_and_the_limits() {
+        // 100 named files with 100 extensions, then one unnamed file.
+        let mut package = Fake::default().file("u/unnamed.bin", b"x");
+        let mut names = BTreeMap::new();
+        for i in 0..100 {
+            let path = format!("e/f{i}.x{i}");
+            names.insert(hash(&path), path.clone());
+            package = package.file(&path, b"");
+            package.order.push(path);
+        }
+        package.order.push("u/unnamed.bin".to_owned());
+        let mut search = Search::new(LIMITS);
+        neighbour_guesses(&package, &names, &mut search);
+        assert_eq!(search.queue.len(), MAX_EXTENSIONS);
+        // A full search takes no more guesses.
+        let mut search = Search::new(Limits {
+            candidates: 10,
+            ..LIMITS
+        });
+        neighbour_guesses(&package, &names, &mut search);
+        assert_eq!(search.queue.len(), 10);
     }
 
     #[test]
