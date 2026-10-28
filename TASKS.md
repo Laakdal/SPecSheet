@@ -90,12 +90,13 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [ ] Mods next (D15): mounting into the `Vfs` in profile order, home-directory and profile discovery in `specsheet-data`. Writing profiles only with the user's go-ahead.
 - [x] Mod writer (D18): `ZipWriter`, `write_new_package` (never replaces, refuses a taken package name), `mod_manifest`; the test package from `mod_write` passes Python's strict `zipfile` check (`mod-writer-checks.txt`).
 - [x] Mod file names (`mod_names`, `paths`): v1 packages without listings get names by hashing candidates; 167,657 of 171,094 entries in 22 packages with game and other-package candidates (`mod-name-recovery.txt`). Search limits added after a security review (section 6).
-- [ ] Mod names, open: `Add-On MAN TG3 2020 by Gloover.scs` keeps 1,113 of 7,558 entries unnamed even with its definitions package as candidates; find which references the scanner misses. When mods are shown in the app, pass the other packages' names as candidates.
+- [ ] Mod names, open: `Add-On MAN TG3 2020 by Gloover.scs` keeps 1,085 of 7,558 entries unnamed even with its definitions package as candidates; find which references the scanner misses. When mods are shown in the app, pass the other packages' names as candidates.
 - [ ] Mod writer in the game: the user copies `specsheet_test.scs` into the mod folder and enables it; check the mod manager and `game.log.txt` ("has been mounted"), then record the result in mods.md.
 - [ ] What a real package holds (the user's choice), e.g. a tuning configuration from the app. Needs mod priority (F14) first if it overrides game paths.
 - [ ] Extractor parity (D19; facts from sk-zk Extractor, each confirmed on our install first, own code; `mod-name-recovery.txt` sections 8–9):
   - [x] Compared paths with Extractor 2026-07-29 on the 22 v1 packages: files named, ours 160,589 vs 160,726, the same set in 17 packages.
   - [x] Rules: exact `.tobj` texture records, `automat/` by content hash, packing-order neighbours, v1 packages as candidates (`--others`), extra candidates from a file (`--paths`). 169,777 of 171,094 named (was 167,657); MAN TG3 6,445 (was 4,341).
+  - [x] Word swaps learned from game folders (NG Sound `blinker_off`, MAN TG3 +28) and a per-package cache for `--others` (82 s → 0.3 s); 169,806 of 171,094 named (`mod-name-recovery.txt` section 10).
   - [ ] Recheck file by file that the 2,104 new MAN TG3 names cover Extractor's 695 automat + 1,409 `.dds`.
   - [x] Not observed here, not built: map sector guessing (every v1 package already fully named where Extractor is), junk and decoy entries (0 unreadable, no decoys).
   - [x] Content types (`sniff.rs`); unnamed entries are labelled by type.
