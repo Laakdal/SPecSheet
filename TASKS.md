@@ -89,8 +89,8 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] HashFS v1 reader (`HashFsV1Archive`, D15), written from `hashfs-v1-derivation.txt`: all 20 v1 mods open, counts equal the game log, 170,674 entries read, 0 failures.
 - [ ] Mods next (D15): mounting into the `Vfs` in profile order, home-directory and profile discovery in `specsheet-data`. Writing profiles only with the user's go-ahead.
 - [x] Mod writer (D18): `ZipWriter`, `write_new_package` (never replaces, refuses a taken package name), `mod_manifest`; the test package from `mod_write` passes Python's strict `zipfile` check (`mod-writer-checks.txt`).
-- [x] Mod file names (`mod_names`, `paths`): v1 packages without listings get names by hashing candidates; 167,421 of 170,765 entries in 21 packages with game and other-package candidates (`mod-name-recovery.txt`).
-- [ ] Mod names, open: `Add-On MAN TG3 2020 by Gloover.scs` keeps 3,219 of 7,558 entries unnamed even with its definitions package as candidates; find which references the scanner misses. When mods are shown in the app, pass the other packages' names as candidates.
+- [x] Mod file names (`mod_names`, `paths`): v1 packages without listings get names by hashing candidates; 167,657 of 171,094 entries in 22 packages with game and other-package candidates (`mod-name-recovery.txt`). Search limits added after a security review (section 6).
+- [ ] Mod names, open: `Add-On MAN TG3 2020 by Gloover.scs` keeps 3,217 of 7,558 entries unnamed even with its definitions package as candidates; find which references the scanner misses. When mods are shown in the app, pass the other packages' names as candidates.
 - [ ] Mod writer in the game: the user copies `specsheet_test.scs` into the mod folder and enables it; check the mod manager and `game.log.txt` ("has been mounted"), then record the result in mods.md.
 - [ ] What a real package holds (the user's choice), e.g. a tuning configuration from the app. Needs mod priority (F14) first if it overrides game paths.
 
