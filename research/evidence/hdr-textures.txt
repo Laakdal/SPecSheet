@@ -1,0 +1,46 @@
+R9G9B9E5_SHAREDEXP (DXGI 67) textures in ETS2 1.60.1.7
+=======================================================
+
+Input: every .scs archive of the install, opened read-only.
+
+Commands:
+  cargo run --release -p specsheet-research --example texture_layout -- <game>/*.scs
+  cargo run --release -p specsheet-research --example hdr_textures -- <game>/*.scs
+
+1. Layout (texture_layout, exact decompressed size per padding model):
+     dxgi  67 faces 1: [0, 0, 3, 25] of n=25
+   With 4 bytes per pixel, the pitch + image alignment model predicts the
+   exact size of all 25 sampled textures, as for every other format.
+   Confirmed: DXGI 67 is a linear 4-byte format in the usual layout.
+
+2. Census (hdr_textures): 197 textures, 0 unpack failures.
+     194 under asset/skybox/ (191 at 4096x1024, 2 at 4096x2048, 1 at
+         1024x256; 11-13 mips, all 2D, one face)
+       3 under material/ui/options/ (brightness_{low,mid,high}_hdr, 728x728,
+         1 mip)
+   None of them is a cube map.
+
+3. Decoding. Each pixel is decoded as the DXGI format defines it: 9-bit
+   mantissas in bits 0-8 (r), 9-17 (g), 18-26 (b), scaled by
+   2^(e - 24) with the exponent e in bits 27-31. The values are plausible
+   linear HDR (Confirmed by content):
+   - one sky set (s_nice_05) ranges from dark to bright, mostly blue above
+     red, with texels far above 1:
+       asset/skybox/s_nice_05/s_nice05_03_10_g.tobj: 4096x1024 faces 1 mips 13 mean [0.011, 0.018, 0.043] peak [0.385, 0.098, 0.098]
+       asset/skybox/s_nice_05/s_nice05_05_00_g.tobj: 4096x1024 faces 1 mips 13 mean [0.052, 0.069, 0.107] peak [19.625, 4.875, 0.719]
+       asset/skybox/s_nice_05/s_nice05_07_15_g.tobj: 4096x1024 faces 1 mips 13 mean [0.142, 0.182, 0.258] peak [1.484, 1.320, 1.094]
+       asset/skybox/s_nice_05/s_nice05_09_50_g.tobj: 4096x1024 faces 1 mips 13 mean [0.228, 0.306, 0.488] peak [1.719, 1.781, 2.031]
+       asset/skybox/s_nice_05/s_nice05_10_80_g.tobj: 4096x1024 faces 1 mips 13 mean [0.238, 0.298, 0.470] peak [2.062, 2.016, 2.172]
+       asset/skybox/s_nice_05/s_nice05_15_00_g.tobj: 4096x1024 faces 1 mips 13 mean [0.066, 0.058, 0.059] peak [4.781, 0.457, 0.164]
+       asset/skybox/s_nice_05/s_nice05_17_10_g.tobj: 4096x1024 faces 1 mips 13 mean [0.011, 0.017, 0.039] peak [0.166, 0.093, 0.115]
+   - some skies peak strongly red (s_nice05_05_00: 19.6, 4.9, 0.7); the
+     highest peak seen is 58.75 in red (s_bad03_04_05_g);
+   - the three UI brightness images:
+       material/ui/options/brightness_high_hdr.tobj: 728x728 faces 1 mips 1 mean [1.177, 1.181, 1.418] peak [5.312, 4.094, 3.375]
+       material/ui/options/brightness_low_hdr.tobj: 728x728 faces 1 mips 1 mean [0.169, 0.162, 0.099] peak [5.688, 5.688, 5.688]
+       material/ui/options/brightness_mid_hdr.tobj: 728x728 faces 1 mips 1 mean [0.497, 0.613, 0.799] peak [5.688, 5.156, 5.688]
+
+Use in the app: specsheet-data maps DXGI 67 to TextureFormat::Rgb9e5, which
+uploads unchanged as wgpu's Rgb9e5Ufloat (the same bit layout). Nothing the
+tuning screen draws today samples these textures; they are needed for
+skyboxes and HDR UI images.
