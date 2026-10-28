@@ -21,6 +21,7 @@ Evidence files live in `research/evidence/`.
 | [formats/effects.md](formats/effects.md) | `effect.scs`: `.rfx` effect → shader map, `.vso`/`.fso` shaders |
 | [formats/ui.md](formats/ui.md) | `/ui/` layout SII (widget units, 1440×900 coordinates, templates, markup), SDF `.font`, UI `.mat`, accessory icon paths |
 | [formats/ui-truck-config.md](formats/ui-truck-config.md) | The truck tuning screen (`truck_configuration_*.sii`, filter dialog): widget trees, runtime-filled containers, captions |
+| [formats/paint.md](formats/paint.md) | Paint jobs: `accessory_paint_job_data`, per-part `simple_paint_job_data` files, masks and `shared_` constants, preset colours |
 
 ## Not yet implemented
 

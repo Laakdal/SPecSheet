@@ -24,6 +24,7 @@ Docs are organised by topic. Each fact has one home: `formats/` describes what g
   - [formats/effects.md](formats/effects.md): `effect.scs` shaders
   - [formats/ui.md](formats/ui.md): `/ui/` layouts, templates, fonts, UI icons
   - [formats/ui-truck-config.md](formats/ui-truck-config.md): the truck tuning screen's widget tree
+  - [formats/paint.md](formats/paint.md): paint jobs, per-part paint, masks
 
 ## The app
 - [RENDERING.md](RENDERING.md): pipeline, coordinates, assembly, caching

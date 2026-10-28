@@ -21,15 +21,21 @@ Unit classes map to `AccessoryKind` as follows (Confirmed by `research/evidence/
 | `accessory_cabin_data` | Cabin |
 | `accessory_addon*_data`, `accessory_horn_addon_data` | Addon |
 | `accessory_wheel_data`, `accessory_rim_data` | Wheel |
-| `accessory_paint_job_data` | PaintJob |
+| `accessory_paint_job_data` | PaintJob, with its `PaintJob` data in `Accessory::paint` (F15) |
 | `accessory_engine_data`, `accessory_transmission_data`, `accessory_head_lights_data`, `accessory_interior_data` | Engine, Transmission, HeadLights (not visual), Interior (its `ext_model` is placed, F10) |
 
-Other classes are not accessories (e.g. `simple_paint_job_data`, `physics_patch_data`) and are ignored.
+Other classes are not accessories. `simple_paint_job_data` units are attached to their paint job as `PartPaint`s (below); others (e.g. `physics_patch_data`) are ignored.
 
 Model references:
 - Chassis and cabin use `detail_model`, else `model`, together with `look`, `variant` and `variant_uk`.
 - Addons use `exterior_model[_uk]`, `look` and `variant`.
 - Wheels use `model` and `look`.
+
+Paint jobs (F15, [formats/paint.md](formats/paint.md)):
+- `Accessory::paint` holds the mask, mask colours, flags, flake, flip, locks and `color_variant[]` groups of every paint job (Confirmed data).
+- Per-part units come from `paint_job/accessory/<token>.sii`, keyed by the first token of the paint job's unit name (Confirmed). `acc_list[]` entries `<slot>.<accessory>` resolve to `<accessory>.<truck>.<slot>` (`PartPaint::accessories`); entries that name no accessory stay in `PartPaint::unresolved` and are not warnings.
+- The per-accessory files `accessory/<slot>/paint_job/*.sii` are skipped (Design: 4 of 131 match an installed paint job).
+- Presets name the paint job by file path; `TruckCatalog::by_def_path` resolves it.
 
 ## Rules (`specsheet_core::Configuration`)
 
@@ -42,7 +48,9 @@ Model references:
 | Addons with an exterior model need a matching locator on the current chassis/cabin | see F4 | Hypothesis, 626/626 presets |
 | Every selection, base parts included, must satisfy its own rules against the rest of the configuration (e.g. an 8x4-only cabin cannot go on a 4x2 chassis) | | Design; regression test `base_parts_must_satisfy_their_own_suitable_for` |
 | Repair after a base-part change: drop selections that became incompatible, then refill required slots from `fallback[]`, then selected `defaults[]`, then the first compatible option | | Design |
-| Selecting a paint job clears the preset's colour override, so the paint job's `base_color` applies | | Design |
+| Selecting a paint job clears every colour override (base, mask r/g/b, flake, flip), so the paint job's own colours apply | | Design |
+| When a change makes the paint job unsuitable (a new cabin), it moves to the first compatible paint job with the same `name` (its family: one design cut per cabin, `770s_met_a`/`_b`/`_c`) and keeps the overrides; this also wins over a cabin's `defaults[]` paint job. Without a family member the paint job is dropped as before | 770s_met family on the Scania S | Design; real-install test `a_cabin_change_keeps_the_paint_job_design` |
+| Colour overrides are not checked against the paint job's `*_locked` flags | | Design |
 
 Validation: example `catalog_info` validates every truck's game preset (`/def/vehicle/truck_desktop/*.sii`) and finds 0 issues for all 26 trucks, wheels included.
 
@@ -50,7 +58,9 @@ Validation: example `catalog_info` validates every truck's game preset (`/def/ve
 
 `Configuration` holds:
 - the selected accessory per slot;
-- an optional paint-colour override (taken from the preset's `vehicle_paint_job_accessory.base_color`; otherwise the paint job's `base_color`).
+- a `PaintOverride`: optional base, mask r/g/b, flake and flip colours, loaded from the preset's `vehicle_paint_job_accessory` (all six keys); `None` uses the paint job's value. `paint_color()`/`set_paint_color()` read and set the base colour.
+
+`specsheet_data::paint::piece_paint` merges the selected paint job, its per-part unit for a placed accessory and the overrides into a `PiecePaint` for the renderer (F15).
 
 The app starts every truck from its game preset.
 
@@ -71,6 +81,6 @@ A base-model locator belongs to the longest slot name it starts with (`mirror_s`
 
 - `overrides[]`.
 - `hide_in`.
-- Paint-job textures and masks (only the base colour is applied).
+- Rendering paint-job masks, flakes and flip: the data is loaded and resolved (`piece_paint`), but the app applies only the base colour.
 - Interior camera (only the exterior-view interior model is shown; right-hand drive shows the interior's UK twin, F10).
 - Engine, transmission, head lights, interior and paint job are selectable from the sidebar's "General" group (slots without a 3D marker), but only the paint job's base colour has a visual effect.

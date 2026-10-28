@@ -243,6 +243,21 @@ Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chass
 - **Unknown.**
   - Whether the tuning screen shows liftable axles raised or lowered. The app shows them lowered. To settle: a reference screenshot (docs/PARITY.md) or REA on `liftable_axle`.
 
+### F15: Paint jobs: one unit, a token-named per-part file, masks cut per cabin (Confirmed data, Hypothesis on unlisted parts)
+Evidence: `research/evidence/paint-job-survey.txt` (S1–S10). Format details: [formats/paint.md](formats/paint.md). No shader code was read (D13).
+
+- **Paint-job unit (Confirmed).** Each `paint_job/<file>.sii` holds one `accessory_paint_job_data` unit (19,998 units, 0 files with more). It carries `base_color`, `paint_job_mask`, `mask_{r,g,b}_color`, the flags `airbrush`, `alternate_uvset` and `flipflake`, flake (`flake_color`, `_density`, `_shininess`, `_clearcoat_rolloff`, `_uvscale`, `_noise`) and flip (`flip_color`, `flip_strength`) parameters, `*_locked` flags, `stock` and `color_variant[]` (S2).
+- **Per-part file (Confirmed).** `paint_job/accessory/<token>.sii`, where `<token>` is the first token of the paint job's unit name, not its file stem. The executable has the string `%s/paint_job/accessory/%s.sii`; 17,410 paint jobs link by token and 0 by stem only (S3). The file holds nameless `simple_paint_job_data` units: a mask, `flake_uvscale`, `flake_vratio` and `acc_list[]` entries `<slot>.<accessory>`, which name units `<accessory>.<truck>.<slot>` (560,896 of 561,084 resolve, S4).
+- **Masks (Confirmed).** `pjm_at_<x>x<y>_size_<w>x<h>.tobj` tiles, BC1/BC3 sRGB, sized as named; each cabin variant of a design (`_a`, `_b`, `_c`, one `suitable_for` cabin each) uses its own tile. `shared_<RRGGBBAA>.tobj` masks are uniform 4×4 textures equal to the hex name (4,816 of 4,816, S5).
+- **Presets and saves (Confirmed).** `vehicle_paint_job_accessory` references the paint job by file path (`data_path`) and stores up to six colours: base, mask r/g/b, flake, flip; saves write all six (S8, S10).
+- **Hypothesis.**
+  - Painted parts that no `acc_list` names use the paint job's main mask: the Scania S bumper and door handles share the cab's material and lie in the cab's UV square (S6).
+  - `flake_noise` defaults to `/material/custom/flake_noise.tobj` (in the executable and the most common value, S7).
+  - Three kinds of paint job: plain/metallic, colour mask, airbrush livery (feature combinations and effect variant names, S2, S7).
+  - A `*_locked` colour cannot be changed by the player.
+- **Unknown.** `color_variant[]` and `stock`; how mask tile coordinates map to UVs; the per-accessory files `accessory/<slot>/paint_job/` (127 of 131 name no installed paint job, S3); the shading maths (needs a clean-room spec).
+- **Test.** The real-install tests `every_paint_job_parses`, `paint_job_parts_resolve_by_unit_token`, `every_paint_mask_exists_or_is_a_constant`, `every_desktop_preset_loads_its_paint_colours` and `a_cabin_change_keeps_the_paint_job_design`.
+
 ## Open questions
 
 | Question | Next step |
