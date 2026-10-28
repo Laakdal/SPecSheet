@@ -19,6 +19,10 @@ pub enum ArchiveError {
     UnsupportedSalt(u16),
     #[error("unsupported compression code {0}")]
     UnsupportedCompression(u8),
+    #[error("not a ZIP archive (no end-of-central-directory record)")]
+    NotZip,
+    #[error("`{path}` uses unsupported ZIP compression method {method}")]
+    UnsupportedZipMethod { path: String, method: u16 },
     #[error("corrupt archive {path}: {reason}")]
     Corrupt { path: PathBuf, reason: String },
     #[error("`{0}` not found")]

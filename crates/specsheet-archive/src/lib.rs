@@ -7,14 +7,18 @@ mod city;
 mod error;
 mod gdeflate;
 mod hashfs;
+mod hashfs_v1;
 mod read_at;
 mod texture;
 mod vfs;
+mod zip;
 
 pub use city::city_hash_64;
 pub use error::{ArchiveError, Result};
 pub use hashfs::{hash_path, Archive, Blob, Content, DirListing, Entry, EntryKind, SkippedEntry};
+pub use hashfs_v1::{EntryV1, HashFsV1Archive};
 pub use texture::{
     pixel_layout, AddressMode, ImageMeta, PackedTexture, PixelLayout, SampleMeta, Surface,
 };
 pub use vfs::Vfs;
+pub use zip::ZipArchive;
