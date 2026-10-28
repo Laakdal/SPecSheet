@@ -1,0 +1,122 @@
+Shader spec sources: glass, lamp, dif.lum, unlit, decalshadow, light.tex, fakeshadow,
+shadowonly, none; plus the truckpaint asafew.a/shadow check (ETS2 1.60.1.7)
+=====================================================================================
+Specs: docs/app/shader-specs/{glass,lamp,dif-lum,unlit,shadows-and-fake-lights}.md,
+and the UV-slot and truckpaint notes in dif-spec.md §3.2 and truckpaint.md §7.
+
+Clean-room note (D13): the game's shaders were read only to learn the maths. All
+extracted text stayed in the session scratchpad, outside the repository. This file
+lists what was read; it contains no shader text.
+
+Commands (Git Bash)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  scs = specsheet-archive example `scs`, built with its own CARGO_TARGET_DIR
+  scs ls effect/eut2/<dir>                          list effects
+  scs cat effect/eut2/<dir>/<effect>.rfx            effect -> techniques -> passes
+  scs cat effect/deferred/rs/<state>.rs             render states
+  scs cat effect/eut2/_shd/<hash>.glsl.vso|fso      shader objects ("SHDO" container)
+  scs cat effect/def/{inputs,uniforms,vas,eut2_interfaces}.sui
+  Then, in the scratchpad: printable runs of each object, keep the GLSL part,
+  diff variants against each other with numeric suffixes stripped.
+
+Effect locations (directory under effect/eut2/)
+  glass/  lamp/  dif_lum/  unlit_tex/  unlit_vcol_tex/  light_tex/  fakeshadow/
+  shadowonly/  none/ ; decalshadow is in shadowmap/ (eut2.decalshadow.rfx).
+  eut2.none.rfx has no technique at all.
+
+Passes read (glsl technique). Columns: effect, pass semantics, render state,
+vertex object, fragment object. For normal-mapped effects the first listed
+technique carries "condition: nmap"; the second is the fallback without the map.
+  eut2.glass                               transparent forward_mult    5927ab1a98aff02025e241df18e7850e 3fc6279da5379823ba15a1d6127f36ca
+  eut2.glass                               transparent forward_add     2e4d90bb0c0f30fc774fd01b11cc19b1 d125280204413ec978bd78bafbf84d13
+  eut2.glass.tsnmap                        transparent forward_mult    77c113993d5c24d14be7432af9135896 cd5b0b076f1a8625a6a3c56b3cdaa428
+  eut2.glass.tsnmap                        transparent forward_add     655367a451bdf9e1219d4ee325eeb4ba 151d8d974811895f6db1517578235232
+  eut2.glass.tsnmap                        transparent forward_mult    5927ab1a98aff02025e241df18e7850e 3fc6279da5379823ba15a1d6127f36ca
+  eut2.glass.tsnmap                        transparent forward_add     2e4d90bb0c0f30fc774fd01b11cc19b1 d125280204413ec978bd78bafbf84d13
+  eut2.glass.tsnmapuv                      transparent forward_mult    77c113993d5c24d14be7432af9135896 cd5b0b076f1a8625a6a3c56b3cdaa428
+  eut2.glass.tsnmapuv                      transparent forward_add     11f3cc6f3078f5bb72795a56e85e106f 1630826e98756ce82cea94c5c98416c1
+  eut2.glass.tsnmapuv                      transparent forward_mult    5927ab1a98aff02025e241df18e7850e 3fc6279da5379823ba15a1d6127f36ca
+  eut2.glass.tsnmapuv                      transparent forward_add     2e4d90bb0c0f30fc774fd01b11cc19b1 d125280204413ec978bd78bafbf84d13
+  eut2.glass.tsnmap.distort                transparent forward_mult    77c113993d5c24d14be7432af9135896 cd5b0b076f1a8625a6a3c56b3cdaa428
+  eut2.glass.tsnmap.distort                transparent forward_add     655367a451bdf9e1219d4ee325eeb4ba 151d8d974811895f6db1517578235232
+  eut2.glass.tsnmap.distort                distort     forward_add     78572a885c49732a6bc9e30756a7c727 7633641e9a9869aadb8e7043db8bad51
+  eut2.glass.tsnmap.distort                transparent forward_mult    5927ab1a98aff02025e241df18e7850e 3fc6279da5379823ba15a1d6127f36ca
+  eut2.glass.tsnmap.distort                transparent forward_add     2e4d90bb0c0f30fc774fd01b11cc19b1 d125280204413ec978bd78bafbf84d13
+  eut2.glass.tsnmap.distort                distort     forward_add     8b14f9c3d0a1652fa98c0847525daa82 97c8968497833e2eea6fe47d06cf54a2
+  eut2.lamp                                defattr     attrib_render   322240ea8a3554e6df1793084b90231d 4750f804e74334ab57179657f4e04c45
+  eut2.lamp                                defpost     post_add        dc88e0ee37074664cd317f768137fc38 03f7bde2adfd3a55f0e870d82e749c37
+  eut2.lamp                                fwdopaque   forward_none    88ee27f56d04f461f1cdca77f2a185cf c0a81841dc4b9351644bfe01863d4dc2
+  eut2.lamp.add.env                        defattr     attrib_render   689a89d8d5eb01502a6a63e91567fc3c 72edd2945c791f75ffc41f778c8327b7
+  eut2.lamp.add.env                        defpost     post_add        f751063caa3c6564ab7064e90720c317 b91d9e59895ad8722611c8f732b68ea6
+  eut2.lamp.add.env                        fwdopaque   forward_none    fd66b462e3fafa13755894d916da0320 b2db656869e452b4bd2ccf8033064895
+  eut2.lamp.tsnmapuv.add.env               defattr     attrib_render   89e2349a67e06d66ffd961df4e6e5c74 195e2d7cc0dc1b134746b027ed570df4
+  eut2.lamp.tsnmapuv.add.env               defpost     post_add        b00904d98bb15638390b3ee7e951e2a5 c99479045fed8c7ac6fb03d76e382e45
+  eut2.lamp.tsnmapuv.add.env               fwdopaque   forward_none    0286d8bfd36c6ab165165a98d4093d41 5eb30678ea35b76271714017f87e5884
+  eut2.lamp.tsnmapuv.add.env               defattr     attrib_render   689a89d8d5eb01502a6a63e91567fc3c 72edd2945c791f75ffc41f778c8327b7
+  eut2.lamp.tsnmapuv.add.env               defpost     post_add        f751063caa3c6564ab7064e90720c317 b91d9e59895ad8722611c8f732b68ea6
+  eut2.lamp.tsnmapuv.add.env               fwdopaque   forward_none    fd66b462e3fafa13755894d916da0320 b2db656869e452b4bd2ccf8033064895
+  eut2.dif.lum                             defattr     attrib_render   a0d10bea88c9cf0056089e6e559ee504 0e595c463eb158a7fba0aee83acf8230
+  eut2.dif.lum                             defpost     post_add        676dc55ca19f042e6777249e1bec8c81 4ee0e5fd9a5f2607d5eb39141f32e730
+  eut2.dif.lum                             fwdopaque   forward_none    305bd1aa62119e972ffa17be23ad97bd 78eabd3a4da8b7cd349e44e53cc662f5
+  eut2.dif.lum.lvcol                       defattr     attrib_render   a0d10bea88c9cf0056089e6e559ee504 0e595c463eb158a7fba0aee83acf8230
+  eut2.dif.lum.lvcol                       defpost     post_add        2db0f9fd3d20ecf0f2c7196a220d6234 4ee0e5fd9a5f2607d5eb39141f32e730
+  eut2.dif.lum.lvcol                       fwdopaque   forward_none    305bd1aa62119e972ffa17be23ad97bd 085fbaa335d30bf332dd939ac6632240
+  eut2.dif.lum.decal.over                  decalpost   decal_over      183e5bf6dd43c8d8a1d9b261f8f8dc12 f15b5dbe3d4ea52a06ffc1815dd6b753
+  eut2.dif.lum.decal.over                  decal       decal_over      305bd1aa62119e972ffa17be23ad97bd 78eabd3a4da8b7cd349e44e53cc662f5
+  eut2.dif.lum.lvcol.decal.over            decalpost   decal_over      183e5bf6dd43c8d8a1d9b261f8f8dc12 1384ec1318bc925e9ec7b73828fb74dd
+  eut2.dif.lum.lvcol.decal.over            decal       decal_over      305bd1aa62119e972ffa17be23ad97bd 085fbaa335d30bf332dd939ac6632240
+  eut2.unlit.tex                           opaque      forward_none    330719f465d6c5ea8bc45344695e4849 a13695f54d4d7e0811b4f552e9dca1f2
+  eut2.unlit.vcol.tex.add                  blend       forward_add     8d63991bd3e8dccf8877ffad3598d1f8 5be7f3aef70994c1218e0336967ca6cf
+  eut2.unlit.vcol.tex.flipsheet.add        blend       forward_add     a04b55114b9258936ebfab7c681d04d0 1a2ee6c5cd9b1fa66c44aa303e02397a
+  eut2.decalshadow                         decalpost   decal_over      9b3d9c394ff4ead750d6aac6b9d9b02e 913d7cfe9e2e16d85862fd7717a81cb2
+  eut2.decalshadow                         decal       decal_over      9b3d9c394ff4ead750d6aac6b9d9b02e 86b76c9a26d8a08f6b0f5a03fc70bb99
+  eut2.light.tex                           lightsrc    apply_fake_light 564e4b0b942f1383955a7633c7e4bceb c8221800ad162c54d24664541a1fff09
+  eut2.fakeshadow                          fakeshadcol fakeshadow_color 18ba7976b1b31402536d26b9ff807cfa 094b8b175b9adf116545c6f0d0c49ed3
+  eut2.shadowonly                          shadow      shadowmap_depth d1d916c88541e4698a9c7f26e2a0b6ed 9d1d79e17ab947bc4b67da3578b6006a
+  eut2.truckpaint.tsnmapuv.asafew.a        defattr     attrib_render   f6d9a7db93bd6ac53e541e61384020af 7b936ffffef854c5c47ef276d56b6dd8
+  eut2.truckpaint.tsnmapuv.asafew.a        fwdopaque   forward_none    f6d9a7db93bd6ac53e541e61384020af 947855d8d18361efd0b22960847b7362
+  eut2.truckpaint.tsnmapuv.asafew.a        defattr     attrib_render   7e88990fe12dc772b15b74e1fd599f09 2d09e6c87e95612e13b9b1472aad7e1b
+  eut2.truckpaint.tsnmapuv.asafew.a        fwdopaque   forward_none    7e88990fe12dc772b15b74e1fd599f09 0e34599f7815b15135987993bd882ae7
+  eut2.truckpaint.shadow                   defattr     attrib_render   63d6ff373a405677e85e2844f4c6e3d4 825dda5bb5924414f95f9e369d6a6787
+  eut2.truckpaint.shadow                   shadow      shadowmap_depth d1d916c88541e4698a9c7f26e2a0b6ed 9d1d79e17ab947bc4b67da3578b6006a
+  eut2.truckpaint.shadow                   fwdopaque   forward_none    63d6ff373a405677e85e2844f4c6e3d4 4ac42d2dd3b138cdd3e317e322d57ca7
+
+Render states read (effect/deferred/rs/)
+  forward_mult      depth greater, no write; cull back; blend src=dst_color, dst=zero
+  forward_add       depth greater, no write; cull back; blend src=src_alpha, dst=one
+  post_add          depth gequal, no write; cull back; blend src=src_alpha, dst=one
+  decal_over        depth gequal, no write, offset; cull back; blend src_alpha / one_minus_src_alpha
+  apply_fake_light  depth gequal, no write, offset; cull back; blend one / one
+  fakeshadow_color  depth less, write; cull front
+  shadowmap_depth   depth greater, write, clamp; cull front; colour writes off
+
+Interface tables used (effect/def/)
+  inputs.sui    .mat names and defaults: glass_tint_color (1,1,1), glass_tint_opacity 0.0,
+                luminance_output 0.0, luminance_night 0.0, fresnel (0.2, 0.9), depth_bias 0.0,
+                lamp_preview_color/mask, animsheet_* , distortion_strength (1,1)
+  uniforms.sui  tint <- glass_tint_color + glass_tint_opacity; material0_data <- diffuse,
+                additional_ambient, specular, shininess, reflection(+secondary);
+                material1_data <- fresnel, env_factor, specular; material_luminosity <-
+                luminance_output; diffuse_multiplier <- diffuse, specular_multiplier <-
+                specular, environment_multiplier <- env_factor (light.tex);
+                engine-only (no .mat input): texture_reflection_modulator, lamp_contrast,
+                lamp_color_array, luminosity_color_array, alpha_to_weight_factors
+  vas.sui       vertex streams: tex_coord_0..7 named "UV 0".."UV 5", "UV Normal" (6), "UV 7"
+  Vertex attribute numbering observed in the vertex objects: UV slot n is attribute 8+n
+  (slot 0 = attribute 8 unpacked with transform0 row 12 .xy; slot 1 = attribute 9 with
+  row 12 .zw; slot 6 = attribute 14 with its own 6/7 unpack pair). Read in glass.tsnmapuv,
+  lamp.add.env and dif.lum.
+
+Cross-checks made while reading
+  - dif.lum deferred post: the vertex stage halves (0.5x) the luminosity and the fragment
+    stage doubles it, so deferred emission equals forward emission.
+  - truckpaint.tsnmapuv.asafew.a vs truckpaint.tsnmapuv: forward and G-buffer passes differ
+    only by a discard when base alpha * vertex alpha < 0.05.
+  - truckpaint.shadow: the same colour passes as truckpaint plus the shadowmap_depth pass.
+
+Not read: lamp.anim*, dif.lum.spec*, unlit *.awhite*, light.tex.ls{bounce,direct,lucent},
+  the glass distort vertex factor, instanced/skinned variants.
+
+Wiki pages used (paraphrased in the specs, not copied)
+  https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Supported_shaders
+  https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Materials/Lamp_system
