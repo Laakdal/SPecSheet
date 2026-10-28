@@ -1,0 +1,71 @@
+# Shaders and lighting: status and plan
+
+Why the app doesn't look like the game yet, which game shaders matter, and how we get to 1:1 within D13 (clean-room shaders).
+
+## Why it doesn't look right yet
+
+The work so far went into *what* is drawn: the right trucks, parts, positions and the game's own tuning UI. *How it is lit and shaded* is still an approximation ([materials.md](materials.md)):
+
+| What you see | Cause |
+|---|---|
+| The garage looks flat and washed out | Only `texture_base` is drawn. The baked shading (`texture_mult`), the normal maps and the scene's `showroom_cube` reflection are ignored. |
+| The paint looks like flat plastic | `truckpaint` is drawn as "paint colour × a fixed metallic value". There is no clear coat, no flakes, no flip colour, and no paint masks or liveries. |
+| Chrome and metal look dull or dark | The reflection is a gradient stand-in, not the game's cube reflections. |
+| No shadows on or under the truck | The `fakeshadow`/`shadowonly` geometry is hidden, and real-time shadows are off. |
+| The overall light feels off | The scene lights are mapped approximately; the game's exposure, tonemapping and bloom are not reproduced. |
+
+## Which shaders the trucks use
+
+Measured with `effect_usage` (`research/evidence/effect-usage-survey.txt`): 7,756 truck and UI-scene models use 5,002 materials and **196 distinct effect names**. An effect name is a **base shader plus flavors**. For example `eut2.dif.spec.weight.add.env.tsnmapuv` is the base `dif.spec` with the flavors `weight`, `add.env` and `tsnmapuv`. So the job is one material system with switchable features, not 196 shaders.
+
+Share of all 24,441 model uses:
+
+| Base shader | Share | What it is (SCS's description, paraphrased) |
+|---|---|---|
+| `dif.spec` | 60.0 % | Diffuse plus specular from one texture; the texture's alpha is the specular strength |
+| `shadowonly` | 16.3 % | Invisible sun-shadow casters |
+| `truckpaint` | 6.4 % | Paint from base and paint-job textures; modes default, colormask, airbrush; flipflake |
+| `lamp` | 5.0 % | Lights; a mask texture marks the parts that light up when on |
+| `dif.lum` | 3.8 % | Diffuse with self-illumination weighted by texture alpha (night lighting) |
+| `glass` | 3.2 % | Alpha is the specular map; tint colour and tint opacity |
+| `decalshadow` | 1.2 % | Transparent baked shadows |
+| `fakeshadow` | 0.6 % | Shadow-volume contours (wheels) |
+| everything else | under 4 % together | `dif`, `dif.spec.mult.dif.spec` (liveries), `light.tex`, `unlit.*`, scene shaders such as `showroom_v2`, `baked`, `water` |
+
+| Flavor | Share | Meaning |
+|---|---|---|
+| `add.env` | 44 % | Adds a reflection pass and texture, scaled by an environment factor |
+| `tsnmap` / `tsnmapuv` | 30 % | Tangent-space normal map (the `uv` variant uses another UV set) |
+| `weight` | 28 % | Modified specular |
+| `a` / `over` / `decal` | 7 % / 7 % / 5 % | Alpha test, blended overlay, decal |
+| `nofresnel` | 5 % | Reflection without the fresnel term |
+| `paint` | 3 % | Takes the truck paint colour |
+| `altuv`, `airbrush`, `flipflake`, `colormask` | about 2 % together | `truckpaint` modes |
+
+The paraphrases come from SCS's public modding wiki, [Supported shaders](https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Supported_shaders), which documents 44 base shaders, their inputs and their flavors. It is SCS's own description of behaviour, not code, so it is a primary input for the specs. Cite it; don't copy its text.
+
+## Plan
+
+### Step 1: quick wins (no shader code involved)
+
+These use only `.mat` parameters, textures and Bevy's renderer:
+1. Draw `texture_mult` (baked shading) as an occlusion layer, on the garage and on the truck.
+2. Normal maps (`tsnmap` / `tsnmapuv`, BC5), on the UV set the flavor names.
+3. The scene's `showroom_cube` (and other cube textures) as Bevy's environment map, loaded at runtime from the install. This replaces the gradient stand-in.
+4. Real-time shadows from the scene's main light.
+5. The `.mat` values (`specular`, `shininess`, `env_factor`, `diffuse`) on every material.
+
+### Step 2: the game's look (clean-room shaders, D13)
+
+1. **Specs.** A spec agent reads the game's shader for one base and its flavors, and writes the maths in prose and equations to `shader-specs/<base>.md`, citing the wiki for behaviour. No code is copied or quoted.
+2. **WGSL.** A different agent, which has never seen the game's shaders, writes one Bevy material per base, with the flavors as switches (shader defs), from the spec only.
+3. **Order by coverage:**
+   1. `dif.spec` with `add.env`, `tsnmap(uv)`, `weight`, `nofresnel`, `a`, `over` and `decal`: about 60 % of all uses, most of the look.
+   2. `truckpaint` with `altuv`, `airbrush`, `colormask` and `flipflake`, together with the paint-job data ([TUNING_SYSTEM.md](../TUNING_SYSTEM.md), paint research).
+   3. `glass` and `lamp` (including `add.env`).
+   4. `dif.lum`, `decalshadow`, `light.tex` and `unlit.*`.
+   5. The scene shaders used by the tuning garage (`showroom_v2`, `baked`).
+   6. Lighting model, exposure and tonemapping.
+4. **Measure.** After each base, run `specsheet --parity` against the reference screenshots and record the scores in [../PARITY.md](../PARITY.md).
+
+Not planned: shaders the trucks and garage don't use (roads, terrain, buildings, sky, water, grass).
