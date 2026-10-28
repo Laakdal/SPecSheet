@@ -143,3 +143,167 @@ pub fn piece_paint(
         flipflake: paint.flipflake,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use specsheet_core::{
+        Accessory, AccessoryKind, Flake, Flip, ModelRef, PaintJob, PaintOverride, PartPaint,
+        TruckId,
+    };
+
+    fn accessory(id: &str, slot: &str, kind: AccessoryKind) -> Accessory {
+        Accessory {
+            id: AccessoryId::from(id),
+            slot: SlotId::from(slot),
+            kind,
+            def_path: format!("/def/t/{slot}/{id}.sii"),
+            name: id.to_owned(),
+            icon: None,
+            price: None,
+            unlock_level: None,
+            model: ModelRef::default(),
+            suitable_for: Vec::new(),
+            conflict_with: Vec::new(),
+            defaults: Vec::new(),
+            requires: Vec::new(),
+            base_color: None,
+            wheel: None,
+            left_hand_traffic: false,
+            drive_twin: None,
+            paint: None,
+        }
+    }
+
+    const MAIN_MASK: &str = "/vehicle/truck/upgrade/paintjob/t/x/pjm_at_0x0_size_2048x2048.tobj";
+    const PART_MASK: &str = "/vehicle/truck/upgrade/paintjob/t/x/shared_ff000080.tobj";
+
+    fn setup() -> (TruckCatalog, Configuration) {
+        let mut job = accessory("x_a.t.paint_job", "paint_job", AccessoryKind::PaintJob);
+        job.base_color = Some([0.5, 0.5, 0.5]);
+        job.paint = Some(Box::new(PaintJob {
+            base_color: Some([0.5, 0.5, 0.5]),
+            mask: Some(MAIN_MASK.to_owned()),
+            mask_colors: [Some([1.0, 0.0, 0.0]), Some([0.0, 1.0, 0.0]), None],
+            airbrush: true,
+            alternate_uvset: true,
+            flake: Flake {
+                color: Some([1.0, 1.0, 1.0]),
+                uvscale: Some(24.0),
+                ..Flake::default()
+            },
+            flip: Flip {
+                color: Some([0.0, 0.0, 1.0]),
+                strength: Some(1.7),
+            },
+            parts: vec![PartPaint {
+                accessories: vec![("sunshld".into(), "stock.t.sunshld".into())],
+                mask: Some(PART_MASK.to_owned()),
+                flake_uvscale: Some(16.0),
+                flake_vratio: Some(0.5),
+                ..PartPaint::default()
+            }],
+            ..PaintJob::default()
+        }));
+        let catalog = TruckCatalog::new(
+            TruckId::from("t"),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            [
+                job,
+                accessory("high.t.cabin", "cabin", AccessoryKind::Cabin),
+                accessory("stock.t.sunshld", "sunshld", AccessoryKind::Addon),
+            ],
+        );
+        let config = Configuration::from_selections(
+            TruckId::from("t"),
+            [
+                ("cabin".into(), "high.t.cabin".into()),
+                ("sunshld".into(), "stock.t.sunshld".into()),
+                ("paint_job".into(), "x_a.t.paint_job".into()),
+            ],
+        );
+        (catalog, config)
+    }
+
+    #[test]
+    fn unlisted_pieces_take_the_paint_jobs_own_values() {
+        let (catalog, config) = setup();
+        let paint =
+            piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
+        assert_eq!(paint.paint_job, AccessoryId::from("x_a.t.paint_job"));
+        assert_eq!(paint.part, None);
+        assert_eq!(paint.base_color, Some([0.5, 0.5, 0.5]));
+        assert_eq!(paint.mask, Some(Mask::Texture(MAIN_MASK.to_owned())));
+        assert_eq!(
+            paint.mask_colors,
+            [Some([1.0, 0.0, 0.0]), Some([0.0, 1.0, 0.0]), None]
+        );
+        assert_eq!(paint.flake.uvscale, Some(24.0));
+        assert_eq!(paint.flake.vratio, None);
+        assert_eq!(paint.flake.noise, DEFAULT_FLAKE_NOISE);
+        assert_eq!(paint.flip.strength, Some(1.7));
+        assert!(paint.airbrush && paint.alternate_uvset && !paint.flipflake);
+    }
+
+    #[test]
+    fn a_listed_piece_takes_its_parts_mask_and_flake_scale() {
+        let (catalog, config) = setup();
+        let paint = piece_paint(
+            &catalog,
+            &config,
+            &"sunshld".into(),
+            &"stock.t.sunshld".into(),
+        )
+        .expect("paint");
+        assert_eq!(paint.part, Some(0));
+        assert_eq!(
+            paint.mask,
+            Some(Mask::Constant {
+                srgba: [1.0, 0.0, 0.0, 128.0 / 255.0],
+                path: PART_MASK.to_owned(),
+            })
+        );
+        assert_eq!(paint.mask.as_ref().map(Mask::path), Some(PART_MASK));
+        assert_eq!(paint.flake.uvscale, Some(16.0));
+        assert_eq!(paint.flake.vratio, Some(0.5));
+    }
+
+    #[test]
+    fn overrides_win_over_the_paint_jobs_colours() {
+        let (catalog, mut config) = setup();
+        config.set_paint_override(PaintOverride {
+            base: Some([0.1, 0.1, 0.1]),
+            mask: [None, Some([0.2, 0.2, 0.2]), Some([0.3, 0.3, 0.3])],
+            flake: Some([0.4, 0.4, 0.4]),
+            flip: None,
+        });
+        let paint =
+            piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
+        assert_eq!(paint.base_color, Some([0.1, 0.1, 0.1]));
+        assert_eq!(
+            paint.mask_colors,
+            [
+                Some([1.0, 0.0, 0.0]),
+                Some([0.2, 0.2, 0.2]),
+                Some([0.3, 0.3, 0.3])
+            ]
+        );
+        assert_eq!(paint.flake.color, Some([0.4, 0.4, 0.4]));
+        assert_eq!(paint.flip.color, Some([0.0, 0.0, 1.0]), "not overridden");
+    }
+
+    #[test]
+    fn no_paint_job_means_no_paint() {
+        let (catalog, _) = setup();
+        let config = Configuration::from_selections(
+            TruckId::from("t"),
+            [("cabin".into(), "high.t.cabin".into())],
+        );
+        assert_eq!(
+            piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()),
+            None
+        );
+    }
+}

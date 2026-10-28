@@ -783,3 +783,277 @@ fn every_preset_has_a_cockpit_at_the_eye_point() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
+
+/// Every truck's catalog, in truck order (paint-job tests, F15).
+fn paint_catalogs(fs: &GameFs) -> Vec<specsheet_core::TruckCatalog> {
+    use specsheet_data::{list_trucks, load_catalog};
+    list_trucks(fs)
+        .expect("trucks")
+        .iter()
+        .map(|truck| load_catalog(fs, &truck.id).expect("catalog").0)
+        .collect()
+}
+
+#[test]
+fn every_paint_job_parses() {
+    use specsheet_core::AccessoryKind;
+    let Some(fs) = game_fs() else { return };
+    let (mut jobs, mut airbrush, mut alt_uv, mut flipflake, mut masked) = (0, 0, 0, 0, 0);
+    let mut missing = Vec::new();
+    for catalog in paint_catalogs(&fs) {
+        for job in catalog
+            .accessories()
+            .filter(|a| a.kind == AccessoryKind::PaintJob)
+        {
+            jobs += 1;
+            let Some(paint) = job.paint.as_deref() else {
+                missing.push(job.id.to_string());
+                continue;
+            };
+            assert_eq!(paint.base_color, job.base_color, "{}", job.id);
+            airbrush += usize::from(paint.airbrush);
+            alt_uv += usize::from(paint.alternate_uvset);
+            flipflake += usize::from(paint.flipflake);
+            masked += usize::from(paint.mask.is_some());
+        }
+    }
+    println!(
+        "{jobs} paint jobs: airbrush {airbrush}, alternate_uvset {alt_uv}, \
+         flipflake {flipflake}, mask {masked}"
+    );
+    assert!(missing.is_empty(), "no paint data: {missing:?}");
+    // research/evidence/paint-job-survey.txt, S2.
+    assert_eq!(
+        (jobs, airbrush, alt_uv, flipflake, masked),
+        (19_998, 14_937, 5_487, 9_526, 18_137)
+    );
+}
+
+#[test]
+fn paint_job_parts_resolve_by_unit_token() {
+    use specsheet_core::{AccessoryId, AccessoryKind, TruckId};
+    use specsheet_data::load_catalog;
+    use std::collections::BTreeSet;
+
+    let Some(fs) = game_fs() else { return };
+    let (mut resolved, mut unresolved, mut with_parts) = (0usize, Vec::new(), 0usize);
+    for catalog in paint_catalogs(&fs) {
+        for job in catalog.accessories().filter_map(|a| a.paint.as_deref()) {
+            with_parts += usize::from(!job.parts.is_empty());
+            for part in &job.parts {
+                resolved += part.accessories.len();
+                unresolved.extend(
+                    part.unresolved
+                        .iter()
+                        .map(|e| format!("{}: {e}", catalog.truck)),
+                );
+                for (slot, id) in &part.accessories {
+                    let accessory = catalog.accessory(id).expect("resolved accessory");
+                    assert_eq!(&accessory.slot, slot, "{id}");
+                }
+            }
+        }
+    }
+    println!(
+        "{with_parts} paint jobs with parts; acc_list {resolved} resolved, {} unresolved: {:?}",
+        unresolved.len(),
+        unresolved.iter().take(20).collect::<Vec<_>>()
+    );
+    // S3, S4: 17,410 paint jobs have a per-part file; 560,896 of 561,084
+    // entries resolve.
+    assert!(with_parts >= 17_000, "{with_parts}");
+    assert!(resolved >= 560_000, "{resolved}");
+    assert!(unresolved.len() * 1000 <= resolved, "{}", unresolved.len());
+
+    // Distinct accessories listed by the parts of one paint job (S4).
+    let listed = |truck: &str, job: &str| -> (usize, usize) {
+        let (catalog, _) = load_catalog(&fs, &TruckId::from(truck)).expect("catalog");
+        let id = AccessoryId::new(format!("{job}.{truck}.paint_job"));
+        let paint = catalog
+            .accessory(&id)
+            .and_then(|a| a.paint.as_deref())
+            .unwrap_or_else(|| panic!("{id} has paint data"));
+        let accessories: BTreeSet<&AccessoryId> = paint
+            .parts
+            .iter()
+            .flat_map(|p| p.accessories.iter().map(|(_, a)| a))
+            .collect();
+        let missing: usize = paint.parts.iter().map(|p| p.unresolved.len()).sum();
+        assert!(
+            accessories.iter().all(|a| catalog
+                .accessory(a)
+                .is_some_and(|a| a.kind != AccessoryKind::PaintJob)),
+            "{id}"
+        );
+        (accessories.len(), missing)
+    };
+    assert_eq!(listed("scania.s_2016", "770s_met_a"), (64, 0));
+    assert_eq!(listed("volvo.fh_2024", "academy_a"), (51, 0));
+    assert_eq!(listed("volvo.fh_2024", "v_m_inb_a"), (51, 0));
+    // `color0m.sii` holds `col0m_s_s_a`: the part file is found by the token.
+    let (catalog, _) = load_catalog(&fs, &TruckId::from("scania.s_2016")).expect("catalog");
+    let by_file = catalog
+        .by_def_path("/def/vehicle/truck/scania.s_2016/paint_job/color0m.sii")
+        .expect("paint job by file path");
+    assert_eq!(by_file.id.as_str(), "col0m_s_s_a.scania.s_2016.paint_job");
+}
+
+#[test]
+fn every_paint_mask_exists_or_is_a_constant() {
+    use specsheet_core::shared_mask_color;
+    use std::collections::BTreeSet;
+
+    let Some(fs) = game_fs() else { return };
+    let mut masks = BTreeSet::new();
+    for catalog in paint_catalogs(&fs) {
+        for job in catalog.accessories().filter_map(|a| a.paint.as_deref()) {
+            masks.extend(job.mask.clone());
+            masks.extend(job.parts.iter().filter_map(|p| p.mask.clone()));
+        }
+    }
+    let constants = masks
+        .iter()
+        .filter(|m| shared_mask_color(m).is_some())
+        .count();
+    let missing: Vec<&String> = masks
+        .iter()
+        .filter(|m| shared_mask_color(m).is_none() && !fs.exists(m))
+        .collect();
+    println!(
+        "{} distinct masks, {constants} shared_ constants, {} missing: {missing:#?}",
+        masks.len(),
+        missing.len()
+    );
+    // S5: 49,457 distinct masks, 27 referenced masks are missing.
+    assert!(masks.len() >= 49_000, "{}", masks.len());
+    assert!(constants >= 4_800, "{constants}");
+    assert!(missing.len() <= 40, "{} masks missing", missing.len());
+}
+
+#[test]
+fn every_desktop_preset_loads_its_paint_colours() {
+    use specsheet_core::{AccessoryKind, TruckCatalog, TruckId};
+    use specsheet_data::{load_catalog, load_vehicle_config};
+    use std::collections::HashMap;
+
+    const KEYS: [&str; 6] = [
+        "base_color",
+        "mask_r_color",
+        "mask_g_color",
+        "mask_b_color",
+        "flake_color",
+        "flip_color",
+    ];
+    let Some(fs) = game_fs() else { return };
+    let dir = "/def/vehicle/truck_desktop";
+    let mut catalogs: HashMap<String, TruckCatalog> = HashMap::new();
+    let (mut presets, mut written, mut failures) = (0, 0, Vec::new());
+    for file in fs.list_dir(dir).expect("presets").files {
+        let path = format!("{dir}/{file}");
+        let doc = fs.read_sii(&path).expect("preset");
+        let truck = doc
+            .units
+            .iter()
+            .filter_map(|u| u.get_str("data_path"))
+            .find_map(|p| {
+                p.strip_prefix("/def/vehicle/truck/")?
+                    .strip_suffix("/data.sii")
+                    .map(str::to_owned)
+            })
+            .unwrap_or_else(|| panic!("{path}: no truck"));
+        let catalog = catalogs
+            .entry(truck.clone())
+            .or_insert_with(|| load_catalog(&fs, &TruckId::new(truck)).expect("catalog").0);
+        let (config, warnings) = load_vehicle_config(&fs, catalog, &path).expect("config");
+        presets += 1;
+        if !warnings.is_empty() {
+            failures.push(format!("{path}: {warnings:?}"));
+        }
+        if config
+            .paint_job(catalog)
+            .is_none_or(|job| job.kind != AccessoryKind::PaintJob || job.paint.is_none())
+        {
+            failures.push(format!("{path}: no paint job with paint data"));
+        }
+        let unit = doc
+            .units_of_class("vehicle_paint_job_accessory")
+            .next()
+            .unwrap_or_else(|| panic!("{path}: no paint unit"));
+        let paint = config.paint_override();
+        let loaded = [
+            paint.base,
+            paint.mask[0],
+            paint.mask[1],
+            paint.mask[2],
+            paint.flake,
+            paint.flip,
+        ];
+        for (key, value) in KEYS.iter().zip(loaded) {
+            let raw = unit
+                .get(key)
+                .and_then(|v| v.as_floats())
+                .and_then(|v| <[f32; 3]>::try_from(v.get(..3)?).ok());
+            written += usize::from(raw.is_some());
+            if raw != value {
+                failures.push(format!("{path}: {key} {raw:?} loaded as {value:?}"));
+            }
+        }
+    }
+    println!(
+        "{presets} presets write {written} of {} paint colours",
+        presets * 6
+    );
+    assert_eq!(presets, 26, "S8: 26 truck_desktop presets");
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn a_cabin_change_keeps_the_paint_job_design() {
+    use specsheet_core::{AccessoryId, Configuration, TruckId};
+    use specsheet_data::assembly::{slot_availability, Drive};
+    use specsheet_data::model::ModelCache;
+    use specsheet_data::{load_catalog, load_preset};
+
+    let Some(fs) = game_fs() else { return };
+    let cache = ModelCache::new();
+    let (catalog, _) = load_catalog(&fs, &TruckId::from("scania.s_2016")).expect("catalog");
+    let (mut config, _) = load_preset(&fs, &catalog)
+        .expect("preset")
+        .expect("a preset");
+    let availability = |c: &Configuration| slot_availability(&fs, &cache, &catalog, c, Drive::Left);
+    let job = |name: &str| AccessoryId::new(format!("{name}.scania.s_2016.paint_job"));
+    // 770s_met_a/_b/_c: one design for three cabins (S1).
+    let first = catalog.accessory(&job("770s_met_a")).expect("770s_met_a");
+    config
+        .select(&catalog, &availability, &first.suitable_for[0].clone())
+        .expect("its cabin");
+    config
+        .select(&catalog, &availability, &first.id)
+        .expect("paint job");
+    config.set_paint_color(Some([0.1, 0.2, 0.3]));
+    let family: Vec<_> = catalog
+        .in_slot(&first.slot)
+        .filter(|a| a.name == first.name && a.id != first.id)
+        .collect();
+    let mut moved = 0;
+    for member in family {
+        let Some(cabin) = member.suitable_for.first() else {
+            continue;
+        };
+        let Some(cabin) = catalog.accessory(cabin) else {
+            continue;
+        };
+        if config
+            .check(&catalog, &availability(&config), cabin)
+            .is_err()
+            || config.select(&catalog, &availability, &cabin.id).is_err()
+        {
+            continue;
+        }
+        let now = config.paint_job(&catalog).expect("a paint job");
+        assert_eq!(now.name, first.name, "{} on {}", now.id, cabin.id);
+        assert_eq!(config.paint_color(&catalog), Some([0.1, 0.2, 0.3]));
+        moved += 1;
+    }
+    assert!(moved > 0, "no other cabin of the family could be selected");
+}

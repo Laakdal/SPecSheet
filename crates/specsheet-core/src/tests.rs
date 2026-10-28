@@ -492,3 +492,162 @@ fn the_price_sums_selected_parts_and_hookups() {
     );
     assert_eq!(base_config().price(&catalog), 70_000);
 }
+
+/// The base catalog plus two members of one paint-job family (one per
+/// cabin) and an unrelated paint job.
+fn paint_catalog() -> TruckCatalog {
+    let mut items: Vec<Accessory> = catalog().accessories().cloned().collect();
+    let job = |id: &str, name: &str, cabin: &str| {
+        let mut job = accessory(id, "paint_job", AccessoryKind::PaintJob);
+        job.model.exterior = None;
+        job.name = name.to_owned();
+        job.suitable_for = vec![cabin.into()];
+        job.base_color = Some([0.5, 0.5, 0.5]);
+        job.paint = Some(Box::default());
+        job
+    };
+    items.push(job("stripe_a.t.paint_job", "@@stripe@@", "high.t.cabin"));
+    items.push(job("stripe_b.t.paint_job", "@@stripe@@", "low.t.cabin"));
+    items.push(job("other.t.paint_job", "@@other@@", "high.t.cabin"));
+    TruckCatalog::new(
+        TruckId::from("t"),
+        Vec::new(),
+        vec![SlotId::from("s_mirror")],
+        vec!["/def/t/s_mirror/stock.sii".into()],
+        items,
+    )
+}
+
+fn all_overrides() -> PaintOverride {
+    PaintOverride {
+        base: Some([0.1, 0.2, 0.3]),
+        mask: [Some([1.0, 0.0, 0.0]), Some([0.0, 1.0, 0.0]), None],
+        flake: Some([1.0, 1.0, 1.0]),
+        flip: Some([0.0, 0.0, 1.0]),
+    }
+}
+
+#[test]
+fn selecting_a_paint_job_clears_every_colour_override() {
+    let catalog = paint_catalog();
+    let mut config = base_config();
+    config.set_paint_override(all_overrides());
+    config.set_flake_color(Some([0.5, 0.5, 0.0]));
+    config
+        .select(&catalog, &all_slots, &"other.t.paint_job".into())
+        .expect("paint");
+    assert!(config.paint_override().is_empty());
+    assert_eq!(config.paint_color(&catalog), Some([0.5, 0.5, 0.5]));
+}
+
+#[test]
+fn paint_colour_setters_change_only_their_override() {
+    let catalog = paint_catalog();
+    let mut config = base_config();
+    config.set_paint_color(Some([0.1, 0.2, 0.3]));
+    config.set_mask_color(1, Some([0.0, 1.0, 0.0]));
+    config.set_mask_color(3, Some([9.0, 9.0, 9.0])); // no such channel
+    config.set_flip_color(Some([0.0, 0.0, 1.0]));
+    let paint = config.paint_override();
+    assert_eq!(paint.base, Some([0.1, 0.2, 0.3]));
+    assert_eq!(paint.mask, [None, Some([0.0, 1.0, 0.0]), None]);
+    assert_eq!((paint.flake, paint.flip), (None, Some([0.0, 0.0, 1.0])));
+    assert_eq!(config.paint_color(&catalog), Some([0.1, 0.2, 0.3]));
+}
+
+#[test]
+fn a_cabin_change_keeps_the_paint_job_family_and_its_colours() {
+    let catalog = paint_catalog();
+    let mut config = base_config();
+    config
+        .select(&catalog, &all_slots, &"stripe_a.t.paint_job".into())
+        .expect("paint");
+    config.set_paint_override(all_overrides());
+    config
+        .select(&catalog, &all_slots, &"low.t.cabin".into())
+        .expect("cabin");
+    assert_eq!(
+        config.selected(&"paint_job".into()),
+        Some(&"stripe_b.t.paint_job".into()),
+        "the family member for the low cabin"
+    );
+    assert_eq!(config.paint_override(), &all_overrides());
+
+    // A paint job without a family member for the new cabin is dropped.
+    config
+        .select(&catalog, &all_slots, &"high.t.cabin".into())
+        .expect("cabin");
+    config
+        .select(&catalog, &all_slots, &"other.t.paint_job".into())
+        .expect("paint");
+    config
+        .select(&catalog, &all_slots, &"low.t.cabin".into())
+        .expect("cabin");
+    assert_eq!(config.selected(&"paint_job".into()), None);
+}
+
+#[test]
+fn a_cabin_default_does_not_replace_the_paint_job_family() {
+    let mut items: Vec<Accessory> = paint_catalog().accessories().cloned().collect();
+    let low = items
+        .iter_mut()
+        .find(|a| a.id.as_str() == "low.t.cabin")
+        .expect("low cabin");
+    // The low cabin brings a paint job of another family by default.
+    low.defaults = vec!["/def/t/paint_job/plain.sii".into()];
+    let mut plain = accessory("plain.t.paint_job", "paint_job", AccessoryKind::PaintJob);
+    plain.model.exterior = None;
+    items.push(plain);
+    let catalog = TruckCatalog::new(
+        TruckId::from("t"),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        items,
+    );
+    let mut config = base_config();
+    config
+        .select(&catalog, &all_slots, &"stripe_a.t.paint_job".into())
+        .expect("paint");
+    config
+        .select(&catalog, &all_slots, &"low.t.cabin".into())
+        .expect("cabin");
+    assert_eq!(
+        config.selected(&"paint_job".into()),
+        Some(&"stripe_b.t.paint_job".into())
+    );
+}
+
+#[test]
+fn shared_mask_names_decode_to_their_srgb_colour() {
+    let red = shared_mask_color("/vehicle/truck/upgrade/paintjob/t/x/shared_ff000080.tobj");
+    assert_eq!(red, Some([1.0, 0.0, 0.0, 128.0 / 255.0]));
+    assert_eq!(
+        shared_mask_color("SHARED_000000FF.TOBJ"),
+        Some([0.0, 0.0, 0.0, 1.0])
+    );
+    for name in [
+        "/x/pjm_at_0x0_size_2048x2048.tobj",
+        "/x/shared_ff0000.tobj",
+        "/x/shared_ff0000zz.tobj",
+        "/x/shared_ff000080ff.tobj",
+        "/x/shared_ff000080.dds",
+        "/x/shared_é000000.tobj",
+        "",
+    ] {
+        assert_eq!(shared_mask_color(name), None, "{name}");
+    }
+    assert!((srgb_to_linear(0.5) - 0.214_041).abs() < 1e-5);
+    assert_eq!(srgb_to_linear(0.0), 0.0);
+}
+
+#[test]
+fn flake_noise_defaults_to_the_custom_noise_texture() {
+    let mut flake = Flake::default();
+    assert_eq!(flake.noise_texture(), DEFAULT_FLAKE_NOISE);
+    flake.noise = Some("/material/custom/flake_pattern01.tobj".into());
+    assert_eq!(
+        flake.noise_texture(),
+        "/material/custom/flake_pattern01.tobj"
+    );
+}
