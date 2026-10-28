@@ -1,0 +1,47 @@
+Clean-room rewrite, phase 2 (decision D13): hashfs.rs
+=====================================================
+
+Why: the HashFS v2 reader had been written with sk-zk's TruckLib.HashFs
+(GPL-2.0) as its layout reference, and hashfs.md's layout facts were only
+functionally confirmed. At the user's request it was rewritten clean-room.
+
+Process
+- Spec side (the coordinating session): replaced hashfs.rs with an
+  interface-only stub on the local branch `cleanroom2` (commit 1733c34, base
+  60ca365). Phase 1's agent was not reused, because it had read hashfs.rs as
+  a call site.
+- Clean side: a second fresh agent first derived the HashFS v2 layout from
+  annotated hex dumps and archive-wide checks of the game's .scs files
+  (research/evidence/hashfs-layout-derivation.txt), then implemented
+  hashfs.rs from that evidence, then re-derived docs/formats/hashfs.md with
+  citations. Forbidden and, per its report, not opened: %USERPROFILE%\refsrc,
+  any TruckLib/Extractor code, the old hashfs.rs and its git history,
+  examples/texture_layout.rs, tools/research/.
+- Corrections to the old doc, from the bytes:
+  - the header spans 0x00-0x34, not 0x2C;
+  - record 0x06 sits on .pmg only, not .pmd;
+  - word 1 bits 28-29 are set on every 0x84 blob and are masked off;
+  - 547 entries appear in no directory listing.
+- Integration: copied onto main unchanged (860d0fa evidence, 156f63b
+  hashfs.rs, f50a6a3 hashfs.md).
+
+Acceptance: differential check over every archive (ETS2 1.60.1.7, 116 files:
+the 115 mounted archives plus version.scs)
+- Tool: a throwaway program (outside the repo), built once against the old
+  reader (main at d21cff1) and once against the clean one. Per archive it
+  compares:
+  - the sorted index (hash, kind and the full Content, i.e. blob offset,
+    sizes and flags, and texture image/sample metadata);
+  - the skipped entries;
+  - every directory listing reachable from the root;
+  - the decompressed bytes of every 97th listed file (plain files and
+    packed textures).
+- Result: all four checks identical for all 116 archives, 0 differences:
+  656,591 indexed entries, 612,149 listed files, 6,262 sampled files
+  decompressed and compared; 0 open errors, 0 skipped entries.
+- The clean side also read every listed entry of version, def, effect,
+  dlc_actros_tuning, dlc_daf_xd and base_vehicle, with 0 errors (20.2 GB
+  decompressed for base_vehicle alone).
+- Also passing: guard; fmt; clippy --workspace --all-targets -D warnings;
+  workspace unit tests (11 new hashfs tests on hostile archives and
+  concurrent readers); real_install 13/13 with ETS2_DIR set.
