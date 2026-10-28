@@ -128,3 +128,58 @@ has .soundref files too (e.g. engine/sound_590s_engine.soundref); whether
 they use the same keys is not checked (Unknown).
 Hypothesis: the game finds accessory files by directory listings, so the
 two badge units, which no listing names, may never appear in the game.
+
+
+6. Search limits (after a security review)
+------------------------------------------
+Hostile content could grow the search without end: the candidate cap counted
+only paths already tried, not those waiting, listing names skipped the path
+checks, and the bytes scanned per package had no bound. Every queued path now
+passes specsheet_formats::paths::clean (at most 512 bytes; no empty, "." or
+".." part), each is queued once, and three limits hold per package. Measured
+on the test install (one-off examples, deleted after use):
+  limit                               set to     largest real need
+  paths ever queued                   4,000,000  ~1,270,000 (626,878 game +
+                                                  642,535 ZIP names and refs)
+  total length of those paths         256 MiB    ~59 MB (34.8 + 24.4)
+  bytes read to scan, per package     4 GiB      at most 2.37 GB: 1.18 GB of
+                                                  files <= 1 MiB (promods-eu-
+                                                  model1), each read at most
+                                                  twice (unnamed, then named)
+  one file or listing scanned         1 MiB      largest listing 87,488 B
+Results with the limits, same 21 packages: 139,693 named from the packages
+alone, 164,645 with game paths and 167,421 with --zips too, all unchanged
+from section 4.
+
+
+7. skybox.scs, and companions of missing files
+----------------------------------------------
+A sky texture package (329 entries, salt 0, 4.5 GB, not in the earlier
+survey). Like NG Sound it has no directory entry at all, so every name comes
+from paths inside its own files. Manifest, description and icon are named;
+the only .sii is manifest.sii.
+Before the change below: 197 named from the package alone, 205 with game
+paths, 124 unnamed. The other mod packages as candidates (--zips) add none.
+The 124 unnamed, by content (one-off example, deleted after use):
+  29  .tobj descriptors pointing at model/skybox/nskies/.../jbx_sky*.dds
+      files that are not in the package. Each one's own path is that
+      texture path with .tobj (29 of 29 hash-verified).
+  70  3-byte files, all "# @". Unknown.
+   7  hex text: 4 x 64 chars (32 bytes) and 3 x 460,010 chars (230,000
+      bytes), no known magic once decoded. Unknown.
+   3  readme text (2 English, 1 Spanish).
+  15  Windows Internet Shortcut files ("[InternetShortcut]", URL=...).
+Hypothesis: the 29 descriptors are leftovers whose textures were removed;
+nothing in the package names them.
+Change: companions are now tried for every candidate, found or not, so a
+missing texture still yields its .tobj. Results with game paths:
+  skybox.scs                 226 from the package alone, 234 with game paths, 95 unnamed
+  the other 21 packages      139,695 alone, 164,647 with game paths (+2 each, none lost)
+With --zips too: 167,657 of 171,094 entries in all 22 packages (the 21:
+167,423, +2 in Add-On MAN TG3, now 3,217 unnamed; skybox 234, unchanged).
+The 8 game paths it replaces are dlc/{dead_end,direction_blocker,
+invisible}_dlc.{pmd,pmg,tobj} (invisible_dlc has no .tobj).
+No .sii in the package names the sky textures, and no game path or other
+mod in the folder does either. Hypothesis: the package needs a separate
+definitions mod (its Spanish readme lists "Compatible: ... JBX Settings
+RC") to change the sky.
