@@ -14,6 +14,20 @@ use crate::ids::{AccessoryId, SlotId};
 /// `flake_noise` write exactly this one).
 pub const DEFAULT_FLAKE_NOISE: &str = "/material/custom/flake_noise.tobj";
 
+/// The game's paint-parameter defaults for values a paint job leaves out
+/// (F17, `research/evidence/rea-paint-apply.txt`): Confirmed for per-part
+/// units, a strong Hypothesis for paint-job attributes (`docs/formats/paint.md`).
+pub const DEFAULT_BASE_COLOR: [f32; 3] = [1.0, 1.0, 1.0];
+pub const DEFAULT_MASK_COLORS: [[f32; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+pub const DEFAULT_FLIP_COLOR: [f32; 3] = [1.0, 0.0, 0.0];
+pub const DEFAULT_FLIP_STRENGTH: f32 = 0.27;
+pub const DEFAULT_FLAKE_COLOR: [f32; 3] = [0.0, 1.0, 0.0];
+pub const DEFAULT_FLAKE_DENSITY: f32 = 1.0;
+pub const DEFAULT_FLAKE_SHININESS: f32 = 50.0;
+pub const DEFAULT_FLAKE_CLEARCOAT_ROLLOFF: f32 = 2.2;
+pub const DEFAULT_FLAKE_UVSCALE: f32 = 32.0;
+pub const DEFAULT_FLAKE_VRATIO: f32 = 1.0;
+
 /// Metallic flakes of a paint job.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Flake {

@@ -46,9 +46,9 @@ const FLAKE_STRENGTH: f32 = 1.0;
 const MAX_FLIP_WEIGHT: f32 = 1.0;
 /// ρ above 1 drives the flake coverage below 0 (§7: density reaches 2).
 const MAX_FLAKE_DENSITY: f32 = 1.0;
-/// `flake_vratio` 0 would collapse the noise's v scale (§7); 0 or missing
-/// means an unstretched noise.
-const DEFAULT_VRATIO: f32 = 1.0;
+/// `flake_vratio` 0 would collapse the noise's v scale (§7), so 0 means an
+/// unstretched noise.
+const ZERO_VRATIO: f32 = 1.0;
 /// F0 when a `.mat` has no `fresnel`: the bias of the seen pair {0.2, 0.9}.
 /// Which of the pair the effect reads is Unknown (lighting §8); we take the
 /// first.
@@ -57,7 +57,7 @@ const DEFAULT_FRESNEL: f32 = 0.2;
 /// roughness (0.35) the paint had before this material.
 const DEFAULT_SPECULAR: [f32; 3] = [1.0; 3];
 const DEFAULT_SHININESS: f32 = 130.0;
-/// The paint colour when neither the paint job nor the configuration has one.
+/// The paint colour without a paint job when the configuration has none.
 const NEUTRAL_PAINT: [f32; 3] = [0.6; 3];
 
 // `PaintUniform::flags`, mirrored in truckpaint.wgsl.
@@ -162,9 +162,8 @@ impl Paint<'_> {
     fn base_color(&self) -> [f32; 3] {
         match self {
             Paint::Job(paint) => paint.base_color,
-            Paint::Color(color) => *color,
+            Paint::Color(color) => color.unwrap_or(NEUTRAL_PAINT),
         }
-        .unwrap_or(NEUTRAL_PAINT)
     }
 }
 
@@ -208,7 +207,7 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
     if let Some(mask) = mask {
         let airbrush = job.airbrush;
         uniform.flags |= if airbrush { AIRBRUSH } else { COLORMASK };
-        let [r, g, b] = job.mask_colors.map(|c| rgb_w(c.unwrap_or(base), 1.0));
+        let [r, g, b] = job.mask_colors.map(|c| rgb_w(c, 1.0));
         (uniform.mask_r, uniform.mask_g, uniform.mask_b) = (r, g, b);
         uniform.mask_constant = match mask {
             Mask::Constant { srgba, .. } => {
@@ -223,16 +222,21 @@ pub fn paint_uniform(surface: &PaintSurface, paint: &Paint<'_>) -> PaintUniform 
     }
     if flipflake {
         uniform.flags |= FLIPFLAKE;
-        let flip = job.flip.strength.unwrap_or(0.0).clamp(0.0, MAX_FLIP_WEIGHT);
-        uniform.flip = rgb_w(job.flip.color.unwrap_or(base), flip);
+        let flip = job.flip.strength.clamp(0.0, MAX_FLIP_WEIGHT);
+        uniform.flip = rgb_w(job.flip.color, flip);
         let flake = &job.flake;
-        let density = flake.density.unwrap_or(0.0).clamp(0.0, MAX_FLAKE_DENSITY);
-        uniform.flake = rgb_w(flake.color.unwrap_or([1.0; 3]), density);
+        let density = flake.density.clamp(0.0, MAX_FLAKE_DENSITY);
+        uniform.flake = rgb_w(flake.color, density);
+        let vratio = if flake.vratio > 0.0 {
+            flake.vratio
+        } else {
+            ZERO_VRATIO
+        };
         uniform.flake_setup = Vec4::new(
-            flake.uvscale.unwrap_or(1.0),
-            flake.shininess.unwrap_or(surface.shininess),
-            flake.clearcoat_rolloff.unwrap_or(0.0),
-            flake.vratio.filter(|r| *r > 0.0).unwrap_or(DEFAULT_VRATIO),
+            flake.uvscale,
+            flake.shininess,
+            flake.clearcoat_rolloff,
+            vratio,
         );
     }
     uniform
@@ -392,21 +396,21 @@ mod tests {
         PiecePaint {
             paint_job: AccessoryId::from("stripes.t.paint_job"),
             part: None,
-            base_color: Some([0.1, 0.2, 0.3]),
+            base_color: [0.1, 0.2, 0.3],
             mask,
-            mask_colors: [Some([1.0, 0.0, 0.0]), None, Some([0.0, 0.0, 1.0])],
+            mask_colors: [[1.0, 0.0, 0.0], [0.1, 0.2, 0.3], [0.0, 0.0, 1.0]],
             flake: FlakePaint {
-                color: None,
-                density: Some(2.0),
-                shininess: None,
-                clearcoat_rolloff: Some(3.0),
-                uvscale: Some(8.0),
-                vratio: Some(0.0),
+                color: [1.0, 1.0, 1.0],
+                density: 2.0,
+                shininess: 60.0,
+                clearcoat_rolloff: 3.0,
+                uvscale: 8.0,
+                vratio: 0.0,
                 noise: "/material/custom/flake_noise.tobj".to_owned(),
             },
             flip: FlipPaint {
-                color: Some([0.9, 0.8, 0.7]),
-                strength: Some(2.7),
+                color: [0.9, 0.8, 0.7],
+                strength: 2.7,
             },
             airbrush: false,
             alternate_uvset: false,
@@ -429,7 +433,7 @@ mod tests {
         let u = paint_uniform(&surface("truckpaint"), &Paint::Job(&paint));
         assert_eq!(u.flags, COLORMASK);
         assert_eq!(u.mask_r, Vec4::new(1.0, 0.0, 0.0, 1.0));
-        assert_eq!(u.mask_g, Vec4::new(0.1, 0.2, 0.3, 1.0), "missing: P");
+        assert_eq!(u.mask_g, Vec4::new(0.1, 0.2, 0.3, 1.0));
         let livery = PiecePaint {
             alternate_uvset: true,
             ..paint.clone()
@@ -497,7 +501,7 @@ mod tests {
         assert_eq!(u.flags, FLIPFLAKE);
         assert_eq!(u.flip, Vec4::new(0.9, 0.8, 0.7, MAX_FLIP_WEIGHT));
         assert_eq!(u.flake, Vec4::new(1.0, 1.0, 1.0, MAX_FLAKE_DENSITY));
-        assert_eq!(u.flake_setup, Vec4::new(8.0, 60.0, 3.0, DEFAULT_VRATIO));
+        assert_eq!(u.flake_setup, Vec4::new(8.0, 60.0, 3.0, ZERO_VRATIO));
     }
 
     #[test]

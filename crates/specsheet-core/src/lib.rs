@@ -18,7 +18,9 @@ pub use hookup::Hookup;
 pub use ids::{AccessoryId, SlotId, TruckId};
 pub use paint::{
     shared_mask_color, srgb_to_linear, Flake, Flip, PaintJob, PaintLocks, PartPaint,
-    DEFAULT_FLAKE_NOISE,
+    DEFAULT_BASE_COLOR, DEFAULT_FLAKE_CLEARCOAT_ROLLOFF, DEFAULT_FLAKE_COLOR,
+    DEFAULT_FLAKE_DENSITY, DEFAULT_FLAKE_NOISE, DEFAULT_FLAKE_SHININESS, DEFAULT_FLAKE_UVSCALE,
+    DEFAULT_FLAKE_VRATIO, DEFAULT_FLIP_COLOR, DEFAULT_FLIP_STRENGTH, DEFAULT_MASK_COLORS,
 };
 
 #[cfg(test)]

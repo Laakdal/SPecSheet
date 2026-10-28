@@ -4,7 +4,10 @@
 //! renderer; nothing here touches textures.
 
 use specsheet_core::{
-    shared_mask_color, AccessoryId, Configuration, SlotId, TruckCatalog, DEFAULT_FLAKE_NOISE,
+    shared_mask_color, AccessoryId, Configuration, SlotId, TruckCatalog, DEFAULT_BASE_COLOR,
+    DEFAULT_FLAKE_CLEARCOAT_ROLLOFF, DEFAULT_FLAKE_COLOR, DEFAULT_FLAKE_DENSITY,
+    DEFAULT_FLAKE_SHININESS, DEFAULT_FLAKE_UVSCALE, DEFAULT_FLAKE_VRATIO, DEFAULT_FLIP_COLOR,
+    DEFAULT_FLIP_STRENGTH, DEFAULT_MASK_COLORS,
 };
 
 /// Where a piece's mask comes from.
@@ -40,28 +43,29 @@ impl Mask {
 /// Flake parameters of a piece.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlakePaint {
-    pub color: Option<[f32; 3]>,
-    pub density: Option<f32>,
-    pub shininess: Option<f32>,
-    pub clearcoat_rolloff: Option<f32>,
+    pub color: [f32; 3],
+    pub density: f32,
+    pub shininess: f32,
+    pub clearcoat_rolloff: f32,
     /// The part's `flake_uvscale`, else the paint job's.
-    pub uvscale: Option<f32>,
+    pub uvscale: f32,
     /// The part's `flake_vratio` (only per-part units write it).
-    pub vratio: Option<f32>,
-    /// `flake_noise`, else `/material/custom/flake_noise.tobj` (Hypothesis).
+    pub vratio: f32,
+    /// `flake_noise`, else `/material/custom/flake_noise.tobj` (F17).
     pub noise: String,
 }
 
 /// Flip parameters of a piece.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlipPaint {
-    pub color: Option<[f32; 3]>,
-    pub strength: Option<f32>,
+    pub color: [f32; 3],
+    pub strength: f32,
 }
 
 /// The effective paint of one placed accessory. Colours are the
 /// configuration's overrides where set, else the paint job's (F15); a colour
-/// the paint job locks is always the paint job's (F17). Which
+/// the paint job locks is always the paint job's (F17). A value nobody sets
+/// takes the game's default (`DEFAULT_*`, F17). Which
 /// pieces of the accessory's model take it is decided by their material
 /// (`eut2.truckpaint*` effects).
 #[derive(Clone, Debug, PartialEq)]
@@ -70,12 +74,12 @@ pub struct PiecePaint {
     pub paint_job: AccessoryId,
     /// Index into the paint job's `parts` when one lists this accessory.
     pub part: Option<usize>,
-    pub base_color: Option<[f32; 3]>,
+    pub base_color: [f32; 3],
     /// The part's mask when a part lists the accessory, else the paint
     /// job's main mask (Hypothesis for unlisted accessories).
     pub mask: Option<Mask>,
     /// Colours for the mask's red, green and blue channels.
-    pub mask_colors: [Option<[f32; 3]>; 3],
+    pub mask_colors: [[f32; 3]; 3],
     pub flake: FlakePaint,
     pub flip: FlipPaint,
     /// `airbrush`: the mask is a painted livery.
@@ -121,34 +125,37 @@ pub fn piece_paint(
             over.or(own)
         }
     };
-    let mut mask_colors = paint.mask_colors;
-    for ((color, over), locked) in mask_colors.iter_mut().zip(colors.mask).zip(locks.mask) {
-        *color = pick(locked, over, *color);
+    let mut mask_colors = DEFAULT_MASK_COLORS;
+    for (i, color) in mask_colors.iter_mut().enumerate() {
+        *color = pick(locks.mask[i], colors.mask[i], paint.mask_colors[i]).unwrap_or(*color);
     }
+    let flake = &paint.flake;
     Some(PiecePaint {
         paint_job: job.id.clone(),
         part,
-        base_color: pick(locks.base, colors.base, paint.base_color.or(job.base_color)),
+        base_color: pick(locks.base, colors.base, paint.base_color.or(job.base_color))
+            .unwrap_or(DEFAULT_BASE_COLOR),
         mask,
         mask_colors,
         flake: FlakePaint {
-            color: pick(locks.flake, colors.flake, paint.flake.color),
-            density: paint.flake.density,
-            shininess: paint.flake.shininess,
-            clearcoat_rolloff: paint.flake.clearcoat_rolloff,
+            color: pick(locks.flake, colors.flake, flake.color).unwrap_or(DEFAULT_FLAKE_COLOR),
+            density: flake.density.unwrap_or(DEFAULT_FLAKE_DENSITY),
+            shininess: flake.shininess.unwrap_or(DEFAULT_FLAKE_SHININESS),
+            clearcoat_rolloff: flake
+                .clearcoat_rolloff
+                .unwrap_or(DEFAULT_FLAKE_CLEARCOAT_ROLLOFF),
             uvscale: part_paint
                 .and_then(|p| p.flake_uvscale)
-                .or(paint.flake.uvscale),
-            vratio: part_paint.and_then(|p| p.flake_vratio),
-            noise: paint
-                .flake
-                .noise
-                .clone()
-                .unwrap_or_else(|| DEFAULT_FLAKE_NOISE.to_owned()),
+                .or(flake.uvscale)
+                .unwrap_or(DEFAULT_FLAKE_UVSCALE),
+            vratio: part_paint
+                .and_then(|p| p.flake_vratio)
+                .unwrap_or(DEFAULT_FLAKE_VRATIO),
+            noise: flake.noise_texture().to_owned(),
         },
         flip: FlipPaint {
-            color: pick(locks.flip, colors.flip, paint.flip.color),
-            strength: paint.flip.strength,
+            color: pick(locks.flip, colors.flip, paint.flip.color).unwrap_or(DEFAULT_FLIP_COLOR),
+            strength: paint.flip.strength.unwrap_or(DEFAULT_FLIP_STRENGTH),
         },
         airbrush: paint.airbrush,
         alternate_uvset: paint.alternate_uvset && part.is_none(),
@@ -161,7 +168,7 @@ mod tests {
     use super::*;
     use specsheet_core::{
         Accessory, AccessoryKind, Flake, Flip, ModelRef, PaintJob, PaintLocks, PaintOverride,
-        PartPaint, TruckId,
+        PartPaint, TruckId, DEFAULT_FLAKE_NOISE,
     };
 
     fn accessory(id: &str, slot: &str, kind: AccessoryKind) -> Accessory {
@@ -251,16 +258,17 @@ mod tests {
             piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
         assert_eq!(paint.paint_job, AccessoryId::from("x_a.t.paint_job"));
         assert_eq!(paint.part, None);
-        assert_eq!(paint.base_color, Some([0.5, 0.5, 0.5]));
+        assert_eq!(paint.base_color, [0.5, 0.5, 0.5]);
         assert_eq!(paint.mask, Some(Mask::Texture(MAIN_MASK.to_owned())));
         assert_eq!(
             paint.mask_colors,
-            [Some([1.0, 0.0, 0.0]), Some([0.0, 1.0, 0.0]), None]
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            "mask b is the game's default blue"
         );
-        assert_eq!(paint.flake.uvscale, Some(24.0));
-        assert_eq!(paint.flake.vratio, None);
+        assert_eq!(paint.flake.uvscale, 24.0);
+        assert_eq!(paint.flake.vratio, 1.0);
         assert_eq!(paint.flake.noise, DEFAULT_FLAKE_NOISE);
-        assert_eq!(paint.flip.strength, Some(1.7));
+        assert_eq!(paint.flip.strength, 1.7);
         assert!(paint.airbrush && paint.alternate_uvset && !paint.flipflake);
     }
 
@@ -283,8 +291,8 @@ mod tests {
             })
         );
         assert_eq!(paint.mask.as_ref().map(Mask::path), Some(PART_MASK));
-        assert_eq!(paint.flake.uvscale, Some(16.0));
-        assert_eq!(paint.flake.vratio, Some(0.5));
+        assert_eq!(paint.flake.uvscale, 16.0);
+        assert_eq!(paint.flake.vratio, 0.5);
         assert!(
             !paint.alternate_uvset,
             "a listed part never takes the alternate UV set (F17)"
@@ -302,17 +310,13 @@ mod tests {
         });
         let paint =
             piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
-        assert_eq!(paint.base_color, Some([0.1, 0.1, 0.1]));
+        assert_eq!(paint.base_color, [0.1, 0.1, 0.1]);
         assert_eq!(
             paint.mask_colors,
-            [
-                Some([1.0, 0.0, 0.0]),
-                Some([0.2, 0.2, 0.2]),
-                Some([0.3, 0.3, 0.3])
-            ]
+            [[1.0, 0.0, 0.0], [0.2, 0.2, 0.2], [0.3, 0.3, 0.3]]
         );
-        assert_eq!(paint.flake.color, Some([0.4, 0.4, 0.4]));
-        assert_eq!(paint.flip.color, Some([0.0, 0.0, 1.0]), "not overridden");
+        assert_eq!(paint.flake.color, [0.4, 0.4, 0.4]);
+        assert_eq!(paint.flip.color, [0.0, 0.0, 1.0], "not overridden");
     }
 
     #[test]
@@ -331,14 +335,66 @@ mod tests {
         });
         let paint =
             piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
-        assert_eq!(paint.base_color, Some([0.5, 0.5, 0.5]), "locked");
+        assert_eq!(paint.base_color, [0.5, 0.5, 0.5], "locked");
         assert_eq!(
             paint.mask_colors,
-            [Some([1.0, 0.0, 0.0]), Some([0.3, 0.3, 0.3]), None],
+            [[1.0, 0.0, 0.0], [0.3, 0.3, 0.3], [0.0, 0.0, 1.0]],
             "only mask r is locked"
         );
-        assert_eq!(paint.flake.color, Some([0.4, 0.4, 0.4]), "not locked");
-        assert_eq!(paint.flip.color, Some([0.0, 0.0, 1.0]), "locked");
+        assert_eq!(paint.flake.color, [0.4, 0.4, 0.4], "not locked");
+        assert_eq!(paint.flip.color, [0.0, 0.0, 1.0], "locked");
+    }
+
+    #[test]
+    fn values_a_paint_job_leaves_out_take_the_games_defaults() {
+        let mut job = accessory("bare.t.paint_job", "paint_job", AccessoryKind::PaintJob);
+        job.paint = Some(Box::new(PaintJob {
+            flipflake: true,
+            ..PaintJob::default()
+        }));
+        let catalog = TruckCatalog::new(
+            TruckId::from("t"),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            [
+                job,
+                accessory("high.t.cabin", "cabin", AccessoryKind::Cabin),
+            ],
+        );
+        let config = Configuration::from_selections(
+            TruckId::from("t"),
+            [
+                ("cabin".into(), "high.t.cabin".into()),
+                ("paint_job".into(), "bare.t.paint_job".into()),
+            ],
+        );
+        let paint =
+            piece_paint(&catalog, &config, &"cabin".into(), &"high.t.cabin".into()).expect("paint");
+        assert_eq!(paint.base_color, [1.0, 1.0, 1.0]);
+        assert_eq!(
+            paint.mask_colors,
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        );
+        assert_eq!(
+            paint.flip,
+            FlipPaint {
+                color: [1.0, 0.0, 0.0],
+                strength: 0.27,
+            }
+        );
+        assert_eq!(
+            paint.flake,
+            FlakePaint {
+                color: [0.0, 1.0, 0.0],
+                density: 1.0,
+                shininess: 50.0,
+                clearcoat_rolloff: 2.2,
+                uvscale: 32.0,
+                vratio: 1.0,
+                noise: DEFAULT_FLAKE_NOISE.to_owned(),
+            }
+        );
     }
 
     #[test]

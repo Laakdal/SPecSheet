@@ -4,7 +4,10 @@
 
 use std::collections::HashSet;
 
-use specsheet_core::{Accessory, AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId};
+use specsheet_core::{
+    Accessory, AccessoryId, AccessoryKind, Incompatibility, SlotId, TruckId, DEFAULT_BASE_COLOR,
+    DEFAULT_FLAKE_COLOR, DEFAULT_FLIP_COLOR,
+};
 
 use crate::assembly::Drive;
 use crate::session::{GameSession, SlotOption, TruckSession};
@@ -292,12 +295,6 @@ fn selected_icon(session: &TruckSession, slot: &SlotId) -> Option<String> {
         .and_then(icon_argument)
 }
 
-/// The game's paint-parameter defaults for colours a paint job leaves out
-/// (F17): base white, flip red, flake green.
-const DEFAULT_BASE: [f32; 3] = [1.0, 1.0, 1.0];
-const DEFAULT_FLIP: [f32; 3] = [1.0, 0.0, 0.0];
-const DEFAULT_FLAKE: [f32; 3] = [0.0, 1.0, 0.0];
-
 /// What the tile template's `<img src=/material/ui/accessory/%1>` takes as
 /// `%1` for `accessory`: its icon, or for a paint job without one the markup
 /// the game builds from the job's own colours (F17): one tinted
@@ -316,13 +313,13 @@ fn icon_argument(accessory: &Accessory) -> Option<String> {
         paint
             .base_color
             .or(accessory.base_color)
-            .unwrap_or(DEFAULT_BASE),
+            .unwrap_or(DEFAULT_BASE_COLOR),
     );
     if !paint.flipflake {
         return Some(format!("color_icon.mat color={base}"));
     }
-    let flip = ui_color(paint.flip.color.unwrap_or(DEFAULT_FLIP));
-    let flake = ui_color(paint.flake.color.unwrap_or(DEFAULT_FLAKE));
+    let flip = ui_color(paint.flip.color.unwrap_or(DEFAULT_FLIP_COLOR));
+    let flake = ui_color(paint.flake.color.unwrap_or(DEFAULT_FLAKE_COLOR));
     Some(format!(
         "clr_0.mat color={base}><offset hshift=-256>\
          <img src=/material/ui/clr_1.mat color={flip}><offset hshift=-256>\
