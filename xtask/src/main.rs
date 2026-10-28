@@ -4,6 +4,13 @@
 //!   real-install tests (needs `ETS2_DIR`).
 //! * `layers`: fails when a crate depends on a crate at its own layer or
 //!   above, or when a crate outside the top layers uses Bevy (D17).
+//! * `guard`: the public-tree guard over every file (no game files).
+//! * `real`: the real-install tests (needs `ETS2_DIR`).
+//! * `parity`: renders the parity cases and compares them with the
+//!   reference screenshots (`specsheet --parity`, docs/DEVELOPMENT.md).
+//! * `version-port`: after an ETS2 update, the checks of
+//!   docs/version-ports.md that can run unattended: the version test, the
+//!   real-install tests and the archive survey of `def.scs` and `effect.scs`.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -38,7 +45,18 @@ fn main() -> ExitCode {
     let result = match args.first().map(String::as_str) {
         Some("layers") => layers(&root),
         Some("check") => check(&root, args.iter().any(|a| a == "--real")),
-        _ => Err("usage: cargo xtask <check [--real] | layers>".to_owned()),
+        Some("guard") => guard(&root),
+        Some("real") => real(&root),
+        Some("parity") => run(
+            &root,
+            "cargo",
+            &["run", "--release", "-p", "specsheet", "--", "--parity"],
+        ),
+        Some("version-port") => version_port(&root),
+        _ => Err(
+            "usage: cargo xtask <check [--real] | layers | guard | real | parity | version-port>"
+                .to_owned(),
+        ),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -57,8 +75,8 @@ fn workspace_root() -> PathBuf {
 }
 
 /// The "Done means" checks, stopping at the first failure.
-fn check(root: &Path, real: bool) -> Result<(), String> {
-    run(root, "python", &["tools/check_public_tree.py", "--all"])?;
+fn check(root: &Path, with_real: bool) -> Result<(), String> {
+    guard(root)?;
     run(root, "cargo", &["fmt", "--all", "--check"])?;
     run(
         root,
@@ -74,25 +92,67 @@ fn check(root: &Path, real: bool) -> Result<(), String> {
     )?;
     run(root, "cargo", &["test", "--workspace"])?;
     layers(root)?;
-    if real {
-        if std::env::var_os("ETS2_DIR").is_none() {
-            return Err("--real needs ETS2_DIR (the game directory)".to_owned());
-        }
-        run(
-            root,
-            "cargo",
-            &[
-                "test",
-                "--release",
-                "-p",
-                REAL_INSTALL_CRATE,
-                "--test",
-                "real_install",
-            ],
-        )?;
+    if with_real {
+        real(root)?;
     }
     println!("xtask: all checks passed");
     Ok(())
+}
+
+fn guard(root: &Path) -> Result<(), String> {
+    run(root, "python", &["tools/check_public_tree.py", "--all"])
+}
+
+/// The game directory, required by the tasks that read the install.
+fn game_dir() -> Result<PathBuf, String> {
+    std::env::var_os("ETS2_DIR")
+        .map(PathBuf::from)
+        .ok_or_else(|| "this task needs ETS2_DIR (the game directory)".to_owned())
+}
+
+fn real(root: &Path) -> Result<(), String> {
+    game_dir()?;
+    run(
+        root,
+        "cargo",
+        &[
+            "test",
+            "--release",
+            "-p",
+            REAL_INSTALL_CRATE,
+            "--test",
+            "real_install",
+        ],
+    )
+}
+
+/// The unattended part of docs/version-ports.md; the rest (surveys against
+/// research/evidence, executable addresses, parity) needs a person.
+fn version_port(root: &Path) -> Result<(), String> {
+    let game = game_dir()?;
+    let version_test = run(
+        root,
+        "cargo",
+        &["test", "-p", "specsheet-data", "--test", "game_version"],
+    );
+    real(root)?;
+    let archives = ["def.scs", "effect.scs"].map(|a| game.join(a).display().to_string());
+    let mut args = vec![
+        "run",
+        "--release",
+        "-p",
+        "specsheet-research",
+        "--example",
+        "survey",
+        "--",
+    ];
+    args.extend(archives.iter().map(String::as_str));
+    run(root, "cargo", &args)?;
+    println!("xtask: next by hand, docs/version-ports.md sections 3-4:");
+    println!("  rerun the surveys and compare them with research/evidence/,");
+    println!("  re-locate executable addresses, rerun parity, then raise TESTED_GAME_VERSION");
+    // A version mismatch is expected during a port; report it last.
+    version_test
 }
 
 /// The crate that holds `tests/real_install.rs`.
