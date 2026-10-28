@@ -20,6 +20,16 @@ The `ets2-researcher` subagent (`.claude/agents/ets2-researcher.md`) follows thi
 - **Excerpts only.** Evidence holds commands, counts, offsets and a few bytes per field: never whole game files, extracted shader text, or anything from the user's profiles or saves (names, IDs, paths, timestamps). The pre-commit guard refuses game files.
 - **Version.** Findings hold for `TESTED_GAME_VERSION` (`specsheet-data::install`). Executable addresses (`FUN_14…`, `0x14…`) are specific to that build; see [version-ports.md](version-ports.md).
 
+## Static tracing before REA
+
+Try this first: it takes seconds and almost no memory, while a Ghidra run takes 30–45 minutes and about 2 GB. It answered F14's mod priority and F18's material uniforms without Ghidra. The scripts in `tools/research/` read the executable read-only and need `capstone`:
+1. `xref.py <exe> <string>…`: the functions that reference a string (RIP-relative loads).
+2. `disasm.py <exe> <function>`: one function, with its chained unwind ranges, annotated with the strings and floats it loads.
+3. `leaf.py <exe> <address>`: a leaf function, which has no `.pdata` entry, up to its `ret`.
+4. `triage.py` (calls, strings, floats, chosen offsets) and `attr_tables.py` (a class's attribute names and field offsets) narrow things down further.
+
+Listings stay in the scratchpad (D13); evidence files record observations in our own words. Matching on field offsets alone misleads, so anchor on strings, vtables or registration tables. Use Ghidra when the trace runs into an indirect call that can't be resolved this way.
+
 ## REA on `eurotrucks2.exe`
 
 - **Setup and command:** the "REA on `eurotrucks2.exe`" notes in `CLAUDE.md` (CLI, environment variables, output folder). The MCP tools time out on this 51 MB binary, so use the CLI.
