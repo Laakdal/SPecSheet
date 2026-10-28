@@ -323,17 +323,18 @@ const MAX_CUBE_SIZE: u32 = 8192;
 pub fn texture_image(data: TextureData, bc_supported: bool) -> Result<Image, String> {
     check_bc(data.format, bc_supported)?;
     let (width, height, bytes) = mip_chain(data.format, &data.mips)?;
-    let mut image = Image::new(
+    // `Image::new` expects one mip level; the data holds the whole chain.
+    let mut image = Image::new_uninit(
         Extent3d {
             width,
             height,
             depth_or_array_layers: 1,
         },
         TextureDimension::D2,
-        bytes,
         gpu_format(data.format, data.srgb),
         RenderAssetUsages::RENDER_WORLD,
     );
+    image.data = Some(bytes);
     image.texture_descriptor.mip_level_count = data.mips.len() as u32;
     let address = |repeat: bool| {
         if repeat {
@@ -385,17 +386,17 @@ pub fn cube_image(data: CubeTextureData, bc_supported: bool) -> Result<Image, St
     let Some((side, mip_count)) = layout else {
         return Err("cube has no faces".to_owned());
     };
-    let mut image = Image::new(
+    let mut image = Image::new_uninit(
         Extent3d {
             width: side,
             height: side,
             depth_or_array_layers: 6,
         },
         TextureDimension::D2,
-        bytes,
         gpu_format(data.format, data.srgb),
         RenderAssetUsages::RENDER_WORLD,
     );
+    image.data = Some(bytes);
     image.texture_descriptor.mip_level_count = mip_count as u32;
     image.texture_view_descriptor = Some(TextureViewDescriptor {
         dimension: Some(TextureViewDimension::Cube),
@@ -617,6 +618,38 @@ mod tests {
         assert_eq!(image.texture_descriptor.format, GpuFormat::Bc1RgbaUnormSrgb);
         // 16x8 → 8 blocks, 8x4 → 2, 4x2 → 1, 2x1 → 1, 1x1 → 1.
         assert_eq!(image.data.map(|d| d.len()), Some((8 + 2 + 1 + 1 + 1) * 8));
+    }
+
+    /// Bevy's `Image::new` asserts (in debug builds) that the data is one
+    /// mip level; game textures carry the whole chain.
+    #[test]
+    fn uncompressed_textures_keep_their_mip_chain() {
+        let rgba = TextureData {
+            format: TextureFormat::Rgba8,
+            mips: vec![
+                MipLevel {
+                    width: 4,
+                    height: 4,
+                    data: vec![0; 64],
+                },
+                MipLevel {
+                    width: 2,
+                    height: 2,
+                    data: vec![0; 16],
+                },
+            ],
+            ..bc1(4, 4, 1)
+        };
+        let image = texture_image(rgba.clone(), true).expect("valid texture");
+        assert_eq!(image.texture_descriptor.mip_level_count, 2);
+        assert_eq!(image.data.as_ref().map(Vec::len), Some(80));
+        let cube = CubeTextureData {
+            format: TextureFormat::Rgba8,
+            srgb: true,
+            faces: vec![rgba.mips; 6],
+        };
+        let image = cube_image(cube, true).expect("valid cube");
+        assert_eq!(image.data.as_ref().map(Vec::len), Some(480));
     }
 
     #[test]
