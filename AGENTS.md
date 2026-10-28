@@ -12,11 +12,21 @@ A standalone ETS2 truck-tuning app, all in Rust: a workspace of library crates p
 
 ## Layering
 
-`specsheet-archive` → `specsheet-formats` → `specsheet-core` → `specsheet-data` → `crates/specsheet`. Each layer uses only the layers to its left.
-- `specsheet-core` stays pure: domain types and rules, no I/O, no file formats.
+Crates sit in layers, and a crate uses only crates in lower layers (D17). `cargo xtask layers` checks it, also in CI:
+
+| Layer | Crates |
+|---|---|
+| 0 | `specsheet-archive`, `specsheet-formats`, `specsheet-truck` |
+| 1 | `specsheet-data` |
+| 2 | `specsheet-assembly`, `specsheet-gameui` |
+| 3 | `specsheet-session` |
+| 8 | `specsheet-research` (tools) |
+| 9 | `crates/specsheet` (the app, the only Bevy crate) |
+
+- `specsheet-truck` stays pure: domain types and rules, no I/O, no file formats.
 - `specsheet-formats` parses bytes, never archives or paths.
-- The UI renders what the backend decides. Compatibility verdicts come from `specsheet-core`; labels, markers and reasons from `specsheet-data::view`.
-- `crates/specsheet` renders and handles input. Orchestration lives in `specsheet-data::session`.
+- The UI renders what the backend decides. Compatibility verdicts come from `specsheet-truck`; labels, markers and reasons from `specsheet-session::view`.
+- `crates/specsheet` renders and handles input. Orchestration lives in `specsheet-session`.
 - Keep the library crates free of UI and renderer code, so a later C++ front end could call them through a C interface (D11).
 
 ## Code rules
@@ -38,13 +48,14 @@ A change is done when all of these hold:
 
    | Changed | Run `cargo test` / `cargo clippy --all-targets -- -D warnings` with |
    |---|---|
-   | `specsheet-archive`, `specsheet-formats` | `-p <crate> -p specsheet-data` |
-   | `specsheet-core` | `-p specsheet-core -p specsheet-data` |
-   | `specsheet-data`, private items only | `-p specsheet-data` |
-   | `specsheet-data` public API, `specsheet-core` public API, or `crates/specsheet` | `--workspace` (builds Bevy) |
+   | Any crate, private items only | `-p <crate>` |
+   | A library crate's public API | `-p <crate>` and every crate above it up to `specsheet-session` |
+   | `crates/specsheet`, or a public API the app uses | `--workspace` (builds Bevy) |
    | Before a commit that touches several of the above | `--workspace` |
 
-2. `ETS2_DIR=<game dir> cargo test -p specsheet-data --release --test real_install` passes whenever a change touches `specsheet-archive`, `specsheet-formats`, `specsheet-core` or `specsheet-data`. Without `ETS2_DIR` these tests return early and prove nothing.
+   `cargo xtask check` runs the whole list (guard, fmt, clippy, tests, layers); `cargo xtask check --real` adds step 2.
+
+2. `ETS2_DIR=<game dir> cargo test -p specsheet-session --release --test real_install` passes whenever a change touches a library crate. Without `ETS2_DIR` these tests return early and prove nothing.
 3. `cargo fmt --all --check` is clean, and clippy is clean for the crates from step 1.
 4. UI and rendering changes are seen working in the running app, not just compiled: a `SPECSHEET_SCRIPT` run that ends in a screenshot you have looked at (see `docs/DEVELOPMENT.md`).
 5. `TASKS.md` is updated, plus `CHANGELOG.md` (Unreleased) for user-visible or format-level changes.
@@ -68,15 +79,19 @@ A change is done when all of these hold:
 |---|---|---|
 | `specsheet-archive` | `.scs` and mod-package indexing, decompression, packed textures, layered VFS; building new ZIP packages | parses file contents |
 | `specsheet-formats` | byte parsers: SII, PMD, PMG, MAT, tokens; the `manifest.sii` writer | touches archives or paths |
-| `specsheet-core` | catalog, rules, configuration state | does I/O or reads formats |
-| `specsheet-data` | install discovery, catalog loading, assembly, scenes, render data, `session` orchestration, `view` display data | knows about UI or GPU APIs |
+| `specsheet-truck` | catalog, rules, configuration state | does I/O or reads formats |
+| `specsheet-data` | install discovery, mounting, catalog loading, models, scenes, render data, paint, localisation | assembles trucks or knows about UI or GPU APIs |
+| `specsheet-assembly` | the built truck: placements, wheels, interior, cockpit, hookups, anchors, the game's pins | loads catalogs or keeps session state |
+| `specsheet-gameui` | the game's UI files: screens, templates, colours, UI materials, the markup layout | knows about trucks |
+| `specsheet-session` | `GameSession`/`TruckSession` orchestration, `view` display data | draws anything |
+| `specsheet-research` | research tools (`examples/`) that produce `research/evidence/` | is used by other crates |
 | `specsheet` (`crates/specsheet`) | Bevy renderer, egui UI, background jobs, settings, dev script | decides compatibility or parses game files |
 
 Crate-level docs live in each `lib.rs` (`//!`). Crates have no README.
 
 ## Where things live
 
-Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/tests/real_install.rs`; it needs `ETS2_DIR`.
+Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-session/tests/real_install.rs`; it needs `ETS2_DIR`.
 
 | Feature | Code | Tests |
 |---|---|---|
@@ -88,19 +103,19 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Profiles and saves: ScsC, binary SII | `specsheet-formats/src/{scsc,bsii}.rs` | unit; examples `profile_mods`, `save_check` |
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
 | UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
-| Rules, configuration, hookups | `specsheet-core/src/{config,catalog,hookup}.rs` | `specsheet-core/src/tests.rs` |
-| Paint jobs: masks, colours, flake/flip, per-part paint | `specsheet-core/src/paint.rs`; loading in `specsheet-data/src/{catalog,paint}.rs` | `specsheet-core/src/tests.rs`; unit; `real_install::{every_paint_job_parses, paint_job_parts_resolve_by_unit_token, every_paint_mask_exists_or_is_a_constant}` |
+| Rules, configuration, hookups | `specsheet-truck/src/{config,catalog,hookup}.rs` | `specsheet-truck/src/tests.rs` |
+| Paint jobs: masks, colours, flake/flip, per-part paint | `specsheet-truck/src/paint.rs`; loading in `specsheet-data/src/{catalog,paint}.rs` | `specsheet-truck/src/tests.rs`; unit; `real_install::{every_paint_job_parses, paint_job_parts_resolve_by_unit_token, every_paint_mask_exists_or_is_a_constant}` |
 | Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
 | Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
-| Slot to locator matching | `specsheet-data/src/slots.rs` | unit |
-| Assembly: base, wheels, hookups, interior, anchors | `specsheet-data/src/assembly.rs`, `assembly/*.rs` | tests in `assembly.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
+| Slot to locator matching | `specsheet-assembly/src/slots.rs` | unit |
+| Assembly: base, wheels, hookups, interior, anchors | `specsheet-assembly/src/*.rs` | tests in `lib.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
 | Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |
 | Tuning scenes: the truck configuration scene (orbit, pin data) and the hub scenes | `specsheet-data/src/scene.rs` | unit; `real_install::{the_truck_configuration_screen_has_a_scene_orbit_and_pins, every_tuning_scene_has_a_model_and_a_camera}` |
-| UI screens, templates, colours, UI materials; markup layout | `specsheet-data/src/ui/{mod,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
+| UI screens, templates, colours, UI materials; markup layout | `specsheet-gameui/src/{lib,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
 | Display strings | `specsheet-data/src/localization.rs` | unit |
-| Session (options, select, hookups, drive) | `specsheet-data/src/session.rs` | through `real_install` |
-| Exterior pins the game's way: base locator, offset, facing, mirrored and wheel pins | `specsheet-data/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
-| Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-data/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
+| Session (options, select, hookups, drive) | `specsheet-session/src/lib.rs` | through `real_install` |
+| Exterior pins the game's way: base locator, offset, facing, mirrored and wheel pins | `specsheet-assembly/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
+| Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-session/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
 | App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
 | Meshes, materials, textures to GPU (with upload checks) | `specsheet/src/assets.rs` | unit |
 | Clean-room game materials (truck paint) and the game's lighting | `specsheet/src/render/{mod,truckpaint,lighting}.rs`, `truckpaint.wgsl`, `game_lighting.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
@@ -109,6 +124,8 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Pins over the 3D view (projection, fade by facing, disc-linked wheel pins) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
 | Dev script mode | `specsheet/src/script.rs` | unit |
 | Visual parity runner (`--parity`, cases in `parity/cases.json`) | `specsheet/src/parity.rs` | unit |
+| Research tools (surveys, dumps, probes) | `specsheet-research/examples/*.rs` | run against the install |
+| Repository tasks: `check`, `layers` | `../xtask/src/main.rs` (`cargo xtask …`) | unit |
 
 ## Read only when needed
 

@@ -4,37 +4,43 @@ A standalone desktop app that reads the user's ETS2 installation, assembles a tr
 
 ## Layers
 
+Each crate uses only crates in lower layers; `cargo xtask layers` checks it locally and in CI (D17).
+
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ crates/specsheet   Bevy 0.19 + bevy_egui (Rust)                 │  3D view, hotspots, sidebar,
-│                                                              │  background jobs, dev script
-├──────────────────────────────────────────────────────────────┤
-│ specsheet-data       ETS2 install → domain + runtime meshes       │  discovery, mount order,
-│                                                              │  def loading, assembly, views
-├───────────────────────────────┬──────────────────────────────┤
-│ specsheet-core (pure)            │ specsheet-formats (pure)           │
-│ catalog, rules, configuration │ SII, PMD, PMG, MAT parsers   │
-├───────────────────────────────┴──────────────────────────────┤
-│ specsheet-archive    HashFS v2 reader, CityHash, GDeflate, VFS     │
-└──────────────────────────────────────────────────────────────┘
+layer 9   crates/specsheet      Bevy 0.19 + bevy_egui: 3D view, pins, the game screen, jobs, dev script
+layer 8   specsheet-research    research tools (examples/), beside the app
+layer 3   specsheet-session     GameSession / TruckSession orchestration, view (display data)
+layer 2   specsheet-assembly    the built truck: placements, wheels, interior, hookups, anchors, pins
+          specsheet-gameui      the game's UI files laid out
+layer 1   specsheet-data        install, mounting, catalogs, models, scenes, render data, paint
+layer 0   specsheet-truck       pure tuning domain: catalog, rules, configuration, paint jobs
+          specsheet-formats     byte parsers: SII, BSII, ScsC, PMD, PMG, MAT; manifest writer
+          specsheet-archive     HashFS v2/v1, ZIP (read and write), CityHash, GDeflate, VFS
 ```
 
 | Crate | Responsibility | May depend on |
 |---|---|---|
 | `specsheet-archive` | Read-only `.scs` and mod-package access: indexing, decompression, packed textures, layered VFS. Builds new ZIP mod packages (D18) | std, thiserror, flate2, gdeflate |
 | `specsheet-formats` | Byte-level parsers for SII, BSII, ScsC, PMD, PMG, MAT; the `manifest.sii` writer; a scanner for paths files mention. No I/O | std, thiserror, flate2, aes, cbc |
-| `specsheet-core` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation. No I/O, no game formats | serde |
-| `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; resolves slot availability from model locators; assembles render-ready meshes; `view` turns a session into display data (labels, markers, verdict reasons) | all of the above |
-| `crates/specsheet` | The application: Bevy renderer, egui UI, background jobs, settings. Converts `specsheet-data` meshes and textures to GPU assets; holds no tuning rules | specsheet-data, specsheet-core, bevy, bevy_egui |
+| `specsheet-truck` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation, paint jobs. No I/O, no game formats | serde |
+| `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; models, scenes, render-ready meshes and textures, paint per part | layer 0 |
+| `specsheet-assembly` | Assembles a configuration into placements; slot availability from model locators; hotspot anchors; the game's exterior pins | layers 0–1 |
+| `specsheet-gameui` | The game's UI screens, templates, colours and markup layout | layers 0–1 |
+| `specsheet-session` | The game and truck sessions (options, selection, hookups, drive); `view` turns a session into display data (labels, pins, verdict reasons) | layers 0–2 |
+| `specsheet-research` | Research tools that produce `research/evidence/` | layers 0–3 |
+| `crates/specsheet` | The application: Bevy renderer, egui UI, background jobs, settings. Converts meshes and textures to GPU assets; holds no tuning rules | every library crate, bevy, bevy_egui |
 
 Boundaries that must hold:
-- `specsheet-core` never sees file formats, and `specsheet-formats` never sees archives. This keeps the rules and parsers testable without a game install.
-- The UI never decides compatibility. It renders what `specsheet-data::view` reports (`compatible` flags, reasons).
+- `specsheet-truck` never sees file formats, and `specsheet-formats` never sees archives. This keeps the rules and parsers testable without a game install.
+- The UI never decides compatibility. It renders what `specsheet-session::view` reports (`compatible` flags, reasons).
 - Nothing writes into the game directory. Archives are opened read-only.
 
 ## Target structure (D17)
 
-Where the crates are heading. Code moves there in one coordinated pass, after the paint and `dif.spec` materials land (TASKS.md). Each crate has one responsibility, and the arrows only point down.
+Where the crates are heading, in staged passes (D17). Each crate has one responsibility, and the arrows only point down.
+
+- **Done (2026-10-28):** `xtask` with `check` and `layers`; `specsheet-core` renamed `specsheet-truck`; `specsheet-data` split into `-data`, `-assembly`, `-gameui` and `-session`; the tools moved into `specsheet-research`.
+- **Next passes:** `specsheet-render` out of the app, at the `dif.spec` stopping point; the foundation `specsheet-core` (ids, maths, colour), which unifies types and is not a pure move; `specsheet-theme` with the app's own screens.
 
 ```
 crates/
@@ -71,7 +77,7 @@ Rules that keep it maintainable:
 
 1. **Startup.** `GameInstall::discover()` (env `ETS2_DIR` or Steam libraries) → `mount()` opens about 110 archives (≈0.7 s) into a `Vfs`.
 2. **Truck list.** Directories under `/def/vehicle/truck/`; display names come from `data.sii` `info[]`.
-3. **Truck catalog.** Every `*.sii` under the truck directory becomes a `specsheet_core::Accessory`. Slot comes from the directory; kind from the unit class.
+3. **Truck catalog.** Every `*.sii` under the truck directory becomes a `specsheet_truck::Accessory`. Slot comes from the directory; kind from the unit class.
 4. **Initial configuration.** `/def/vehicle/truck_desktop/<truck>.sii` preset; repaired by the core rules.
 5. **Assembly.**
    - The chassis and cabin models (with their variant and look) form the base.

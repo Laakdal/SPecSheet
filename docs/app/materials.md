@@ -76,7 +76,7 @@ This is an approximation, not the game's shaders.
 - **`flipflake` (Confirmed, REA):** the paint job's flag alone.
 - **`flipflakeuv`:** not implemented. What selects it is Unknown, and the flakes use the mask's UV.
 
-**Missing paint values** take the game's defaults (F17, `specsheet_core::DEFAULT_*`), applied in `specsheet_data::paint::piece_paint`:
+**Missing paint values** take the game's defaults (F17, `specsheet_truck::DEFAULT_*`), applied in `specsheet_data::paint::piece_paint`:
 - base white;
 - mask colours red, green and blue;
 - flip red, strength 0.27;

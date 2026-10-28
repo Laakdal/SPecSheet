@@ -94,7 +94,7 @@ Containers also carry `fitting: bool` (Hypothesis: the container sizes itself to
   - `<ret>`, `<br>`, `<nowrap>`.
 
   The full tag grammar is **Unknown**.
-- **Markup layout** (all Hypothesis). These rules make the geometry of `txt.window.bcg_rect4`, `btn.truck_grp` and `btn.truck_acc` add up exactly. They are implemented in `specsheet-data::ui::flow`, and the unit tests reproduce those three templates:
+- **Markup layout** (all Hypothesis). These rules make the geometry of `txt.window.bcg_rect4`, `btn.truck_grp` and `btn.truck_acc` add up exactly. They are implemented in `specsheet-gameui::flow`, and the unit tests reproduce those three templates:
   - The cursor starts at the widget's top-left, with y pointing down inside the box. Units are reference units, and one texel is one unit.
   - `<ret>` returns the cursor to the origin; it does not start a new line. In `btn.truck_grp`'s selected state, `…</align><ret><img icon>` draws the icon over the background, not below it. `<br>` starts a new line.
   - `<offset hshift= vshift=>` moves the cursor by that much from where it is (Confirmed). In `btn.truck_acc`, `<img height=22><ret><offset vshift=22><img height=74>` fills the 96-unit item exactly. About 2,000 of the 4,180 offsets in `ui/*.sii` sit mid-line as spacing, e.g. `<img width=60><offset hshift=10><img width=60>` in `nonlinear_rank_desc.sii`, which would overlap if offsets were absolute. The game's layered paint thumbnail steps back over its 256-wide icon with `hshift=-256` (F17).
@@ -134,4 +134,4 @@ Containers also carry `fitting: bool` (Hypothesis: the container sizes itself to
     - with an icon: `<icon>.mat`;
     - without one (stock RAL colours): `color_icon.mat color=<base>`;
     - without one and with `flipflake`: `clr_0.mat` (base), `/material/ui/clr_1.mat` (flip) and `clr_2.mat` (flake), each a tinted layer stepped back with `<offset hshift=-256>`, under an untinted `clr_3.mat`.
-    - The colours are the paint job's own, linear → sRGB, ×255 truncated, written `FF` + blue + green + red. `specsheet_data::view` builds this as the option's `icon`.
+    - The colours are the paint job's own, linear → sRGB, ×255 truncated, written `FF` + blue + green + red. `specsheet_session::view` builds this as the option's `icon`.

@@ -2,7 +2,7 @@
 
 The clickable pins on the truck. The exterior pins follow the game's own rules, read from the executable ([F5](../REVERSE_ENGINEERING.md); evidence in `research/evidence/pin-attributes.txt`). Which parts of this match the game is tracked in [../PARITY.md](../PARITY.md).
 
-## Exterior pins (`specsheet-data::pins`)
+## Exterior pins (`specsheet-assembly::pins`)
 
 The game builds one record per pin from the truck's locators and the pin table of `/def/truck_config_scene.sii` (`pin_group`, `pin_offset`, `pin_dir`, `pin_dir_uk`, `double_sided`; tabulated in `research/evidence/pin-table.txt`).
 
@@ -21,7 +21,7 @@ The game builds one record per pin from the truck's locators and the pin table o
 
 Measured on every preset (`research/evidence/pin-survey.txt`): the pins land on their parts, with a median of 0 m and 90 % within 0.1 m.
 
-## Which slots get a pin (`specsheet-data::view::overview`)
+## Which slots get a pin (`specsheet-session::view::overview`)
 
 Only accessory slots get a pin; base parts are picked through their fixed tab (F5, see [ui.md](ui.md)).
 - An exterior slot is pinned when it is an addon or wheel slot with at least one option, or another slot with at least two. The game drops only slots with no options.
@@ -36,7 +36,7 @@ Each `Hotspot` carries:
 
 Slots without a pin are listed in `TruckOverview::general` with their tab.
 
-## Interior pins (`specsheet-data::assembly`)
+## Interior pins (`specsheet-assembly`)
 
 Interior slots still use our anchors: the centre of the placed models' bounding box, or the bare locators while empty. Interior-only accessories (steering wheel, curtains, toys…) attach to locators on the interior's full cockpit, moved into truck space (F10). How the game places interior pins is not decoded yet: it searches the interior model's locators, and the space it ends up in is Unknown.
 

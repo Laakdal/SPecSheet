@@ -2,7 +2,7 @@
 
 How ETS2 1.60.1.7 describes a truck paint job and how it reaches each painted part. The finding is F15 in [../REVERSE_ENGINEERING.md](../REVERSE_ENGINEERING.md); evidence is `research/evidence/paint-job-survey.txt` (sections S1–S10, cited as [S*n*]). Labels follow [../ASSET_FORMATS.md](../ASSET_FORMATS.md). No shader code was read for this page (D13): effect variants are known by file name only.
 
-Code: `specsheet_core::{PaintJob, PartPaint, Flake, Flip, PaintLocks, PaintOverride, shared_mask_color}`, loaded by `specsheet-data/src/catalog.rs` and resolved per placed part by `specsheet_data::paint::piece_paint`.
+Code: `specsheet_truck::{PaintJob, PartPaint, Flake, Flip, PaintLocks, PaintOverride, shared_mask_color}`, loaded by `specsheet-data/src/catalog.rs` and resolved per placed part by `specsheet_data::paint::piece_paint`.
 
 ## Files
 

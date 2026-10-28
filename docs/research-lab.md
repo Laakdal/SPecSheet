@@ -4,7 +4,7 @@ How we find out how ETS2 works, and how a finding becomes something the code may
 
 ## Sources, cheapest first
 
-1. **Game data, through our own tools.** The `examples/` of `specsheet-archive` and `specsheet-data` read the install read-only: `scs` (ls/cat/find/tex), `survey`, `model_info`, `def_stats`, `def_grep`, and the surveys `axle_survey`, `effect_usage`, `locator_check`, `wheel_fit` and others. Most questions end here.
+1. **Game data, through our own tools.** The tools in `crates/specsheet-research/examples/` read the install read-only (`cargo run --release -p specsheet-research --example <tool>`): `scs` (ls/cat/find/tex), `survey`, `model_info`, `def_stats`, `def_grep`, and the surveys `axle_survey`, `effect_usage`, `locator_check`, `wheel_fit` and others. Most questions end here.
 2. **The game's log**, `game.log.txt` in the game's home folder, for runtime behaviour such as mount order and errors.
 3. **The executable, through REA.** It answers engine conventions the data doesn't state: placement rules, camera maths, which effect variant is chosen. REA is expensive; see below.
 4. **SCS's public modding documentation** ([modding.scssoft.com](https://modding.scssoft.com/wiki/Main_Page)) describes behaviour, e.g. the [supported shaders](https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Supported_shaders). Cite it and paraphrase it; don't copy it.

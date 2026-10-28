@@ -9,7 +9,7 @@ The real-install test `installed_game_is_the_tested_version` fails, naming the i
 ## 2. Check that the files still read
 
 Run with `ETS2_DIR` set:
-- `cargo test --release -p specsheet-data --test real_install`. Every test says which file or rule broke. The archive test fails on any skipped entry, which means a new metadata record type.
+- `cargo test --release -p specsheet-session --test real_install`. Every test says which file or rule broke. The archive test fails on any skipped entry, which means a new metadata record type.
 - `survey` over `def.scs`, `effect.scs` and one DLC archive: 100 % reachable, 0 skipped.
 
 A failure here is a format change. Derive it from the bytes as in [research-lab.md](research-lab.md) (evidence first), then fix the parser.

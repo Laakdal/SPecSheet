@@ -6,9 +6,9 @@ The app draws the game's own truck configuration screen, `truck.config`. It buil
 
 | Step | Code |
 |---|---|
-| Load the screen (`/ui/!desc.sii` → `ui_script[]` layouts) and every template | `specsheet-data::ui::{load_screen, load_templates}` |
+| Load the screen (`/ui/!desc.sii` → `ui_script[]` layouts) and every template | `specsheet-gameui::{load_screen, load_templates}` |
 | A widget's markup: its template with its `value` split on `\|` as `%0…%9`, then `@@key@@` resolved | `ui::substitute`, `Localization::resolve` |
-| Markup → positioned images and text (rules: [../formats/ui.md](../formats/ui.md), "Markup layout") | `specsheet-data::ui::flow` |
+| Markup → positioned images and text (rules: [../formats/ui.md](../formats/ui.md), "Markup layout") | `specsheet-gameui::flow` |
 | Reference space → window | `crates/specsheet/src/ui/screen.rs` `Mapping` |
 | UI materials → egui textures | `crates/specsheet/src/ui/textures.rs` |
 
@@ -34,7 +34,7 @@ The game's handler shows, hides and fills widgets in code that has not been trac
 
 ## Tabs and pins
 
-The eight tabs follow finding F5 (`specsheet-data::view::Tab`, `tab_of`):
+The eight tabs follow finding F5 (`specsheet-session::view::Tab`, `tab_of`):
 - **Fixed tabs:** cabin, chassis, engine, transmission, colour (paint job) and interior. They have no pins; opening one lists its slot's options at once.
 - **Drive side (F10).** The interior tab lists the game's UK interiors (", UK") beside the EU ones. Choosing one with `left_hand_traffic: true` makes the truck right-hand drive, and choosing an EU one makes it left-hand drive. The drive toggle in the SpecSheet window swaps the selected interior for its twin.
 - **Exterior and interior accessories:** every other accessory goes under one of these two, by whether its anchor is inside the cab. Opening one shows the pins for that tab only ([hotspots.md](hotspots.md)); clicking a pin lists that slot's options.

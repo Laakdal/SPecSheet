@@ -11,9 +11,9 @@
 ## Build and test
 
 ```sh
-# Library change (no Bevy build): the changed crate plus specsheet-data
-cargo test -p specsheet-core -p specsheet-data
-cargo clippy -p specsheet-core -p specsheet-data --all-targets -- -D warnings
+# Library change (no Bevy build): the changed crate plus the crates above it
+cargo test -p specsheet-data -p specsheet-assembly -p specsheet-session
+cargo clippy -p specsheet-data -p specsheet-assembly -p specsheet-session --all-targets -- -D warnings
 
 # App or public-API change, or before a multi-crate commit (builds Bevy)
 cargo test --workspace
@@ -21,9 +21,12 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 cargo fmt --all --check
 
+# All of the above plus the crate layer check; --real adds the real-install tests
+cargo xtask check
+
 # Integration tests against the real game (they return early if ETS2_DIR is unset):
 ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
-  cargo test -p specsheet-data --release --test real_install
+  cargo test -p specsheet-session --release --test real_install
 ```
 
 **Game version pin.** The research and tests were checked against ETS2 `TESTED_GAME_VERSION` (`specsheet-data/src/install.rs`, currently 1.60.1.7). `GameInstall::version()` reads it from `version.scs` (`fs_pack_set.version`). With `ETS2_DIR` set, `cargo test -p specsheet-data --test game_version` fails on any other version. After a game update:
@@ -34,10 +37,12 @@ ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
 **Which crates to check.** The library crates never depend on Bevy. Testing only the crates a change touches, plus their dependents, avoids compiling the roughly 400 Bevy crates. The full table is in `AGENTS.md` under "Done means":
 
 ```
-specsheet-archive ─┐
-specsheet-formats ─┼─> specsheet-data ─> specsheet (Bevy app)
-specsheet-core ────┘                  ↗
+specsheet-archive ─┐                     ┌─> specsheet-assembly ─┐
+specsheet-formats ─┼─> specsheet-data ───┤                       ├─> specsheet-session ─> specsheet (Bevy app)
+specsheet-truck ───┘                     └─> specsheet-gameui ───┘
 ```
+
+`specsheet-research` holds the research tools and sits beside the app. `cargo xtask layers` checks that every dependency points down (D17).
 
 ## Run the app
 
@@ -110,49 +115,49 @@ These are examples, not shipped binaries. All of them read `ETS2_DIR`.
 export MSYS_NO_PATHCONV=1   # Git Bash only: keep /game/paths intact
 
 # Archive survey: entry kinds per extension, texture formats, reachability
-cargo run --release -p specsheet-archive --example survey -- "<game>/def.scs" ...
+cargo run --release -p specsheet-research --example survey -- "<game>/def.scs" ...
 
 # Browse the layered file system
-cargo run --release -p specsheet-archive --example scs -- ls def/vehicle/truck
-cargo run --release -p specsheet-archive --example scs -- cat def/vehicle/truck/scania.s_2016/data.sii
-cargo run --release -p specsheet-archive --example scs -- find vehicle/truck/scania_2016 .pmd
+cargo run --release -p specsheet-research --example scs -- ls def/vehicle/truck
+cargo run --release -p specsheet-research --example scs -- cat def/vehicle/truck/scania.s_2016/data.sii
+cargo run --release -p specsheet-research --example scs -- find vehicle/truck/scania_2016 .pmd
 
 # Model structure: looks, variants, parts, locators
-cargo run --release -p specsheet-data --example model_info -- /vehicle/truck/scania_2016/cabin/cab_s_low.pmd
+cargo run --release -p specsheet-research --example model_info -- /vehicle/truck/scania_2016/cabin/cab_s_low.pmd
 
 # Byte-level layout checks (independent of our parsers): dump with `scs cat <path> > file`, then
 python -I tools/research/model_layout.py <dumps>/*.pmd <dumps>/*.pmg
-cargo run --release -p specsheet-archive --example texture_layout -- "<game>/base.scs" ...
+cargo run --release -p specsheet-research --example texture_layout -- "<game>/base.scs" ...
 
 # Definition statistics / samples (optional last argument: root directory, default /def/vehicle/truck)
-cargo run --release -p specsheet-data --example def_stats
-cargo run --release -p specsheet-data --example def_stats -- /def/vehicle/f_disc
-cargo run --release -p specsheet-data --example def_grep -- accessory_addon_data conflict_with 3
-cargo run --release -p specsheet-data --example def_grep -- accessory_rim_data tire_shift 5 /def/vehicle/f_disc
+cargo run --release -p specsheet-research --example def_stats
+cargo run --release -p specsheet-research --example def_stats -- /def/vehicle/f_disc
+cargo run --release -p specsheet-research --example def_grep -- accessory_addon_data conflict_with 3
+cargo run --release -p specsheet-research --example def_grep -- accessory_rim_data tire_shift 5 /def/vehicle/f_disc
 
 # Wheel parts: x extents and tire_shift per part, rim lip vs tyre bead, yawed wheel locators (F9)
-cargo run --release -p specsheet-data --example wheel_fit
-cargo run --release -p specsheet-data --example wheel_fit -- fit
-cargo run --release -p specsheet-data --example wheel_fit -- locators
-cargo run --release -p specsheet-data --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left
+cargo run --release -p specsheet-research --example wheel_fit
+cargo run --release -p specsheet-research --example wheel_fit -- fit
+cargo run --release -p specsheet-research --example wheel_fit -- locators
+cargo run --release -p specsheet-research --example wheel_fit -- profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left
 
 # Axles: wheel-locator pairs per axle vs. the chassis' powered/steerable/liftable arrays (F13)
-cargo run --release -p specsheet-data --example axle_survey
+cargo run --release -p specsheet-research --example axle_survey
 
 # Mod packages (no ETS2_DIR): container by content, HashFS v1 header/entries/keys, manifest fields (F14)
-cargo run --release -p specsheet-archive --example mod_probe -- "<home>/mod"
+cargo run --release -p specsheet-research --example mod_probe -- "<home>/mod"
 
 # Profile: decrypt (ScsC) or read plain text, list active_mods in order
-cargo run --release -p specsheet-formats --example profile_mods -- "<home>/profiles/<hex name>/profile.sii"
+cargo run --release -p specsheet-research --example profile_mods -- "<home>/profiles/<hex name>/profile.sii"
 
 # Saves: decode every save (ScsC, text, binary) and compare binary against text field kinds
-cargo run --release -p specsheet-formats --example save_check -- "<home>/profiles"
+cargo run --release -p specsheet-research --example save_check -- "<home>/profiles"
 
 # Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --zips adds the ZIP mods of a folder as candidates; --list adds folders, replaced game files, unnamed contents
-cargo run --release -p specsheet-data --example mod_names -- [--list] [--zips "<home>/mod"] "<home>/mod/<package>.scs" ...
+cargo run --release -p specsheet-research --example mod_names -- [--list] [--zips "<home>/mod"] "<home>/mod/<package>.scs" ...
 
 # Mod writer: a test package (manifest + description, no game files) as <dir>/specsheet_test.scs; refuses if it exists
-cargo run --release -p specsheet-data --example mod_write -- <dir>
+cargo run --release -p specsheet-research --example mod_write -- <dir>
 ```
 
 ## Debugging tips
@@ -181,6 +186,7 @@ The repository must never contain game files. A pre-commit hook enforces this:
 2. `cargo fmt --all --check`.
 3. `cargo clippy --workspace --all-targets -- -D warnings`.
 4. `cargo test --workspace`.
+5. `cargo xtask layers` (crate layers, D17).
 
 Notes:
 - **Real-install tests skip in CI,** because CI has no game files. Run them locally with `ETS2_DIR` set before pushing parser, catalog or assembly changes.

@@ -1,6 +1,6 @@
 # Tuning system
 
-How the game describes truck customisation, and how `specsheet-core` + `specsheet-data` reproduce it.
+How the game describes truck customisation, and how `specsheet-truck` + `specsheet-data` reproduce it.
 
 Labels follow [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md): **Confirmed**, **Hypothesis**, **Design** (our own choice).
 
@@ -37,7 +37,7 @@ Paint jobs (F15, [formats/paint.md](formats/paint.md)):
 - The per-accessory files `accessory/<slot>/paint_job/*.sii` are skipped (Design: 4 of 131 match an installed paint job).
 - Presets name the paint job by file path; `TruckCatalog::by_def_path` resolves it.
 
-## Rules (`specsheet_core::Configuration`)
+## Rules (`specsheet_truck::Configuration`)
 
 | Rule | Data | Status |
 |---|---|---|

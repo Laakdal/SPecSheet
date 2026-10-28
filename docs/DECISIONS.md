@@ -148,7 +148,9 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - `specsheet-data` split into `-data`, `-assembly`, `-session` and `-gameui`;
   - `specsheet-render` out of the app, and `specsheet-research` for the tools;
   - an `xtask` crate with a layer check.
-  It is done in one coordinated pass after the paint and `dif.spec` materials land; until then new code follows the target boundaries where it can.
+  It is done in staged passes, each a pure move that builds and passes the checks on its own:
+  - **2026-10-28 (done):** `xtask` (`check`, `layers`, also in CI); `specsheet-core` → `specsheet-truck`; `specsheet-data` → `-data`, `-assembly`, `-gameui`, `-session`; the examples → `specsheet-research`. No compatibility re-exports: every user was moved.
+  - **Next:** `specsheet-render` at the `dif.spec` stopping point; the foundation `specsheet-core`, which unifies `Aabb`, `Transform` and colour and so changes types; `specsheet-theme`.
 - **Engineering practices adopted with it:**
   - `cargo xtask check` (the "Done means" list) and `cargo xtask layers`, which CI also runs;
   - `cargo-deny` for licences and advisories;

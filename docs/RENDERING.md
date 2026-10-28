@@ -12,10 +12,10 @@ How the app turns game data into the 3D tuning view. What the game files contain
 ## Pipeline
 
 ```
-specsheet-data::assembly::assemble   →  placements (model, look, variant, transform) + anchors
+specsheet-assembly::assemble   →  placements (model, look, variant, transform) + anchors
 specsheet-data::render::build_mesh   →  MeshData (visible parts, CCW indices, material info)
 specsheet-data::render::load_texture →  TextureData (unpacked mips, BGRA→RGBA)
-specsheet-data::view::overview       →  hotspots, slot list, paint colour, warnings
+specsheet-session::view::overview       →  hotspots, slot list, paint colour, warnings
 crates/specsheet/src/assets.rs     →  validated Bevy meshes, StandardMaterials, BC images
 crates/specsheet/src/render/       →  clean-room WGSL materials (truck paint)
 crates/specsheet/src/viewer.rs     →  truck and scene entities, lights, fog, orbit camera

@@ -17,7 +17,7 @@ Findings about ETS2 that the implementation relies on, with their evidence.
 | Tool | Used for | Evidence |
 |---|---|---|
 | REA 6.4.0 (MCP + CLI, `npx rea-agents@6.4.0`) with Ghidra 12.1.4 | Executable analysis | "REA Evidence" |
-| Our own parsers and the research examples (`specsheet-archive/examples/{survey,scs}.rs`, `specsheet-data/examples/{model_info,def_stats,def_grep}.rs`) | Archive and definition content | "Parser observation", reproducible with the commands in [DEVELOPMENT.md](DEVELOPMENT.md) |
+| Our own parsers and the research examples (`specsheet-research/examples/{survey,scs}.rs`, `specsheet-research/examples/{model_info,def_stats,def_grep}.rs`) | Archive and definition content | "Parser observation", reproducible with the commands in [DEVELOPMENT.md](DEVELOPMENT.md) |
 | The game's own `game.log.txt` from a real session | Runtime behaviour | "Runtime log" (passive; we did not run the game) |
 | sk-zk TruckLib.HashFs / TruckLib.Models (GPL-2.0), GisDeflate (MIT) | Cross-checking our layouts | "Reference", never proof on its own. Facts only, never code (see `THIRD_PARTY_NOTICES.md`) |
 
@@ -193,7 +193,7 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
 - **Placement (Hypothesis, strong).** The light model is placed at the cabin's only `ext_interior` locator.
   - That placement fits inside the cabin box for all 26 presets.
   - Placing it at the origin would fail for 6 of them: MAN TGX 2020 and Euro 6, Scania R 2016, S 2016 and S 2024e, and Volvo FH16.
-- **Implementation.** `specsheet-data::assembly` places it there. The real-install test `every_preset_validates_and_assembles_without_warnings` requires an interior placement for every preset in both drives.
+- **Implementation.** `specsheet-assembly` places it there. The real-install test `every_preset_validates_and_assembles_without_warnings` requires an interior placement for every preset in both drives.
 - **Right-hand drive (Hypothesis, strong).** 219 of the 438 units are UK twins: they carry `left_hand_traffic: true`, a UK `model` and their own `ext_variant` (e.g. `s_h_std_eu` → `s_h_std_uk`). Nothing in the data links a pair.
   - **Rule:** the twin is in the same directory, and its file name is the left-hand-drive one with one extra `uk` word (`uk_a`, `a_uk`, `standard_low` → `standard_uk_low`). It pairs all 219 one-to-one with no ambiguity.
   - **Implementation:** `specsheet-data` stores the twin's exterior model as `exterior_uk` / `variant_uk` and places it in right-hand drive.
