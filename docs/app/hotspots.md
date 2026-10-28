@@ -37,6 +37,7 @@ Every frame, `ui::ui` projects each anchor through the truck's transform and the
 ## Known gaps
 
 - Anchors for empty slots float where the locator is. A better anchor would be the first compatible option placed at that locator.
+- **Wheels don't match the game.** The game gives each wheel part its own pin around the wheel: tyre 0.4 m up, disc 0.25 m up, rim and hub at the centre, cover behind, nuts in front. Its rim pin sits on the wheel locator ([F5](../REVERSE_ENGINEERING.md), `research/evidence/pin-table.txt`). We stack all seven wheel slots, including `f_wheel`, which has no pin entry, on the mean of the axle group's left locators. That shows as one dot counting 7, and on multi-axle trucks it falls between two axles.
 - A wheel group sits on the left wheels of its axle, so from the right side the marker is on the far wheel.
 - Markers have no depth test against the meshes.
-- Which slots the game pins, and where, is still Unknown (REA target `0x14223d860`).
+- Our anchors ignore the game's pin table (`TuningScene::pins`: `pin_offset`, `pin_dir`, `double_sided`). How the game applies it to non-wheel parts is Unknown; REA on the pin reader is in progress.

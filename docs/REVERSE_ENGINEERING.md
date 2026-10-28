@@ -84,8 +84,16 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - `pin_look` is `custom_acc` 59 times, and `acc_cover`, `acc_hub` and `acc_nuts` twice each.
   - 60 of 65 `pin_group` values match truck slot directory names. Unmatched: `cabdefl`, `f_fendr_cab`, `hoodlatch`, `m_mudflap`, `markers`.
   - Most likely this is the per-slot pin offset and direction (with a UK direction) applied to the slot's locator.
+- **Wheel pins (Confirmed data; base point observed in game).** Tabulated in `research/evidence/pin-table.txt`.
+  - Each wheel part has its own entry: `tire`, `disc`, `rim`, `hub` (`acc_hub`), `cover` (`acc_cover`) and `nuts` (`acc_nuts`), front and rear. All face −x and are `double_sided`.
+  - Around the wheel: tyre 0.40 m up, disc 0.25 m up, rim and hub at the centre, cover 0.15 m back, nuts 0.15 m forward. x is −0.1 at the front and −0.3 at the rear (twin tyres), with small per-part differences.
+  - `f_wheel`/`r_wheel` (complete wheels) have no entry. Whether the game pins them is Unknown.
+  - **Observed in the game (the user, 2026-10-28):** the rim pin sits at the wheel's locator, and the tyre pin is the tyre entry's `pin_offset` added to that point. Which wheel locator is used on multi-axle trucks is Unknown.
+- **Other pins (Confirmed data, Hypothesis use).** Every entry with `double_sided` false has x offset 0. Every `double_sided` entry outside the wheels has x from −0.8 to −1.35, except `cabdefl` and `r_deflector`. Those are left/right pairs: fenders, lights, steps, mirrors, side skirts.
+  - **Hypothesis:** a `double_sided` pin starts from the centre of the slot's left and right locators, the x offset moves it to the truck's side, and it is mirrored to the side facing the camera. The wheels don't fit this, because they start from a wheel locator.
+  - `pin_dir_uk` differs from `pin_dir` only for `cab_door`, `codrv_seat` and `s_mirror` (x flipped, the driver's side).
 - **Input (Confirmed, REA static).** The single caller `FUN_140fbf860` is the screen's input handler, not pin creation (`ev_f6f0551…`, `research/evidence/rea-pin-handler.txt`). It handles `joy_sec_prv`/`joy_sec_nxt` (tabs, by name), `joy_nav_prv`/`joy_nav_nxt` (pin to pin), `j_trzoom_in`/`j_trzoom_out`, select and back, and treats ids 10000–19999 as pins.
-- **Unknown:** how `pin_offset`/`pin_dir` are applied, and which code creates the `acc_info_t` records. Next lead: the code that reads `truck_config_scene.sii`'s `pin_*` keys (string search, then decompile).
+- **Unknown:** the base point of non-wheel pins, what `pin_dir` and `double_sided` do (visibility, mirroring), whether pins merge on screen, and which code creates the `acc_info_t` records. In progress: `rea trace --query=pin_offset` to find the reader, then decompile it and the code that places pins.
 
 ### F6: Preset configurations use the save-game vehicle structure (Confirmed)
 - `/def/vehicle/truck_desktop/<truck>.sii` holds one `vehicle` unit whose `accessories[]` point to:
