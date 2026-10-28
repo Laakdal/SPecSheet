@@ -1,0 +1,70 @@
+Paint-job class layouts from the executable's attribute tables (static, no Ghidra)
+==================================================================================
+
+Command (read-only on the executable; ETS2 1.60.1.7,
+sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8):
+  python -I tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" \
+    flake_uvscale flip_strength alternate_flipflake_uvset acc_list paint_job_mask
+
+Method: each class's SII attributes are described by a table of 40-byte entries
+[class ptr, field offset, type, 0, name ptr] (layout from a peer's static scan;
+the tool keeps only entries whose fourth word is 0 and whose name pointer is a
+printable string). The tool finds each key's string, every pointer to it, and
+prints the whole run of consecutive entries.
+
+Observed (Confirmed for the 1.60 executable):
+- Table 1 (class ptr 0x141d27240) = accessory_paint_job_data. Its 26 keys are
+  exactly the paint-job unit's attributes (docs/formats/paint.md), plus one more:
+  alternate_flipflake_uvset (bool, +0x1bf, right after alternate_uvset +0x1be).
+- Table 2 (class ptr 0x141d271f0) = simple_paint_job_data: paint_job_mask
+  +0x10, flake_uvscale +0x7c, flake_vratio +0x80, acc_list +0xb8.
+- Types seen: 9 = colour/float3 (all *_color), 5 = float, 1 = string/path
+  (paint_job_mask, flake_noise), 57 = bool (flags, *_locked, stock),
+  10 = float3 array (color_variant), 2 = string array (acc_list). The type
+  numbers' names are our reading of the keys that use them.
+- accessory_paint_job_data field offsets (used to read decompiled code):
+  +0x1b8..0x1bd *_locked; +0x1be alternate_uvset; +0x1bf alternate_flipflake_uvset;
+  +0x1c0 stock; +0x1e8 paint_job_mask; +0x208/0x214/0x220 mask_r/g/b_color;
+  +0x22c base_color; +0x238 flip_color; +0x244 flip_strength; +0x248 flake_color;
+  +0x254 flake_uvscale; +0x258 flake_vratio; +0x25c flake_density;
+  +0x260 flake_shininess; +0x264 flake_clearcoat_rolloff; +0x268 flake_noise;
+  +0x288 flipflake; +0x289 airbrush; +0x290 color_variant.
+- Game data: no accessory_paint_job_data unit under /def/vehicle sets
+  alternate_flipflake_uvset (def_grep: 0 units; the same search finds
+  flipflake at once). accessory_paint_job_data also has flake_vratio, which
+  the data survey did not list for that class.
+
+Output
+------
+== table at file 0x2c35a10 (va 0x142c37810), class ptr 0x141d27240, found via 'flake_uvscale'
+   +0x0208  type   9  mask_r_color
+   +0x0214  type   9  mask_g_color
+   +0x0220  type   9  mask_b_color
+   +0x022c  type   9  base_color
+   +0x0238  type   9  flip_color
+   +0x0244  type   5  flip_strength
+   +0x0248  type   9  flake_color
+   +0x0254  type   5  flake_uvscale
+   +0x0258  type   5  flake_vratio
+   +0x025c  type   5  flake_density
+   +0x0260  type   5  flake_shininess
+   +0x0264  type   5  flake_clearcoat_rolloff
+   +0x0268  type   1  flake_noise
+   +0x0288  type  57  flipflake
+   +0x0289  type  57  airbrush
+   +0x01e8  type   1  paint_job_mask
+   +0x01b8  type  57  mask_r_locked
+   +0x01b9  type  57  mask_g_locked
+   +0x01ba  type  57  mask_b_locked
+   +0x01bb  type  57  base_color_locked
+   +0x01bc  type  57  flip_color_locked
+   +0x01bd  type  57  flake_color_locked
+   +0x01be  type  57  alternate_uvset
+   +0x01bf  type  57  alternate_flipflake_uvset
+   +0x01c0  type  57  stock
+   +0x0290  type  10  color_variant
+== table at file 0x2c35ea0 (va 0x142c37ca0), class ptr 0x141d271f0, found via 'flake_uvscale'
+   +0x007c  type   5  flake_uvscale
+   +0x0080  type   5  flake_vratio
+   +0x0010  type   1  paint_job_mask
+   +0x00b8  type   2  acc_list
