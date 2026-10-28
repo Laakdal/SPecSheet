@@ -155,9 +155,10 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 10. **App shell (D16):** the `specsheet-theme` token crate with contrast tests, then the home, trucks, configurations, mods, parity, settings and about screens per [docs/app/design-system.md](docs/app/design-system.md). After the 1:1 tuning screen.
 11. **Docs per feature:** move each tuning feature's findings, rules and status into one `docs/features/<feature>.md` (wheels, interior, hookups, pins, scenes, paint). Shrink REVERSE_ENGINEERING.md to an index of F-numbers that link to them. Do it after the paint branch and the mod session's F14/D15 land.
 12. **Restructure (D17):** the target tree is in place (2026-10-28: core, theme, archive, formats, truck, data, assembly, gameui, session, render, research, app; `xtask` check/layers/guard/real/parity/version-port). Still to do:
-    - split `specsheet-data/src/catalog.rs` and `specsheet-truck/src/config.rs` into modules;
+    - [x] split `specsheet-data`'s `catalog` and `specsheet-truck`'s `config` into modules (2026-10-29);
+    - [x] `#![warn(missing_docs)]` on every library crate, with every public item documented (2026-10-29). Exception: `specsheet-data::{render, scene}` carry `#[allow(missing_docs)]` until their pending edits land, then document them and drop the allows;
     - bundle the theme's fonts (OFL) and build the app's own screens on the tokens (D16);
-    - `deny.toml` (cargo-deny) and `missing_docs` on the library crates.
+    - `deny.toml` (cargo-deny): waits for the user's OK to install `cargo-deny`.
 
 ## Blockers and notes
 
