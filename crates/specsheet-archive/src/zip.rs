@@ -110,6 +110,11 @@ impl ZipArchive {
         self.files.contains_key(path.trim_start_matches('/'))
     }
 
+    /// Uncompressed size of a file as its central record declares it.
+    pub fn size(&self, path: &str) -> Option<u64> {
+        self.files.get(path.trim_start_matches('/')).map(|e| e.size)
+    }
+
     /// Reads and decompresses a file (`def/x.sii` or `/def/x.sii`).
     pub fn read(&self, path: &str) -> Result<Vec<u8>> {
         let entry = self
