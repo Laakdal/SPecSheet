@@ -41,6 +41,6 @@ A small crate with no dependencies holds every design value as Rust constants. T
 
 ## Building it
 
-- **Phase 1:** the `specsheet-theme` crate with its contrast tests, and `ui/theme.rs` mapping it onto egui.
+- **Phase 1 (done 2026-10-28):** the `specsheet-theme` crate with its contrast tests, and `ui/theme.rs` mapping it onto egui. The app's current controls take their colours from the dark palette; fonts are not bundled yet.
 - **Phase 2:** the shared widgets (numbered row, segmented control, switch, field), then the screens.
 - Check each screen with a `SPECSHEET_SCRIPT` screenshot in both appearances.

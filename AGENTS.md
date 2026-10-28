@@ -16,12 +16,16 @@ Crates sit in layers, and a crate uses only crates in lower layers (D17). `cargo
 
 | Layer | Crates |
 |---|---|
-| 0 | `specsheet-archive`, `specsheet-formats`, `specsheet-truck` |
-| 1 | `specsheet-data` |
-| 2 | `specsheet-assembly`, `specsheet-gameui` |
-| 3 | `specsheet-session` |
+| 0 | `specsheet-core` (ids, maths, colour), `specsheet-archive`, `specsheet-theme` |
+| 1 | `specsheet-formats`, `specsheet-truck` |
+| 2 | `specsheet-data` |
+| 3 | `specsheet-assembly`, `specsheet-gameui` |
+| 4 | `specsheet-session` |
+| 5 | `specsheet-render` (Bevy) |
 | 8 | `specsheet-research` (tools) |
-| 9 | `crates/specsheet` (the app, the only Bevy crate) |
+| 9 | `crates/specsheet` (the app, Bevy) |
+
+Only `specsheet-render` and the app use Bevy.
 
 - `specsheet-truck` stays pure: domain types and rules, no I/O, no file formats.
 - `specsheet-formats` parses bytes, never archives or paths.
@@ -77,6 +81,8 @@ A change is done when all of these hold:
 
 | Crate | Owns | Never |
 |---|---|---|
+| `specsheet-core` | ids (`TruckId`, `SlotId`, `AccessoryId`), maths (`Aabb`, `Transform`), the sRGB conversion | domain rules, formats or I/O |
+| `specsheet-theme` | design tokens for the app's own screens (D16) | styles the game's tuning screen |
 | `specsheet-archive` | `.scs` and mod-package indexing, decompression, packed textures, layered VFS; building new ZIP packages | parses file contents |
 | `specsheet-formats` | byte parsers: SII, PMD, PMG, MAT, tokens; the `manifest.sii` writer | touches archives or paths |
 | `specsheet-truck` | catalog, rules, configuration state | does I/O or reads formats |
@@ -85,7 +91,8 @@ A change is done when all of these hold:
 | `specsheet-gameui` | the game's UI files: screens, templates, colours, UI materials, the markup layout | knows about trucks |
 | `specsheet-session` | `GameSession`/`TruckSession` orchestration, `view` display data | draws anything |
 | `specsheet-research` | research tools (`examples/`) that produce `research/evidence/` | is used by other crates |
-| `specsheet` (`crates/specsheet`) | Bevy renderer, egui UI, background jobs, settings, dev script | decides compatibility or parses game files |
+| `specsheet-render` | game materials (clean-room WGSL), the game's lighting, checked mesh and texture upload | decides compatibility or parses game files |
+| `specsheet` (`crates/specsheet`) | app wiring: viewer, egui UI, background jobs, settings, dev script | decides compatibility or parses game files |
 
 Crate-level docs live in each `lib.rs` (`//!`). Crates have no README.
 
@@ -117,15 +124,17 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | Exterior pins the game's way: base locator, offset, facing, mirrored and wheel pins | `specsheet-assembly/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
 | Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-session/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
 | App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
-| Meshes, materials, textures to GPU (with upload checks) | `specsheet/src/assets.rs` | unit |
-| Clean-room game materials (truck paint) and the game's lighting | `specsheet/src/render/{mod,truckpaint,lighting}.rs`, `truckpaint.wgsl`, `game_lighting.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
+| Meshes, materials, textures to GPU (with upload checks) | `specsheet-render/src/assets.rs` | unit |
+| Clean-room game materials (truck paint, `dif.spec`), their texture loader and the game's lighting | `specsheet-render/src/{lib,truckpaint,difspec,textures,lighting}.rs`, `truckpaint.wgsl`, `difspec.wgsl`, `game_lighting.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
 | The game's truck configuration screen (layout drawing, tabs, lists), UI textures, SpecSheet window | `specsheet/src/ui/{mod,screen,textures}.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Pins over the 3D view (projection, fade by facing, disc-linked wheel pins) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
 | Dev script mode | `specsheet/src/script.rs` | unit |
 | Visual parity runner (`--parity`, cases in `parity/cases.json`) | `specsheet/src/parity.rs` | unit |
+| Ids, `Aabb`, `Transform`, sRGB | `specsheet-core/src/{ids,math,colour}.rs` | unit |
+| Design tokens (colours, type, spacing; WCAG contrast test) | `specsheet-theme/src/lib.rs`, mapped in `specsheet/src/ui/theme.rs` | unit |
 | Research tools (surveys, dumps, probes) | `specsheet-research/examples/*.rs` | run against the install |
-| Repository tasks: `check`, `layers` | `../xtask/src/main.rs` (`cargo xtask …`) | unit |
+| Repository tasks: `check`, `layers`, `guard`, `real`, `parity`, `version-port` | `../xtask/src/main.rs` (`cargo xtask …`) | unit |
 
 ## Read only when needed
 

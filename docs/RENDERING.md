@@ -16,8 +16,8 @@ specsheet-assembly::assemble   →  placements (model, look, variant, transform)
 specsheet-data::render::build_mesh   →  MeshData (visible parts, CCW indices, material info)
 specsheet-data::render::load_texture →  TextureData (unpacked mips, BGRA→RGBA)
 specsheet-session::view::overview       →  hotspots, slot list, paint colour, warnings
-crates/specsheet/src/assets.rs     →  validated Bevy meshes, StandardMaterials, BC images
-crates/specsheet/src/render/       →  clean-room WGSL materials (truck paint)
+crates/specsheet-render/src/assets.rs →  validated Bevy meshes, StandardMaterials, BC images
+crates/specsheet-render/src/       →  clean-room WGSL materials (truck paint, dif.spec), game lighting
 crates/specsheet/src/viewer.rs     →  truck and scene entities, lights, fog, orbit camera
 crates/specsheet/src/ui/           →  the game's tuning screen, egui panels and hotspot markers
 ```
@@ -26,7 +26,7 @@ crates/specsheet/src/ui/           →  the game's tuning screen, egui panels an
 
 ### Coordinates
 
-SCS truck space is x right, y up, −z forward. It is right-handed with y up, the same as Bevy, so placements are used unchanged. Locator rotations are stored `(w, x, y, z)` and converted to `(x, y, z, w)` in `assembly::Transform`. The scene's truck pose (`truck_rot`, degrees) is applied as intrinsic XYZ Euler angles.
+SCS truck space is x right, y up, −z forward. It is right-handed with y up, the same as Bevy, so placements are used unchanged. Locator rotations are stored `(w, x, y, z)` and converted to `(x, y, z, w)` in `specsheet_core::Transform`. The scene's truck pose (`truck_rot`, degrees) is applied as intrinsic XYZ Euler angles.
 
 ### Assembly
 

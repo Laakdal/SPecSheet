@@ -4,7 +4,7 @@ How the app draws game materials. The effect files themselves are described in [
 
 ## Effect tokens → Bevy `StandardMaterial`
 
-`specsheet-data::render::MaterialInfo` classifies each `.mat` by its effect tokens. `crates/specsheet/src/assets.rs::material` maps the result:
+`specsheet-data::render::MaterialInfo` classifies each `.mat` by its effect tokens. `specsheet-render/src/assets.rs::material` maps the result:
 
 | Effect tokens | `MaterialInfo` | Bevy |
 |---|---|---|
@@ -44,7 +44,7 @@ The stand-ins are an approximation, not the game's shaders.
 
 ## `dif.spec` (`eut2.dif.spec*`)
 
-`render/difspec.{rs,wgsl}` draws the family from [shader-specs/dif-spec.md](shader-specs/dif-spec.md) (D13), on the shared lighting module (`render/game_lighting.wgsl`, see "Lighting" under truck paint):
+`specsheet-render/src/difspec.{rs,wgsl}` draws the family from [shader-specs/dif-spec.md](shader-specs/dif-spec.md) (D13), on the shared lighting module (`specsheet-render/src/game_lighting.wgsl`, see "Lighting" under truck paint):
 - **Surface (§5.3):** albedo = base texture × `diffuse` × 2 × vertex colour. The base alpha is the specular mask: plain variants use `sat(ms·B.a + mb)·specular`, `weight` uses `B.a · specular · 2 × vertex colour`.
 - **Sun (§5.4):** unnormalised Blinn-Phong with `shininess`, gated by `sat(10·N·L)`, or `N·L` for `weight`.
 - **Reflection (§5.5), `add.env` and `nofresnel`:** the `.mat`'s own `texture_reflection` × `env_factor` (× 2 × vertex colour with `weight`) × base alpha × fresnel × `sat(light_environment)`. The fresnel is linear, `sat(fb + fs·(1 − N·E))` from `fresnel` (bias, scale); `nofresnel` uses 1.
@@ -60,7 +60,7 @@ Seen working (MAN TGX Euro 6, Scania S): paint, plastic and chrome share one lig
 
 ## Truck paint (`eut2.truckpaint*`)
 
-`crates/specsheet/src/render/truckpaint.{rs,wgsl}`: a Bevy `ExtendedMaterial<StandardMaterial, TruckPaint>` written from the clean-room spec [shader-specs/truckpaint.md](shader-specs/truckpaint.md).
+`crates/specsheet-render/src/truckpaint.{rs,wgsl}`: a Bevy `ExtendedMaterial<StandardMaterial, TruckPaint>` written from the clean-room spec [shader-specs/truckpaint.md](shader-specs/truckpaint.md).
 
 **Provenance (D13).** A spec agent read the game's truckpaint shaders and wrote `truckpaint.md` and `truckpaint-lighting.md` (sources: `research/evidence/truckpaint-spec-sources.txt`). The session that wrote the WGSL and its Rust side never saw the shaders, their extracted text or that evidence file; it read only the two spec pages.
 
@@ -116,7 +116,7 @@ The game copies these into the material unscaled.
 | `specular`, `shininess` absent | 1, 4: the material-input table's defaults (dif-spec §3.1) | — |
 | no paint job and no colour | 0.6 grey | — |
 
-**Lighting: the game's forward model** ([truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) §4–5), from the shared module `render/game_lighting.wgsl`, which `dif.spec` will use too:
+**Lighting: the game's forward model** ([truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) §4–5), from the shared module `specsheet-render/src/game_lighting.wgsl`, which `dif.spec` will use too:
 - ambient plus the sun's diffuse, unnormalised Blinn-Phong specular with the `sat(10·N·L)` gate, and the `.mat`'s `additional_ambient` (the scene gives no additional ambient colour, so that term is 0);
 - the reflection from the `.mat`'s own `texture_reflection` cube, with Schlick's fresnel, scaled by `sat(light_environment)`;
 - no normal maps yet (`tsnmap`/`tsnmapuv` need tangents); the normal-map factor is 1.

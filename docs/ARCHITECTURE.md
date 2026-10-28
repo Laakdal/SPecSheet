@@ -7,28 +7,34 @@ A standalone desktop app that reads the user's ETS2 installation, assembles a tr
 Each crate uses only crates in lower layers; `cargo xtask layers` checks it locally and in CI (D17).
 
 ```
-layer 9   crates/specsheet      Bevy 0.19 + bevy_egui: 3D view, pins, the game screen, jobs, dev script
+layer 9   crates/specsheet      the app: viewer, pins, the game screen, jobs, dev script (Bevy, egui)
 layer 8   specsheet-research    research tools (examples/), beside the app
-layer 3   specsheet-session     GameSession / TruckSession orchestration, view (display data)
-layer 2   specsheet-assembly    the built truck: placements, wheels, interior, hookups, anchors, pins
+layer 5   specsheet-render      game materials (clean-room WGSL), game lighting, checked GPU upload (Bevy)
+layer 4   specsheet-session     GameSession / TruckSession orchestration, view (display data)
+layer 3   specsheet-assembly    the built truck: placements, wheels, interior, hookups, anchors, pins
           specsheet-gameui      the game's UI files laid out
-layer 1   specsheet-data        install, mounting, catalogs, models, scenes, render data, paint
-layer 0   specsheet-truck       pure tuning domain: catalog, rules, configuration, paint jobs
+layer 2   specsheet-data        install, mounting, catalogs, models, scenes, render data, paint
+layer 1   specsheet-truck       pure tuning domain: catalog, rules, configuration, paint jobs
           specsheet-formats     byte parsers: SII, BSII, ScsC, PMD, PMG, MAT; manifest writer
+layer 0   specsheet-core        foundation: ids, maths (Aabb, Transform), sRGB conversion
           specsheet-archive     HashFS v2/v1, ZIP (read and write), CityHash, GDeflate, VFS
+          specsheet-theme       design tokens for the app's own screens (D16)
 ```
 
 | Crate | Responsibility | May depend on |
 |---|---|---|
+| `specsheet-core` | Foundation types every crate shares: ids, `Aabb`, `Transform`, the sRGB conversion. No domain logic | serde |
+| `specsheet-theme` | Design tokens (colour roles in two appearances, type scale, spacing) with a WCAG contrast test | nothing |
 | `specsheet-archive` | Read-only `.scs` and mod-package access: indexing, decompression, packed textures, layered VFS. Builds new ZIP mod packages (D18) | std, thiserror, flate2, gdeflate |
 | `specsheet-formats` | Byte-level parsers for SII, BSII, ScsC, PMD, PMG, MAT; the `manifest.sii` writer; a scanner for paths files mention. No I/O | std, thiserror, flate2, aes, cbc |
-| `specsheet-truck` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation, paint jobs. No I/O, no game formats | serde |
-| `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; models, scenes, render-ready meshes and textures, paint per part | layer 0 |
-| `specsheet-assembly` | Assembles a configuration into placements; slot availability from model locators; hotspot anchors; the game's exterior pins | layers 0–1 |
-| `specsheet-gameui` | The game's UI screens, templates, colours and markup layout | layers 0–1 |
-| `specsheet-session` | The game and truck sessions (options, selection, hookups, drive); `view` turns a session into display data (labels, pins, verdict reasons) | layers 0–2 |
-| `specsheet-research` | Research tools that produce `research/evidence/` | layers 0–3 |
-| `crates/specsheet` | The application: Bevy renderer, egui UI, background jobs, settings. Converts meshes and textures to GPU assets; holds no tuning rules | every library crate, bevy, bevy_egui |
+| `specsheet-truck` | Domain types (`TruckCatalog`, `Accessory`, `Configuration`), compatibility rules, validation, paint jobs. No I/O, no game formats | specsheet-core, serde |
+| `specsheet-data` | Install discovery and mounting; builds `TruckCatalog` from SII; models, scenes, render-ready meshes and textures, paint per part | layers 0–1 |
+| `specsheet-assembly` | Assembles a configuration into placements; slot availability from model locators; hotspot anchors; the game's exterior pins | layers 0–2 |
+| `specsheet-gameui` | The game's UI screens, templates, colours and markup layout | layers 0–2 |
+| `specsheet-session` | The game and truck sessions (options, selection, hookups, drive); `view` turns a session into display data (labels, pins, verdict reasons) | layers 0–3 |
+| `specsheet-render` | Game materials on Bevy: clean-room WGSL shaders, the game's lighting, checked mesh and texture upload | layers 0–4, bevy |
+| `specsheet-research` | Research tools that produce `research/evidence/` | layers 0–4 |
+| `crates/specsheet` | The application: viewer, egui UI, background jobs, settings; holds no tuning rules | every library crate, bevy, bevy_egui |
 
 Boundaries that must hold:
 - `specsheet-truck` never sees file formats, and `specsheet-formats` never sees archives. This keeps the rules and parsers testable without a game install.
@@ -39,8 +45,8 @@ Boundaries that must hold:
 
 Where the crates are heading, in staged passes (D17). Each crate has one responsibility, and the arrows only point down.
 
-- **Done (2026-10-28):** `xtask` with `check` and `layers`; `specsheet-core` renamed `specsheet-truck`; `specsheet-data` split into `-data`, `-assembly`, `-gameui` and `-session`; the tools moved into `specsheet-research`.
-- **Next passes:** `specsheet-render` out of the app, at the `dif.spec` stopping point; the foundation `specsheet-core` (ids, maths, colour), which unifies types and is not a pure move; `specsheet-theme` with the app's own screens.
+- **Done (2026-10-28):** every crate in the tree below exists. `xtask` has `check`, `layers`, `guard`, `real`, `parity` and `version-port`.
+- **Still open:** splitting `specsheet-data/src/catalog.rs` and `specsheet-truck/src/config.rs` into modules; bundling the theme's fonts.
 
 ```
 crates/

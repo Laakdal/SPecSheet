@@ -37,12 +37,13 @@ ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" \
 **Which crates to check.** The library crates never depend on Bevy. Testing only the crates a change touches, plus their dependents, avoids compiling the roughly 400 Bevy crates. The full table is in `AGENTS.md` under "Done means":
 
 ```
-specsheet-archive ─┐                     ┌─> specsheet-assembly ─┐
-specsheet-formats ─┼─> specsheet-data ───┤                       ├─> specsheet-session ─> specsheet (Bevy app)
-specsheet-truck ───┘                     └─> specsheet-gameui ───┘
+specsheet-core ──> specsheet-formats, specsheet-truck ──> specsheet-data
+specsheet-data ──> specsheet-assembly, specsheet-gameui ──> specsheet-session
+specsheet-session ──> specsheet-render (Bevy) ──> specsheet (the app, Bevy)
+specsheet-archive and specsheet-theme sit at the bottom with specsheet-core.
 ```
 
-`specsheet-research` holds the research tools and sits beside the app. `cargo xtask layers` checks that every dependency points down (D17).
+`specsheet-research` holds the research tools and sits beside the app. Only `specsheet-render` and the app compile Bevy. `cargo xtask layers` checks that every dependency points down (D17).
 
 ## Run the app
 
