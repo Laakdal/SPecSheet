@@ -6,6 +6,8 @@
 //! Not for the tuning screen: that is the game's own UI, drawn from its
 //! layout files, and is never restyled with these tokens.
 
+#![warn(missing_docs)]
+
 /// An sRGB colour, 8 bits per channel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rgb(pub u8, pub u8, pub u8);
@@ -33,11 +35,15 @@ pub struct Palette {
     pub accent: Rgb,
     /// Text on `accent`.
     pub on_accent: Rgb,
+    /// Errors and destructive actions.
     pub danger: Rgb,
+    /// Completed and compatible states.
     pub success: Rgb,
-    /// Pin colours over the 3D view, by category.
+    /// Pin colour over the 3D view for exterior accessories.
     pub pin_base: Rgb,
+    /// Pin colour for wheel groups.
     pub pin_wheel: Rgb,
+    /// Pin colour for interior accessories.
     pub pin_interior: Rgb,
 }
 
@@ -82,10 +88,13 @@ pub const LIGHT: Palette = Palette {
 /// One step of the type scale, in logical pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TypeStep {
+    /// Font size.
     pub size: f32,
+    /// Line height.
     pub line_height: f32,
     /// Letter spacing in em.
     pub tracking: f32,
+    /// Font weight, 100 to 900.
     pub weight: u16,
 }
 
@@ -98,22 +107,32 @@ const fn step(size: f32, line_height: f32, tracking: f32, weight: u16) -> TypeSt
     }
 }
 
+/// Tiny indices and badges.
 pub const MICRO: TypeStep = step(11.0, 14.0, 0.02, 500);
+/// Captions and secondary notes.
 pub const CAPTION: TypeStep = step(12.0, 16.0, 0.01, 400);
+/// Field and list labels.
 pub const LABEL: TypeStep = step(13.0, 18.0, 0.0, 500);
+/// Default control text.
 pub const UI: TypeStep = step(14.0, 20.0, 0.0, 400);
+/// Running text.
 pub const BODY: TypeStep = step(15.0, 22.0, 0.0, 400);
+/// Section headings.
 pub const HEADING: TypeStep = step(20.0, 26.0, -0.01, 600);
+/// Screen titles.
 pub const TITLE: TypeStep = step(28.0, 32.0, -0.02, 600);
+/// Large display numbers and hero text.
 pub const DISPLAY: TypeStep = step(44.0, 48.0, -0.03, 700);
 /// The faint "SPecSheet" signature behind the home screen.
 pub const WORDMARK: TypeStep = step(160.0, 160.0, -0.04, 800);
 
 /// The spacing scale, in logical pixels.
 pub const SPACE: [f32; 9] = [4.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, 96.0];
-/// Page margin, and the margin when the window is narrow.
+/// Page margin.
 pub const PAGE_MARGIN: f32 = 64.0;
+/// Page margin when the window is narrow.
 pub const PAGE_MARGIN_NARROW: f32 = 16.0;
+/// Corner radius of panels and controls.
 pub const RADIUS: f32 = 8.0;
 /// Diameter of a pin dot over the 3D view.
 pub const PIN_SIZE: f32 = 16.0;
