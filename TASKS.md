@@ -79,6 +79,15 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
 - [x] Clean-room rewrite, phase 1 (D13): `pmd.rs`, `pmg.rs` and `texture.rs` rewritten from interface stubs and our own evidence by an agent that never saw TruckLib or the old code. Output identical to the old code for all 278,633 models and textures in the install (`research/evidence/cleanroom-phase1.txt`), plus three resource-exhaustion guards.
 - [x] Clean-room rewrite, phase 2 (D13): `hashfs.rs` rewritten by a second fresh agent from a byte-level derivation of the HashFS v2 layout (`hashfs-layout-derivation.txt`). Identical to the old reader on all 116 archives (`cleanroom-phase2.txt`). It corrected the old doc: the header ends at 0x34, record 0x06 is on .pmg only, and 547 entries appear in no listing.
+- [x] Mod loader research (F14, `docs/formats/mods.md`): container by content, HashFS v1 layout and salted keys (`mod_probe`), ZIP quirks, manifest gating, multi-folder `dlc_*` packages, mod pool at profile load.
+- [x] Tolerant ZIP reader (`ZipArchive`, D15): all 33 ZIP mods read, record counts equal the game log, including the deliberately malformed one.
+- [x] ScsC profile decryption (`scsc::sii_text`) and the SII `\xNN` escape fix: all 4 profiles give their `active_mods` (`profile_mods`).
+- [ ] Mod priority (F14 Unknown): the REA string search is done (`rea-search-mod-loader.txt`). Next, decompile the functions that reference `0x142112188` (`[mods] Active %Iu mods`) and `0x1420bcaa8` (pool lookup). Each REA `function` run is a full ~30 min analysis; run it after 71's `FUN_140fbf860` run, never at the same time.
+- [x] `\xNN` fix vs the app UI (checked with de): the markup parser passes multi-byte text through, and the affected widgets (prev/next tab glyphs, money) are hidden for now, so nothing on screen changes. Once wired, the glyphs need the `glyphs_xb` font.
+- [x] Binary SII parser (`bsii.rs`) and the text placement fix: all 86 saves decode (32 binary, 54 text), every nameless reference resolves, and 470 of 482 shared fields agree in kind with text (`save_check`, `bsii-derivation.txt`).
+- [ ] Placement float 3 (always just above 2^23, probably packed position offsets) and `nil` = u64::MAX are open (bsii.md). Settle them before showing save positions.
+- [x] HashFS v1 reader (`HashFsV1Archive`, D15), written from `hashfs-v1-derivation.txt`: all 20 v1 mods open, counts equal the game log, 170,674 entries read, 0 failures.
+- [ ] Mods next (D15): mounting into the `Vfs` in profile order, home-directory and profile discovery in `specsheet-data`. Writing profiles or mods only with the user's go-ahead.
 
 ## Next
 

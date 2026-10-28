@@ -57,12 +57,17 @@ All notable changes to this project are documented here. The format follows [Kee
   - The Rust toolchain is pinned to 1.95.0 (`rust-toolchain.toml`).
   - LF line endings on every platform (`.gitattributes`).
   - Commits are signed.
+- **Mod packages:** a tolerant ZIP reader (`specsheet_archive::ZipArchive`) reads mod packages the way the game does. It ignores the encryption bit and CRCs that some mods scramble to block ordinary tools. All 33 ZIP mods on the test install read completely. A HashFS v1 reader (`HashFsV1Archive`) covers the older `.scs` format many mods use (ProMods, PNG): all 20 v1 mods read completely, salted packages included. Mods are not mounted yet.
+- **Profiles:** `specsheet_formats::scsc` decrypts `ScsC` profiles (AES-256-CBC + zlib) and passes already-decrypted SII text through, so a profile's `active_mods` can be read. Profiles are only read.
+- **Saves:** binary SII (`specsheet_formats::bsii`) is read into the same units as text SII, and `scsc::document` reads a save or profile in any form (encrypted, text or binary). All 86 saves on the test install decode. Saves are only read.
 - **Game version pin:** `GameInstall::version()` reads the installed version from `version.scs`. The real-install tests fail with instructions on any version other than `TESTED_GAME_VERSION` (1.60.1.7).
 
 ### Fixed
 - Chrome and polished metal no longer render nearly black: materials with an `env_factor` become PBR metal, with roughness from `shininess`.
+- Text SII placements `(x, y, z) (w; x, y, z)` parse as one value. They used to fail the whole file, so no save could be read.
 - **Licensing:** the model (PMD/PMG) and texture code was rewritten clean-room from our own evidence (D13), with output identical to before on every model and texture in the game. The parsers now also bound UV sets, total decoded geometry and variant values against hostile files.
 - **Licensing:** the HashFS archive reader was also rewritten clean-room, from a new byte-level derivation of the format (D13), and reads every archive identically. No code derived from GPL sources remains.
+- SII strings decode `\xNN` escapes as UTF-8 bytes. They used to lose the backslash (`xe2x82xac` instead of `€`), in profiles, in 31 game UI layouts (the euro sign and glyph-font icons on the tuning screen) and in road-sign definitions.
 - PMG locators without a hookup no longer report an empty hookup string, and a piece whose stored vertex stride disagrees with its streams is rejected instead of misread. Both were found by re-deriving the model layout from our own byte dumps.
 - The docs listed sk-zk's TruckLib references as MIT. They are GPL-2.0, so SPecSheet (MIT) takes only facts from them, never code.
 - Right-hand drive shows the right-hand-drive interior (each interior's UK twin, paired for all 219 units).
