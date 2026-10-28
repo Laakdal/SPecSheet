@@ -132,7 +132,7 @@ The game copies these into the material unscaled.
 | ρ (`flake_density`) | clamped to 0–1 | §7: values reach 2 |
 | r (`flake_vratio`) | 1 when 0 | §7 |
 | λ, flake light | 1; the sun's direction | §7 |
-| F0 | the `.mat`'s first `fresnel` value, else 0.2 | lighting §8 |
+| F0 | 0.035, the truckpaint effects' constant; a `.mat` `fresnel` whose second value is −1 gives its clamped first value instead | lighting §4, F18 |
 | μ, `texture_reflection_modulator` | 1 | lighting §4 |
 | (a_w, b_w), alpha to specular weight | (1, 0) | lighting §4 |
 | `specular`, `shininess` absent | 1, 4: the material-input table's defaults (dif-spec §3.1) | — |
