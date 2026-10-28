@@ -109,6 +109,8 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 - When touching archive reading, parsers or texture/model conversion, read `docs/ASSET_FORMATS.md` and the `docs/formats/*` page it links for that format.
 - When judging whether a feature matches the game, read `docs/PARITY.md`.
 - When relying on how the game behaves (mount order, locators, presets, UI), read `docs/REVERSE_ENGINEERING.md`.
+- When researching the game (data surveys, REA on the exe, writing evidence), read `docs/research-lab.md`.
+- When ETS2 updates or `installed_game_is_the_tested_version` fails, read `docs/version-ports.md`.
 - When changing compatibility, defaults or configuration logic, read `docs/TUNING_SYSTEM.md`.
 - When changing the viewer, materials, scenes, hotspots or the app UI, read `docs/RENDERING.md` and the `docs/app/*` page it links.
 - When adding a crate, module or dependency, read `docs/ARCHITECTURE.md` and record the choice in `docs/DECISIONS.md`.

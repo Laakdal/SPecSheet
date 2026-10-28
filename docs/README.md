@@ -11,6 +11,8 @@ Docs are organised by topic. Each fact has one home: `formats/` describes what g
 
 ## The game (reverse engineering)
 - [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md): findings log (F*n*) with evidence
+- [research-lab.md](research-lab.md): how we research the game (sources, REA, evidence, labels, D13)
+- [version-ports.md](version-ports.md): what to do when ETS2 updates
 - [TUNING_SYSTEM.md](TUNING_SYSTEM.md): slots, compatibility rules, presets
 
 ## Game file formats
