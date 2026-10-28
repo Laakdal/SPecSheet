@@ -1,0 +1,17 @@
+[package]
+name = "specsheet-render"
+version = "0.1.0"
+description = "Game materials on Bevy: clean-room WGSL shaders, the game's lighting, and checked mesh and texture upload."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+specsheet-core = { path = "../specsheet-core" }
+specsheet-data = { path = "../specsheet-data" }
+specsheet-session = { path = "../specsheet-session" }
+bevy = { version = "0.19.1", default-features = false, features = ["3d"] }
+
+[lints]
+workspace = true

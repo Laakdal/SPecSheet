@@ -23,7 +23,7 @@ use super::MaterialContext;
 /// diffuse, vertex colour) plus the paint.
 pub type TruckPaintMaterial = ExtendedMaterial<StandardMaterial, TruckPaint>;
 
-const SHADER: &str = "embedded://specsheet/render/truckpaint.wgsl";
+const SHADER: &str = "embedded://specsheet_render/truckpaint.wgsl";
 
 pub struct TruckPaintPlugin;
 
@@ -103,7 +103,7 @@ pub struct TruckPaint {
     #[texture(103)]
     #[sampler(104)]
     pub flake_noise: Option<Handle<Image>>,
-    /// The scene's light ([`crate::render::GameLighting`]).
+    /// The scene's light ([`crate::GameLighting`]).
     #[storage(105, read_only)]
     pub light: Handle<ShaderBuffer>,
     /// The `.mat`'s `texture_reflection` cube.

@@ -4852,6 +4852,7 @@ dependencies = [
  "specsheet-core",
  "specsheet-data",
  "specsheet-gameui",
+ "specsheet-render",
  "specsheet-session",
  "specsheet-theme",
  "specsheet-truck",
@@ -4912,6 +4913,16 @@ dependencies = [
  "specsheet-core",
  "specsheet-data",
  "specsheet-formats",
+]
+
+[[package]]
+name = "specsheet-render"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "specsheet-core",
+ "specsheet-data",
+ "specsheet-session",
 ]
 
 [[package]]

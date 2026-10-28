@@ -22,7 +22,7 @@ use specsheet_data::render::{
 };
 use specsheet_session::GameSession;
 
-use crate::render::{DifSpecSurface, PaintSurface};
+use crate::{DifSpecSurface, PaintSurface};
 
 /// One model as the viewer requests it. `parts` limits the model to the
 /// named parts (empty: all), as scene models do.

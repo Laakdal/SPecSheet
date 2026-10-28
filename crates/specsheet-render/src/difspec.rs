@@ -22,7 +22,7 @@ use super::MaterialContext;
 /// diffuse, vertex colour, blending) plus the family's own inputs.
 pub type DifSpecMaterial = ExtendedMaterial<StandardMaterial, DifSpec>;
 
-const SHADER: &str = "embedded://specsheet/render/difspec.wgsl";
+const SHADER: &str = "embedded://specsheet_render/difspec.wgsl";
 
 pub struct DifSpecPlugin;
 

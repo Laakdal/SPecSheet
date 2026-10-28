@@ -12,6 +12,7 @@ specsheet-core = { path = "../specsheet-core" }
 specsheet-assembly = { path = "../specsheet-assembly" }
 specsheet-data = { path = "../specsheet-data" }
 specsheet-gameui = { path = "../specsheet-gameui" }
+specsheet-render = { path = "../specsheet-render" }
 specsheet-session = { path = "../specsheet-session" }
 specsheet-theme = { path = "../specsheet-theme" }
 specsheet-truck = { path = "../specsheet-truck" }

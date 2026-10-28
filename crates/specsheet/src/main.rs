@@ -5,10 +5,8 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod assets;
 mod hotspots;
 mod parity;
-mod render;
 mod script;
 mod settings;
 mod studio;
@@ -19,11 +17,11 @@ use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_egui::EguiPlugin;
 
-use crate::render::GameMaterialsPlugin;
 use crate::script::ScriptPlugin;
 use crate::studio::StudioPlugin;
 use crate::ui::UiPlugin;
 use crate::viewer::ViewerPlugin;
+use specsheet_render::GameMaterialsPlugin;
 
 fn main() -> AppExit {
     let args: Vec<String> = std::env::args().skip(1).collect();

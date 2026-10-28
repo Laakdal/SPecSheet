@@ -20,12 +20,12 @@ use specsheet_assembly::Placement;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
-use crate::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
-use crate::render::{
+use crate::studio::{FrameSet, Studio};
+use specsheet_render::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
+use specsheet_render::{
     DifSpecMaterial, DifSpecMaterials, GameLight, GameLighting, GameTextures, MaterialContext,
     Paint, PaintMaterials, TruckPaintMaterial,
 };
-use crate::studio::{FrameSet, Studio};
 
 /// The truck, the scene, lights and the orbit camera.
 pub struct ViewerPlugin;
