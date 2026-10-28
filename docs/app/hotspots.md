@@ -9,6 +9,7 @@ The clickable markers on the truck. How the game itself creates its pins is in [
 - **Empty slots** (nothing placed) use their bare locators and carry `Anchor::empty`. These can sit away from any geometry, e.g. `b_grill` ahead of the bumper, or `f_mudflap` on the centre line for an L/R pair.
 - **Interior slots:** a slot is interior when its models lie entirely inside the cabin box shrunk by 5 cm.
 - **Wheel groups:** every wheel part of an axle shares one position and a group key (`Anchor::group`, e.g. `wheel_f`, the locator prefix).
+- **Cockpit slots:** interior-only accessories (the steering wheel, curtains, toys…) attach to locators on the interior's full cockpit, moved into truck space. Their anchors come from those placements or locators, so they get pins in the interior view (F10).
 
 ## Which slots get a marker (`specsheet-data::view::overview`)
 

@@ -49,3 +49,12 @@ Without a scene camera, the orbit target follows the centre of the truck's bound
 - **Cursor, not raw motion.** Drags follow the cursor inside the window. They end when the window loses focus or the cursor leaves it, so a button release the window never sees cannot leave the camera following the mouse. (Raw motion did, and could fling the camera off into the dark.)
 - **Bounds.** The orbit target stays within `camera_relative_bounds` around the aim, with its height within `camera_aim_y_bounds` (Hypothesis). Scenes without bounds allow 10 m around their aim.
 - **Home** restores the scene's view.
+
+## Interior view
+
+The Interior and Interior Accessories tabs look from the driver's seat (Design: the game's interior camera is assumed, until a reference screenshot confirms it).
+
+- **Eye point:** the camera sits at `Assembly::cockpit`'s transform, the cabin's `ext_interior` locator, which is the driver's eye (F10, Hypothesis).
+- **Looking around:** it starts looking ahead and slightly down (pitch −0.2). A drag turns the head, by up to ±2.6 rad of yaw and ±1.2 rad of pitch. There is no pan or zoom.
+- **What is drawn:** the interior's full cockpit, and the interior-only accessories on its locators (`Assembly::interior_parts`: steering wheel, curtains, toys, glass sets, carpets at the eye point), replace the light exterior-view interior. The pins are those of the interior tab, with no far-side culling inside the cab.
+- **Leaving:** switching to any other tab returns to the orbit camera unchanged.
