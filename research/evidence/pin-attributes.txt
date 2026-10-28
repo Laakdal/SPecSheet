@@ -236,3 +236,24 @@ Record layout (Confirmed): +0x0 vehicle index in the chain, +0x8 id token,
 +0x10 look token, +0x18 linked record index or -1, +0x1c position (x, y, z
 plus two 512 m cell indices), +0x2c rotation quaternion (w, x, y, z),
 +0x3c..+0x3e flags.
+
+use_non_wheel_pin_data_from_model default, and interior base points (static, ETS2 1.60.1.7)
+- Default: false (Confirmed). The full constructor of the truck-data class
+  (class ptr 0x141d27eb0, the class whose table holds fallback +0x1b8,
+  use_non_wheel_pin_data_from_model +0x1e0, pin_group +0x1e8 ... double_sided
+  +0x2b0) is FUN_0x140977730. It zeroes r14 and stores r14b to +0x1e0 while
+  initialising all seven pin fields. Five other writers of +0x1e0 copy the
+  byte from a source object (copy constructors). With no 1.60 truck setting
+  the key (above), every truck uses the scene table for non-wheel pins.
+- Interior pass: for each slot it takes the model object of the interior entry
+  (entry +0x10) and calls FUN_1415209e0(model, locator token). That function
+  searches the model's parts whose "visible" attribute is set, then returns the
+  matching locator's position (locator +0x08..+0x10) and rotation quaternion
+  (+0x18), unchanged except that x and z pass through 0x14012b9e0 (Hypothesis:
+  a per-axis conversion to the engine's split position format). It applies no
+  instance placement: the base point is in the interior model's own space.
+  With the cockpit's head-relative locators (F10: steering_w at
+  (-0.0007, -0.372, -0.555), origin = the driver's eye at ext_interior), the
+  interior pins end in truck space only if the builder's chain offset carries
+  the eye-point placement. Otherwise they sit around the truck origin.
+  Unknown: what the chain offset holds for the interior pass.
