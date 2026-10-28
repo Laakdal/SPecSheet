@@ -1,0 +1,97 @@
+truckpaint shader spec: sources read (clean-room SPEC side, D13)
+=================================================================
+
+Purpose: audit trail for docs/app/shader-specs/truckpaint.md and truckpaint-lighting.md.
+Lists what was read, how it was extracted and what was counted. No shader text is
+reproduced here or in the specs. Extracted files live only in the gitignored
+research/extracted/truckpaint/ (rfx/, glsl/, txt_*.txt printable-text dumps).
+
+Install: ETS2 1.60.1.7, D:\Steam Library\steamapps\common\Euro Truck Simulator 2 (read-only).
+
+Commands (Git Bash)
+-------------------
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  export CARGO_TARGET_DIR=<scratchpad>/target
+  cargo build --release -j 4 -p specsheet-archive --example scs
+  cargo build --release -j 4 -p specsheet-data --example model_info
+  SCS=$CARGO_TARGET_DIR/release/examples/scs.exe
+
+  # 1. variant list (270 .rfx; 135 skinned, 132 shadow, 132 asafew.a variants not read)
+  $SCS ls effect/eut2/truckpaint
+  # 2. effect files read
+  $SCS cat /effect/eut2/truckpaint/<name>.rfx > research/extracted/truckpaint/rfx/<name>.rfx
+  # 3. GLSL objects named by the glsl technique(s) of those effects
+  awk '/path: glsl/{g=1} /path: sm4x/{g=0} g && /_setup/ && /_shd/{print $2}' rfx/*.rfx | sort -u
+  $SCS cat /effect/eut2/_shd/<hash>.glsl.<vso|fso> > research/extracted/truckpaint/glsl/<hash>...
+  # 4. printable text of each object (SHDO container, GLSL 330 inside)
+  tr -c '\11\12\15\40-\176' '\n' < glsl/<obj> | grep -a -E '.{3,}' > txt_<obj>.txt
+  # 5. truckpaint .mat examples (inputs only)
+  model_info /vehicle/truck/volvo_fh_2024/cabin/globe_xl_aero_2024.pmd   -> /automat/a1/a13f598c610360b9.mat (tsnmapuv)
+  model_info /vehicle/truck/upgrade/doorhandle/scania_rcab_2009/doorhandle_02.pmd -> /automat/1b/1b3ea38cb5609b77.mat (flipflake.altuv)
+  model_info /vehicle/truck/upgrade/doorhandle/scania_streamline/doorhandle_02.pmd -> /automat/6c/6c5cc0ceb449fd28.mat (plain, with paintjob_* keys)
+  $SCS cat /automat/14/14a950810c14dfc2.mat   (Scania S cab, plain truckpaint)
+
+Effects read (18 .rfx) and their GLSL objects
+---------------------------------------------
+(technique "glsl"; "nmap" = the technique with predicate condition nmap; the
+tsnmap* effects also carry a fallback glsl technique without the condition that
+names exactly the objects of the corresponding variant without tsnmap)
+
+  effect suffix                       pass defattr (vso / fso)                      pass fwdopaque fso
+  (none)                              63d6ff373a405677e85e2844f4c6e3d4 / 825dda5bb5924414f95f9e369d6a6787   4ac42d2dd3b138cdd3e317e322d57ca7
+  .altuv                              identical to (none)
+  .colormask                          2df632e02a4e290b23ac4f737f3b7ce6 / e9a46b2c4af09da5f1742edb9551c913   ae2e0139975dca47e53dec70819e1f3f
+  .colormask.altuv                    5aa6ae583e40cfdb289687f198cad2e9 / (same fso as colormask)
+  .airbrush                           1d8e4844e3597d3aecddaf5dcc926495 / ef2b03c9fb47a7f05274a57b79aca922   bc918c4e5e699bf537c4294c825c78b5
+  .airbrush.altuv                     1b60b98c3732d205a6424da07e7b2be6 / (same fso as airbrush)
+  .flipflake                          4631e46568223ac4207afb153171c7e0 / ab30ad7b554cb2f329470b461facb7c2   df5ad63b8196a6dea139b1dff8b60bbc
+  .flipflake.altuv                    20dceb79b316cbab920ccc711b0907fa / (same fso as flipflake)
+  .flipflakeuv                        320e66c6f480b068cf5ac47ce3cd1cc4 / ff20cff9288ff4e74720ba0aa44de297   9b3a2910594eede20784512f2a3b0134
+  .airbrush.flipflake                 4631e465... (as flipflake) / f4bbef593dff14dcf6a26712b991f926          354be2d52c6a8c3b91e742c36c1f4c73
+  .airbrush.flipflake.altuv           20dceb79... (as flipflake.altuv) / (same fso as airbrush.flipflake)
+  .airbrush.flipflakeuv               320e66c6... (as flipflakeuv) / ee90c0b060116ce2fa28508c5e16e392        752241995c15d36bf58afc31c6678cfe
+  .tsnmap  (nmap)                     dbfae2b33c83aeee0edcae8fe7c4f8c9 / b9ee60b34f0cec753e5680e712242717   48c5d14b067ee966187f099d166a66f5
+  .tsnmapuv (nmap)                    53e510b24b44488909773021c1e116e7 / 1dd999d7c3e6ba3db1624dd00d5295df   81de34c20a100b7187fa577d8995d22a
+  .tsnmap.colormask (nmap)            0d6c9e2b9912f61ecc13316bd47a6570 / 1c09626e87928c03d3f7808af3e5d4a9   397413c878e1c1dc3df6e56cf7c22662
+  .tsnmap.flipflake (nmap)            5e815baa2e5571d0558ebe80c86cf3b9 / 88a160df42ab150364d06771131139bf   fb1c0b623980e45683c2f4d2ee79b142
+  .tsnmapuv.flipflakeuv (nmap)        62da032b0f9310d124b6f1e47ec61d5b / 616de6b2ee3a84683c08b37632ba3e61   ded6570ef64fcd497e87245178814b8e
+  .tsnmapuv.airbrush.flipflake.altuv  d925b24a7772a0def8e8c0dadceb9167 / 6344a9f0148c54d29e640efcf84a73fd   5d78b2ab49f9c389595d27da92676cfd
+
+Total: 14 distinct vertex objects + 26 distinct fragment objects (40 .glsl.* files).
+Only the GLSL objects were read; sm4x/sm5x/sm51/sm60/spv objects were not opened.
+
+Counts and checks (on the extracted text; reproducible with grep over txt_*.fso.txt)
+-----------------------------------------------------------------------------------
+- Reads of the "environment" row (5th vec4) of the second material block: 0 of 26
+  fragment objects. Fresnel row: only its 3rd component is read, in 26 of 26.
+- The packed material-block diffuse (1st row, rgb) is read by 6 of 26 fragment objects:
+  exactly the defattr+fwdopaque pairs of the three variants without paint uniforms
+  ((none), tsnmap, tsnmapuv).
+- Deferred-attribute pass vs forward pass, surface maths up to the point each writes
+  its output, after renaming temporaries: identical for 6 of 6 pairs compared
+  (base, colormask, airbrush, tsnmap, flipflake, airbrush.flipflake); the forward
+  pass additionally computes an output alpha.
+- UV routing (vertex objects, 14 of 14 read): UV0 for texture_base always; second
+  coordinate pair = mesh tex_coord_1 without altuv, tex_coord_2 with altuv (7 of 7
+  paint/flake vertex objects); flipflakeuv adds tex_coord_2 as a third pair (3 of 3);
+  tsnmapuv reads a separate tex_coord_6 attribute (3 of 3); tsnmap uses UV0.
+- Literal constants observed: 255/127 and 128/127 (normal decode), 0.399902 and 0.600098
+  (normal-z diffuse factor), 0.996 (flake clearcoat bias), e = 2.718282, 1/90000 and 20
+  (envmap widening), Schlick exponent 5, N.L gate factor 10, 1e-6 (eye-vector clamp),
+  2.0 (vertex colour expansion), G-buffer packing 5/6/5 bits + exponent offset 16,
+  reflection strength x4096 clamped at 16383.
+
+.mat inputs observed (4 files)
+------------------------------
+  plain cab / Volvo tsnmapuv: additional_ambient 0, diffuse (1,1,1), fresnel (0.2, 0.9),
+    shininess 250, specular (1,1,1); texture_base, [texture_nmap], texture_reflection
+    (/material/environment/vehicle_reflection.tobj, clamped). No env_factor.
+  doorhandle flipflake.altuv: adds env_factor 0.073239 x3, specular 1.5, paintjob_base_color,
+    flake_clearcoat_rolloff 2.4, flake_color, flake_density 1, flake_shininess 50,
+    flake_uvscale 48, flake_vratio 0, flip_color, flip_strength 0.27, texture_flakenoise.
+  doorhandle plain: paintjob_base/r/g/b_color keys although the effect has no such uniforms.
+
+Further counts over the 26 fragment objects (grep over txt_*.fso.txt)
+  - material flag that scales the reflection by the ambient scalar is set: 26 of 26
+  - envmap distance-widening constant (1/90000) present: 26 of 26
+  - vertex colour expanded x2: 26 of 26
