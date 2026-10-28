@@ -1,0 +1,109 @@
+Shader spec sources: eut2.dif.spec family (docs/app/shader-specs/dif-spec.md), ETS2 1.60.1.7
+=====================================================================================
+
+Clean-room note (D13): the game's shaders were read only to learn the maths. All extracted
+text was kept outside the repository, in the session scratchpad (specwriter-dumps/). This
+file lists what was read. It contains no shader text.
+
+Commands (Git Bash)
+  export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
+  export CARGO_TARGET_DIR=<scratchpad>/target-specwriter
+  cargo build --release -j 2 -p specsheet-archive --example scs
+      (the older prebuilt scs.exe could not open .rfx: metadata record 0x07)
+  scs ls effect/eut2 ; scs ls effect/eut2/<dir>                  list effects
+  scs cat effect/eut2/<dir>/<effect>.rfx                          effect -> passes -> shader objects
+  scs cat effect/eut2/_shd/<hash>.glsl.vso|fso                    shader object (container "SHDO")
+  scs cat effect/deferred/rs/<name>.rs                            render states
+  scs cat effect/deferred/<dir>/<effect>.rfx, effect/deferred/_shd/<hash>.glsl.fso
+  scs cat effect/def/{flavors,inputs,uniforms,vas}.sui, effect/def/eut2_interfaces.sui
+  Then, in the scratchpad: extract printable runs from each object, keep the GLSL 330 part,
+  and diff variants against each other to see what each flavor adds.
+
+Mapping effect name -> shaders
+  The .mat effect name is the .rfx file name, in the directory named after the base with the
+  dots replaced by underscores. Examples: eut2.dif.spec.weight.add.env.tsnmapuv is in
+  effect/eut2/dif_spec_weight_add_env/; eut2.dif.spec.tsnmap is in effect/eut2/dif_spec/.
+  'nofresnel' and 'oclu' are part of base names: dif_spec_add_env_nofresnel, dif_spec_oclu,
+  dif_spec_oclu_add_env, dif_spec_oclu_weight_add_env.
+  In each .rfx only the techniques with "path: glsl" were used. Normal-mapped effects have two
+  glsl techniques: one with "condition: nmap" (normal-mapped shaders) and one without, which
+  reuses the non-normal-mapped shaders.
+
+Effects read (glsl technique; pass: render state, vertex object, fragment object)
+  eut2.dif.spec                    defattr attrib_render 3e01f28b441c901fcf70cf2599157d1c 8e789a42321c97a6f5e3ce5a5238d9c7
+                                   fwdopaque forward_none 3e01f28b... ebc9efa92dda5e0d226c01a9fa8097f7
+  eut2.dif.spec.weight             defattr f957c89051de50009b3ee0e1f76e2d66 e22df2e109a8a3395a495330828872b2
+                                   fwdopaque f957c890... f166addcb1307bf2a0ee963803268bda
+  eut2.dif.spec.add.env            defattr b9a401f7011576430e522ddf3b8857e2 c495654005d43da0f15cfcc6c6fed431
+                                   fwdopaque b9a401f7... 44df0b82d51059d58ba2ae1b28086fec
+  eut2.dif.spec.add.env.indenv     same hashes as eut2.dif.spec.add.env
+  eut2.dif.spec.add.env.paint      same hashes as eut2.dif.spec.add.env
+  eut2.dif.spec.add.env.shadow     the same two passes, plus "shadow" shadowmap_depth d1d916c88541e4698a9c7f26e2a0b6ed 9d1d79e17ab947bc4b67da3578b6006a (not read)
+  eut2.dif.spec.weight.add.env     defattr f1a40f1b18a93d268ced8941715ae81b 8f7fef35043ff153f8ba1afd3cbfe2b8
+                                   fwdopaque f1a40f1b... 71806da5560ec2381589e6c27c956b08
+  eut2.dif.spec.add.env.nofresnel  defattr b9a401f7... ba2af5518ad348322a1f69f573f9321e
+                                   fwdopaque b9a401f7... 767b844b9ed7f964f7c2aac7c00a96cd
+  eut2.dif.spec.tsnmap (nmap)      defattr a7fbde2d768987c6115f4dfee8bd0873 3a8752a4e3f41f2c44b2b1e8f2b22ac0
+                                   fwdopaque a7fbde2d... dcbcb8ae91fb40b361b10ce55bf8f945
+  eut2.dif.spec.tsnmapuv (nmap)    defattr 35e3e1e8b402d8d379a8dd66329cdbec cdaf41ad6eda9a79893526233574e29a
+                                   fwdopaque 35e3e1e8... 8ba5feae5ff00889cb81cb136ef2ca6f
+  eut2.dif.spec.weight.add.env.tsnmapuv (nmap)
+                                   defattr 8da9de09682d095c81e8c90959fb29c7 988a14eb96c7dfb66a47ec4a6ea41ae8
+                                   fwdopaque 8da9de09... 520045e8319d6be2833d3e75a6e161db
+  eut2.dif.spec.weight.add.env.tsnmap (nmap)
+                                   fwdopaque bd0a2e20d28b446f0152263cc9ea4f34 f67fe6fc6a0b6a54aaf1235de2bbce4f
+  eut2.dif.spec.weight.add.env.tsnmapuv2 (nmap)
+                                   fwdopaque f2bd3dd5819957adbe0f0781037b2736 ac4ae1f13ccb7646e795a10b0453912c
+  eut2.dif.spec.weight.add.env.tsnmap.a (nmap)
+                                   fwdopaque 3f3549d308bb4248e484feae35ff3721 f6732bff04e03cce1cff221a744e9a54
+  eut2.dif.spec.a                  defattr c04197679e0b01c97279ea1d6550992e 1eaf72769aed6f15e24df0d01828270a
+                                   fwdopaque c0419767... f44bcd732d9a88a77cc7ccc7cbd7d46d
+  eut2.dif.spec.tsnmap.asafew.a    fallback technique: same hashes as eut2.dif.spec.a
+  eut2.dif.spec.over               one pass, "blend" forward_over, 3e01f28b... ebc9efa9... (= the dif.spec forward pass)
+  eut2.dif.spec.weight.add.env.tsnmap.over
+                                   one pass, "blend" forward_over, bd0a2e20... f67fe6fc... (= its forward pass)
+  eut2.dif.spec.decal.over         decalpost decal_over 204cf5782d99ad08ea6194e66f6d3475 f8d91ca6b931f333c20fa92ec368f768
+                                   decal decal_over 3e01f28b... ebc9efa9...
+  eut2.dif.spec.a.decal            decalpost decal_none c7772157ccba63ece4e3e570f55403e5 e92fa9b9b218bea67c51c97775e6800a
+                                   decal decal_none c0419767... f44bcd73...
+  eut2.dif.spec.add.env.a.decal    decalpost a8181541ce3d4025130e8e17cbd28134 e2733becb41d834be18c850231bc4022
+                                   decal 643ab1e3b1e3d15425d388033ab98e00 68ffcf99fdf44086687bdb27420778a4 (not read)
+  eut2.dif.spec.oclu               defattr 807ca1bd34beb9b1d821fea91f3ecc23 a151eaf7c0e86070fcad245b0d5dcce3
+                                   fwdopaque 807ca1bd... c3e1cc6cbf54ec4f1fce2fc7c982eb62
+  eut2.dif.spec.oclu.add.env       defattr 5c020795bfefd55252cd4b651cb560fb f3ffe9f3da03a1bdf42d1973ef213af9
+                                   fwdopaque 5c020795... 4aa69f204bbaf02d8a86cfed5c57cedc
+  eut2.dif.spec.oclu.weight.add.env.tsnmapuv (nmap)
+                                   fwdopaque fd11053436db06c9a110fac77be85f5b 2e6cdbf878db4eb78c497c18d0173d7d
+
+  Deferred engine passes (for §7 of the spec):
+  def.apply.light.sun.spec         defquad apply_light ebd88ab8fc1a272ed3e146f674abb9ea 196c13ac3c4057abe23316bc5f825ab6
+  def.compose.lighting             defquad overwrite 2a7c97aaa11df7e9d5d79696d7124790 340f579c76caf9da2230f0b97b49fd24
+
+  Render states read: effect/deferred/rs/{attrib_render, forward_none, forward_over, decal_over, decal_none}.rs
+
+How each fact was established
+  - Per-flavor differences: the normalised fragment bodies were diffed pairwise:
+    base vs weight; base vs add.env; add.env vs nofresnel; add.env vs weight.add.env;
+    base vs tsnmap; tsnmap vs tsnmapuv; base vs a; base vs oclu; weight.add.env.tsnmapuv vs
+    tsnmapuv2. The defattr (G-buffer) bodies were diffed for base vs weight and base vs add.env.
+  - The forward and deferred paths agree: the deferred compose pass combines the G-buffer and
+    the light buffers with the same equation as the forward pass.
+  - The specular-gate switch: the 'weight' G-buffer pass sets a flag that the sun-light pass
+    reads to choose N.L over sat(10 N.L).
+  - UV streams: vertex objects of the base, tsnmap, tsnmapuv, tsnmapuv2, weight.add.env and
+    oclu variants, plus the effect interface table (vertex streams per effect) and the
+    vertex-stream table (UV-slot names and exporter defaults).
+  - .mat names and defaults: the material-input table (names, UI labels, defaults; "fresnel" is
+    labelled "(bias, scale)", default (0.2, 0.9)) and the material-uniform table (which inputs
+    feed which engine constant). .mat attribute names cross-checked in
+    research/evidence/material-survey.txt; texture_oclu confirmed in /automat/12/1276d7b45261b635.mat.
+  - The material-uniform table lists no .mat input for the reflection rotation, the global
+    reflection scalar or the specular-mask remap, so they are engine-supplied.
+
+Public description used
+  https://modding.scssoft.com/wiki/Documentation/Tools/SCS_Blender_Tools/Supported_shaders
+  (dif.spec, add.env, indenv, nofresnel, tsnmap/tsnmapuv, weight, a, asafew, over/add/mult,
+  decal, oclu, paint, shadow), paraphrased in the spec.
+
+Not read: the light-list pass (point and spot lights), the shadowed sun variants, the fog and
+tonemap passes, the shadow-caster pass, the skinned and tg0 variants.
