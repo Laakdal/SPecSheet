@@ -125,3 +125,35 @@ located yet (Unknown).
   0x140ae2460); the bloom and colour-correction callbacks; which climate or
   sun profile the tuning screen uses; where a scene's pre_exposure (scene
   class +0x44) enters (it is in none of these callbacks).
+
+6. bloom_params, color_correction and the scenes' pre_exposure (static)
+- bloom_params callback (0x1413c9e40, a leaf function without .pdata): one
+  vec3 copied unchanged from R+0x254, +0x258, +0x25c.
+- color_correction callback (0x1413c8910): one vec4 copied unchanged from
+  R+0xd8..+0xe4; without R it writes nothing.
+- How a UI scene config is applied (FUN_140f8a590, which also logs
+  "Enforcing 'floor_reflection: false' ..."): it copies light_ambient,
+  light_diffuse, light_specular and light_environment into the scene state,
+  and normalises light_direction. Then:
+    pre_exposure = the scene's pre_exposure, when > 0;
+    otherwise 0.0348717 * (ambient.r + ambient.g + ambient.b
+                            + 0.525322 * (diffuse.r + diffuse.g + diffuse.b)).
+  /def/truck_config_scene.sii (ambient 0.3 each, diffuse 1.2 each, no
+  pre_exposure): 0.0348717 * (0.9 + 0.525322 * 3.6) = 0.0973.
+- FUN_140f89490(state, k) writes the scene state into a global lighting block
+  (pointer at 0x1434e8258):
+    +0x18 ambient*k, +0x24 diffuse*k, +0x30 specular*k, +0x3c 1.0, +0x40 1.0,
+    +0x44 0, +0x48 pre_exposure*k, +0x4c light_environment*k, +0x50 k,
+    then the light direction.
+  The UI scene setup calls it with k = 1.0 (0x140f8adf4); a second caller
+  passes k as an argument (Hypothesis: a fade).
+- The world lighting update (FUN_1404dca40, sun angles and climate values)
+  writes the same block with +0x48 = 1.0 (constant) and +0x3c/+0x40/+0x44/
+  +0x4c/+0x50 from the climate state.
+Observed: +0x48 is a pre-exposure multiplier. The world sets 1.0; a UI scene
+sets its pre_exposure, derived from its lights when absent (0.0973 for the
+tuning screen).
+Not established: which of the 13 readers of +0x48 apply it and how (as
+radiance x pre_exposure, or into the exposure/tonemap); whether the UI path
+runs eye adaptation, and which values R holds in a UI scene. The UI path
+reads no sun_profile in the functions seen.
