@@ -6,6 +6,7 @@ mod catalog;
 mod config;
 mod hookup;
 mod ids;
+mod paint;
 pub mod slots;
 
 pub use catalog::{Accessory, AccessoryKind, ModelRef, TruckCatalog, WheelPart};
@@ -15,6 +16,10 @@ pub use config::{
 };
 pub use hookup::Hookup;
 pub use ids::{AccessoryId, SlotId, TruckId};
+pub use paint::{
+    shared_mask_color, srgb_to_linear, Flake, Flip, PaintJob, PaintLocks, PartPaint,
+    DEFAULT_FLAKE_NOISE,
+};
 
 #[cfg(test)]
 mod tests;

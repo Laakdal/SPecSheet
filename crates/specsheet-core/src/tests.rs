@@ -25,6 +25,7 @@ fn accessory(id: &str, slot: &str, kind: AccessoryKind) -> Accessory {
         wheel: None,
         left_hand_traffic: false,
         drive_twin: None,
+        paint: None,
     }
 }
 

@@ -491,6 +491,7 @@ fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Option<Accesso
         left_hand_traffic: kind == AccessoryKind::Interior
             && unit.get_bool("left_hand_traffic").unwrap_or(false),
         drive_twin: None,
+        paint: None,
     })
 }
 
@@ -561,6 +562,7 @@ mod tests {
             wheel: None,
             left_hand_traffic: path.contains("uk"),
             drive_twin: None,
+            paint: None,
         }
     }
 

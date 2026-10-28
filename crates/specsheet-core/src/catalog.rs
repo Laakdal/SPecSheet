@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::hookup::Hookup;
 use crate::ids::{AccessoryId, SlotId, TruckId};
+use crate::paint::PaintJob;
 
 /// What kind of part an accessory is. Determines how it is assembled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -109,6 +110,10 @@ pub struct Accessory {
     /// The same interior for the other drive side (F10).
     #[serde(default)]
     pub drive_twin: Option<AccessoryId>,
+    /// Paint jobs only: masks, colours, flakes and per-part overrides
+    /// (F15). `base_color` above stays the paint job's base colour too.
+    #[serde(default)]
+    pub paint: Option<Box<PaintJob>>,
 }
 
 impl Accessory {

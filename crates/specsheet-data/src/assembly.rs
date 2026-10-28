@@ -230,6 +230,7 @@ mod tests {
             wheel: Some(wheel),
             left_hand_traffic: false,
             drive_twin: None,
+            paint: None,
         }
     }
 
