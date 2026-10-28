@@ -25,9 +25,18 @@ How the app draws game materials. The effect files themselves are described in [
 Glass, decals, lamps and paint keep their own rules.
 
 - Colours in `.mat` (`diffuse`, `env_factor`) and paint jobs (`base_color`) are linear RGB, and are used as such. Paint values such as Coffee Brown (0.034, 0.023, 0.014) only make sense as linear. Textures flagged `_SRGB` are uploaded as `*UnormSrgb` formats.
-- `MaterialInfo` also carries `specular`, `fresnel` and `reflection_texture`, which are not used yet. Only `texture_base` is uploaded. Normal, reflection, mask and `texture_mult` (baked AO) textures are ignored.
+- `MaterialInfo` also carries `specular` and `fresnel`, which are not used yet. Per material, only `texture_base` is uploaded. Normal, mask and `texture_mult` (baked AO) textures are ignored.
 - Other materials use metallic 0.1 and roughness 0.6.
-- Reflections come from a hemispherical gradient environment map, a stand-in for the game's reflection cubes (`texture_reflection`, e.g. `/material/environment/vehicle_reflection.tobj`). Using those cubes is the next step. See [scenes.md](scenes.md) for the environment map's strength.
+
+**Environment map (the game's reflection cube).**
+- `viewer::ReflectionCube` waits until every truck model has loaded, then counts the `texture_reflection` of the truck's reflective materials and takes the most common cube. For the Scania S this is `/material/environment/fuzzy_reflection/fuzzy_reflection.tobj`.
+- `render::load_cube_texture` loads all six faces on the async pool; `assets::cube_image` validates them: six square, power-of-two faces with identical mip chains, BC dimensions a multiple of 4, BC support on the GPU.
+- The cube goes on the camera as Bevy's `GeneratedEnvironmentMapLight`, which filters it on the GPU. Until it is ready, or when it fails validation, the hemispherical gradient stays.
+- Face order is taken as stored (+x, −x, +y, −y, +z, −z; Hypothesis).
+- **Exposure (ours):** the cube's mean luminance, from its smallest mip, is scaled to the gradient's (about 0.5), clamped to ×0.25–×4. The game's cubes are dark, and the base cubes hit the ×4 cap. How the game itself exposes them is **Unknown** (REA queued).
+- The garage scene's own materials use `/material/environment/ui_vehicle_reflection.tobj`, which no truck material names. Whether the game substitutes it for vehicle reflections in UI scenes is **Unknown** (REA queued).
+
+See [scenes.md](scenes.md) for the environment strength.
 
 This is an approximation, not the game's shaders.
 
