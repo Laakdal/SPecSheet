@@ -205,3 +205,66 @@ histogram, with an option to "use only sun light value for exposure", and an
   filler either.
 Still open: which code fills L and R from eutpp_scene_light and sun_profile,
 i.e. whether limited_pre_exposure multiplies the light colours or the exposure.
+
+9. Engine-filled material uniforms: the callbacks (static, 2026-10-29)
+Method (read-only, no Ghidra): tools/research-style scripts in the session scratchpad
+(string xrefs by RIP-relative LEA/MOV, capstone disassembly of .pdata extents, and a
+linear disassembly to `ret` for leaf functions). Listings stay out of the repository.
+- FUN_1403dcf80 registers the material uniforms: for each name it passes a callback
+  (lea rdx) that fills that uniform. Callbacks used below:
+    texture_reflection_modulator 0x1403d88c0   envmap_matrix 0x1403db190
+    material1_data 0x1403db120 (both via the builder 0x1403daeb0)
+    fwd_lights_data 0x1403d9460   material_luminosity 0x1403d8bf0 (scalar 0x1403d8a80)
+    lamp_color_array 0x1403d8d00 -> 0x1403de230   lamp_contrast 0x1403d8d10
+    luminosity_color_array 0x1403d8cf0 -> 0x1403de0c0   es_world_up 0x1403d9d60
+  The other ~120 registered names and callbacks are in the scratchpad (callbacks.txt).
+- The light object every callback reads is ctx+0x18 -> +0x68 (present when the context
+  flag 0x2000 is set). Its offsets are those of eutpp_scene_light (section 7):
+  +0x18 ambient, +0x24 diffuse, +0x30 specular, +0x3c diffspec_conditional_mult,
+  +0x44 (named ec_adjustment in the table), +0x48 limited_pre_exposure,
+  +0x4c environment, +0x50 environment_conditional_mult.
+- fwd_lights_data (4 vec4):
+    [0] = (ambient.rgb, environment)
+    [1] = light direction (from a direction table indexed by a 13-bit id at +0x62)
+    [2] = diffuse.rgb * diffspec_conditional_mult
+    [3] = specular.rgb * diffspec_conditional_mult
+  limited_pre_exposure is not read: the forward sun and ambient colours are not scaled
+  by pre-exposure.
+- texture_reflection_modulator (one float), in order:
+    the material binds no texture in its "texture_reflection" slot -> 9999.0;
+    its reflection texture is in an engine set at ctx+0x48 -> 1.0;
+    otherwise (and when ctx+0x48 is null) -> environment_conditional_mult (+0x50).
+  The UI scene writes +0x50 = k = 1.0 (section 6), so it is 1.0 on the tuning screen.
+- lamp_contrast = 1 + 3 * (+0x44). The UI scene writes +0x44 = 0, so it is 1.0 there.
+- lamp_color_array / luminosity_color_array: copied from an array on the drawn object
+  (ctx+0x18 -> +0x98 for lamps, +0xa0 for backlights; count at +0x28, data at +0x20),
+  each rgb multiplied by limited_pre_exposure (+0x48; 1.0 without a light object), alpha
+  unchanged. Entries past the object's count are written as zero.
+- material_luminosity = (o+0x18, o+0x1c, o+0x20, s * o+0x24), o = ctx+0x18 -> +0x90
+  (context flag 0x40000; an engine object, contents not decoded), with the scalar s from
+  0x1403d8a80:
+    (x, y) = the material's luminance pair (attribute slot 15; luminance_output and
+    luminance_night by order, Hypothesis); x = 0 -> 50; y = 0 -> x;
+    t = 0, or 1 when forced by the caller or an effect flag (bit 21), or +0x44 of the
+    light object, unless effect flag bit 20 keeps it 0;
+    v = x when x == y; otherwise exp(lerp(ln x, ln y, t)) when x > 0, else lerp(x, y, t);
+    s = v * limited_pre_exposure * 0.001 when x > 0;  s = |v| when x <= 0.
+  So luminance_output -1 gives s = 1 (no pre-exposure), and 0 means 50 nits.
+- material1_data (6 vec4; envmap_matrix is its first four):
+    rows 0, 1, 3 = the camera object's +0x58, +0x68, +0x88 (ctx+0x18 -> +0, flag bit 0);
+    row 2 = minus the camera object's +0x78 (all four components negated);
+    [4].rgb = material colour slot "color2" * slot "specular" (two 3-vectors), unless the
+      effect flag bit 9 (0x200) is set, then slot "color2" alone;
+    [5] = (0, 0, f0, f1):
+      effect flags & 0x18000 == 0: (f0, f1) = the material's fresnel pair, raw;
+      0x8000: f0 = 0.14; 0x10000: f0 = 0.035; 0x18000: f0 = 0.07; f1 = 1;
+      in those three modes, a fresnel pair whose second value is -1 gives
+      f0 = clamp(first value, 0, 1) instead.
+  The slot names come from the engine's material-slot table (0x1425e966c, 32-byte
+  entries: default vec4, then a name pointer): slot 4 = fresnel, default (0.2, 0.9),
+  which fixes the slot numbering; slot 1 = specular, slot 9 = color2, slot 15 = aux5.
+  Effect flags are the .rfx "flags:" field: eut2.glass 0x18000, eut2.truckpaint
+  0x10100 (and 0x10000 with flipflake), dif.spec/lamp/dif.lum/unlit 0 (no field).
+- The .mat float3 inputs diffuse, specular and env_factor (and their _secondary forms)
+  are clamped to [0, 5] per component when applied (FUN_14031c230); glass_tint_color,
+  the paint and showroom colours are not.
