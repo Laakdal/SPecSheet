@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut effects: BTreeMap<String, String> = BTreeMap::new();
     // (effect, uv sets, has colours) -> (pieces, models)
     let mut rows: BTreeMap<(String, usize, bool), (usize, usize)> = BTreeMap::new();
+    let mut examples: BTreeMap<(String, usize, bool), &str> = BTreeMap::new();
     let mut color_sum = [0f64; 4];
     let mut color_count = 0u64;
     let mut short: Vec<String> = Vec::new();
@@ -73,6 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             missing_from_0 += usize::from(sets <= if altuv { 2 } else { 1 });
             missing_from_base += usize::from(sets <= usize::from(altuv));
             let key = (effect, sets, !piece.colors.is_empty());
+            examples.entry(key.clone()).or_insert(model);
             *seen.entry(key.clone()).or_default() += 1;
             if piece.uv_sets.len() < 2 && short.len() < 20 {
                 short.push(format!("{model}: {} uv sets", piece.uv_sets.len()));
@@ -97,7 +99,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{} models", models.len());
     println!("pieces models uvsets colours effect");
     for ((effect, sets, colors), (pieces, users)) in &rows {
-        println!("{pieces:6} {users:6} {sets:6} {colors:7} {effect}");
+        let example = examples
+            .get(&(effect.clone(), *sets, *colors))
+            .copied()
+            .unwrap_or("");
+        println!("{pieces:6} {users:6} {sets:6} {colors:7} {effect}  e.g. {example}");
     }
     if color_count > 0 {
         let mean = color_sum.map(|s| s / color_count as f64);

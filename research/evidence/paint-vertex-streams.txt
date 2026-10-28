@@ -6,11 +6,13 @@ Command (ETS2 1.60.1.7, install opened read-only):
 
 Every piece of every /vehicle/truck .pmd whose first-look material has a
 truckpaint effect, by effect, number of PMG UV sets and colour stream.
-Columns: pieces, models, uv sets, has colours, effect.
+Columns: pieces, models, uv sets, has colours, effect, first model.
 
 Readings recorded in docs/app/materials.md:
 - Mask UV: counting UV sets from 0 (mask set 1, altuv set 2), 393 of 1725
   paint pieces lack the set; with mask set 0 and altuv set 1, only 1 does.
+  Liveries line up on cabs where the readings differ: the MAN TGX Euro 6
+  cab_xl (tsnmapuv.airbrush.altuv, 2 sets) and the Actros 2014 (3 sets).
 - Every paint piece has a colour stream; the mean is grey 0.326 (x2 = 0.65),
   and only 464 of 2.8M vertices have r, g, b more than 2 apart.
 
@@ -18,44 +20,44 @@ Output:
 
 7740 models
 pieces models uvsets colours effect
-   207    187      1 true    eut2.truckpaint
-   219    219      2 true    eut2.truckpaint
-    93     77      3 true    eut2.truckpaint
-     8      8      2 true    eut2.truckpaint.airbrush
-     8      8      3 true    eut2.truckpaint.airbrush
-    13      8      3 true    eut2.truckpaint.airbrush.altuv
-     3      3      2 true    eut2.truckpaint.airbrush.flipflake.altuv
-     2      2      3 true    eut2.truckpaint.airbrush.flipflake.altuv
-     1      1      1 true    eut2.truckpaint.altuv
-    72     71      2 true    eut2.truckpaint.altuv
-    91     63      3 true    eut2.truckpaint.altuv
-     1      1      1 true    eut2.truckpaint.flipflake
-     1      1      2 true    eut2.truckpaint.flipflake.altuv
-    58     58      3 true    eut2.truckpaint.flipflake.altuv
-     2      2      1 true    eut2.truckpaint.tsnmap
-    35     35      2 true    eut2.truckpaint.tsnmap
-    10      5      3 true    eut2.truckpaint.tsnmap
-     2      1      3 true    eut2.truckpaint.tsnmap.airbrush
-     8      8      3 true    eut2.truckpaint.tsnmap.airbrush.altuv
-     1      1      3 true    eut2.truckpaint.tsnmap.airbrush.flipflake
-     8      8      3 true    eut2.truckpaint.tsnmap.altuv
-     2      2      2 true    eut2.truckpaint.tsnmap.asafew.a
-     4      4      3 true    eut2.truckpaint.tsnmap.flipflake.altuv
-    61     41      1 true    eut2.truckpaint.tsnmapuv
-    93     89      2 true    eut2.truckpaint.tsnmapuv
-   517    492      3 true    eut2.truckpaint.tsnmapuv
-    60     59      4 true    eut2.truckpaint.tsnmapuv
-    11     11      2 true    eut2.truckpaint.tsnmapuv.airbrush
-    16     16      3 true    eut2.truckpaint.tsnmapuv.airbrush
-    34     34      4 true    eut2.truckpaint.tsnmapuv.airbrush
-    23     23      2 true    eut2.truckpaint.tsnmapuv.airbrush.altuv
-    22     22      2 true    eut2.truckpaint.tsnmapuv.altuv
-    31     28      3 true    eut2.truckpaint.tsnmapuv.altuv
-     2      2      2 true    eut2.truckpaint.tsnmapuv.asafew.a
-     6      6      3 true    eut2.truckpaint.tsnmapuv.asafew.a
+   207    187      1 true    eut2.truckpaint  e.g. vehicle/truck/daf_2021/ai/xgp_4x2.pmd
+   219    219      2 true    eut2.truckpaint  e.g. vehicle/truck/daf_2021/accessory/mirror/cam_semi_int.pmd
+    93     77      3 true    eut2.truckpaint  e.g. vehicle/truck/iveco_stralis/truck.pmd
+     8      8      2 true    eut2.truckpaint.airbrush  e.g. vehicle/truck/upgrade/rearbumper/mercedes_actros_2009/4x2_chrome_v1.pmd
+     8      8      3 true    eut2.truckpaint.airbrush  e.g. vehicle/truck/upgrade/doorhandle/daf_xf_euro6/doorhandle_02.pmd
+    13      8      3 true    eut2.truckpaint.airbrush.altuv  e.g. vehicle/truck/renault_magnum_2009/truck.pmd
+     3      3      2 true    eut2.truckpaint.airbrush.flipflake.altuv  e.g. vehicle/truck/daf_xf_euro6/interior/model.pmd
+     2      2      3 true    eut2.truckpaint.airbrush.flipflake.altuv  e.g. vehicle/truck/upgrade/mirror/scania_rcab_2009/mirror_01.pmd
+     1      1      1 true    eut2.truckpaint.altuv  e.g. vehicle/truck/volvo_fh16_2009/accessory/r_chs_cover/r_chs_cover_paint.pmd
+    72     71      2 true    eut2.truckpaint.altuv  e.g. vehicle/truck/daf_xf/interior/model.pmd
+    91     63      3 true    eut2.truckpaint.altuv  e.g. vehicle/truck/daf_xf/truck.pmd
+     1      1      1 true    eut2.truckpaint.flipflake  e.g. vehicle/truck/upgrade/steering_knob/standard_carbon.pmd
+     1      1      2 true    eut2.truckpaint.flipflake.altuv  e.g. vehicle/truck/volvo_fh16_2009/accessory/mirror/mirror_03_interior.pmd
+    58     58      3 true    eut2.truckpaint.flipflake.altuv  e.g. vehicle/truck/upgrade/doorhandle/daf_xf/doorhandle_02.pmd
+     2      2      1 true    eut2.truckpaint.tsnmap  e.g. vehicle/truck/volvo_fh16_2012/accessory/s_mirror/painted_side_mirror_interior.pmd
+    35     35      2 true    eut2.truckpaint.tsnmap  e.g. vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd
+    10      5      3 true    eut2.truckpaint.tsnmap  e.g. vehicle/truck/daf_xf_euro6/truck.pmd
+     2      1      3 true    eut2.truckpaint.tsnmap.airbrush  e.g. vehicle/truck/iveco_hiway/truck.pmd
+     8      8      3 true    eut2.truckpaint.tsnmap.airbrush.altuv  e.g. vehicle/truck/upgrade/bottomgrill/daf_xf_euro6/paintable.pmd
+     1      1      3 true    eut2.truckpaint.tsnmap.airbrush.flipflake  e.g. vehicle/truck/upgrade/mirror/iveco_hiway/mirror_01.pmd
+     8      8      3 true    eut2.truckpaint.tsnmap.altuv  e.g. vehicle/truck/upgrade/frontintake/daf_xf_euro6/paintable_cab.pmd
+     2      2      2 true    eut2.truckpaint.tsnmap.asafew.a  e.g. vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd
+     4      4      3 true    eut2.truckpaint.tsnmap.flipflake.altuv  e.g. vehicle/truck/upgrade/mirror/iveco_hiway/mirror_01_uk.pmd
+    61     41      1 true    eut2.truckpaint.tsnmapuv  e.g. vehicle/truck/volvo_fh16_2012/accessory/mirror/mirror_01.pmd
+    93     89      2 true    eut2.truckpaint.tsnmapuv  e.g. vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd
+   517    492      3 true    eut2.truckpaint.tsnmapuv  e.g. vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd
+    60     59      4 true    eut2.truckpaint.tsnmapuv  e.g. vehicle/truck/renault_t/accessory/cor_def/paint.pmd
+    11     11      2 true    eut2.truckpaint.tsnmapuv.airbrush  e.g. vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_4x2.pmd
+    16     16      3 true    eut2.truckpaint.tsnmapuv.airbrush  e.g. vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_6x4.pmd
+    34     34      4 true    eut2.truckpaint.tsnmapuv.airbrush  e.g. vehicle/truck/mercedes_actros_2009/cabin_a.pmd
+    23     23      2 true    eut2.truckpaint.tsnmapuv.airbrush.altuv  e.g. vehicle/truck/man_tgx_euro6/cab_xl.pmd
+    22     22      2 true    eut2.truckpaint.tsnmapuv.altuv  e.g. vehicle/truck/upgrade/cor_def/man_tgx_euro6/paint.pmd
+    31     28      3 true    eut2.truckpaint.tsnmapuv.altuv  e.g. vehicle/truck/mercedes_actros_2014/8x4.pmd
+     2      2      2 true    eut2.truckpaint.tsnmapuv.asafew.a  e.g. vehicle/truck/volvo_fh_2024/accessory/f_intake_cab/fh16_aero.pmd
+     6      6      3 true    eut2.truckpaint.tsnmapuv.asafew.a  e.g. vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_paint_cab.pmd
 mean vertex colour (bytes 0..3 / 255) over 2819572 vertices: [0.326, 0.326, 0.326, 0.996]
 vertices with r, g, b more than 2 apart: 464
-1725 paint pieces; lacking the mask's set if counted from 0          (mask 1, altuv 2): 393; if mask 0, altuv 1: 1
+1725 paint pieces; lacking the mask's set if counted from 0 (mask 1, altuv 2): 393; if mask 0, altuv 1: 1
 first paint pieces with fewer than 2 UV sets:
   vehicle/truck/daf_2021/ai/xgp_4x2.pmd: 1 uv sets
   vehicle/truck/daf_2021/ai/xgp_4x2.pmd: 1 uv sets
