@@ -63,7 +63,7 @@ pub fn load_model(game: &GameSession, key: &ModelKey) -> Result<ModelPayload, St
         .materials
         .iter()
         .filter_map(|m| m.base_texture.as_deref())
-        .chain(surfaces.iter().flat_map(DifSpecSurface::normal_map_paths))
+        .chain(surfaces.iter().flat_map(DifSpecSurface::texture_paths))
         .collect();
     paths.sort();
     paths.dedup();
@@ -164,7 +164,14 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         };
         let paint = PaintSurface::of(info);
         let dif_spec = DifSpecSurface::of(info).map(|mut surface| {
-            surface.resolve_normal_maps(|path| stores.textures.get(path).cloned().flatten());
+            surface.resolve_textures(|path| stores.textures.get(path).cloned().flatten());
+            if !surface.route_uvs(&piece) {
+                warnings.push(format!(
+                    "{}: piece {index}: its mult and normal-map UV sets differ from UV0 \
+                     and from each other; drawn without the normal map",
+                    mesh.path
+                ));
+            }
             surface
         });
         let attributes = MeshAttributes {
@@ -176,6 +183,9 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
             normal_uv: dif_spec
                 .as_ref()
                 .is_some_and(DifSpecSurface::needs_normal_uvs),
+            mult_uv: dif_spec
+                .as_ref()
+                .is_some_and(DifSpecSurface::needs_mult_uvs),
         };
         let alternate = match (&paint, &piece.alternate_paint_uvs) {
             (Some(_), Some(uvs)) => Some(MeshPiece {
@@ -234,9 +244,13 @@ struct MeshAttributes {
     /// The stored tangents (`dif.spec` normal maps, dif-spec.md §3.2).
     tangents: bool,
     /// The "UV Normal" stream (UV slot 6) as `UV_1`, which the `tsnmapuv`
-    /// flavours sample their normal map with (dif-spec.md §5.2). `UV_1` is
-    /// free on `dif.spec` pieces: only paint uses it.
+    /// flavours sample their normal map with (dif-spec.md §5.2).
     normal_uv: bool,
+    /// The set routed to UV slot 1 as `UV_1`, which `texture_mult` samples
+    /// (dif-spec-mult.md §2.1). It takes `UV_1` before the "UV Normal"
+    /// stream; `DifSpecSurface::route_uvs` moves that stream to `UV_0` or
+    /// onto this set. `UV_1` carries at most one of paint, mult and normal.
+    mult_uv: bool,
 }
 
 /// The GPU mesh of `piece`.
@@ -264,6 +278,10 @@ fn piece_mesh(piece: MeshPiece, attributes: MeshAttributes) -> Result<Mesh, Stri
     if normal_uvs.as_ref().is_some_and(|uvs| uvs.len() != count) {
         return Err("normal UV count differs from position count".to_owned());
     }
+    let mult_uvs = piece.mult_uvs.filter(|_| attributes.mult_uv);
+    if mult_uvs.as_ref().is_some_and(|uvs| uvs.len() != count) {
+        return Err("mult UV count differs from position count".to_owned());
+    }
     if !piece.indices.len().is_multiple_of(3) || piece.indices.iter().any(|&i| i as usize >= count)
     {
         return Err("index out of range or incomplete triangle".to_owned());
@@ -277,9 +295,12 @@ fn piece_mesh(piece: MeshPiece, attributes: MeshAttributes) -> Result<Mesh, Stri
     if let Some(uvs) = piece.uvs {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
     }
-    if let Some(uvs) = piece.paint_uvs.filter(|_| attributes.paint_uv) {
-        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
-    } else if let Some(uvs) = normal_uvs {
+    if let Some(uvs) = piece
+        .paint_uvs
+        .filter(|_| attributes.paint_uv)
+        .or(mult_uvs)
+        .or(normal_uvs)
+    {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
     }
     if let Some(tangents) = tangents {
@@ -742,6 +763,7 @@ mod tests {
         colors: true,
         tangents: true,
         normal_uv: true,
+        mult_uv: true,
     };
 
     fn triangle() -> MeshPiece {
@@ -790,6 +812,59 @@ mod tests {
         };
         assert!(piece_mesh(short_normal_uvs.clone(), normal_mapped).is_err());
         assert!(piece_mesh(short_normal_uvs, MeshAttributes::default()).is_ok());
+    }
+
+    /// The `UV_1` attribute of `mesh`, as its first vertex.
+    fn uv_1(mesh: &Mesh) -> Option<[f32; 2]> {
+        match mesh.attribute(Mesh::ATTRIBUTE_UV_1)? {
+            bevy::mesh::VertexAttributeValues::Float32x2(uvs) => uvs.first().copied(),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn mult_pieces_carry_their_mult_set_as_uv_1() {
+        let mult = MeshPiece {
+            mult_uvs: Some(vec![[0.25; 2]; 3]),
+            ..triangle()
+        };
+        let mult_only = MeshAttributes {
+            colors: true,
+            mult_uv: true,
+            ..MeshAttributes::default()
+        };
+        let mesh = piece_mesh(mult.clone(), mult_only).expect("valid piece");
+        assert_eq!(uv_1(&mesh), Some([0.25; 2]));
+        assert!(!mesh.contains_attribute(Mesh::ATTRIBUTE_TANGENT));
+
+        // With a normal map that `route_uvs` moved onto UV0 or the mult set,
+        // the mult set keeps UV_1.
+        let both = MeshAttributes {
+            tangents: true,
+            normal_uv: true,
+            ..mult_only
+        };
+        let mesh = piece_mesh(mult.clone(), both).expect("valid piece");
+        assert_eq!(uv_1(&mesh), Some([0.25; 2]));
+        assert!(mesh.contains_attribute(Mesh::ATTRIBUTE_TANGENT));
+
+        // Without the mult layer the normal UVs are UV_1, as before.
+        let mesh = piece_mesh(
+            mult,
+            MeshAttributes {
+                mult_uv: false,
+                ..both
+            },
+        )
+        .expect("valid piece");
+        assert_eq!(uv_1(&mesh), Some([0.5; 2]));
+
+        let short = MeshPiece {
+            mult_uvs: Some(vec![[0.0; 2]; 2]),
+            ..triangle()
+        };
+        assert!(piece_mesh(short.clone(), mult_only).is_err());
+        assert!(piece_mesh(short, MeshAttributes::default()).is_ok());
     }
 
     #[test]
