@@ -127,6 +127,9 @@ pub struct MeshPiece {
     pub normals: Vec<[f32; 3]>,
     /// First UV set, if present.
     pub uvs: Option<Vec<[f32; 2]>>,
+    /// Second UV set, if present: paint masks of `alternate_uvset` paint
+    /// jobs use it (F15).
+    pub uvs2: Option<Vec<[f32; 2]>>,
     pub indices: Vec<u32>,
 }
 
@@ -191,6 +194,7 @@ pub fn build_mesh(
                 positions: piece.positions.clone(),
                 normals: piece.normals.clone(),
                 uvs: piece.uv_sets.first().cloned(),
+                uvs2: piece.uv_sets.get(1).cloned(),
                 indices,
             });
         }

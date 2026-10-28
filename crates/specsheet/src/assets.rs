@@ -166,7 +166,9 @@ fn piece_mesh(piece: MeshPiece) -> Result<Mesh, String> {
     if piece.normals.len() != count {
         return Err("normal count differs from position count".to_owned());
     }
-    if piece.uvs.as_ref().is_some_and(|uvs| uvs.len() != count) {
+    if piece.uvs.as_ref().is_some_and(|uvs| uvs.len() != count)
+        || piece.uvs2.as_ref().is_some_and(|uvs| uvs.len() != count)
+    {
         return Err("UV count differs from position count".to_owned());
     }
     if !piece.indices.len().is_multiple_of(3) || piece.indices.iter().any(|&i| i as usize >= count)
@@ -181,6 +183,9 @@ fn piece_mesh(piece: MeshPiece) -> Result<Mesh, String> {
     .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, piece.normals);
     if let Some(uvs) = piece.uvs {
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+    }
+    if let Some(uvs) = piece.uvs2 {
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, uvs);
     }
     mesh.insert_indices(Indices::U32(piece.indices));
     Ok(mesh)
@@ -609,6 +614,7 @@ mod tests {
             positions: vec![[0.0; 3]; 3],
             normals: vec![[0.0, 1.0, 0.0]; normals],
             uvs: None,
+            uvs2: None,
             indices,
         };
         assert!(piece_mesh(piece(vec![0, 1, 2], 3)).is_ok());
