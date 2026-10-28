@@ -19,7 +19,10 @@
 //! - the content hash of each unnamed entry, which names a generated
 //!   `automat/` material;
 //! - the stems of the named files packed next to an unnamed one, with the
-//!   package's extensions.
+//!   package's extensions;
+//! - variants of found names by word swaps learned from the game
+//!   ([`learn_word_swaps`]), and a vehicle folder's files tried in the
+//!   other vehicle folders of its kind.
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
@@ -288,7 +291,8 @@ fn recover_with(
 ) -> RecoveredNames {
     let mut search = Search::new(limits);
     search.extend(["manifest.sii", "versions.sii"]);
-    search.extend(candidates);
+    let mut vehicles = Vehicles::default();
+    search.extend(candidates.into_iter().inspect(|p| vehicles.note(p)));
     let mut names = BTreeMap::new();
     let mut scanned: HashSet<u64> = HashSet::new();
     loop {
@@ -313,6 +317,7 @@ fn recover_with(
         if names.len() == before {
             neighbour_guesses(package, &names, &mut search);
             swap_guesses(&names, swaps, &mut search);
+            vehicle_guesses(&names, &mut vehicles, &mut search);
             drain(package, &mut search, &mut names);
         }
         if names.len() == before {
@@ -423,6 +428,56 @@ fn neighbour_guesses(package: &impl Package, names: &BTreeMap<u64, String>, sear
                     return;
                 }
                 search.push(&format!("{}.{ext}", &neighbour[..dot]));
+            }
+        }
+    }
+}
+
+/// Vehicle folders (`def/vehicle/<kind>/<name>/`) seen among the
+/// candidates and found names, by kind.
+#[derive(Default)]
+struct Vehicles(HashMap<String, HashSet<String>>);
+
+impl Vehicles {
+    /// Records the vehicle folder of `path`, if it is in one.
+    fn note(&mut self, path: &str) {
+        if let Some((kind, name, _)) = vehicle_parts(path) {
+            if !self.0.get(kind).is_some_and(|names| names.contains(name)) {
+                self.0
+                    .entry(kind.to_owned())
+                    .or_default()
+                    .insert(name.to_owned());
+            }
+        }
+    }
+}
+
+/// `(kind, name, rest)` of `def/vehicle/<kind>/<name>/<rest>`.
+fn vehicle_parts(path: &str) -> Option<(&str, &str, &str)> {
+    let rest = path.trim_start_matches('/').strip_prefix("def/vehicle/")?;
+    let (kind, rest) = rest.split_once('/')?;
+    let (name, rest) = rest.split_once('/')?;
+    (!rest.is_empty()).then_some((kind, name, rest))
+}
+
+/// A vehicle folder's files tried in its sibling vehicles of the same kind:
+/// a sound mod lays out each truck it covers alike (`scania.s_2016/
+/// interior/sound.sui`, `scania.t_2016/interior/sound.sui`; `research/
+/// evidence/mod-name-recovery.txt` section 11).
+fn vehicle_guesses(names: &BTreeMap<u64, String>, vehicles: &mut Vehicles, search: &mut Search) {
+    for path in names.values() {
+        vehicles.note(path);
+    }
+    for path in names.values() {
+        let Some((kind, own, rest)) = vehicle_parts(path) else {
+            continue;
+        };
+        for other in vehicles.0.get(kind).into_iter().flatten() {
+            if search.is_full() {
+                return;
+            }
+            if other != own {
+                search.push(&format!("def/vehicle/{kind}/{other}/{rest}"));
             }
         }
     }
@@ -756,6 +811,35 @@ mod tests {
         assert_eq!(
             named(&result),
             ["f/blinker_off.soundref", "f/blinker_on.soundref"]
+        );
+    }
+
+    #[test]
+    fn tries_a_vehicle_folders_files_in_its_sibling_vehicles() {
+        // The package's Scania S interior is named; its Scania T copy is
+        // not, but another candidate shows that folder exists.
+        let package = Fake::default()
+            .file(
+                "def/vehicle/truck/scania.s/interior/sound.sui",
+                b"sounds: 1",
+            )
+            .file(
+                "def/vehicle/truck/scania.t/interior/sound.sui",
+                b"sounds: 2",
+            );
+        let result = recover(
+            &package,
+            [
+                "def/vehicle/truck/scania.s/interior/sound.sui".to_owned(),
+                "def/vehicle/truck/scania.t/engine/other.sii".to_owned(),
+            ],
+        );
+        assert_eq!(
+            named(&result),
+            [
+                "def/vehicle/truck/scania.s/interior/sound.sui",
+                "def/vehicle/truck/scania.t/interior/sound.sui"
+            ]
         );
     }
 
