@@ -130,6 +130,9 @@ cargo run --release -p specsheet-research --example model_info -- /vehicle/truck
 python -I tools/research/model_layout.py <dumps>/*.pmd <dumps>/*.pmg
 cargo run --release -p specsheet-research --example texture_layout -- "<game>/base.scs" ...
 
+# Every R9G9B9E5 (HDR) texture: size, mips, decoded mean and peak colour
+cargo run --release -p specsheet-research --example hdr_textures -- "<game>"/*.scs
+
 # Definition statistics / samples (optional last argument: root directory, default /def/vehicle/truck)
 cargo run --release -p specsheet-research --example def_stats
 cargo run --release -p specsheet-research --example def_stats -- /def/vehicle/f_disc

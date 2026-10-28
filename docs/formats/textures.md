@@ -56,7 +56,7 @@ After decompression, each mip level starts on the image alignment, and each row 
 |------|-----------------|
 | 35   | R16G16_UNORM    |
 | 61   | R8_UNORM        |
-| 67   | R9G9B9E5_SHAREDEXP (skyboxes, HDR UI images; not unpacked yet) |
+| 67   | R9G9B9E5_SHAREDEXP: 194 skybox panoramas and 3 HDR UI images, 4 bytes per pixel, uploaded as `Rgb9e5Ufloat` (`research/evidence/hdr-textures.txt`) |
 | 71   | BC1_UNORM       |
 | 72   | BC1_UNORM_SRGB  |
 | 77   | BC3_UNORM       |

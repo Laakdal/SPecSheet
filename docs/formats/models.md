@@ -57,7 +57,9 @@ Evidence: `research/evidence/pmg-layout-derivation.txt`. Record sizes come from 
 
 **Piece** (100 bytes):
 - `u32` index count, vertex count;
-- `u32` at +8: a bit field that varies with the UV set count. Meaning **Unknown**;
+- `u32` at +8: UV slot routing, eight nibbles with slot 0 the least significant. Each nibble is a stored UV set index or `0xf` (unused) (`research/evidence/pmg-uv-routing.txt`, 611,638 pieces under `vehicle`, `model`, `model2`, `prefab`, `prefab2`):
+  - **Confirmed:** only slots 0, 1, 2 and 6 are ever used, and no nibble names a missing set. The UV set count is 1 + the highest routed set, and every stored set is routed. Slot 0 is set 0 whenever UVs exist; pieces without UVs store `0xffffffff`. Slot 6 is used exactly when the material's effect has `tsnmapuv` or `tsnmapuv2`. In truck models, slot 1 is used exactly for `oclu`, `mult`, `lamp` and `truckpaint`, and slot 2 exactly for `truckpaint`. Other effects (`amod`, `window`, `leaves`, …) also use slots 1 and 2. No `.mat` has a per-texture UV-set attribute (59,516 materials checked).
+  - **Hypothesis:** nibble *n* is the stored set that feeds the shader's UV slot *n*. Slot 6 is the `tsnmapuv` normal map, slot 1 the `oclu`/paint mask, slot 2 the `altuv` mask. The set is per piece: truck pieces route slot 6 from sets 0/1/2/3 (1,316/5,766/1,003/94);
 - `u32` UV set count (0–4 seen across all base archives, `research/evidence/cleanroom-phase1.txt`), material index;
 - bounding sphere (centre + radius) at +20, AABB at +36;
 - `u32` vertex stride at +60 (28, 36, 52, 60, 68 seen);
