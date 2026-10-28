@@ -1,0 +1,94 @@
+How the paint job reaches the material: callers of the builder (static, F17)
+============================================================================
+
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Method (read-only, no Ghidra run): the executable's own .pdata unwind table
+(chained entries resolved to their root function) gives each function's
+extent; capstone disassembles it.
+  python -I tools/research/triage.py <exe> <offsets> <functions...>
+  python -I tools/research/disasm.py <exe> <function>   (needs capstone)
+Listings stay out of the repository (D13); below are observations in our own
+words. Field offsets are named with research/evidence/paint-class-layout.txt
+(the executable's attribute tables). The builder FUN_1408d1100 is described in
+research/evidence/rea-paint-variant.txt (ev_6e3f6685…).
+
+Call chain
+----------
+- FUN_1408d1e70 (724 bytes with its chained ranges) takes (part, record,
+  flag A, flag B, path). It walks the part's materials in two loops and
+  calls the builder FUN_1408d1100 for each, passing its arguments through.
+  It reads no paint-job field and loads no constant.
+- Five functions call it: 0x1405348a0, 0x14068e680, 0x1408cea60, 0x1408d24d0,
+  0x1408d2740. Each also calls 0x1408d0ea0 (references "eut2.truckpaint")
+  on the path where it does not call FUN_1408d1e70.
+
+The paint record = a parameter block shared by both paint classes
+------------------------------------------------------------------
+0x1408cea60 builds the record with a constructor that receives a pointer to
+the paint job's +0x1e8 (paint_job_mask). The builder's record offsets then
+equal paint-job offsets minus 0x1e8. Every builder access agrees:
+  record +0x00 paint_job_mask (string object; +0x08 = its text)
+  record +0x20/+0x2c/+0x38 mask_r/g/b_color   record +0x44 base_color
+  record +0x50 flip_color      record +0x5c flip_strength
+  record +0x60 flake_color     record +0x6c flake_uvscale  +0x70 flake_vratio
+  record +0x74 flake_density   record +0x78 flake_shininess
+  record +0x7c flake_clearcoat_rolloff   record +0x80 flake_noise (+0x88 text)
+  record +0xa0 flipflake       record +0xa1 airbrush
+simple_paint_job_data embeds the same block at its +0x10 (its table: mask
++0x10, flake_uvscale +0x7c, flake_vratio +0x80 = block +0x6c, +0x70).
+
+Colours: saved colour unless locked (0x1408d2620, 276 bytes, Confirmed)
+-----------------------------------------------------------------------
+It resolves the paint job from the vehicle's paint accessory
+(vehicle_paint_job_accessory: mask_r +0x40, mask_g +0x4c, mask_b +0x58,
+flake +0x64, flip +0x70, base +0x7c). For each colour, it takes the paint job's
+colour when that colour's *_locked flag is set, otherwise the vehicle's:
+  base  (base_color_locked +0x1bb)  -> record +0x44
+  mask_r (mask_r_locked +0x1b8)     -> record +0x20
+  mask_g (+0x1b9) -> +0x2c   mask_b (+0x1ba) -> +0x38
+  flake (flake_color_locked +0x1bd) -> record +0x60
+  flip  (flip_color_locked +0x1bc)  -> record +0x50
+Without a paint job, all six come from the vehicle.
+
+Defaults (default construction of the block in 0x1405348a0, Confirmed for
+that instance; the paint job embeds the same block, so its absent attributes
+have the same defaults: Hypothesis, strong)
+---------------------------------------------------------------------------
+16-byte constants read from the file (0x1423d9130, 0x1423dad80, 0x1423da6c0,
+0x1423db260, 0x1423db110):
+  mask_r (1,0,0)  mask_g (0,1,0)  mask_b (0,0,1)  base (1,1,1)
+  flip_color (1,0,0)  flip_strength 0.27
+  flake_color (0,1,0)  flake_uvscale 32  flake_vratio 1  flake_density 1
+  flake_shininess 50  flake_clearcoat_rolloff 2.2
+  flake_noise "/material/custom/flake_noise.tobj"
+  paint_job_mask "" (empty)
+
+Builder arguments at the call sites
+-----------------------------------
+- 0x1408cea60 and 0x1408d24d0: flag A = alternate_uvset (+0x1be), flag B =
+  alternate_flipflake_uvset (+0x1bf), path = base_texture_override (text at
+  +0x1d0).
+  0x1408cea60 calls the builder only when base_texture_override, the mask, flipflake
+  or airbrush is set; otherwise it calls 0x1408d0ea0 (Hypothesis: restores
+  the plain truckpaint material).
+- 0x1405348a0 (walks the vehicle's parts):
+  - flag B = alternate_flipflake_uvset; path = base_texture_override;
+  - flag A starts as alternate_uvset. The routine then looks the part up as
+    "<slot>.<accessory>" in the per-part file (0x1408d2320 builds "%s.%s";
+    0x1408d2150 loads "%s/paint_job/accessory/%s.sii"). On a match: the record's
+    mask, flake_uvscale and flake_vratio come from the per-part unit, and
+    flag A is cleared (altuv off).
+- 0x14068e680 and 0x1408d2740: one or both flags come from other values
+  (registers, or +0xd8 of another object), not decoded (Unknown).
+
+Combined with the builder (rea-paint-variant.txt): which value lands in which
+shader constant
+--------------------------------------------------------------------------
+  without flipflake: c0 = (mask_r, 0), c1 = (mask_g, 0), c2 = (mask_b, 0),
+                     c3 = (base, 0)
+  with flipflake:    c0 = (flake_uvscale, flake_shininess,
+                           flake_clearcoat_rolloff, flake_vratio)
+                     c1 = (flake_color, flake_density)
+                     c2 = (flip_color, flip_strength)
+                     c3 = (base, 0)
