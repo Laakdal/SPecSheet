@@ -325,3 +325,48 @@ Built as a rule (vehicle_guesses): each found def/vehicle/<kind>/<name>/
 candidates and found names. 22 v1 packages with --others: 169,815 of
 171,094 named (was 169,806; NG Sound 90 of 91, every other package
 unchanged); run time 269 s against 251 s.
+The last NG Sound entry (c36ebc91717d1445) was named by hand: its content
+is byte-identical to interior/sound_smartdash.sui; in packing order it sits
+inside def/vehicle/truck/scania.t_2016/interior/ between sound.sui and
+sound_effects.sui (names sorted), so its name sorts between those two. The
+game's only interior name there is sound_24.sui (renault.t), which does not
+match; of 20 guesses, def/vehicle/truck/scania.t_2016/interior/
+sound_2024.sui hashes to the entry. NG Sound: 91 of 91. Not a rule: the
+"2024" came from a guess, not from data.
+
+
+12. Sorted gaps, and the two JBX Graphics 3 packages
+----------------------------------------------------
+Rule (gap_guesses): for an unnamed file packed between two named files of
+one folder with one extension, try <their shared leading '_' words>_<word>.
+<ext> for every word of the candidates' paths with that extension, keeping
+names that sort strictly between the two (packers sort a folder's names,
+sections 7 and 11). The word list is gathered only for packages with such
+a gap, from the paths already queued.
+22 v1 packages + 2 JBX packages (E:, not in the mod folder), --others:
+  named                  172,651 of 174,075 (the 22: 169,816, +1 NG Sound
+                         def/vehicle/truck/scania.t_2016/interior/
+                         sound_2024.sui; JBX unchanged)
+  time                   365 s (the 22 alone without the rule: 269 s; a
+                         first version with one word list for every
+                         extension took 508 s for the 22)
+JBX Graphics 3 v2.4 for ETS2 [1.50.x], two v1 packages, salt 0, no
+directory entries:
+  _6_NMPREFABS  2,230 entries; 1,789 named alone, 2,094 with candidates
+                (295 at 1.60 game paths, e.g. 200 in material/ui),
+                136 unnamed
+  _9_NBASE        751 entries; 731 alone, 741 with candidates (357 at game
+                paths: model2/rock, material/terrain, material/road, ...),
+                10 unnamed (6 Internet Shortcuts, readme, 2 hex, 1 .sii)
+_6_NMPREFABS unnamed, by content and packing order (one-off examples):
+  104 .mat ("eut2.glass.rfx" and similar), packed inside automat/<xx>/
+      folders, but no name is the CityHash64 of the content: edited copies
+      that keep the name of the original 1.50 content. Hypothesis: 1.60
+      models name other automat materials, so these are not loaded.
+   11 .tobj in material/ui/loading/bar_pics/, all pointing to
+      /material/ui/loading/jbx_main/jbx_main_loading.dds
+   21 others (.pmg 6, binary 6, .dds 3, text 5, 1 Internet Shortcut)
+Extractor 2026-07-29 --deep --list on _6_NMPREFABS names 2,068 files; its
+paths as candidates add 4 to ours (dlc/direction_blocker_curve.{pmd,pmg},
+model2/vegetation/bank_concrete_grass_blke.{pmd,pmg}), paths of older game
+versions that the 1.60 install does not hold.
