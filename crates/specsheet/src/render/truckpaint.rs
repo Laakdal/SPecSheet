@@ -51,10 +51,10 @@ const ZERO_VRATIO: f32 = 1.0;
 /// Which of the pair the effect reads is Unknown (lighting §8); we take the
 /// first.
 const DEFAULT_FRESNEL: f32 = 0.2;
-/// `.mat` `specular` and `shininess` when absent. 130 keeps the perceptual
-/// roughness (0.35) the paint had before this material.
+/// `.mat` `specular` and `shininess` when absent: the game's material-input
+/// table defaults (dif-spec.md §3.1; Hypothesis for truckpaint).
 const DEFAULT_SPECULAR: [f32; 3] = [1.0; 3];
-const DEFAULT_SHININESS: f32 = 130.0;
+const DEFAULT_SHININESS: f32 = 4.0;
 /// The paint colour without a paint job when the configuration has none.
 const NEUTRAL_PAINT: [f32; 3] = [0.6; 3];
 

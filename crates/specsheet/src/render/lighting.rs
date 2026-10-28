@@ -10,10 +10,9 @@ use bevy::render::storage::ShaderBuffer;
 use bevy::shader::load_shader_library;
 
 /// The game's colours are linear HDR, and how its eye adaptation and tone
-/// mapping turn them into pixels is Unknown (F16). Ours: they go straight
-/// into Bevy's tonemapper. With the tuning scene's light (sun 3, ambient
-/// 0.3), the MAN TGX Euro 6's white Driving Academy cab then matches the
-/// plastic parts beside it that still use Bevy's lighting; 1/π drew it grey.
+/// mapping turn them into pixels is Unknown (F16; REA on the tonemap
+/// parameters is queued). Ours, without a reference: they go straight into
+/// Bevy's tonemapper.
 const OUTPUT_SCALE: f32 = 1.0;
 
 pub struct GameLightingPlugin;
