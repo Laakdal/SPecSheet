@@ -19,14 +19,19 @@ use specsheet_assembly::Drive;
 /// row's `value_list` names them; [`Tab::from_token`] reads those names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Tab {
+    /// Cabins.
     Cabin,
+    /// Chassis.
     Chassis,
+    /// Engines.
     Engine,
+    /// Gearboxes.
     Transmission,
     /// Paint job (`color`).
     Color,
     /// Exterior accessories: one pin per slot on the truck.
     ExteriorAccessories,
+    /// Interiors.
     Interior,
     /// Interior accessories: pins inside the cab.
     InteriorAccessories,
@@ -90,15 +95,19 @@ pub fn tab_of(kind: AccessoryKind, interior: bool) -> Tab {
 pub enum HotspotCategory {
     /// Chassis and cabin.
     Base,
+    /// Exterior accessories.
     Addon,
+    /// Wheel parts.
     Wheel,
     /// Slots whose parts sit inside the cabin.
     Interior,
 }
 
 impl HotspotCategory {
+    /// Every category, in sidebar order.
     pub const ALL: [Self; 4] = [Self::Base, Self::Addon, Self::Wheel, Self::Interior];
 
+    /// The sidebar heading.
     pub fn title(self) -> &'static str {
         match self {
             Self::Base => "Chassis & cabin",
@@ -112,7 +121,9 @@ impl HotspotCategory {
 /// A slot with a clickable marker on the truck.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hotspot {
+    /// The slot it opens.
     pub slot: SlotId,
+    /// The slot's display name.
     pub label: String,
     /// Truck-space position (x right, y up, -z forward).
     pub position: [f32; 3],
@@ -125,11 +136,13 @@ pub struct Hotspot {
     pub link: Option<usize>,
     /// Opening this pin shows the pins linked to it.
     pub expands: bool,
+    /// Its sidebar group.
     pub category: HotspotCategory,
     /// Display name of the selected accessory.
     pub selected: Option<String>,
     /// Icon of the selected accessory.
     pub selected_icon: Option<String>,
+    /// Number of accessories for the slot.
     pub option_count: usize,
     /// Nothing is placed in the slot; the anchor sits on bare locators.
     pub empty: bool,
@@ -140,21 +153,32 @@ pub struct Hotspot {
 /// A slot without a marker (paint job, engine, interior-only parts...).
 #[derive(Clone, Debug, PartialEq)]
 pub struct SlotEntry {
+    /// The slot.
     pub slot: SlotId,
+    /// Its display name.
     pub label: String,
+    /// Display name of the selected accessory.
     pub selected: Option<String>,
+    /// Icon of the selected accessory.
     pub selected_icon: Option<String>,
+    /// Number of accessories for the slot.
     pub option_count: usize,
+    /// The tab that lists it.
     pub tab: Tab,
 }
 
 /// A slot listed under a tab.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TabSlot<'a> {
+    /// The slot.
     pub slot: &'a SlotId,
+    /// Its display name.
     pub label: &'a str,
+    /// Display name of the selected accessory.
     pub selected: Option<&'a str>,
+    /// Icon of the selected accessory.
     pub selected_icon: Option<&'a str>,
+    /// Number of accessories for the slot.
     pub option_count: usize,
     /// The slot has a pin on the truck.
     pub pinned: bool,
@@ -200,9 +224,13 @@ pub fn tab_slots(overview: &TruckOverview, tab: Tab) -> Vec<TabSlot<'_>> {
 /// Everything a front end shows about the truck being tuned.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TruckOverview {
+    /// The truck.
     pub truck: TruckId,
+    /// Its display name.
     pub name: String,
+    /// The drive side.
     pub drive: Drive,
+    /// The pins on the truck.
     pub hotspots: Vec<Hotspot>,
     /// Slots without a marker, listed in a "General" group.
     pub general: Vec<SlotEntry>,
@@ -210,37 +238,50 @@ pub struct TruckOverview {
     pub paint_color: Option<[f32; 3]>,
     /// The configuration's price (`Configuration::price`).
     pub price: i64,
+    /// Problems to show the user (missing models, unmatched slots).
     pub warnings: Vec<String>,
 }
 
 /// One option of a slot with the rules' verdict.
 #[derive(Clone, Debug, PartialEq)]
 pub struct OptionView {
+    /// The accessory.
     pub id: AccessoryId,
+    /// Its display name.
     pub name: String,
     /// The tile template's icon argument `%1`, spliced into
     /// `<img src=/material/ui/accessory/%1>`: an icon name, or for a paint
     /// job the game's thumbnail markup (`icon_argument`).
     pub icon: Option<String>,
+    /// Price in the game's currency.
     pub price: Option<i64>,
+    /// Player level that unlocks it.
     pub unlock_level: Option<i64>,
+    /// It is the slot's current selection.
     pub selected: bool,
+    /// It can be selected now.
     pub compatible: bool,
     /// Why the option is not compatible, in plain words.
     pub reason: Option<String>,
 }
 
+/// A slot's options, ready for its list.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SlotOptions {
+    /// The slot.
     pub slot: SlotId,
+    /// Its display name.
     pub label: String,
+    /// The options, in list order.
     pub options: Vec<OptionView>,
 }
 
 /// A truck of the installation with its display name.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TruckEntry {
+    /// The truck.
     pub id: TruckId,
+    /// Its display name.
     pub name: String,
 }
 

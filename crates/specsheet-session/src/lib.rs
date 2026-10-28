@@ -4,6 +4,8 @@
 //! incompatibility reasons). UI layers translate these into their own
 //! transport types.
 
+#![warn(missing_docs)]
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -69,22 +71,27 @@ impl GameSession {
         })
     }
 
+    /// The game installation.
     pub fn install(&self) -> &GameInstall {
         &self.install
     }
 
+    /// The mounted game files.
     pub fn fs(&self) -> &GameFs {
         &self.fs
     }
 
+    /// Parsed models, shared between trucks.
     pub fn models(&self) -> &ModelCache {
         &self.models
     }
 
+    /// Display strings.
     pub fn localization(&self) -> &Localization {
         &self.localization
     }
 
+    /// Every truck of the installation.
     pub fn trucks(&self) -> &[TruckSummary] {
         &self.trucks
     }
@@ -143,8 +150,11 @@ impl GameSession {
 /// One option of a slot, with the rules' verdict for the current state.
 #[derive(Debug)]
 pub struct SlotOption<'a> {
+    /// The option.
     pub accessory: &'a Accessory,
+    /// It is the slot's current selection.
     pub selected: bool,
+    /// `Ok` when it can be selected, else the rule it breaks.
     pub verdict: Result<(), Incompatibility>,
 }
 
@@ -159,22 +169,27 @@ pub struct TruckSession {
 }
 
 impl TruckSession {
+    /// The truck's accessories and rules.
     pub fn catalog(&self) -> &TruckCatalog {
         &self.catalog
     }
 
+    /// The current configuration.
     pub fn config(&self) -> &Configuration {
         &self.config
     }
 
+    /// The drive side.
     pub fn drive(&self) -> Drive {
         self.drive
     }
 
+    /// The assembled truck of the current configuration.
     pub fn assembly(&self) -> &Assembly {
         &self.assembly
     }
 
+    /// Definitions that could not be loaded.
     pub fn load_warnings(&self) -> &[LoadWarning] {
         &self.load_warnings
     }
