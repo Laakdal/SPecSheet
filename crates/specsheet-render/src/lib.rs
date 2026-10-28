@@ -17,7 +17,7 @@ use specsheet_session::GameSession;
 
 pub use difspec::{DifSpecMaterial, DifSpecMaterials, DifSpecSurface};
 pub use lighting::{GameLight, GameLighting};
-pub use textures::GameTextures;
+pub use textures::{vehicle_slot_cube, GameTextures};
 pub use truckpaint::{Paint, PaintMaterials, PaintSurface, TruckPaintMaterial};
 
 /// The game lighting, the clean-room materials and their textures.

@@ -23,8 +23,8 @@ use specsheet_data::scene::{OrbitSpec, Scene};
 use crate::studio::{FrameSet, Studio};
 use specsheet_render::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
 use specsheet_render::{
-    DifSpecMaterial, DifSpecMaterials, GameLight, GameLighting, GameTextures, MaterialContext,
-    Paint, PaintMaterials, TruckPaintMaterial,
+    vehicle_slot_cube, DifSpecMaterial, DifSpecMaterials, GameLight, GameLighting, GameTextures,
+    MaterialContext, Paint, PaintMaterials, TruckPaintMaterial,
 };
 
 /// The truck, the scene, lights and the orbit camera.
@@ -810,6 +810,10 @@ fn apply_scene(
         let (sun_light, sun_transform) = &mut *sun;
         apply_lights(scene, &mut ambient, sun_light, sun_transform);
         paints.set_light(Some(scene));
+        paints.textures.set_vehicle_slot(
+            studio.game.as_ref(),
+            vehicle_slot_cube(scene.vehicle_reflection.as_deref(), scene.cube_reflection),
+        );
         let strength = scene
             .light_environment
             .map_or(DEFAULT_ENVIRONMENT, |e| e.min(MAX_ENVIRONMENT));
