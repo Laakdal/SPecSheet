@@ -2,7 +2,9 @@
 
 How the app turns game data into the 3D tuning view. What the game files contain is in [ASSET_FORMATS.md](ASSET_FORMATS.md) and `formats/`. These pages cover how the app uses them:
 
-- [app/materials.md](app/materials.md): `.mat` effects to Bevy materials, texture upload, and the planned WGSL port of the game shaders.
+- [app/materials.md](app/materials.md): `.mat` effects to Bevy materials, the truck paint material, texture upload.
+- [app/shaders.md](app/shaders.md): which game shaders the trucks use, why the look isn't 1:1 yet, and the status of each clean-room material.
+- [app/shader-specs/](app/shader-specs/): the clean-room specs (D13) the WGSL is written from: `truckpaint`, `truckpaint-lighting`, `dif-spec`.
 - [app/scenes.md](app/scenes.md): the `/def/desktop` scenes, camera, lights, fog and orbit controls.
 - [app/hotspots.md](app/hotspots.md): marker anchors, far-side culling, clustering, empty slots and wheel groups.
 - [app/ui.md](app/ui.md): the egui layout, sidebar and controls.
@@ -15,8 +17,9 @@ specsheet-data::render::build_mesh   →  MeshData (visible parts, CCW indices, 
 specsheet-data::render::load_texture →  TextureData (unpacked mips, BGRA→RGBA)
 specsheet-data::view::overview       →  hotspots, slot list, paint colour, warnings
 crates/specsheet/src/assets.rs     →  validated Bevy meshes, StandardMaterials, BC images
+crates/specsheet/src/render/       →  clean-room WGSL materials (truck paint)
 crates/specsheet/src/viewer.rs     →  truck and scene entities, lights, fog, orbit camera
-crates/specsheet/src/ui.rs         →  egui panels and hotspot markers
+crates/specsheet/src/ui/           →  the game's tuning screen, egui panels and hotspot markers
 ```
 
 `assets::load_model` runs `build_mesh` and the texture loads on Bevy's async compute pool. The upload happens on the main thread (`viewer::finish_models`).

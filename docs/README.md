@@ -30,6 +30,7 @@ Docs are organised by topic. Each fact has one home: `formats/` describes what g
 - [RENDERING.md](RENDERING.md): pipeline, coordinates, assembly, caching
   - [app/materials.md](app/materials.md): effects to Bevy materials, texture upload, shader port
   - [app/shaders.md](app/shaders.md): why the look isn't 1:1 yet, which game shaders the trucks use, and the plan
+  - [app/shader-specs/](app/shader-specs/): clean-room shader specs (D13): `truckpaint`, `truckpaint-lighting`, `dif-spec`
   - [app/scenes.md](app/scenes.md): tuning scenes, lights, fog, orbit camera
   - [app/hotspots.md](app/hotspots.md): anchors, culling, clustering, marker styles
   - [app/ui.md](app/ui.md): egui layout, sidebar, busy state, settings

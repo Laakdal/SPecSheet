@@ -4,13 +4,13 @@ Why the app doesn't look like the game yet, which game shaders matter, and how w
 
 ## Why it doesn't look right yet
 
-The work so far went into *what* is drawn: the right trucks, parts, positions and the game's own tuning UI. *How it is lit and shaded* is still an approximation ([materials.md](materials.md)):
+The work so far went into *what* is drawn: the right trucks, parts, positions and the game's own tuning UI. *How it is lit and shaded* is still mostly an approximation ([materials.md](materials.md)). Status on 2026-10-28:
 
 | What you see | Cause |
 |---|---|
 | The garage looks flat and washed out | Only `texture_base` is drawn. The baked shading (`texture_mult`), the normal maps and the scene's `showroom_cube` reflection are ignored. |
-| The paint looks like flat plastic | `truckpaint` is drawn as "paint colour × a fixed metallic value". There is no clear coat, no flakes, no flip colour, and no paint masks or liveries. |
-| Chrome and metal look dull or dark | The reflection is a gradient stand-in, not the game's cube reflections. |
+| The paint still looks too smooth | **The surface is done:** colour masks, airbrush liveries, flip colour and vertex colour follow the clean-room spec (`render/truckpaint.{rs,wgsl}`). It is still lit by Bevy's PBR, so the game's highlight, clear-coat reflection and flake sparkle are missing. |
+| Chrome and metal look dull or dark | The truck's most common reflection cube is used as Bevy's environment light (`viewer::ReflectionCube`), with our own exposure. The game samples each material's own cube with its own fresnel; that comes with the shared lighting module. |
 | No shadows on or under the truck | The `fakeshadow`/`shadowonly` geometry is hidden, and real-time shadows are off. |
 | The overall light feels off | The scene lights are mapped approximately; the game's exposure, tonemapping and bloom are not reproduced. |
 
@@ -48,6 +48,8 @@ The paraphrases come from SCS's public modding wiki, [Supported shaders](https:/
 
 ### Step 1: quick wins (no shader code involved)
 
+Status: 3 is partly done (one cube for the whole truck, not the scene's `showroom_cube`); the rest is open. Items 1, 2 and 5 are covered by the `dif.spec` material in step 2, so they are only worth doing on their own if that material is far off.
+
 These use only `.mat` parameters, textures and Bevy's renderer:
 1. Draw `texture_mult` (baked shading) as an occlusion layer, on the garage and on the truck.
 2. Normal maps (`tsnmap` / `tsnmapuv`, BC5), on the UV set the flavor names.
@@ -56,6 +58,12 @@ These use only `.mat` parameters, textures and Bevy's renderer:
 5. The `.mat` values (`specular`, `shininess`, `env_factor`, `diffuse`) on every material.
 
 ### Step 2: the game's look (clean-room shaders, D13)
+
+| Base | Spec | WGSL |
+|---|---|---|
+| `truckpaint` | Done: [shader-specs/truckpaint.md](shader-specs/truckpaint.md), [truckpaint-lighting.md](shader-specs/truckpaint-lighting.md) | Surface done, under Bevy's lighting ([materials.md](materials.md#truck-paint-eut2truckpaint)) |
+| `dif.spec` | Done: [shader-specs/dif-spec.md](shader-specs/dif-spec.md), with the lighting model and the deferred path | Next: one shared lighting module for `dif.spec` and `truckpaint`, with per-material cube sampling (§5.5) |
+| `glass`, `lamp`, the rest | Not started | — |
 
 1. **Specs.** A spec agent reads the game's shader for one base and its flavors, and writes the maths in prose and equations to `shader-specs/<base>.md`, citing the wiki for behaviour. No code is copied or quoted.
 2. **WGSL.** A different agent, which has never seen the game's shaders, writes one Bevy material per base, with the flavors as switches (shader defs), from the spec only.
@@ -66,6 +74,6 @@ These use only `.mat` parameters, textures and Bevy's renderer:
    4. `dif.lum`, `decalshadow`, `light.tex` and `unlit.*`.
    5. The scene shaders used by the tuning garage (`showroom_v2`, `baked`).
    6. Lighting model, exposure and tonemapping.
-4. **Measure.** After each base, run `specsheet --parity` against the reference screenshots and record the scores in [../PARITY.md](../PARITY.md).
+4. **Measure.** After each base, run `specsheet --parity` against the reference screenshots and record the scores in [../PARITY.md](../PARITY.md). Reference screenshots are deferred for now; until they exist, engine conventions (exposure, tonemapping, camera) come from the executable via REA, and each material is checked by eye in a `SPECSHEET_SCRIPT` screenshot.
 
 Not planned: shaders the trucks and garage don't use (roads, terrain, buildings, sky, water, grass).

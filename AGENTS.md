@@ -86,6 +86,7 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
 | UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
 | Rules, configuration, hookups | `specsheet-core/src/{config,catalog,hookup}.rs` | `specsheet-core/src/tests.rs` |
+| Paint jobs: masks, colours, flake/flip, per-part paint | `specsheet-core/src/paint.rs`; loading in `specsheet-data/src/{catalog,paint}.rs` | `specsheet-core/src/tests.rs`; unit; `real_install::{every_paint_job_parses, paint_job_parts_resolve_by_unit_token, every_paint_mask_exists_or_is_a_constant}` |
 | Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
 | Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
 | Slot to locator matching | `specsheet-data/src/slots.rs` | unit |
@@ -98,6 +99,7 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-data/
 | Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-data/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
 | App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
 | Meshes, materials, textures to GPU (with upload checks) | `specsheet/src/assets.rs` | unit |
+| Clean-room game materials (truck paint) | `specsheet/src/render/{mod,truckpaint}.rs`, `truckpaint.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
 | The game's truck configuration screen (layout drawing, tabs, lists), UI textures, SpecSheet window | `specsheet/src/ui/{mod,screen,textures}.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Pins over the 3D view (projection, culling, clustering) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
