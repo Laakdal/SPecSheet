@@ -6,6 +6,7 @@
 
 mod catalog;
 mod error;
+pub mod extract;
 mod fs;
 mod install;
 pub mod localization;
