@@ -1,0 +1,61 @@
+Facts behind the mod package writer (D18, docs/formats/mods.md)
+===============================================================
+
+Subject: the ZIP packages in the test install's mod folder (ETS2 1.60.1.7),
+read only. Package file names are public mod names; no profile data. Values
+of manifests are not quoted except game-defined category names.
+
+Commands (read-only on the mod folder):
+  cargo run --release -p specsheet-archive --example mod_probe -- "<home>/mod"
+  python -I <scratch>/manifest_shapes.py "<home>/mod"   (stdlib zipfile)
+  python -I <scratch>/categories.py "<home>/mod"
+  cargo run --release -p specsheet-data --example mod_write -- <scratch dir>
+
+
+1. Directory records are not needed
+-----------------------------------
+mod_probe prints central-directory records and files per ZIP package. In
+most packages records > files (directory records present), e.g.
+  CargoMarketStutterFix.scs        records=5     files=4
+  Sanax_volvo_fh_2022_p_BASE.scs   records=9164  files=8455
+but one has none:
+  Sanax_volvo_fh_2022_p_DEF.scs    records=4077  files=4077
+That package is mounted at profile load (16 devices, one per folder; see
+mod-loader-survey.txt, multi-folder packages), so its top-level folders
+(base/, dlc_*/) resolve without directory records (Confirmed). That nested
+folders (def/vehicle/...) list without them is a Hypothesis, to settle with
+a package that has such content. The writer emits none; the test package
+has root files only.
+
+
+2. manifest.sii shape (31 readable ZIP manifests)
+-------------------------------------------------
+Unit name after "mod_package :":
+  dot-prefixed (".name")              28
+  bare, containing dots               3
+  (1 package has no manifest; 1 is refused by zipfile: the malformed one)
+All 31 start with SiiNunit and have no BOM. Line ends: CRLF 24, LF 7, so
+both are accepted. Attributes present: icon 31, description_file 31,
+package_version 31, author 31, category[] 30, display_name 29,
+compatible_versions[] 7.
+-> The writer uses the dot-prefixed form and LF.
+
+
+3. category[] values (game-defined names)
+-----------------------------------------
+  tuning_parts 11, truck 8, map 6, graphics 2, sound 2, other 1, "" 1
+The empty value is the one the log reports ("Unknown category '' defined
+for X. Ignoring."). The test package uses "other".
+
+
+4. The test package (mod_write)
+-------------------------------
+specsheet_test.scs, 477 bytes: manifest.sii (216 bytes, deflated to 151) and
+description.txt (117 bytes, deflated to 98). Unit mod_package : .specsheet,
+category[] "other", compatible_versions[] "1.60.*", no icon.
+Python's zipfile (a strict stock reader, unlike ours): testzip() = None,
+i.e. every CRC matches; flag bits 0 (no encryption, no data descriptor);
+dates 1980-01-01 00:00 (fixed, so output is reproducible).
+A second run refused: PackageExists (the stem is taken).
+Whether the game shows and mounts it: not yet checked (needs the user to
+copy it into the mod folder and enable it).

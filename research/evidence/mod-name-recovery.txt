@@ -1,0 +1,130 @@
+Recovering file names in HashFS v1 mod packages (docs/formats/mods.md)
+=======================================================================
+
+Subject: the 21 HashFS v1 packages in the test install's mod folder and the
+mounted game (ETS2 1.60.1.7), read only. Package names are public mod
+names; no profile data.
+
+Commands (read-only):
+  cargo run --release -p specsheet-data --example mod_names -- [--list] [--zips "<home>/mod"] <v1 packages>
+  one-off examples (deleted after use) for the convention counts in 3.
+  python -I <scratch>/stems.py "<home>/mod"   (stdlib zipfile, ZIP mods)
+
+
+1. Why names go missing
+-----------------------
+A v1 entry record holds only a CityHash64 of its path (hashfs-v1-derivation.txt).
+Names exist only in directory listings, and listings are optional:
+- no package has a root listing (known before, 20 of 20);
+- NG Sound.scs (91 entries, not in the earlier survey) has no directory
+  entry at all: every record has flags bit 0 clear.
+The game needs no names, since it looks files up by full path; a tool that
+lists a package's contents has only hashes. A name can be recovered only by
+hashing a candidate path and finding it in the index.
+
+
+2. Candidate sources (specsheet_data::mod_names, specsheet_formats::paths)
+--------------------------------------------------------------------------
+- every path of the mounted game: walk from the root listing, 626,878
+  paths (606,713 files, 20,165 directories), about 2 s;
+- parents of every candidate, and the listings of directory entries found;
+- absolute paths mentioned in any entry's bytes, named or not ("/..."
+  after a quote, '|', '=', ':', '(' or space; "#event" cut), relative
+  @include targets, and relative .tobj names inside .mat files;
+- manifest icon and description_file;
+- the conventions counted in 3.
+Every candidate counts only when its hash is in the package, so a wrong
+guess can only miss, never mis-name.
+
+
+3. Conventions used for guesses (counted on game data and ZIP mods)
+-------------------------------------------------------------------
+  addon unit <name>.<truck>.<slot> in
+    def/vehicle/truck/<truck>/accessory/<slot>/<name>.sii    22,783 of 29,841 units (76%)
+    (30,188 accessory files, 61 not parsed; misses are mostly a different
+     file stem, e.g. trim1.volvo.fh_2024.windowtrim in windowtrim_01.sii)
+  accessory icon "<p>" -> material/ui/accessory/<p>.mat     Confirmed before (ui.md)
+  .pmd -> same-stem .pmg (game)                             70,076 of 70,076
+  .tobj -> same-stem .mat (game)                            19,366 of 138,478
+  .dds -> same-stem .tobj (ZIP mods; the game has no .dds,
+          it packs textures into .tobj)                     3,295 of 3,343
+  .bank -> .bank.guids                                      seen in NG Sound
+
+
+4. Results, all 21 v1 packages
+------------------------------
+                                          entries  package alone  with game paths  of which game paths  unnamed
+  Add-On MAN TG3 2020 by Gloover.scs         7558       2385          2412               26              5146
+  NG Sound.scs                                 91         53            71               18                20
+  PNG_PE_BASE_1.scs                          2198       1767          2197             1259                 1
+  PNG_PE_BASE_2.scs                           484        484           484              210                 0
+  PNG_PE_WEATHER_CLASSIC.scs                  246        223           246               29                 0
+  PNG_PE_WEATHER_CLASSIC_FOGGY.scs             26          3            26               20                 0
+  promods-eu-assets-v283.scs                56403      55034         55962             5651               441
+  promods-eu-media-v283.scs                 21923         20         21923             2914                 0
+  promods-eu-model1-v283.scs                22577      22577         22577             1607                 0
+  promods-eu-model2-v283.scs                30031      30031         30031             3588                 0
+  promods-eu-model3-v283.scs                 6793       6793          6793                0                 0
+  promods-me-assets-v283.scs                 6332       6031          6111              368               221
+  promods-tgs-assets-v162.scs               12712      11699         12534             2080               178
+  zPNG_NORTH_EXPERIENCE.scs                   237        214           237              150                 0
+  zPNG_PE_AUTUMN.scs                         1158        691          1139              397                19
+  zPNG_PE_SPRING.scs                          596        526           544              231                52
+  zPNG_PE_SUMMER.scs                          515        442           473              218                42
+  zzPNG_PE_BUGFIX.scs                         134        128           134              130                 0
+  zzPNG_RealAirTraffic_[FreeAddon]_ETS2.scs   301        301           301              156                 0
+  zzPNG_RealGenericLogos_[FreeAddon]_ETS2     234        234           234              118                 0
+  zzPNG_StreetLamps_[FreeAddon].scs           216         57           216              166                 0
+  all                                      170765     139693        164645                              6120
+"of which game paths": named entries whose path also exists in the game,
+i.e. files the package replaces.
+
+With the other packages as candidates too (--zips: the 642,535 file names
+of the ZIP mods in the folder and the paths their .sii/.sui/.mat/.tobj/.pmd/
+.soundref files mention), 167,421 of 170,765 entries get a name:
+                                          entries  named  unnamed
+  Add-On MAN TG3 2020 by Gloover.scs         7558   4339     3219
+  NG Sound.scs                                 91     80       11
+  PNG_PE_BASE_1.scs                          2198   2197        1
+  promods-eu-assets-v283.scs                56403  56403        0
+  promods-me-assets-v283.scs                 6332   6332        0
+  promods-tgs-assets-v162.scs               12712  12712        0
+  zPNG_PE_AUTUMN.scs                         1158   1139       19
+  zPNG_PE_SPRING.scs                          596    544       52
+  zPNG_PE_SUMMER.scs                          515    473       42
+  (the other 12 unchanged at 0 unnamed)
+  all                                      170765 167421     3344
+So a v1 package's names often sit in another package: the MAN TG3 models
+are named by the definitions in the ZIP "Add-On Definition MAN TG3 2020 by
+Gloover.scs", and the ProMods asset packages by the ProMods def packages.
+
+
+5. NG Sound.scs in detail
+-------------------------
+Manifest: compatible_versions[] "1.59.*" (the game is 1.60.1.7).
+Named 71 of 91 with game paths (80 with the other packages too):
+  sound/truck: 2 FMOD banks (RIFF FEV, 182 MB) + 2 .bank.guids
+  def/vehicle/truck/scan.ng.common/..., ng.dc16.122.common/engine:
+    36 .soundref, new paths
+  def/vehicle/truck/scania.{s,r}_2016/{cabin,chassis,engine,interior,
+    transmission}/sound*.sui: 18 files that replace game files
+  def/vehicle/truck/scania.{s,r}_2016/accessory/badge/530{s,r}_scs.sii
+    (addon-unit convention), their badge models (.pmd/.pmg)
+  material/ui/accessory/max2712.{dds,tobj,mat} (icon of the author; no
+    unit in the package names it)
+  manifest.sii, description.txt, icon .jpg
+Unnamed 20 with game paths only (11 with the other packages):
+  19 sound fragments ("# Configuration of the ... sounds", the form of the
+     game's sound*.sui includes) that match no 1.60 path and no reference.
+     Hypothesis: they replaced 1.59 files that 1.60 renamed or dropped, so
+     they no longer apply.
+   1 .soundref: source="/sound/truck/ng_effects_paid.bank#interior/blinker_off".
+     Its name follows its siblings (def/vehicle/truck/scan.ng.common/
+     interior/blinker_off.soundref hashes to it), but sibling guessing is
+     not in the library.
+.soundref (37 in the package): text lines key=value; "source" in all 37
+(bank path, '#', event path), "position_offset" (x;y;z) in 8. The game
+has .soundref files too (e.g. engine/sound_590s_engine.soundref); whether
+they use the same keys is not checked (Unknown).
+Hypothesis: the game finds accessory files by directory listings, so the
+two badge units, which no listing names, may never appear in the game.
