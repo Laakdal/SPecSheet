@@ -285,7 +285,7 @@ impl DifSpecSurface {
                 mult.image = None;
             }
         }
-        if !self.mult.as_ref().is_some_and(|m| m.image.is_some()) {
+        if self.mult.as_ref().is_none_or(|m| m.image.is_none()) {
             return true;
         }
         let on_uv0 = |uvs: &Option<Vec<[f32; 2]>>| uvs.is_some() && *uvs == piece.uvs;
