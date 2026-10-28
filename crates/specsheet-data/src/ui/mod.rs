@@ -79,6 +79,8 @@ pub struct Widget {
     /// Lists: item size and gap.
     pub item_size: Option<[f32; 2]>,
     pub item_gap: Option<f32>,
+    /// Sliders: smallest handle length (`minimal_handle_size`).
+    pub min_handle: Option<f32>,
 }
 
 /// A layout file: one window root and its widgets.
@@ -221,6 +223,7 @@ fn widget(unit: &Unit, parent: Option<usize>) -> Widget {
             .zip(unit.get_f32("item_height"))
             .map(|(w, h)| [w, h]),
         item_gap: unit.get_f32("item_gap"),
+        min_handle: unit.get_f32("minimal_handle_size"),
     }
 }
 
@@ -244,11 +247,23 @@ pub struct ButtonTemplate {
     pub height: Option<f32>,
 }
 
+/// A vertical scrollbar look (`ui::slider_template`, `*_vert` fields).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SliderTemplate {
+    pub handle: String,
+    pub handle_hovered: String,
+    pub handle_pressed: String,
+    pub track: String,
+    /// Space kept free at both ends of the track.
+    pub margin: f32,
+}
+
 /// Every text and button template under `/ui/template`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Templates {
     text: HashMap<String, TextTemplate>,
     buttons: HashMap<String, ButtonTemplate>,
+    sliders: HashMap<String, SliderTemplate>,
     /// Every template by name with its class, including kinds without a
     /// typed model yet (sliders, input lines, tables, tooltips).
     classes: HashMap<String, String>,
@@ -261,6 +276,10 @@ impl Templates {
 
     pub fn button(&self, name: &str) -> Option<&ButtonTemplate> {
         self.buttons.get(name)
+    }
+
+    pub fn slider(&self, name: &str) -> Option<&SliderTemplate> {
+        self.sliders.get(name)
     }
 
     /// Every text template and button state as `(name, markup)`.
@@ -295,6 +314,27 @@ impl Templates {
                             markup: markup(unit, "text"),
                             width: unit.get_f32("width"),
                             height: unit.get_f32("height"),
+                        },
+                    );
+                }
+                "ui::slider_template" => {
+                    let handle = markup(unit, "n_pml_vert");
+                    let or_handle = |key: &str| {
+                        unit.get_str(key)
+                            .filter(|s| !s.is_empty())
+                            .map_or_else(|| handle.clone(), str::to_owned)
+                    };
+                    self.sliders.insert(
+                        unit.name.clone(),
+                        SliderTemplate {
+                            handle_hovered: or_handle("s_pml_vert"),
+                            handle_pressed: or_handle("p_pml_vert"),
+                            track: markup(unit, "n_background_vert"),
+                            margin: unit
+                                .get_f32("margin_vert")
+                                .filter(|m| m.is_finite())
+                                .unwrap_or(0.0),
+                            handle: handle.clone(),
                         },
                     );
                 }
@@ -466,6 +506,15 @@ ui::button_row : _nameless.tabs {
  layer: 4
  my_parent: _nameless.root
 }
+ui::slider_common : _nameless.slider {
+ look_template: sld.slider0d
+ minimal_handle_size: 32
+ coords_l: 309
+ coords_r: 343
+ coords_t: 700
+ coords_b: 100
+ my_parent: _nameless.acclist
+}
 ui::list_common : _nameless.acclist {
  item_width: 292
  item_height: 96
@@ -484,7 +533,7 @@ truck_config_hdl : _nameless.handler {
         let doc = sii::parse("/ui/x.sii", src).expect("parse");
         let layout = layout_from_doc("/ui/x.sii", &doc);
         assert_eq!(layout.keep_aspect, KeepAspect::Left);
-        assert_eq!(layout.widgets.len(), 3, "the handler is not a widget");
+        assert_eq!(layout.widgets.len(), 4, "the handler is not a widget");
         let tabs = layout.by_id(499).expect("tabs");
         assert_eq!(tabs.value_list, ["cabin", "chassis"]);
         assert_eq!(tabs.id_list, [510, 500]);
@@ -492,6 +541,36 @@ truck_config_hdl : _nameless.handler {
         assert_eq!(tabs.rect.height(), 64.0);
         let list = layout.by_id(300).expect("list");
         assert_eq!(list.item_size, Some([292.0, 96.0]));
+        let slider = layout
+            .widgets
+            .iter()
+            .find(|w| w.class == "ui::slider_common")
+            .expect("slider");
+        assert_eq!(slider.min_handle, Some(32.0));
+        assert_eq!(slider.parent.map(|p| layout.widgets[p].id), Some(300));
         assert_eq!(layout.children(0).count(), 2);
+        let mut templates = Templates::default();
+        let doc = sii::parse(
+            "/ui/template/slider.sii",
+            br#"SiiNunit
+{
+ui::slider_template : sld.v {
+ n_pml_vert: "<img src=/h2.mat>"
+ s_pml_vert: "<img src=/h1.mat>"
+ p_pml_vert: ""
+ n_background_vert: "<img src=/white.mat height=-1 width=2>"
+ margin_vert: 2
+}
+}"#,
+        )
+        .expect("parse");
+        templates.add(&doc);
+        let slider = templates.slider("sld.v").expect("slider");
+        assert_eq!(slider.handle_hovered, "<img src=/h1.mat>");
+        assert_eq!(
+            slider.handle_pressed, slider.handle,
+            "empty states fall back"
+        );
+        assert_eq!(slider.margin, 2.0);
     }
 }
