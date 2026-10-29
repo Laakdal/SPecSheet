@@ -28,9 +28,10 @@ The game's handler shows, hides and fills widgets in code that has not been trac
 | Panel backgrounds, title, folded vehicle analysis `[6001]`, leave button `[20]`, category bar | always |
 | Tab row `[499]` | one `btn.truck_grp` button per `value_list` token (the 64-unit icons fill the row). The open tab uses the selected state, and hover does too |
 | "Select a category" `[380]` | until a tab is chosen |
-| Accessory browser `[305]` with list title `[310]` (`<color>@@clr_sel@@ …` + the tab's caption key) and list `[300]` | while a slot's options are open |
+| Accessory browser `[305]` with list title `[310]` (`<color>@@clr_sel@@ …` + the tab's caption key) and list `[300]` | while a slot's options are open. Options made for other parts (`suitable_for` unmet) are not listed; the rest stay in price order when one is picked |
 | Price box `[385]`, customize mode | the `tc_*` labels `[387]` with `[364]` original price (the truck as loaded), `[362]` extra (current − original) and `[360]` new total. The price is `Configuration::price`, the sum of the selected parts and hookups (Hypothesis). The buy-mode labels `[386]` and the cart/checkout buttons `[210]` stay hidden |
-| Remove button, messages, conflict marker, paint channels, walk-camera notice, crosshair, cart, origin badge, money, unfolded analysis, colour picker, control and tab-key hints, search, filter | hidden: their behaviour is not wired up yet. An unaddressed sibling with a hidden widget's exact rectangle (its background, e.g. the money box) is hidden with it |
+| The game's colour picker and paint channels | hidden; in their place, ours: an egui "Paint colour" panel at the bottom right while the paint job list is open, one picker per colour the job leaves unlocked and its look uses (`PaintJob::editable_channels`, Hypothesis beyond the locks). A colour applies when the mouse button is released |
+| Remove button, messages, conflict marker, walk-camera notice, crosshair, cart, origin badge, money, unfolded analysis, control and tab-key hints, search, filter | hidden: their behaviour is not wired up yet. An unaddressed sibling with a hidden widget's exact rectangle (its background, e.g. the money box) is hidden with it |
 
 ## Tabs and pins
 

@@ -5,7 +5,7 @@ The app opens on the game's own truck configuration scene, `/def/truck_config_sc
 - **Model and lights:** `desktop_garage` with its lights, read like the hub scenes below.
 - **Orbit camera** (`OrbitSpec`): aim (0, 2.6, −1.465), FOV 50, default azimuth −2.516, elevation −0.068, zoom 1, elevation limits (−0.35, 0), `relative_bounds` 7.5, plus sensitivities.
   - Hypothesis: azimuth turns from +z towards +x, elevation is the pitch above the aim (negative lowers the camera), and the distance is zoom × the x bound. That gives a front-left three-quarter view about 7.5 m out, about 0.5 m below the aim, looking slightly up at the cab.
-  - `viewer::Orbit::from_spec` uses the elevation limits as the pitch range, so the camera stays between the aim's height and about 20° below it, and at least 0.3 m above the floor (ours).
+  - `viewer::Orbit::from_spec` takes the scene's lowest angle (20° below the aim) but lets the camera rise to nearly overhead, and keeps it at least 0.3 m above the floor (ours). The game's own range (between the aim's height and 20° below) was too tight for the user.
   - The opposite sign (the camera above the aim) was our first reading; the user found that view too high.
   - Non-finite values in the definition fall back to defaults; they never reach `f32::clamp`.
 - **Pins:** the file's per-slot pin data (`pin_group`/`pin_look`/`pin_offset`/`pin_dir`/`pin_dir_uk`/`double_sided`, `interior_only`, `hookups_exterior_only`) is parsed into `TuningScene::pins`. Placement still uses our anchors ([hotspots.md](hotspots.md)); how the game applies these fields is F5's open question.

@@ -75,6 +75,7 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 | `tab <token>` | open a tab of the game screen: `cabin`, `chassis`, `engine`, `transmission`, `color`, `e_accessories`, `interior`, `i_accessories` |
 | `orbit <yaw°> <pitch°> <distance>` | place the camera around the current target |
 | `exposure <E>` | set the tonemap's fixed exposure scale (default 5.555, so k = 1) |
+| `paint <base\|mask1\|mask2\|mask3\|flake\|flip> <r> <g> <b>` | set one of the paint job's colours (linear RGB), as the colour picker does |
 | `sleep <frames>` / `echo <text>` | pause; log `script: <text>` so an external driver can sync |
 | `screenshot <png path>` | save the window (then waits 30 frames) |
 | `exit` | quit |
