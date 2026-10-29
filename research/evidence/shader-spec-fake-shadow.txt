@@ -1,0 +1,29 @@
+Shader spec sources: the vehicle fake shadow (docs/app/shader-specs/fake-shadow.md), ETS2 1.60.1.7
+=================================================================================================
+Clean-room note (D13): shaders read only to learn the maths; extracted text stayed in the session
+scratchpad. This file lists what was read; it contains no shader text.
+
+Effects (scs ls/cat effect/deferred/def_apply_fake_shadow; glsl technique)
+  def.apply.fake.shadow.rfx       defgeom  apply_fake_shadow  e019bee5453af07c7e76edda834105c6 517857d8d2e422e35ce307b4e1bfcffa
+  def.apply.fake.shadow.dist.rfx  defgeom  apply_fake_shadow  e019bee5453af07c7e76edda834105c6 606755806d0697787147283d46b96a2d
+  effect/deferred/rs/apply_fake_shadow.rs: blend src dst_color, dst zero (multiply); cull front.
+  Vertex stage: a volume in clip space, its z pinned to w when it lies beyond the far plane, and
+  the screen position packed for the fragment stage.
+  Fragment, both: eye position from G-buffer depth and the view ray; projector matrix; colour
+  texture sample; light-buffer outputs diffuse (1-I, 1-I, 1-I, sat((1-I)^2)) and specular
+  ((1-I)^2, ..., 0).
+  Fragment, .dist only: jitter texture tiled every 64 px; depth bias from it; 4 taps of a
+  one-channel distance map at +-jitter.xy and +-jitter.zw; per-tap scene fade-out on the receiver
+  distance scaled by the colour texture's red, counted only behind the occluder; average; light
+  fade-out on the receiver depth; times colour alpha and the light's diffuse red.
+  Uniforms named (engine-set): light projection matrix, light diffuse, smap light and scene
+  fade-outs, smap texture size; samplers jitter, light rgba texture, light r_0 texture, G-buffer.
+
+Contour pass (shadows-and-fake-lights.md section 3)
+  eut2.fakeshadow: one pass "fakeshadcol", writes 0.5 + 0.5 * uncorrected clip z, depth less with
+  write, cull front. 155 truck models use eut2.fakeshadow (effect-usage-survey.txt).
+
+Ambient occlusion exists separately (not specified yet): effect/deferred/def_ssao/
+  def.ssao.{zfetch,zreduce,compute,spatial_denoise_a,spatial_denoise_b,temporal_denoise,upscale}.rfx;
+  executable strings name it GTAO (gtao_config0/1, "GTAO ao noisy", bent normals, env visibility),
+  the setting r_ssao and the uniform ao_apply_params.
