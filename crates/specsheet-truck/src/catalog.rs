@@ -85,6 +85,11 @@ pub struct ModelRef {
     /// Right-hand-drive replacement of `cockpit` (`interior_model_uk`).
     #[serde(default)]
     pub cockpit_uk: Option<String>,
+    /// Interiors: the cockpit's moving parts (`animated_model`: steering
+    /// column, stalks, gauges), in the cockpit's space with its look and
+    /// variant.
+    #[serde(default)]
+    pub cockpit_animated: Option<String>,
     /// Cabins: the side windows' glass, a model of its own in the cabin's
     /// space (`windows_model`; animated open by `left/right_window_anim`).
     #[serde(default)]
