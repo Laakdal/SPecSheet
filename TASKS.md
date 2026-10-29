@@ -170,11 +170,23 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
     - `deny.toml` (cargo-deny): waits for the user's OK to install `cargo-deny`.
 13. **Performance (user, 2026-10-29).** The app renders through Vulkan (wgpu's default here) on an NVIDIA GeForce MX450, an entry-level laptop GPU. Measure first, then fix what the numbers show, in this order:
     1. [x] **Logging (first):** every run writes `specsheet.log` next to `settings.json` (the previous run as `specsheet.prev.log`); `SPECSHEET_PERF=1` logs frame time and FPS every 5 s and each background job's duration (`crates/specsheet/src/diagnostics.rs`, docs/DEVELOPMENT.md). First numbers (dev profile, Vulkan, MX450, default garage with the Scania S, idle): about 32 FPS (31 ms per frame); open game 756 ms, load truck 933 ms. Not yet timed: model and texture upload (viewer).
-    2. **Measure:** one `SPECSHEET_SCRIPT` run (garage plus truck, orbiting) on Vulkan and one on DX12 (`WGPU_BACKEND=dx12`); a GPU capture (RenderDoc or Nsight) of one frame to see which pass costs most.
+    2. [x] **Measure (2026-10-29):** the A/B switches `SPECSHEET_PERF_NO_{SHADOWS,ENVMAP,MSAA,TONEMAP,VSYNC}` (docs/DEVELOPMENT.md), release build at a06c20b, Vulkan, MX450, default garage with the Scania S, idle, every row with `NO_VSYNC`, 5 s windows. The laptop's clocks swing a lot (single windows up to about 300 ms even with nothing else running), so the comparison uses each run's best windows:
+
+       | Run | Frame time (best windows) | Reading |
+       |---|---|---|
+       | baseline | 31–37 ms | about 30 FPS |
+       | no environment map | 15–17 ms (3 runs) | **half the frame** |
+       | no sun shadows | 37.6 ms | no gain |
+       | no MSAA | 31.1 ms | at most a few ms |
+       | no tonemap pass | about 35 ms | no gain (slower in one run) |
+       | all four off | about 14 ms | ≈ the environment map's gain |
+       | baseline on DX12 | 12–18 ms | maybe faster, too noisy to rank |
+
+       Not measured: orbiting, a GPU capture (needs RenderDoc or Nsight installed). Logs: the session scratchpad of the measuring session.
     3. **Then, by what the numbers show:**
        - Redraw only on change: Bevy's desktop-app update mode, staying continuous while something animates (scene animations, flare fades, eye adaptation).
        - Shadows: a smaller map or one cascade, or re-render the map only when the truck or sun changes.
-       - Build the reflection environment map once per scene, if it regenerates every frame.
+       - **First, by the numbers:** build the reflection environment map once per scene instead of re-filtering it whenever its intensity changes.
        - Anti-aliasing: 4× MSAA to 2× or FXAA.
        - A lower internal resolution for the 3D view, with the UI at full resolution.
        - Game-material shaders: one shader variant per flavour, instead of runtime branches.
