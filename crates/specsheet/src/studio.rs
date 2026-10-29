@@ -15,6 +15,7 @@ use specsheet_data::scene::{tuning_scene, OrbitSpec, Scene};
 use specsheet_data::GameInstall;
 use specsheet_session::view::{self, SlotOptions, TruckEntry, TruckOverview};
 use specsheet_session::{GameSession, TruckSession};
+use specsheet_truck::PaintChannel;
 
 use crate::diagnostics::JobTimer;
 use crate::settings::{self, Settings};
@@ -62,6 +63,8 @@ pub enum Action {
     /// Shows a slot's options in the sidebar; `None` returns to the list.
     ShowSlot(Option<SlotId>),
     Select(AccessoryId),
+    /// Sets one of the paint job's colours (linear RGB).
+    SetPaintColor(PaintChannel, [f32; 3]),
     SetDrive(Drive),
     SetScene(usize),
 }
@@ -114,6 +117,8 @@ pub struct Studio {
     /// Bumped whenever `placements` or the paint colour change.
     pub truck_generation: u64,
     pub options: Option<SlotOptions>,
+    /// The paint job's colours the player may set.
+    pub paint_colors: Vec<view::PaintColorView>,
     /// The truck's price when it was loaded, before any change.
     pub original_price: Option<i64>,
     job: Option<Task<JobOutput>>,
@@ -162,6 +167,7 @@ impl Studio {
                 Some(((p.slot.clone(), p.accessory.clone()), paint))
             })
             .collect();
+        self.paint_colors = view::paint_colors(session);
         self.truck_generation += 1;
         if let Some(options) = &self.options {
             self.options = Some(view::slot_options(game, session, &options.slot));
@@ -215,6 +221,12 @@ fn apply(studio: &mut Studio, action: Action) {
                     .map_err(|e| e.to_string());
                 JobOutput::Changed(session, result)
             });
+        }
+        Action::SetPaintColor(channel, color) => {
+            if let Some(session) = studio.session.as_mut() {
+                session.set_paint_color(channel, Some(color));
+                studio.refresh();
+            }
         }
         Action::SetDrive(drive) => {
             let (Some(game), Some(mut session)) = (studio.game.clone(), studio.session.take())

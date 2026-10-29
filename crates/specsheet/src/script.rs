@@ -10,6 +10,7 @@
 //! tab <token>              orbit <yaw°> <pitch°> <distance>
 //! sleep <frames>           echo <text>           (logs the text, to sync external drivers)
 //! exposure <E>             (the tonemap's fixed exposure scale)
+//! paint base|mask1|mask2|mask3|flake|flip <r> <g> <b>   (linear, as the colour picker)
 //! screenshot <png path>    exit
 //! ```
 
@@ -21,6 +22,7 @@ use bevy::render::view::screenshot::{save_to_disk, Screenshot};
 use specsheet_assembly::Drive;
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_session::view::Tab;
+use specsheet_truck::PaintChannel;
 
 use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;
@@ -132,6 +134,28 @@ pub(crate) fn parse(source: &str) -> Result<Vec<Step>, String> {
             })),
             "scene" => Step::Act(Action::SetScene(one()?.parse().map_err(|_| error())?)),
             "tab" => Step::Tab(Tab::from_token(one()?).ok_or_else(error)?),
+            "paint" => {
+                let [channel, r, g, b] = args[..] else {
+                    return Err(error());
+                };
+                let channel = match channel {
+                    "base" => PaintChannel::Base,
+                    "mask1" => PaintChannel::Mask(0),
+                    "mask2" => PaintChannel::Mask(1),
+                    "mask3" => PaintChannel::Mask(2),
+                    "flake" => PaintChannel::Flake,
+                    "flip" => PaintChannel::Flip,
+                    _ => return Err(error()),
+                };
+                let colour: Vec<f32> = [r, g, b]
+                    .iter()
+                    .map(|v| v.parse().map_err(|_| error()))
+                    .collect::<Result<_, _>>()?;
+                Step::Act(Action::SetPaintColor(
+                    channel,
+                    [colour[0], colour[1], colour[2]],
+                ))
+            }
             "exposure" => Step::Exposure(
                 one()?
                     .parse()
@@ -280,5 +304,13 @@ echo ready now"
         assert!(parse("orbit 1 2\n").is_err());
         assert!(parse("teleport\n").is_err());
         assert!(parse("exposure -1\n").is_err());
+        assert!(parse("paint rim 1 1 1\n").is_err());
+        assert_eq!(
+            parse("paint mask2 0.5 0.25 1").expect("valid"),
+            vec![Step::Act(Action::SetPaintColor(
+                PaintChannel::Mask(1),
+                [0.5, 0.25, 1.0]
+            ))]
+        );
     }
 }

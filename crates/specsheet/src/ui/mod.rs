@@ -18,8 +18,10 @@ use bevy_egui::{
 };
 use egui::{Align2, Color32, Id, Order, Pos2, RichText, Sense, Stroke};
 use specsheet_assembly::Drive;
+use specsheet_core::colour::{linear_to_srgb, srgb_to_linear};
 use specsheet_gameui::{load_screen, load_templates};
 use specsheet_session::view::{Hotspot, HotspotCategory, Tab, TruckOverview};
+use specsheet_truck::PaintChannel;
 
 use crate::hotspots::{opacity, open_after_click, shown};
 use crate::studio::{Action, Actions, Studio};
@@ -65,6 +67,8 @@ pub struct UiState {
     assets: Option<Result<ScreenAssets, String>>,
     textures: UiTextures,
     pub screen: ScreenState,
+    /// A paint colour being dragged in the picker, applied on release.
+    pending_paint: Option<(PaintChannel, [f32; 3])>,
 }
 
 impl UiState {
@@ -204,6 +208,15 @@ fn ui(
                 clicks
             })
             .inner;
+        let picking = studio
+            .options
+            .as_ref()
+            .is_some_and(|o| o.slot.as_str() == PAINT_JOB_SLOT);
+        if picking && !studio.paint_colors.is_empty() {
+            if let Some(rect) = paint_picker(&ctx, &studio, state, &mut actions) {
+                blocking.push(rect);
+            }
+        }
         for click in clicks {
             match click {
                 Click::Tab(tab) => state.open_tab(tab, overview, &mut actions),
@@ -361,6 +374,51 @@ fn specsheet_window(
                 ui.label(RichText::new(warning).color(MUTED).small());
             }
         });
+}
+
+/// The paint job slot, whose list gets the colour picker.
+const PAINT_JOB_SLOT: &str = "paint_job";
+
+/// The paint job's unlocked colours, each with a picker. Ours: the game's
+/// own picker layout is not drawn yet. A colour applies when the mouse
+/// button is released, so a drag does not rebuild the truck every frame.
+fn paint_picker(
+    ctx: &egui::Context,
+    studio: &Studio,
+    state: &mut UiState,
+    actions: &mut Actions,
+) -> Option<egui::Rect> {
+    let released = !ctx.input(|i| i.pointer.primary_down());
+    let response = egui::Window::new("Paint colour")
+        .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -64.0))
+        .resizable(false)
+        .collapsible(false)
+        .show(ctx, |ui| {
+            for colour in &studio.paint_colors {
+                let shown = match state.pending_paint {
+                    Some((channel, pending)) if channel == colour.channel => pending,
+                    _ => colour.color,
+                };
+                let [r, g, b] = shown.map(|c| (linear_to_srgb(c) * 255.0).round() as u8);
+                let mut picked = Color32::from_rgb(r, g, b);
+                ui.label(colour.label);
+                if egui::color_picker::color_picker_color32(
+                    ui,
+                    &mut picked,
+                    egui::color_picker::Alpha::Opaque,
+                ) {
+                    let linear = [picked.r(), picked.g(), picked.b()]
+                        .map(|c| srgb_to_linear(f32::from(c) / 255.0));
+                    state.pending_paint = Some((colour.channel, linear));
+                }
+            }
+        })?;
+    if released {
+        if let Some((channel, color)) = state.pending_paint.take() {
+            actions.0.push(Action::SetPaintColor(channel, color));
+        }
+    }
+    Some(response.response.rect)
 }
 
 fn locate(ctx: &egui::Context, studio: &Studio, state: &mut UiState, actions: &mut Actions) {
