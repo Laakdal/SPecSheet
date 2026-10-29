@@ -120,6 +120,7 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |
 | Tuning scenes: the truck configuration scene (orbit, pin data) and the hub scenes | `specsheet-data/src/scene.rs` | unit; `real_install::{the_truck_configuration_screen_has_a_scene_orbit_and_pins, every_tuning_scene_has_a_model_and_a_camera}` |
 | UI screens, templates, colours, UI materials; markup layout | `specsheet-gameui/src/{lib,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
+| Vehicle lights (flares): the `flare.*` units light locators name | `specsheet-data/src/flare.rs` | unit; `real_install::every_vehicle_light_unit_loads_and_its_glow_model_exists`; example `flare_survey` |
 | Display strings | `specsheet-data/src/localization.rs` | unit |
 | Session (options, select, hookups, drive) | `specsheet-session/src/lib.rs` | through `real_install` |
 | Pins the game's way: base locator, offset, facing, mirrored, wheel and interior (cockpit) pins | `specsheet-assembly/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |

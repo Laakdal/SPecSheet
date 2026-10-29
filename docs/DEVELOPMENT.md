@@ -134,6 +134,9 @@ cargo run --release -p specsheet-research --example texture_layout -- "<game>/ba
 # Every R9G9B9E5 (HDR) texture: size, mips, decoded mean and peak colour
 cargo run --release -p specsheet-research --example hdr_textures -- "<game>"/*.scs
 
+# Every vehicle light (flare) hookup on truck models, and the unit and glow model it resolves to
+cargo run --release -p specsheet-research --example flare_survey
+
 # Definition statistics / samples (optional last argument: root directory, default /def/vehicle/truck)
 cargo run --release -p specsheet-research --example def_stats
 cargo run --release -p specsheet-research --example def_stats -- /def/vehicle/f_disc

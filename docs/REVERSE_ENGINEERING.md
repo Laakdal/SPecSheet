@@ -379,6 +379,15 @@ Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: stri
   - The adaptation limits and speeds on the tuning screen. The UI scene's per-frame update (`FUN_140f8acc0`, Ghidra, `research/evidence/rea-ui-scene-update.txt`) sets no exposure, adaptation or tonemap parameter (Confirmed), so the histogram adaptation runs with values the UI never sets.
   - Which lights the scenes' `vehicle_lights_on: true` switches on (8 of 10 desktop scenes set it).
 
+### F19: Vehicle lights are locator hookups that name `flare.*` units (Confirmed data; drawing Unknown)
+
+- A light locator's hookup string names a unit in `/unit/hookup/vehicle/flare/*.sii`, e.g. `flare.vehicle.headl` on a headlight locator. The classes are `flare_vehicle` (steady), `flare_blink` (blinking) and `beacon_vehicle` (rotating). Each unit names its `light_type` (`low_beam`, `high_beam`, `parking`, `brake`, `reverse`, the blinkers, `aux`, `beacon`, `electrics`) and usually a glow model under `/model/flare/`, whose material uses `eut2.flare`. Many also carry a real light: colour, range, cone angles (`research/evidence/flare-survey.txt`).
+- Of the 49 distinct `flare.*` hookups on truck models, 47 resolve. `flare.vehicle.lblinkerl_ledl`/`rblinkerl_ledl` (one model) name no unit; the folder defines `lblinkr_ledl`/`rblinkr_ledl` (Hypothesis: a naming slip, so those lights get no flare). Every glow model named exists; `_noflr`/`_nofl` units have none.
+- Beacons also use `flare_only.*` and `light_only.*` hookups from outside this folder (not resolved yet).
+- Code: `specsheet-data::flare::vehicle_lights`; `Scene::vehicle_lights_on`.
+- The shader is specified in [app/shader-specs/flare.md](app/shader-specs/flare.md) (71): a 1×1 m quad, additive, no occlusion query; billboarding, size and angle fade happen on the CPU.
+- **Unknown:** how the engine uses `dir_type`, the angles and the scaling keys, and which light types a scene's lights-on mask switches on. The tuning screen's own scene does not set `vehicle_lights_on`, so it shows no flares there (Hypothesis, from the data).
+
 ## Open questions
 
 | Question | Next step |
