@@ -158,6 +158,14 @@ pub struct SlotOption<'a> {
     pub verdict: Result<(), Incompatibility>,
 }
 
+/// Sorts a slot's options for the list: by price, catalog order within a
+/// price (a stable sort). Neither the selection nor the verdicts move an
+/// option, so the list stays put when something is picked, as in the game
+/// (the user's in-game screenshot of the colour tab; Hypothesis beyond it).
+fn display_order(options: &mut [SlotOption<'_>]) {
+    options.sort_by_key(|o| o.accessory.price.unwrap_or(0));
+}
+
 /// The truck being tuned: catalog, configuration and current assembly.
 #[derive(Debug)]
 pub struct TruckSession {
@@ -209,13 +217,7 @@ impl TruckSession {
                     .check(&self.catalog, &self.assembly.availability, accessory),
             })
             .collect();
-        options.sort_by_key(|o| {
-            (
-                !o.selected,
-                o.verdict.is_err(),
-                o.accessory.price.unwrap_or(0),
-            )
-        });
+        display_order(&mut options);
         options
     }
 
@@ -316,5 +318,62 @@ impl TruckSession {
             &self.config,
             self.drive,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use specsheet_core::{AccessoryId, SlotId};
+    use specsheet_truck::{AccessoryKind, ModelRef};
+
+    fn accessory(id: &str, price: i64) -> Accessory {
+        Accessory {
+            id: AccessoryId::from(id),
+            slot: SlotId::from("paint_job"),
+            kind: AccessoryKind::PaintJob,
+            def_path: String::new(),
+            name: id.to_owned(),
+            icon: None,
+            price: Some(price),
+            unlock_level: None,
+            model: ModelRef::default(),
+            suitable_for: Vec::new(),
+            conflict_with: Vec::new(),
+            defaults: Vec::new(),
+            requires: Vec::new(),
+            base_color: None,
+            wheel: None,
+            left_hand_traffic: false,
+            drive_twin: None,
+            paint: None,
+        }
+    }
+
+    #[test]
+    fn the_list_keeps_its_order_when_something_is_selected() {
+        // The game lists by price; selecting an option does not move it
+        // (the user's in-game screenshot of the colour tab).
+        let (white, yellow, vortex) = (
+            accessory("white", 1000),
+            accessory("yellow", 2500),
+            accessory("vortex", 17000),
+        );
+        let option = |accessory, selected, verdict| SlotOption {
+            accessory,
+            selected,
+            verdict,
+        };
+        let conflict = Err(Incompatibility::ConflictsWith {
+            accessory: AccessoryId::from("x"),
+        });
+        let mut options = vec![
+            option(&vortex, true, Ok(())),
+            option(&yellow, false, conflict),
+            option(&white, false, Ok(())),
+        ];
+        display_order(&mut options);
+        let ids: Vec<&str> = options.iter().map(|o| o.accessory.id.as_str()).collect();
+        assert_eq!(ids, ["white", "yellow", "vortex"]);
     }
 }
