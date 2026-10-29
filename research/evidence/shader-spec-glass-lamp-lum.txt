@@ -139,3 +139,13 @@ luminance_output of the unlit and dif.lum materials in the garage scenes
    100                 1         unlit.vcol.tex.over (diffuse 0,0,0)
   luminance_night is 0 in all 15. The -1 materials include the unlit background domes of
   the halloween, northern-lights and xmas scenes, which are visible in the game.
+
+Shadow casters in the tuning scenes (game data, 2026-10-29)
+  Command: model_info on every /model/ui/**/*.pmd, effect names of their materials.
+  The scene models of the garage, its animated parts and characters, hangar, under_bridge,
+  night_city, dark_studio, empty_dark_scene, northern_lights, xmas, halloween and the
+  background dome use no eut2.shadowonly material and no effect with a `shadow` flavour.
+  Only showroom/showroom_sc has casters (2 materials eut2.dif.spec.shadow.a).
+  Only effects with `shadow` in the name list a shadowmap_depth pass (see the passes above), so
+  in these scenes the real-time sun shadow can come only from the truck.
+
