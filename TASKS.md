@@ -157,7 +157,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 11. **Docs per feature:** move each tuning feature's findings, rules and status into one `docs/features/<feature>.md` (wheels, interior, hookups, pins, scenes, paint). Shrink REVERSE_ENGINEERING.md to an index of F-numbers that link to them. Do it after the paint branch and the mod session's F14/D15 land.
 12. **Restructure (D17):** the target tree is in place (2026-10-28: core, theme, archive, formats, truck, data, assembly, gameui, session, render, research, app; `xtask` check/layers/guard/real/parity/version-port). Still to do:
     - [x] split `specsheet-data`'s `catalog` and `specsheet-truck`'s `config` into modules (2026-10-29);
-    - [x] `#![warn(missing_docs)]` on every library crate, with every public item documented (2026-10-29). Exception: `specsheet-data::scene` carries `#[allow(missing_docs)]` until de's pending edits to it land; then document it and drop the allow;
+    - [x] `#![warn(missing_docs)]` on every library crate, with every public item documented (2026-10-29). `specsheet-data::scene` too, now that de's edits landed (its allow is gone);
     - bundle the theme's fonts (OFL) and build the app's own screens on the tokens (D16);
     - `deny.toml` (cargo-deny): waits for the user's OK to install `cargo-deny`.
 
