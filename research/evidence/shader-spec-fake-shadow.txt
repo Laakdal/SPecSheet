@@ -27,3 +27,19 @@ Ambient occlusion exists separately (not specified yet): effect/deferred/def_ssa
   def.ssao.{zfetch,zreduce,compute,spatial_denoise_a,spatial_denoise_b,temporal_denoise,upscale}.rfx;
   executable strings name it GTAO (gtao_config0/1, "GTAO ao noisy", bent normals, env visibility),
   the setting r_ssao and the uniform ao_apply_params.
+
+The UI shadow model (game data, 2026-10-29)
+  def_grep accessory_chassis_data ui_shadow over /def/vehicle/truck: all 164 chassis of all 26
+  trucks set ui_shadow (70 distinct .pmd files), next to extended_shadow_texture (.tobj),
+  extended_shadow_intensity, extended_shadow_fadeout_start/length and
+  extended_shadow_shared_model_variant. Example, volvo.fh_2024 chassis 4x2:
+    ui_shadow = /vehicle/truck/volvo_fh16_2012/ui_shadow/ui_shadow_4x2.pmd
+    extended_shadow_texture = /vehicle/truck/volvo_fh16_2012/shadow_4x2.tobj, intensity 1.0,
+    fadeout_start 10, fadeout_length 0.
+  model_info on ui_shadow_4x2.pmd: one piece of 4 vertices, a flat quad at y = 0.0003,
+  x -2.18..2.18, z -4.06..4.29; 13 looks (default, gt, gt_xl, gt_xxl, fh16, fh16_xl, fh16_xxl,
+  fh16_780(_xl/_xxl), fh16_750(_xl/_xxl)); material eut2.dif.over with diffuse (1,1,1),
+  specular 0, texture_base = the same shadow_4x2.tobj, clamp_to_border, mip_filter none.
+  The chassis class attribute table (exe, class ptr 0x141d1fd70) stores ui_shadow at +0x400 as
+  a path, next to the shadow keys at +0x378..+0x3d0. What chooses the look is not read; the
+  FH16 2012 cabins all use look "default".
