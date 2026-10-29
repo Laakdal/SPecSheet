@@ -176,6 +176,15 @@ fn display_order(options: &mut [SlotOption<'_>]) {
     options.sort_by_key(|o| o.accessory.price.unwrap_or(0));
 }
 
+/// Drops the options made for other parts (`suitable_for` unmet, e.g. a
+/// paint job for another cabin): the game does not list them (the user's
+/// report). Conflicting options stay, with their reason; the selection
+/// always stays.
+fn hide_unsuitable(options: &mut Vec<SlotOption<'_>>) {
+    options
+        .retain(|o| o.selected || !matches!(o.verdict, Err(Incompatibility::NotSuitable { .. })));
+}
+
 /// The truck being tuned: catalog, configuration and current assembly.
 #[derive(Debug)]
 pub struct TruckSession {
@@ -227,6 +236,7 @@ impl TruckSession {
                     .check(&self.catalog, &self.assembly.availability, accessory),
             })
             .collect();
+        hide_unsuitable(&mut options);
         display_order(&mut options);
         options
     }
@@ -385,5 +395,40 @@ mod tests {
         display_order(&mut options);
         let ids: Vec<&str> = options.iter().map(|o| o.accessory.id.as_str()).collect();
         assert_eq!(ids, ["white", "yellow", "vortex"]);
+    }
+
+    #[test]
+    fn options_for_other_parts_are_not_listed() {
+        // A paint job for another cabin (`suitable_for` unmet) is hidden, as
+        // in the game; a conflicting one stays, with its reason.
+        let (normal_cab, here, conflicting) = (
+            accessory("normal_only", 1000),
+            accessory("here", 2000),
+            accessory("conflicting", 3000),
+        );
+        let mut options = vec![
+            SlotOption {
+                accessory: &normal_cab,
+                selected: false,
+                verdict: Err(Incompatibility::NotSuitable {
+                    needs_one_of: vec![AccessoryId::from("normal.scania.s_2016.cabin")],
+                }),
+            },
+            SlotOption {
+                accessory: &here,
+                selected: true,
+                verdict: Ok(()),
+            },
+            SlotOption {
+                accessory: &conflicting,
+                selected: false,
+                verdict: Err(Incompatibility::ConflictsWith {
+                    accessory: AccessoryId::from("x"),
+                }),
+            },
+        ];
+        hide_unsuitable(&mut options);
+        let ids: Vec<&str> = options.iter().map(|o| o.accessory.id.as_str()).collect();
+        assert_eq!(ids, ["here", "conflicting"]);
     }
 }
