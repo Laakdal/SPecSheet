@@ -24,17 +24,25 @@ const TUNING_SCENE_CLASS: &str = "ui_truck_scene_config";
 /// terms: angles in radians around `aim`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct OrbitSpec {
+    /// The point the camera orbits (`camera_aim`).
     pub aim: [f32; 3],
     /// Vertical field of view in degrees.
     pub fov: f32,
+    /// Default azimuth (`camera_default_azimuth`).
     pub azimuth: f32,
+    /// Default elevation (`camera_default_elevation`).
     pub elevation: f32,
+    /// Default zoom (`camera_default_zoom`), a factor on `relative_bounds`.
     pub zoom: f32,
     /// `(min, max)` elevation.
     pub elevation_limit: [f32; 2],
+    /// `camera_relative_bounds`; its x extent scales the zoom distance.
     pub relative_bounds: [f32; 3],
+    /// `(min, max)` height of the aim point (`camera_aim_y_bounds`).
     pub aim_y_bounds: [f32; 2],
+    /// Mouse rotation sensitivity (`mouse_rot_sens`).
     pub rotation_sensitivity: f32,
+    /// Zoom sensitivity (`camera_zoom_sens`).
     pub zoom_sensitivity: f32,
 }
 
@@ -63,10 +71,13 @@ pub struct PinSpec {
     pub group: String,
     /// Pin style: `custom_acc`, or `acc_cover` / `acc_hub` / `acc_nuts`.
     pub look: String,
+    /// Offset from the slot's locator (`pin_offset`).
     pub offset: [f32; 3],
+    /// The direction the pin faces (`pin_dir`).
     pub dir: [f32; 3],
     /// Direction for right-hand-drive (UK) trucks.
     pub dir_uk: [f32; 3],
+    /// Pins on both sides of the truck (`double_sided`).
     pub double_sided: bool,
 }
 
@@ -76,7 +87,9 @@ pub struct PinSpec {
 pub struct TuningScene {
     /// Model, lights and truck pose; `camera` is the orbit's default pose.
     pub scene: Scene,
+    /// The orbit camera, when the scene defines `camera_aim`.
     pub orbit: Option<OrbitSpec>,
+    /// Per-slot pin data, from the parallel `pin_*` arrays.
     pub pins: Vec<PinSpec>,
     /// Slots whose pins only show in the interior view.
     pub interior_only: Vec<String>,
@@ -176,37 +189,54 @@ const SCENE_CLASS: &str = "ui_truck_scene_base_config";
 /// `config.sii` is the plain garage, the default scene.
 const DEFAULT_SCENE_FILE: &str = "config.sii";
 
+/// A camera pose: a position looking at a point.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CameraPose {
+    /// Where the camera sits.
     pub position: [f32; 3],
+    /// The point it looks at.
     pub aim: [f32; 3],
     /// Vertical field of view in degrees.
     pub fov: f32,
 }
 
+/// The scene's garage model (`scene_model_*`).
 #[derive(Clone, Debug, PartialEq)]
 pub struct SceneModel {
+    /// The `.pmd` model (`scene_model_path`).
     pub path: String,
+    /// Model look (`scene_model_look`).
     pub look: Option<String>,
+    /// Model variant (`scene_model_variant`).
     pub variant: Option<String>,
+    /// Position of the model (`scene_model_position`).
     pub position: [f32; 3],
     /// Parts drawn, in the game's `part_order[]`; empty means all parts.
     pub parts: Vec<String>,
 }
 
+/// A truck scene: its model, camera, lights, reflection and fog keys, and
+/// the truck's pose in it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Scene {
     /// Definition file, e.g. `/def/desktop/config.hangar.sii`.
     pub path: String,
     /// Localisation key or text (`@@garage_scene@@`).
     pub name: String,
+    /// The garage model, when the scene names one.
     pub model: Option<SceneModel>,
+    /// The first pose (static, then each cinematic animation's first frame)
+    /// that frames the truck.
     pub camera: Option<CameraPose>,
     /// Direction the light travels (not normalised).
     pub light_direction: Option<[f32; 3]>,
+    /// Ambient light colour (`light_ambient`).
     pub light_ambient: Option<[f32; 3]>,
+    /// Sun diffuse colour (`light_diffuse`).
     pub light_diffuse: Option<[f32; 3]>,
+    /// Sun specular colour (`light_specular`).
     pub light_specular: Option<[f32; 3]>,
+    /// Reflection visibility (`light_environment`).
     pub light_environment: Option<f32>,
     /// Exposure the scene asks for (`pre_exposure`; only the Halloween hub
     /// sets it, to 1.0). See [`Scene::limited_pre_exposure`].
@@ -222,8 +252,11 @@ pub struct Scene {
     /// `floor_reflection`: the floor mirrors the truck; the game forces it off
     /// when the scene has no parts to customise for reflection (F16).
     pub floor_reflection: bool,
+    /// Fog colour (`fog_color`).
     pub fog_color: Option<[f32; 3]>,
+    /// Fog density (`fog_density`).
     pub fog_density: Option<f32>,
+    /// Where the truck stands (`truck_position`).
     pub truck_position: [f32; 3],
     /// Euler angles in degrees.
     pub truck_rotation: [f32; 3],
