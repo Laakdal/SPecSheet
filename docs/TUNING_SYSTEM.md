@@ -45,6 +45,7 @@ Paint jobs (F15, [formats/paint.md](formats/paint.md)):
 | An accessory is not allowed while any `conflict_with[]` entry is selected, checked in both directions | 795 addons | Confirmed by presets |
 | Selecting applies `defaults[]` unless the slot already holds a compatible choice | chassis → cabin, cabin → interior/paint/addons, addons → related addons | Hypothesis on the "keep compatible" part |
 | `require[]` slots (truck data, cabin) must stay filled; base slots are always required | `data.sii`, some cabins | Confirmed data; Design on enforcement |
+| A slot with a truck `fallback[]` part must stay filled: it can be swapped, not removed (engine, transmission, interior, wheels, paint, steering wheel, the Scania S front light bar and fenders…). Every other filled slot can be emptied with the remove button. A cabin's `defaults[]` do not make a slot required | `data.sii` `fallback[]` | Hypothesis (a fallback is what the slot falls back on, so it is never empty); `defaults[]` Unknown |
 | Addons with an exterior model need a matching locator on the current chassis/cabin | see F4 | Hypothesis, 626/626 presets |
 | Every selection, base parts included, must satisfy its own rules against the rest of the configuration (e.g. an 8x4-only cabin cannot go on a 4x2 chassis) | | Design; regression test `base_parts_must_satisfy_their_own_suitable_for` |
 | Repair after a base-part change: drop selections that became incompatible, then refill required slots from `fallback[]`, then selected `defaults[]`, then the first compatible option | | Design |
