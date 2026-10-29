@@ -1,0 +1,42 @@
+Shader spec sources: eut2.flare (docs/app/shader-specs/flare.md), ETS2 1.60.1.7
+=============================================================================
+Clean-room note (D13): the game's shaders were read only to learn the maths; extracted text
+stayed in the session scratchpad. This file lists what was read; it contains no shader text.
+
+Effect and passes (scs cat; glsl technique)
+  effect/eut2/particle/eut2.flare.rfx   (declares itself "eut2.particle.add", flags 4)
+    fwdblend  forward_add  a95e23cfadb6b39754856d8c7e38c075 bdea995957dad7c52bd5598874f24244
+    defblend  forward_add  8b5929ec71722359da4b54f45ad0e015 b125809d53c255cd647a8e7c45468f76
+  forward_add: depth greater, no write; cull back; blend src_alpha / one.
+  effect/def/eut2/eut2_flare.sui: inputs diffuse, luminance_night, luminance_output, substance,
+    animsheet_*; sampler texture_base.
+  Read: vertex stage = model transform only (no camera-facing term); fragment = base texture x
+  diffuse x 2 x vertex colour x material luminosity rgb x alpha; alpha = vertex alpha x base
+  alpha; fog; the deferred variant also multiplies alpha by sat(2 x (eye z - G-buffer depth)),
+  1 where no surface was recorded.
+
+Flare model and material (model_info, scs cat)
+  /model/flare/uniform_white_amplified.pmd: one look, one variant, one piece; bounds
+  (-0.5,-0.5,0)..(0.5,0.5,0); material /automat/71/71a714903a3a98b3.mat:
+  effect eut2.flare.rfx, diffuse (1,1,1), luminance_night 10, luminance_output 10000,
+  texture_base /asset/flare/flare.tobj.
+
+flare_vehicle units (scs ls/cat /unit/hookup/vehicle/flare, 47 .sii files)
+  light_type values: parking, low_beam, high_beam, brake, left_blinker, right_blinker, reverse,
+  aux, beacon, electrics, police_hooter. dir_type values: wide, narrow (some units leave it
+  out). Examples: flare.vehicle.headl (narrow, low_beam, flare_inner_angle 7, visual_offset 0.6,
+  default_scale 1.53, scale_factor 3, scaling 0..60 m, uniform_white_amplified.pmd);
+  flare.vehicle.parkl (wide, parking, default_scale 0.405, scale_factor 2, uniform_white.pmd);
+  vehicle_bulb_type_incandescent.sui: state_change_duration 0.083.
+
+Executable (static, tools/research/attr_tables.py and a pointer-table scan)
+  flare_vehicle attribute table (class ptr 0x141d2bdd0): flare_inner_angle +0xbc,
+  flare_outer_angle +0xc0, scaling_start_distance +0xc4, scaling_end_distance +0xc8,
+  scale_factor +0xcc, default_scale +0xd0, model +0xd8, visual_offset +0x100,
+  state_change_duration +0x104, model_hdr (-1, not stored).
+  light_type name table at 0x142c30d08 (name, value): aux 0x200, beacon 0x20, brake 0xc00,
+  dim_aux 0x4000, electrics 0x4, high_beam 0x40, left_blinker 0x2, low_beam 0x1,
+  parking 0x2000, police_hooter 0x100, reverse 0x80, right_blinker (value slot holds a pointer:
+  the table's layout ends there; value not read).
+  The code that reads the flare_vehicle fields was not identified (offset scans hit unrelated
+  functions).
