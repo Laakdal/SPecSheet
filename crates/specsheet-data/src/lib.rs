@@ -9,6 +9,7 @@
 mod catalog;
 mod error;
 pub mod extract;
+pub mod flare;
 mod fs;
 mod install;
 pub mod localization;

@@ -252,6 +252,10 @@ pub struct Scene {
     /// `floor_reflection`: the floor mirrors the truck; the game forces it off
     /// when the scene has no parts to customise for reflection (F16).
     pub floor_reflection: bool,
+    /// `vehicle_lights_on`: the truck's lights are on in this scene (8 of the
+    /// 10 hub scenes; not the tuning screen's). Which lights is Unknown
+    /// (`research/evidence/rea-ui-scene-update.txt`).
+    pub vehicle_lights_on: bool,
     /// Fog colour (`fog_color`).
     pub fog_color: Option<[f32; 3]>,
     /// Fog density (`fog_density`).
@@ -354,6 +358,7 @@ fn scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> Scene {
             .map(str::to_owned),
         cube_reflection: unit.get_bool("cube_reflection").unwrap_or(false),
         floor_reflection: unit.get_bool("floor_reflection").unwrap_or(false),
+        vehicle_lights_on: unit.get_bool("vehicle_lights_on").unwrap_or(false),
         fog_color: vec3("fog_color"),
         fog_density: unit.get_f32("fog_density"),
         truck_position: vec3("truck_position").unwrap_or([0.0; 3]),
@@ -527,6 +532,7 @@ pre_exposure: 1.0
 ui_truck_scene_base_config : plain.config {
 cube_reflection: true
 floor_reflection: true
+vehicle_lights_on: true
 }
 }"#;
         let doc = sii::parse("/def/s.sii", src).expect("parse");
@@ -541,7 +547,8 @@ floor_reflection: true
         assert!(!hangar.cube_reflection && !hangar.floor_reflection);
         let plain = scene_from_unit(&fs, "/def/s.sii", units.next().expect("plain"));
         assert_eq!((plain.vehicle_reflection, plain.pre_exposure), (None, None));
-        assert!(plain.cube_reflection && plain.floor_reflection);
+        assert!(plain.cube_reflection && plain.floor_reflection && plain.vehicle_lights_on);
+        assert!(!hangar.vehicle_lights_on);
     }
 
     #[test]

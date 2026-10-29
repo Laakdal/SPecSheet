@@ -1062,3 +1062,22 @@ fn a_cabin_change_keeps_the_paint_job_design() {
     }
     assert!(moved > 0, "no other cabin of the family could be selected");
 }
+
+#[test]
+fn every_vehicle_light_unit_loads_and_its_glow_model_exists() {
+    // research/evidence/flare-survey.txt
+    let Some(fs) = game_fs() else { return };
+    let (lights, warnings) = specsheet_data::flare::vehicle_lights(&fs).expect("light folder");
+    assert!(warnings.is_empty(), "{warnings:?}");
+    assert!(lights.len() >= 80, "only {} light units", lights.len());
+    let headlight = lights
+        .get("flare.vehicle.headl")
+        .expect("the low beam unit");
+    assert_eq!(headlight.light_type.as_deref(), Some("low_beam"));
+    let missing: Vec<String> = lights
+        .values()
+        .filter_map(|light| light.model.as_ref().filter(|m| !fs.exists(m)))
+        .cloned()
+        .collect();
+    assert!(missing.is_empty(), "glow models missing: {missing:?}");
+}
