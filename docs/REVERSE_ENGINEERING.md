@@ -376,7 +376,8 @@ Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: stri
   - The per-draw object behind `material_luminosity`'s colour.
   - The contents of the lamp and backlight arrays in the garage.
   - The deferred light object's filling.
-  - Whether the UI path meters the histogram for exposure.
+  - The adaptation limits and speeds on the tuning screen. The UI scene's per-frame update (`FUN_140f8acc0`, Ghidra, `research/evidence/rea-ui-scene-update.txt`) sets no exposure, adaptation or tonemap parameter (Confirmed), so the histogram adaptation runs with values the UI never sets.
+  - Which lights the scenes' `vehicle_lights_on: true` switches on (8 of 10 desktop scenes set it).
 
 ## Open questions
 

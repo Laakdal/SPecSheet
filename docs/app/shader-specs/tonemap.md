@@ -275,7 +275,7 @@ Two properties decide where any pre-exposure can go (C):
 The forward and material callbacks settle it (`exposure-tonemap-data.txt` §9):
 - **The light colours are not pre-exposed.** The forward rows carry `Camb`, `Csun_d·m` and `Csun_s·m` with `m = diffspec_conditional_mult` (1 on the tuning screen). On the tuning screen the scene's `light_ambient`, `light_diffuse` and `light_specular` therefore reach the shader unscaled.
 - **Emissive inputs are pre-exposed.** Lamp and backlight colours are × `p`, and luminance in nits is × `p · 0.001`. Relative luminance (`luminance_output < 0`) is not.
-- So a UI scene's `p` brings emissive sources, given in absolute units, down to the level of its lights. The exposure itself still comes from the tonemap's `E` (§3–§4). Whether the UI path meters the histogram or uses a fixed `E` is still U, and so is the deferred light object's filling (the deferred sun pass reads another copy of the lights).
+- So a UI scene's `p` brings emissive sources, given in absolute units, down to the level of its lights. The exposure itself still comes from the tonemap's `E` (§3–§4). The UI scene's per-frame update sets no exposure, adaptation or tonemap parameter (C, `research/evidence/rea-ui-scene-update.txt`), so the histogram metering of §3 runs on the tuning screen with limits and speeds the UI never sets (H: their defaults or the last climate's). Those values are U, and so is the deferred light object's filling (the deferred sun pass reads another copy of the lights). **For the implementer:** meter the histogram as §3 describes; take the limits from a reference screenshot until the values are known.
 
 For the implementer: use the scene's light colours as they are, scale emissives as above, and leave exposure to the tonemap.
 

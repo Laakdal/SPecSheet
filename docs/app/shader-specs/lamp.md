@@ -72,7 +72,7 @@ As dif-spec §5.5 for plain `add.env` (linear fresnel `F = sat(fb + fs·(1 − N
 
 | Input | Status | Stand-in (our choice, not the game's) |
 |---|---|---|
-| `Cl` (lamp colour table) | C: copied from a colour array held by the drawn object, each rgb × the scene's `limited_pre_exposure` (0.0973 on the tuning screen); entries past the array's length are zero (`research/evidence/exposure-tonemap-data.txt` §9). How the array follows the light state is U. | All zero: the tuning screen shows the truck with its lights off (H, to check against a screenshot). The `lamp_preview_color`/`lamp_preview_mask` `.mat` inputs exist for editor preview only. |
+| `Cl` (lamp colour table) | C: copied from a colour array held by the drawn object, each rgb × the scene's `limited_pre_exposure` (0.0973 on the tuning screen); entries past the array's length are zero (`research/evidence/exposure-tonemap-data.txt` §9). How the array follows the light state is U. | 8 of the 10 `/def/desktop` scenes set `vehicle_lights_on: true` (`research/evidence/rea-ui-scene-update.txt`), so lamps glow there; which lights that switches on is U. Stand-in: zero (lights off) until that is known; check against a screenshot of the garage. The `lamp_preview_color`/`lamp_preview_mask` `.mat` inputs exist for editor preview only. |
 | `γ` (lamp contrast) | C: `1 + 3·n`, with `n` a scene-light-block value that the tuning scene writes as 0, so **γ = 1** there | 1.0 |
 | `g`, `mremap`, `M` | as dif-spec §3.3 | as dif-spec |
 
