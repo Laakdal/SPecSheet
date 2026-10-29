@@ -15,7 +15,7 @@ How the app draws game materials. The effect files themselves are described in [
 | `a` | `AlphaTest` | `AlphaMode::Mask(0.5)` |
 | `truckpaint` | `paintable` | the truck paint material (below) |
 | `dif.spec…` (not paint, lamp or additive; of the `mult` effects only `dif.spec.mult.dif.spec…` and `dif.spec.decal.mult`) | — | the `dif.spec` material (below) |
-| `lamp`, `lum`, `light` | `emissive` | emissive = base texture × 40 |
+| `lamp`, `lum`, `light` | `emissive` | lamps: no glow, the tuning screen's lights are off (lamp.md §7); `lum` and `light`: emissive = base texture × 0.04 in scene units (ours) |
 | `decal`, `over` | `decal` | `depth_bias` 8 |
 | an `env_factor` on an opaque or cut-out material outside the paint and `dif.spec` materials (e.g. `baked.spec.add.env`, 20 uses) | `env_factor`, `shininess` | reflective metal (below) |
 
