@@ -56,6 +56,7 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 - Release builds have no console window. Debug builds keep one for logs.
 - **Log file:** every run also writes its log to `%APPDATA%\dev.specsheet.app\specsheet.log` (next to `settings.json`), and keeps the previous run's as `specsheet.prev.log`.
 - **Performance log:** `SPECSHEET_PERF=1` adds the frame time and FPS every 5 s, and how long each background job took (`perf: open game took … ms`, `load truck`, `select`, `set drive`). It only writes to the log and draws nothing, so `SPECSHEET_SCRIPT` screenshots are unchanged. To compare graphics APIs, set `WGPU_BACKEND=vulkan` or `WGPU_BACKEND=dx12`; the log's `AdapterInfo` line names the backend used.
+- **Performance A/B switches** (only with `SPECSHEET_PERF` set, so plain runs never change; the log's `perf: switches …` line records them): `SPECSHEET_PERF_NO_SHADOWS` (no sun shadows), `_NO_ENVMAP` (no environment map for the stand-ins), `_NO_MSAA`, `_NO_TONEMAP` (no game tonemap pass), `_NO_VSYNC` (present without vsync). Measure with `_NO_VSYNC`: with vsync at 60 Hz a frame just over 16.7 ms shows as 33 ms.
 - The first build compiles Bevy and takes several minutes. When other sessions use the repo, build with your own `CARGO_TARGET_DIR` so the shared `target/` isn't locked.
 
 ### Dev script mode (seeing changes work)
