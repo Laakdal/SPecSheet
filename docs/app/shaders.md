@@ -71,6 +71,7 @@ These use only `.mat` parameters, textures and Bevy's renderer:
 | `dif.lum` (+ `lvcol`, `decal.over`) | Done: [shader-specs/dif-lum.md](shader-specs/dif-lum.md): lit surface plus emission weighted by base alpha | Not started |
 | `unlit.tex`, `unlit.vcol.tex` | Done: [shader-specs/unlit.md](shader-specs/unlit.md) | Not started |
 | `decalshadow`, `light.tex`, `fakeshadow`, `shadowonly`, `none` | Done: [shader-specs/shadows-and-fake-lights.md](shader-specs/shadows-and-fake-lights.md): `decalshadow` is black with base red as opacity; `light.tex` writes the deferred light buffer; the rest are never drawn in colour | Not started |
+| `flare` (vehicle light flares) | Done: [shader-specs/flare.md](shader-specs/flare.md): an additive textured quad lit by the material luminosity (10000 nits × pre-exposure); facing, size and angle fade are CPU-side | Not started |
 
 1. **Specs.** A spec agent reads the game's shader for one base and its flavors, and writes the maths in prose and equations to `shader-specs/<base>.md`, citing the wiki for behaviour. No code is copied or quoted.
 2. **WGSL.** A different agent, which has never seen the game's shaders, writes one Bevy material per base, with the flavors as switches (shader defs), from the spec only.
