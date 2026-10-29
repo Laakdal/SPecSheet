@@ -22,9 +22,10 @@ pub(super) fn interior_placements(
     base_locators: &[Locator],
     drive: Drive,
     warnings: &mut Vec<String>,
-) -> (Vec<Placement>, Option<Placement>) {
+) -> (Vec<Placement>, Option<Placement>, Option<Placement>) {
     let mut placements = Vec::new();
     let mut cockpit = None;
+    let mut animated = None;
     for accessory in selected
         .iter()
         .filter(|a| a.kind == AccessoryKind::Interior)
@@ -57,15 +58,19 @@ pub(super) fn interior_placements(
             transform,
         });
         if let Some(full) = &accessory.model.cockpit {
-            cockpit = Some(Placement {
+            let in_cockpit = |model: &String| Placement {
                 slot: accessory.slot.clone(),
                 accessory: accessory.id.clone(),
-                model: full.clone(),
+                model: model.clone(),
                 look: accessory.model.cockpit_look.clone(),
                 variant: accessory.model.cockpit_variant.clone(),
                 transform,
-            });
+            };
+            cockpit = Some(in_cockpit(full));
+            // The moving parts sit in the cockpit's space, at rest (their
+            // animations are not played).
+            animated = accessory.model.cockpit_animated.as_ref().map(in_cockpit);
         }
     }
-    (placements, cockpit)
+    (placements, cockpit, animated)
 }
