@@ -48,16 +48,20 @@ pub struct OrbitSpec {
 
 impl OrbitSpec {
     /// The default camera position (Hypothesis): `azimuth` turns around +y
-    /// from +z towards +x, negative `elevation` raises the camera, and the
-    /// distance is `zoom` times the x extent of `relative_bounds`. With the
-    /// 1.60 values this is a front-left three-quarter view about 7.5 m out.
+    /// from +z towards +x, `elevation` is the pitch above the aim (negative
+    /// lowers the camera), and the distance is `zoom` times the x extent of
+    /// `relative_bounds`. With the 1.60 values this is a front-left
+    /// three-quarter view about 7.5 m out, slightly below the aim and
+    /// looking up at the cab; the limits (−0.35, 0) keep it between the
+    /// aim's height and 20° below. The user saw our earlier reading (the
+    /// camera above the aim) as too high.
     pub fn position(&self) -> [f32; 3] {
         let distance = self.zoom * self.relative_bounds[0];
         let (sin_az, cos_az) = self.azimuth.sin_cos();
         let (sin_el, cos_el) = self.elevation.sin_cos();
         [
             self.aim[0] + distance * cos_el * sin_az,
-            self.aim[1] - distance * sin_el,
+            self.aim[1] + distance * sin_el,
             self.aim[2] + distance * cos_el * cos_az,
         ]
     }
@@ -508,7 +512,7 @@ hookups_exterior_only[]: sunshld
         assert_eq!(orbit.elevation_limit, [-0.35, 0.0]);
         // Front-left three-quarter view, slightly above the aim, ~7.5 m out.
         let [x, y, z] = orbit.position();
-        assert!(x < -3.0 && z < -5.0 && y > orbit.aim[1], "{:?}", [x, y, z]);
+        assert!(x < -3.0 && z < -5.0 && y < orbit.aim[1], "{:?}", [x, y, z]);
         let camera = tuning.scene.camera.expect("camera");
         assert_eq!(camera.aim, orbit.aim);
         assert_eq!(tuning.pins.len(), 2);

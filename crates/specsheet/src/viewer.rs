@@ -99,6 +99,8 @@ const DEFAULT_PAN_REACH: f32 = 10.0;
 
 const MIN_DISTANCE: f32 = 2.5;
 const MAX_DISTANCE: f32 = 25.0;
+/// The orbit camera's lowest height above the floor (ours).
+const MIN_CAMERA_HEIGHT: f32 = 0.3;
 /// Keeps the camera just above the floor (three.js `maxPolarAngle` 0.495π).
 const MIN_PITCH: f32 = 0.005 * std::f32::consts::PI;
 const MAX_PITCH: f32 = 0.5 * std::f32::consts::PI - 0.01;
@@ -133,7 +135,7 @@ impl Orbit {
         let distance = finite(spec.zoom * spec.relative_bounds[0], MIN_DISTANCE).max(MIN_DISTANCE);
         let [low, high] = spec.elevation_limit;
         let (min_pitch, max_pitch) = if low.is_finite() && high.is_finite() {
-            ((-high).min(-low), (-high).max(-low))
+            (low.min(high), low.max(high))
         } else {
             (MIN_PITCH, MAX_PITCH)
         };
@@ -162,7 +164,7 @@ impl Orbit {
             target_max: Vec3::new(target.x + reach.x, y_max.max(target.y), target.z + reach.z),
             target,
             yaw: finite(spec.azimuth, 0.0),
-            pitch: finite(-spec.elevation, min_pitch),
+            pitch: finite(spec.elevation, min_pitch),
             distance,
             max_distance: MAX_DISTANCE.max(distance),
             min_pitch,
@@ -173,8 +175,15 @@ impl Orbit {
 
     fn clamped(mut self) -> Self {
         self.target = self.target.clamp(self.target_min, self.target_max);
-        self.pitch = self.pitch.clamp(self.min_pitch, self.max_pitch);
         self.distance = self.distance.clamp(MIN_DISTANCE, self.max_distance);
+        // Never below the floor, however far a low camera zooms out.
+        let floor = ((MIN_CAMERA_HEIGHT - self.target.y) / self.distance)
+            .clamp(-1.0, 1.0)
+            .asin();
+        self.pitch = self
+            .pitch
+            .clamp(self.min_pitch, self.max_pitch)
+            .max(floor.min(self.max_pitch));
         self
     }
 
@@ -1183,7 +1192,21 @@ mod tests {
         };
         let orbit = Orbit::from_spec(&spec);
         assert!(orbit.position().distance(Vec3::from(spec.position())) < 1e-4);
-        assert_eq!((orbit.min_pitch, orbit.max_pitch), (0.0, 0.35));
+        assert_eq!((orbit.min_pitch, orbit.max_pitch), (-0.35, 0.0));
+        // Slightly below the aim, looking up at the cab.
+        assert!(orbit.position().y < spec.aim[1] && orbit.position().y > 1.5);
+        // Zoomed out at the lowest pitch, the camera stays above the floor.
+        let low = Orbit {
+            pitch: -0.35,
+            distance: MAX_DISTANCE,
+            ..orbit
+        }
+        .clamped();
+        assert!(
+            low.position().y >= MIN_CAMERA_HEIGHT - 1e-4,
+            "{}",
+            low.position().y
+        );
     }
 
     #[test]
