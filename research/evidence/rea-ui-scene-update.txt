@@ -1,0 +1,50 @@
+REA function analysis of the UI scene's per-frame update FUN_140f8acc0 (exposure question)
+=========================================================================================
+
+Command (Git Bash; S = %USERPROFILE%\rea-ets2; about 36 min; the shell was reaped for low
+memory, the Ghidra process finished on its own and wrote the record):
+  REA_GHIDRA_STARTUP_TIMEOUT_MS=10800000 JAVA_HOME="C:\Program Files\Java\jdk-22" \
+  GHIDRA_INSTALL_DIR=%USERPROFILE%\AppData\Local\Programs\Ghidra\ghidra_12.1.4_PUBLIC \
+  npx -y rea-agents@6.4.0 function <eurotrucks2.exe> --procedure=0x140f8acc0 \
+    --provider ghidra --snapshot "$S/eurotrucks2.snapshot" --format json \
+    > "$S/function-ui-scene-update.json"
+Found by: static disassembly. It is the only caller of the scene-light block writer
+FUN_140f89490 with k = 1.0 (exposure-tonemap-data.txt section 6).
+
+Evidence ID: ev_5e2777d11e688e1af26cca64ced6e157a61aa062dfe35b2feaa1b97ae40d3ab7
+Subject:     eurotrucks2.exe, ETS2 1.60.1.7,
+             sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Provider:    Ghidra 12.1.4. Static only: nothing was executed.
+The full record stays outside the repository (decompiled SCS code, D13); below are our
+observations in our own words.
+
+What the function does, in order
+1. Virtual calls on the scene and the render view that set up the view (not decoded).
+2. Sets a byte of the render view (+0x25b) to 1, and a flag word (+0x2a0) to 0xd01b when a
+   scene flag (+0x331) is set, else 0.
+3. In one scene mode (+0x250 == 1), builds and applies a camera setup (helper 0x140f8d8e0).
+4. Writes the scene light block (FUN_140f89490, k = 1.0; section 6/9 of
+   exposure-tonemap-data.txt).
+5. Takes the light direction from the block's direction table (id at block +0x62), turns it
+   into a world position (x4096, split into 512 m sectors), and calls 0x1403d6b20 with that
+   position, weight 1.0 and the luminance 0.3 R + 0.59 G + 0.11 B of the block's SPECULAR
+   colour (+0x30). Static read of 0x1403d6b20: with weight >= 1 it takes the new position at
+   once and stores a strength sat(500 * luminance). Hypothesis: the sun-visibility/flare
+   source; with light_specular (1.2,1.2,1.2) the strength is 1.
+6. Copies the scene unit's truck_steering_rot (+0xdc of the ui_truck_scene_config class) into
+   two render-view fields (+0x1408, +0x640) and zeroes +0x1410.
+7. Further view and scene updates through virtual calls; marks a scene object's state 2.
+
+Answer to the open question
+- Confirmed: the UI scene update writes no exposure, adaptation or tonemap parameter. Its only
+  lighting output is the scene light block and the sun-visibility source above.
+- So the eye-adaptation limits and speeds the deferred pipeline uses on the tuning screen (the
+  render-parameter object R, +0x1d8..+0x1e4, read by the eye-adapt uniform callback 0x1413c9980)
+  are not set by the UI scene. Hypothesis: R keeps its default construction or the last
+  climate state. Unknown: those values.
+
+Side finding (game data, Confirmed by reading the files)
+- ui_truck_scene_config has a key vehicle_lights_on (+0x21e). 8 of the 10 /def/desktop scene
+  configs set it true (config, christmasbg, halloween_2023, hangar, night_city, northlights,
+  under_bridge, xmas); dark_studio and waves do not set it. /def/truck_config_scene.sii does
+  not set it. Which lights it switches on is not read.
