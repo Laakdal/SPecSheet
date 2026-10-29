@@ -716,3 +716,32 @@ fn a_channel_colour_sets_its_override() {
     config.set_channel_color(PaintChannel::Flip, None);
     assert_eq!(config.paint_override().flip, None);
 }
+
+#[test]
+fn a_slot_with_a_truck_fallback_cannot_be_emptied() {
+    // Scania S `data.sii`: `fallback[]: "accessory|steering_w/standard.sii"`
+    // with no `require[]` for steering_w. A fallback is the part the truck
+    // falls back on, so the slot is never empty: swap, not remove.
+    let wheel = accessory("standard.t.steering_w", "steering_w", AccessoryKind::Addon);
+    let horn = accessory("air.t.horn", "horn", AccessoryKind::Addon);
+    let catalog = TruckCatalog::new(
+        TruckId::from("t"),
+        Vec::new(),
+        Vec::new(),
+        vec!["/def/t/steering_w/standard.sii".into()],
+        [wheel, horn],
+    );
+    let config = Configuration::from_selections(
+        TruckId::from("t"),
+        [
+            ("steering_w".into(), "standard.t.steering_w".into()),
+            ("horn".into(), "air.t.horn".into()),
+        ],
+    );
+    let required = config.required_slots(&catalog);
+    assert!(required.contains(&SlotId::from("steering_w")));
+    assert!(
+        !required.contains(&SlotId::from("horn")),
+        "a plain addon may go"
+    );
+}

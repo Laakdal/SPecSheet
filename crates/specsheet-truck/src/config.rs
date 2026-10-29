@@ -341,12 +341,23 @@ impl Configuration {
         }
     }
 
-    /// Slots that must stay filled: the truck's `require[]` plus the
-    /// `requires` of every selected accessory, plus the base slots.
+    /// Slots that must stay filled: the truck's `require[]`, the slots of
+    /// its `fallback[]` parts, the `requires` of every selected accessory,
+    /// and the base slots.
     pub fn required_slots(&self, catalog: &TruckCatalog) -> BTreeSet<SlotId> {
         let mut required: BTreeSet<SlotId> = catalog.required_slots.iter().cloned().collect();
         required.insert(SlotId::from(crate::slots::CHASSIS));
         required.insert(SlotId::from(crate::slots::CABIN));
+        // A truck `fallback[]` names the part a slot falls back on, so that
+        // slot is never empty (the engine, wheels, steering wheel…): it can
+        // be swapped, not removed (Hypothesis from the data).
+        required.extend(
+            catalog
+                .fallbacks
+                .iter()
+                .filter_map(|path| catalog.by_def_path(path))
+                .map(|a| a.slot.clone()),
+        );
         for id in self.selections.values() {
             if let Some(accessory) = catalog.accessory(id) {
                 required.extend(accessory.requires.iter().cloned());
