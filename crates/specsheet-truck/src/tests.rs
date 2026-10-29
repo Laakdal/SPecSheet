@@ -653,3 +653,66 @@ fn flake_noise_defaults_to_the_custom_noise_texture() {
         "/material/custom/flake_pattern01.tobj"
     );
 }
+
+#[test]
+fn the_player_may_change_the_colours_a_job_leaves_unlocked_and_uses() {
+    // `color1.sii` (Ivory White) locks its base colour; `color0.sii`
+    // (Custom Colour) does not; `color0m.sii` (Custom Metallic) also leaves
+    // flake and flip unlocked.
+    let stock = PaintJob {
+        locks: PaintLocks {
+            base: true,
+            ..PaintLocks::default()
+        },
+        ..PaintJob::default()
+    };
+    assert!(stock.editable_channels().is_empty());
+    assert_eq!(
+        PaintJob::default().editable_channels(),
+        [PaintChannel::Base]
+    );
+    let metallic = PaintJob {
+        flipflake: true,
+        mask: Some("/m.tobj".to_owned()),
+        ..PaintJob::default()
+    };
+    assert_eq!(
+        metallic.editable_channels(),
+        [PaintChannel::Base, PaintChannel::Flake, PaintChannel::Flip],
+        "no mask colours on a metallic job"
+    );
+    let two_tone = PaintJob {
+        mask: Some("/two_tone.tobj".to_owned()),
+        locks: PaintLocks {
+            mask: [false, true, false],
+            ..PaintLocks::default()
+        },
+        ..PaintJob::default()
+    };
+    assert_eq!(
+        two_tone.editable_channels(),
+        [
+            PaintChannel::Base,
+            PaintChannel::Mask(0),
+            PaintChannel::Mask(2)
+        ]
+    );
+    let livery = PaintJob {
+        mask: Some("/livery.tobj".to_owned()),
+        airbrush: true,
+        ..PaintJob::default()
+    };
+    assert_eq!(livery.editable_channels(), [PaintChannel::Base]);
+}
+
+#[test]
+fn a_channel_colour_sets_its_override() {
+    let mut config = Configuration::new(TruckId::from("t"));
+    config.set_channel_color(PaintChannel::Mask(1), Some([0.1, 0.2, 0.3]));
+    config.set_channel_color(PaintChannel::Flip, Some([1.0, 0.0, 0.0]));
+    let paint = config.paint_override();
+    assert_eq!(paint.mask[1], Some([0.1, 0.2, 0.3]));
+    assert_eq!(paint.flip, Some([1.0, 0.0, 0.0]));
+    config.set_channel_color(PaintChannel::Flip, None);
+    assert_eq!(config.paint_override().flip, None);
+}

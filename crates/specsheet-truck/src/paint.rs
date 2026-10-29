@@ -172,7 +172,49 @@ pub struct PaintJob {
     pub parts: Vec<PartPaint>,
 }
 
+/// One colour of a paint job the player may set.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum PaintChannel {
+    /// `base_color`.
+    Base,
+    /// `mask_r_color`, `mask_g_color`, `mask_b_color` (0, 1, 2).
+    Mask(usize),
+    /// `flake_color`.
+    Flake,
+    /// `flip_color`.
+    Flip,
+}
+
 impl PaintJob {
+    /// The colours the player may change: those the job does not lock
+    /// (F17) and its look uses. Mask colours only with a colour mask (a
+    /// mask that is neither a livery nor on a metallic job, F17), flake and
+    /// flip only with `flipflake`. Which ones the game's picker offers
+    /// beyond the locks is a Hypothesis.
+    pub fn editable_channels(&self) -> Vec<PaintChannel> {
+        let colour_mask = self.mask.is_some() && !self.airbrush && !self.flipflake;
+        let mut channels = Vec::new();
+        if !self.locks.base {
+            channels.push(PaintChannel::Base);
+        }
+        if colour_mask {
+            channels.extend(
+                (0..3)
+                    .filter(|&i| !self.locks.mask[i])
+                    .map(PaintChannel::Mask),
+            );
+        }
+        if self.flipflake {
+            if !self.locks.flake {
+                channels.push(PaintChannel::Flake);
+            }
+            if !self.locks.flip {
+                channels.push(PaintChannel::Flip);
+            }
+        }
+        channels
+    }
+
     /// The per-part unit that lists `accessory`, if any.
     pub fn part_for(&self, accessory: &AccessoryId) -> Option<&PartPaint> {
         self.parts.iter().find(|p| p.lists(accessory))

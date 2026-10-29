@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::Configuration;
 use crate::catalog::{Accessory, AccessoryKind, TruckCatalog};
+use crate::paint::PaintChannel;
 
 /// Colour overrides a configuration carries for its paint job: the six
 /// colours presets and saves store in `vehicle_paint_job_accessory` (F15).
@@ -74,6 +75,16 @@ impl Configuration {
     /// Sets the flip colour override.
     pub fn set_flip_color(&mut self, color: Option<[f32; 3]>) {
         self.paint.flip = color;
+    }
+
+    /// Sets the override of `channel` (`None` uses the paint job's).
+    pub fn set_channel_color(&mut self, channel: PaintChannel, color: Option<[f32; 3]>) {
+        match channel {
+            PaintChannel::Base => self.set_paint_color(color),
+            PaintChannel::Mask(i) => self.set_mask_color(i, color),
+            PaintChannel::Flake => self.set_flake_color(color),
+            PaintChannel::Flip => self.set_flip_color(color),
+        }
     }
 
     /// The selected paint job, if any.
