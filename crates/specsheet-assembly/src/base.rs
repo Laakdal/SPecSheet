@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 
 use specsheet_core::SlotId;
 use specsheet_formats::pmg::Locator;
-use specsheet_truck::{Configuration, SlotAvailability, TruckCatalog};
+use specsheet_truck::{Configuration, ModelRef, SlotAvailability, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
 use crate::slots::locators_by_slot;
@@ -63,11 +63,36 @@ pub(super) fn base_layout(
                     variant: variant.cloned(),
                     transform: Transform::IDENTITY,
                 });
+                layout
+                    .placements
+                    .extend(companions(&accessory.model, drive).map(|model| Placement {
+                        slot: accessory.slot.clone(),
+                        accessory: accessory.id.clone(),
+                        model: model.to_owned(),
+                        look: None,
+                        variant: None,
+                        transform: Transform::IDENTITY,
+                    }));
             }
             Err(error) => layout.warnings.push(format!("{}: {error}", accessory.id)),
         }
     }
     layout
+}
+
+/// The models a base part brings in its own space: a cabin's side
+/// windows' glass and the wipers for `drive`, a chassis's shadow quad.
+fn companions(model: &ModelRef, drive: Drive) -> impl Iterator<Item = &str> {
+    let wipers = match drive {
+        Drive::Right => model.wipers_uk.as_ref().or(model.wipers.as_ref()),
+        Drive::Left => model.wipers.as_ref(),
+    };
+    model
+        .windows
+        .iter()
+        .chain(wipers)
+        .chain(&model.ui_shadow)
+        .map(String::as_str)
 }
 
 pub(super) fn addon_slots(catalog: &TruckCatalog) -> BTreeSet<SlotId> {
@@ -92,5 +117,44 @@ pub fn slot_availability(
         available: locators_by_slot(&addon_slots(catalog), base.locators.iter())
             .into_keys()
             .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_cabin_brings_its_side_windows_and_the_wipers_for_its_drive() {
+        // `/def/vehicle/truck/scania.s_2016/cabin/highline.sii`.
+        let cabin = ModelRef {
+            exterior: Some("/cab_s_high.pmd".to_owned()),
+            windows: Some("/win_open_s.pmd".to_owned()),
+            wipers: Some("/wiper_s_eu.pmd".to_owned()),
+            wipers_uk: Some("/wiper_s_uk.pmd".to_owned()),
+            ..ModelRef::default()
+        };
+        let left: Vec<&str> = companions(&cabin, Drive::Left).collect();
+        assert_eq!(left, ["/win_open_s.pmd", "/wiper_s_eu.pmd"]);
+        let right: Vec<&str> = companions(&cabin, Drive::Right).collect();
+        assert_eq!(right, ["/win_open_s.pmd", "/wiper_s_uk.pmd"]);
+        let no_uk = ModelRef {
+            wipers: Some("/wiper.pmd".to_owned()),
+            ..ModelRef::default()
+        };
+        assert_eq!(
+            companions(&no_uk, Drive::Right).collect::<Vec<_>>(),
+            ["/wiper.pmd"]
+        );
+        assert_eq!(companions(&ModelRef::default(), Drive::Left).count(), 0);
+        // `/def/vehicle/truck/volvo.fh_2024/chassis/4x2.sii`.
+        let chassis = ModelRef {
+            ui_shadow: Some("/ui_shadow_4x2.pmd".to_owned()),
+            ..ModelRef::default()
+        };
+        assert_eq!(
+            companions(&chassis, Drive::Left).collect::<Vec<_>>(),
+            ["/ui_shadow_4x2.pmd"]
+        );
     }
 }
