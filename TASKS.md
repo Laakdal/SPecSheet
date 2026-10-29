@@ -117,6 +117,12 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - render the garage's own reflection cube in Bevy, to replace that stand-in;
       - [x] the tonemap pass from `shader-specs/tonemap.md` §4 (`specsheet_render::GameTonemap`), with the lights in the game's units; fixed exposure k = 1 and the identity curve are ours (docs/app/scenes.md). The pre-exposure A/B agrees with F18: the lights stay unscaled;
       - eye adaptation (§3: histogram, trimmed mean, retention), which the tuning screen runs (71, `rea-ui-scene-update.txt`); its limits and `T0.x` are Unknown, so tune them against a reference screenshot. Then bloom (§5) and the curve coefficients from `contrast`/`shoulder_length` (Unknown);
+      - [x] the cabin's side-window glass (`windows_model`) and wipers (`wiper_model[_uk]`) are placed with the cab; the orbit camera's elevation sign is flipped, so the default view is lower (docs/app/scenes.md);
+      - [ ] the window glass and wiper animations (`left/right_window_anim`, `wiper_anim[_uk]`, `.pma`): the user's to-do;
+      - [x] the shadow under the truck: the chassis's `ui_shadow` quad (71), drawn with no specular reflection. Open: which of its looks a cabin picks; the game's GTAO (`def_ssao`, second-order, 71) and the in-world fake shadow (`fake-shadow.md`);
+      - [ ] the environment map costs half the frame (item 13's A/B: 31 → 15–17 ms without it): filter it once per scene, or prefilter it;
+      - [ ] the interior view: the cab's pillars and roof lie outside the 50° view and behind the sidebar, and two pins float in the garage; check against an in-game interior screenshot;
+      - [ ] a paint colour picker for the paint job's unlocked colours (`PaintOverride` and the locks exist; the session, an action and the UI are missing);
       - [x] vehicle light flares (F19, flare.md): the game's glow model at each light locator, in scenes with `vehicle_lights_on`; the lights on (parking, low beam), the facing and the offset towards the camera are ours. Open: the scene's light mask, the cone fade of `narrow` lights, the soft depth fade, `flare_only`/`light_only` beacon hookups, and the real light the units carry (colour, range, cone);
       - [x] lamps no longer glow white: the lights are off on the tuning screen (lamp.md §7), so lamp stand-ins have no emission, hookup lamps included; the faint `lum` glow is rescaled to scene units (it was tuned for Bevy's old exposure);
       - [x] real-time shadows from the scene's main light: `shadowonly` and the `shadow` flavour cast, nothing else; the shadow scales the sun term only (docs/app/scenes.md). Open: whether the game draws them on the tuning screen (a reference screenshot), and the `nocull`/`.a` caster variants;
@@ -140,7 +146,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
    - the game's lighting: the shared module (`specsheet-render/src/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). The vehicle_reflection slot is filled by the scene (done). Next: normal maps (needs tangents), then the game's sun profile, eye adaptation and curve for the tonemap pass (done: the pass itself, fixed exposure);
    - align with the game's paint application (F17, done by REA): locked colours win (done, a9cc0b2); effect flags from the paint job and UV sets 1/2 (done); the engine defaults for missing paint values (done). Still open: the UV set used when a model lacks it, and two caller paths;
-   - the `paint_job` slot UI and the colour picker.
+   - the `paint_job` slot UI and the colour picker (see item 0.1).
 3. **Interior:** interior models and an interior camera; `hide_in`.
 4. **Wheels:** whether the tuning screen shows lift axles raised or lowered (reference screenshot or REA), the inner twin-tyre bead, `wheel_shift`. Axle variants are done (F13).
 5. **UI fidelity:** the game screen is drawn from its layouts (see Done). Next:
