@@ -7,6 +7,7 @@
 //! truck <truck id>         slot <slot id>        back
 //! select <accessory id>    pick <n>              (n-th selectable option of the open slot)
 //! clear <slot id>          (empties an optional slot, as the remove button)
+//! look <yaw°> <pitch°>     (the driver's head in the interior view; 0 0 ahead)
 //! drive left|right         scene <index>
 //! tab <token>              orbit <yaw°> <pitch°> <distance>
 //! sleep <frames>           echo <text>           (logs the text, to sync external drivers)
@@ -27,7 +28,7 @@ use specsheet_truck::PaintChannel;
 
 use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;
-use crate::viewer::{ExposureSettings, ModelCache, Orbit};
+use crate::viewer::{ExposureSettings, ModelCache, Orbit, ViewportInput};
 
 pub(crate) const ENV_VAR: &str = "SPECSHEET_SCRIPT";
 
@@ -79,6 +80,9 @@ pub enum Step {
         pitch: f32,
         distance: f32,
     },
+    /// The driver's head in the interior view (radians; positive yaw left,
+    /// positive pitch up).
+    Look(Vec2),
     Wait,
     /// Sets the tonemap's fixed exposure scale E.
     Exposure(f32),
@@ -168,6 +172,16 @@ pub(crate) fn parse(source: &str) -> Result<Vec<Step>, String> {
             "sleep" => Step::Sleep(one()?.parse().map_err(|_| error())?),
             "echo" => Step::Echo(args.join(" ")),
             "screenshot" => Step::Screenshot(PathBuf::from(args.join(" "))),
+            "look" => {
+                let angles: Vec<f32> = args
+                    .iter()
+                    .map(|a| a.parse().map_err(|_| error()))
+                    .collect::<Result<_, _>>()?;
+                let [yaw, pitch] = angles[..] else {
+                    return Err(error());
+                };
+                Step::Look(Vec2::new(yaw.to_radians(), pitch.to_radians()))
+            }
             "orbit" => {
                 let numbers: Vec<f32> = args
                     .iter()
@@ -197,6 +211,7 @@ fn run(
     cache: Res<ModelCache>,
     mut ui: ResMut<UiState>,
     mut exposure: ResMut<ExposureSettings>,
+    mut viewport: ResMut<ViewportInput>,
     mut orbit: Single<&mut Orbit>,
     mut exit: MessageWriter<AppExit>,
 ) {
@@ -234,6 +249,7 @@ fn run(
             }
         }
         Step::Exposure(e) => exposure.exposure = e,
+        Step::Look(head) => viewport.head = head,
         Step::Sleep(frames) => script.cooldown = frames,
         Step::Echo(text) => info!("script: {text}"),
         Step::Orbit {
@@ -307,6 +323,11 @@ echo ready now"
         assert!(parse("teleport\n").is_err());
         assert!(parse("exposure -1\n").is_err());
         assert!(parse("paint rim 1 1 1\n").is_err());
+        assert!(parse("look 10\n").is_err());
+        assert_eq!(
+            parse("look 0 -30").expect("valid"),
+            vec![Step::Look(Vec2::new(0.0, -30f32.to_radians()))]
+        );
         assert_eq!(
             parse("paint mask2 0.5 0.25 1").expect("valid"),
             vec![Step::Act(Action::SetPaintColor(

@@ -1069,7 +1069,7 @@ pub struct ViewportInput {
     /// The camera sits at the driver's eye (interior tabs), set by the UI.
     pub interior_view: bool,
     /// Where the driver looks: `(yaw, pitch)`, 0 looking ahead.
-    head: Vec2,
+    pub(crate) head: Vec2,
     /// Whether the last frame was the interior view.
     was_interior: bool,
     dragging: bool,
