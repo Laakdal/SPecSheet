@@ -209,7 +209,7 @@ pub struct Scene {
     pub light_specular: Option<[f32; 3]>,
     pub light_environment: Option<f32>,
     /// Exposure the scene asks for (`pre_exposure`; only the Halloween hub
-    /// sets it, to 1.0). How the engine applies it is Unknown.
+    /// sets it, to 1.0). See [`Scene::limited_pre_exposure`].
     pub pre_exposure: Option<f32>,
     /// Cube that fills the engine's vehicle reflection slot in this scene
     /// (`vehicle_reflection`), e.g. the hangar's own cube map. Materials that
@@ -227,6 +227,23 @@ pub struct Scene {
     pub truck_position: [f32; 3],
     /// Euler angles in degrees.
     pub truck_rotation: [f32; 3],
+}
+
+impl Scene {
+    /// The engine's `limited_pre_exposure` for this scene: its
+    /// `pre_exposure` when positive, else derived from its light colours
+    /// (Confirmed by static disassembly, `exposure-tonemap-data.txt` §6):
+    /// 0.0973 for the tuning screen. `None` without both light colours.
+    /// It scales only emissive inputs (lamp and backlight colours, material
+    /// luminance), not the sun or ambient (§9 there).
+    pub fn limited_pre_exposure(&self) -> Option<f32> {
+        if let Some(p) = self.pre_exposure.filter(|&p| p > 0.0) {
+            return Some(p);
+        }
+        let ambient: f32 = self.light_ambient?.iter().sum();
+        let diffuse: f32 = self.light_diffuse?.iter().sum();
+        Some(0.034_871_7 * (ambient + 0.525_322 * diffuse))
+    }
 }
 
 /// Every scene definition, the default garage first. Files that fail to
@@ -492,6 +509,35 @@ floor_reflection: true
         let plain = scene_from_unit(&fs, "/def/s.sii", units.next().expect("plain"));
         assert_eq!((plain.vehicle_reflection, plain.pre_exposure), (None, None));
         assert!(plain.cube_reflection && plain.floor_reflection);
+    }
+
+    #[test]
+    fn pre_exposure_comes_from_the_scene_or_its_lights() {
+        // `/def/truck_config_scene.sii`: ambient 0.3, diffuse 1.2, no
+        // pre_exposure (research/evidence/exposure-tonemap-data.txt §6).
+        let src = br#"SiiNunit
+{
+ui_truck_scene_base_config : tuning.config {
+light_ambient: (0.3, 0.3, 0.3)
+light_diffuse: (1.2, 1.2, 1.2)
+}
+ui_truck_scene_base_config : hangar.config {
+light_ambient: (0.3, 0.3, 0.3)
+light_diffuse: (1.2, 1.2, 1.2)
+pre_exposure: 1.0
+}
+ui_truck_scene_base_config : dark.config {
+pre_exposure: 0
+}
+}"#;
+        let doc = sii::parse("/def/s.sii", src).expect("parse");
+        let fs = GameFs::new(specsheet_archive::Vfs::new());
+        let mut units = doc.units_of_class("ui_truck_scene_base_config");
+        let mut next = || scene_from_unit(&fs, "/def/s.sii", units.next().expect("unit"));
+        let tuning = next().limited_pre_exposure().expect("from lights");
+        assert!((tuning - 0.0973).abs() < 5e-5, "{tuning}");
+        assert_eq!(next().limited_pre_exposure(), Some(1.0));
+        assert_eq!(next().limited_pre_exposure(), None);
     }
 
     #[test]
