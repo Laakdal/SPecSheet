@@ -12,13 +12,13 @@ use bevy::image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerD
 use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use bevy::render::render_resource::{
-    Extent3d, TextureDimension, TextureFormat as GpuFormat, TextureViewDescriptor,
+    Extent3d, Face, TextureDimension, TextureFormat as GpuFormat, TextureViewDescriptor,
     TextureViewDimension,
 };
 use specsheet_core::colour::srgb_to_linear;
 use specsheet_data::render::{
-    build_mesh, load_texture, texture_block_bytes, BlendMode, CubeTextureData, MaterialInfo,
-    MeshData, MeshPiece, MipLevel, TextureData, TextureFormat,
+    build_mesh, load_texture, texture_block_bytes, BlendMode, CubeTextureData, LightLocator,
+    MaterialInfo, MeshData, MeshPiece, MipLevel, TextureData, TextureFormat,
 };
 use specsheet_session::GameSession;
 
@@ -90,6 +90,8 @@ pub struct GpuModel {
     /// Per piece: whether it casts sun shadows
     /// ([`MaterialInfo::casts_shadow`]).
     pub casts_shadow: Vec<bool>,
+    /// The visible parts' light locators (F19).
+    pub lights: Vec<LightLocator>,
     /// The reflection cube (`texture_reflection`) of every reflective
     /// material, once per material; the viewer uses the most common one as
     /// the environment map that lights the stand-ins.
@@ -182,7 +184,8 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         });
         let attributes = MeshAttributes {
             paint_uv: paint.is_some(),
-            colors: paint.is_some() || dif_spec.is_some(),
+            // flare.md §3 multiplies by 2·c, as the game materials do.
+            colors: paint.is_some() || dif_spec.is_some() || info.is_flare(),
             tangents: dif_spec
                 .as_ref()
                 .is_some_and(DifSpecSurface::needs_tangents),
@@ -234,6 +237,7 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         pieces,
         game,
         casts_shadow,
+        lights: mesh.lights,
         reflections,
         aabb_min: Vec3::from(mesh.aabb_min),
         aabb_max: Vec3::from(mesh.aabb_max),
@@ -409,6 +413,11 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
         },
         alpha_mode,
         depth_bias: if info.decal { DECAL_DEPTH_BIAS } else { 0.0 },
+        // A flare is unlit, B·Kd·2c (flare.md §3; the viewer scales it by
+        // the luminosity). Its quad is turned to the camera, so neither face
+        // is culled.
+        unlit: info.is_flare(),
+        cull_mode: (!info.is_flare()).then_some(Face::Back),
         ..default()
     }
 }
@@ -937,6 +946,34 @@ mod tests {
         assert_eq!(cutout.alpha_mode, AlphaMode::Mask(0.5));
         let glow = material(&info("eut2.dif.lum.add", BlendMode::Additive), None);
         assert_eq!(glow.alpha_mode, AlphaMode::Add);
+    }
+
+    #[test]
+    fn a_flare_is_an_unlit_additive_quad_seen_from_both_sides() {
+        let info = MaterialInfo {
+            path: String::new(),
+            effect: "eut2.flare.rfx".to_owned(),
+            blend: BlendMode::Additive,
+            diffuse: [1.0; 3],
+            base_texture: None,
+            paintable: false,
+            emissive: false,
+            decal: false,
+            specular: None,
+            shininess: None,
+            env_factor: None,
+            fresnel: None,
+            reflection_texture: None,
+            additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
+        };
+        let flare = material(&info, None);
+        assert!(flare.unlit);
+        assert_eq!(flare.alpha_mode, AlphaMode::Add);
+        assert_eq!(flare.cull_mode, None);
+        assert_eq!(flare.base_color, Color::linear_rgba(1.0, 1.0, 1.0, 1.0));
     }
 
     #[test]
