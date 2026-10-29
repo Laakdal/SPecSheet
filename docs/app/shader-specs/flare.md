@@ -46,7 +46,7 @@ The engine stores these keys in the `flare_vehicle` class (attribute table, C: `
 | `flare_inner_angle`, `flare_outer_angle` | e.g. 7 (headlight) | (H) Full strength inside the inner angle, fading to zero at the outer. |
 | `default_scale` | 0.405 (parking) … 1.53 (low beam) | (H) The quad's size in metres near the camera. |
 | `scale_factor`, `scaling_start_distance`, `scaling_end_distance` | 2–6; 0 and 60 m (low beam) | (H) The size grows from `default_scale` to `default_scale × scale_factor` between the two camera distances, so flares stay visible far away. |
-| `visual_offset` | 0.6 (low beam) | (H) Moves the quad this many metres along the locator's forward axis, out of the lamp housing. |
+| `visual_offset` | 0.6 (low beam) | (H) Moves the quad this many metres out of the lamp housing. Along the locator's forward axis it lands 0.6 m ahead of the headlight, beside the truck in a three-quarter view (de, on screen), so towards the camera is the likelier reading. The app uses towards the camera (our choice, `docs/app/scenes.md`). |
 | `state_change_duration` | 0.083 s (incandescent `.sui`) | (H) Fade time when the light switches; the include file's own comment says bulbs should warm up, but the system uses an almost instant change. |
 
 ## 5. Which lights a scene turns on
