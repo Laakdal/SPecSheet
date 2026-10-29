@@ -1,0 +1,93 @@
+Vehicle light hookups (flares): which ones truck models name, and whether they resolve
+=====================================================================================
+
+Command (ETS2 1.60.1.7, install opened read-only):
+  ETS2_DIR=<game> cargo run --release -p specsheet-research --example flare_survey
+
+Scans the exterior model of every truck accessory (all trucks, deduplicated
+by path), collects each locator's hookup string, and resolves the `flare.*`
+ones against the units in /unit/hookup/vehicle/flare/*.sii (classes
+flare_vehicle, flare_blink, beacon_vehicle; specsheet-data::flare).
+
+Observations (Confirmed, from the output below):
+- 49 distinct `flare.*` hookups; 47 resolve. The two that do not,
+  flare.vehicle.lblinkerl_ledl and flare.vehicle.rblinkerl_ledl (4 locators
+  each, one model), name no unit; the folder defines lblinkr_ledl and
+  rblinkr_ledl. Hypothesis: a naming slip in the game data; such lights get
+  no flare.
+- Every glow model a resolved unit names exists. Units ending in _noflr /
+  _nofl / intlight_bck.* have no model: they only light (no glow sprite).
+- Every glow model is under /model/flare/ (uniform_white, _red, _orange,
+  _cold_white and their _amplified/_low/_dimmed forms).
+- Light types seen: low_beam, high_beam, parking, brake, reverse,
+  left_blinker, right_blinker, aux, beacon, electrics.
+- Beacons also use flare_only.vehicle.beacon.blink_l/_r and
+  light_only.vehicle.beacon.blink_l/_r, which are not in this folder (not
+  resolved here).
+Not established: how the engine draws a flare (eut2.flare, spec pending),
+and which light types a scene's vehicle_lights_on switches on (light mask
+0xd01b, rea-ui-scene-update.txt).
+
+Output
+------
+84 light units in /unit/hookup/vehicle/flare; 5124 distinct exterior models scanned
+hookup: locators, models; class, light_type, glow model (exists)
+  flare.trailer.beacon: 4, 2; Beacon, beacon, /model/flare/uniform_orange_amplified.pmd (yes)
+  flare.vehicle.aux_led: 180, 5; Flare, aux, /model/flare/uniform_white.pmd (yes)
+  flare.vehicle.aux_light: 60, 6; Flare, aux, /model/flare/uniform_white.pmd (yes)
+  flare.vehicle.beacon: 8, 4; Beacon, beacon, /model/flare/uniform_orange_amplified.pmd (yes)
+  flare.vehicle.beacon_addon.blink: 122, 61; Blink, beacon, /model/flare/uniform_orange_amplified.pmd (yes)
+  flare.vehicle.brake_ledl: 130, 12; Flare, brake, /model/flare/uniform_red.pmd (yes)
+  flare.vehicle.brakel: 133, 55; Flare, brake, /model/flare/uniform_red.pmd (yes)
+  flare.vehicle.brakel_noflr: 87, 48; Flare, brake, -
+  flare.vehicle.brakel_nolgh: 49, 9; Flare, brake, /model/flare/uniform_red.pmd (yes)
+  flare.vehicle.brakellow: 26, 12; Flare, brake, /model/flare/uniform_red_low.pmd (yes)
+  flare.vehicle.headl: 116, 46; Flare, low_beam, /model/flare/uniform_white_amplified.pmd (yes)
+  flare.vehicle.high_beam: 320, 112; Flare, high_beam, /model/flare/uniform_white_amplified.pmd (yes)
+  flare.vehicle.intlight_bck.cyan: 6, 6; Flare, electrics, -
+  flare.vehicle.intlight_bck.orange: 4, 4; Flare, electrics, -
+  flare.vehicle.intlight_bck.red: 3, 3; Flare, electrics, -
+  flare.vehicle.intlight_bck.red_medium: 6, 1; Flare, electrics, -
+  flare.vehicle.intlight_bck.red_short: 1, 1; Flare, electrics, -
+  flare.vehicle.intlight_bck.salmon_red: 3, 3; Flare, electrics, -
+  flare.vehicle.intlight_bck.sky_blue: 11, 11; Flare, electrics, -
+  flare.vehicle.intlight_bck.violet: 4, 4; Flare, electrics, -
+  flare.vehicle.lblink_nolgh: 20, 11; Flare, left_blinker, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.lblinkerl: 249, 172; Flare, left_blinker, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.lblinkerl_ledl: 4, 1; UNRESOLVED
+  flare.vehicle.lblinkerlow: 16, 15; Flare, left_blinker, /model/flare/uniform_orange_low.pmd (yes)
+  flare.vehicle.lblinkr_ledl: 81, 49; Flare, left_blinker, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.lblinkr_nofl: 66, 63; Flare, left_blinker, -
+  flare.vehicle.orangel: 1397, 334; Flare, parking, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.orangeled_nf: 9, 3; Flare, parking, -
+  flare.vehicle.orangeledl: 368, 86; Flare, parking, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.orangl_nolgh: 12, 3; Flare, parking, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.parkl: 16, 8; Flare, parking, /model/flare/uniform_white.pmd (yes)
+  flare.vehicle.rblink_nolgh: 19, 10; Flare, right_blinker, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.rblinkerl: 247, 173; Flare, right_blinker, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.rblinkerl_ledl: 4, 1; UNRESOLVED
+  flare.vehicle.rblinkerlow: 17, 16; Flare, right_blinker, /model/flare/uniform_orange_low.pmd (yes)
+  flare.vehicle.rblinkr_ledl: 83, 51; Flare, right_blinker, /model/flare/uniform_orange.pmd (yes)
+  flare.vehicle.rblinkr_nofl: 66, 63; Flare, right_blinker, -
+  flare.vehicle.rearl: 185, 56; Flare, parking, /model/flare/uniform_red_dimmed.pmd (yes)
+  flare.vehicle.rearl_noflr: 163, 72; Flare, parking, -
+  flare.vehicle.rearl_nolgh: 159, 27; Flare, parking, /model/flare/uniform_red_dimmed.pmd (yes)
+  flare.vehicle.rearllow: 63, 19; Flare, parking, /model/flare/uniform_red_low2.pmd (yes)
+  flare.vehicle.redl: 117, 28; Flare, parking, /model/flare/uniform_red.pmd (yes)
+  flare.vehicle.redl_nolgh: 24, 5; Flare, parking, /model/flare/uniform_red.pmd (yes)
+  flare.vehicle.reversel: 282, 97; Flare, reverse, /model/flare/uniform_cold_white.pmd (yes)
+  flare.vehicle.reversellow: 55, 27; Flare, reverse, /model/flare/uniform_cold_white_low.pmd (yes)
+  flare.vehicle.reversl_nofl: 13, 7; Flare, reverse, -
+  flare.vehicle.revrse_nolgh: 4, 2; Flare, reverse, /model/flare/uniform_cold_white.pmd (yes)
+  flare.vehicle.whitel: 233, 63; Flare, parking, /model/flare/uniform_cold_white.pmd (yes)
+  flare.vehicle.whiteledl: 1011, 204; Flare, parking, /model/flare/uniform_cold_white.pmd (yes)
+49 distinct flare hookups, 47 resolved, 0 glow models missing
+other locator hookups:
+  f: 1
+  flare_only.vehicle.beacon.blink_l: 61
+  flare_only.vehicle.beacon.blink_r: 47
+  license.plate: 119
+  license.plate_rear: 153
+  light_only.vehicle.beacon.blink_l: 43
+  light_only.vehicle.beacon.blink_r: 41
+  wheel.particles: 430
