@@ -17,8 +17,8 @@ The hub ("desktop") scenes from `/def/desktop/config*.sii` follow in the picker 
 |---|---|---|---|
 | Scene model | `scene_model_path`, look, variant, position; only the parts in `part_order[]` (the `coll` collision part is skipped) | Loaded like a truck model, under `SceneRoot` | Rendered |
 | Camera | Static `camera_position`/`camera_aim`/`camera_fov`, then frame 0 of each `scene_cinematic_camera` animation. The first pose more than 5 m from the truck whose view ray passes within 5 m of it is used, with the target moved to the closest point on that ray. | Orbit camera starts at that pose; FOV is vertical, as in Bevy | Design: the game's choice between the two is unknown |
-| Sun | `light_direction` (direction travelled), `light_diffuse` | `DirectionalLight`, colour = diffuse / its peak, illuminance = peak × π lux; the game materials take it as is ([materials.md](materials.md)) | Game units |
-| Ambient | `light_ambient` | `GlobalAmbientLight` colour, 1 cd/m² | Game units |
+| Sun | `light_direction` (direction travelled), `light_diffuse` | `DirectionalLight`, colour = diffuse / its peak, illuminance = peak × π lux; the game materials take it as is ([materials.md](materials.md)) | Game units; stand-ins keep Bevy's shading |
+| Ambient | `light_ambient` | `GlobalAmbientLight` colour, 1 cd/m² | Game units; stand-ins keep Bevy's shading |
 | Environment | `light_environment` | The truck's most common reflection cube as a `GeneratedEnvironmentMapLight` (gradient until it loads), intensity = value × 0.5 (capped at 4) × an exposure balance ([materials.md](materials.md)) | Approximation: the cube is the game's, its exposure is ours |
 | Fog | `fog_color`, `fog_density` | `DistanceFog` with `ExponentialSquared` falloff | Rendered |
 | Truck pose | `truck_position`, `truck_rot` (degrees) | `TruckRoot` transform; markers follow it | Rendered |

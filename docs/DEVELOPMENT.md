@@ -71,6 +71,7 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 | `scene <index>` | switch scene (0 = default garage) |
 | `tab <token>` | open a tab of the game screen: `cabin`, `chassis`, `engine`, `transmission`, `color`, `e_accessories`, `interior`, `i_accessories` |
 | `orbit <yaw°> <pitch°> <distance>` | place the camera around the current target |
+| `exposure <E>` | set the tonemap's fixed exposure scale (default 5.555, so k = 1) |
 | `sleep <frames>` / `echo <text>` | pause; log `script: <text>` so an external driver can sync |
 | `screenshot <png path>` | save the window (then waits 30 frames) |
 | `exit` | quit |
