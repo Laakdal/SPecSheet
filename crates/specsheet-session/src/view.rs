@@ -533,6 +533,8 @@ pub struct PaintColorView {
     /// Its current value, linear RGB: the override, else the paint job's,
     /// else the game's default.
     pub color: [f32; 3],
+    /// The same as the UI's `FFBBGGRR` hex, for the channel button template.
+    pub ui_color: String,
 }
 
 /// The selected paint job's colours the player may set
@@ -566,6 +568,7 @@ pub fn paint_colors(session: &TruckSession) -> Vec<PaintColorView> {
                 channel,
                 label,
                 color,
+                ui_color: ui_color(color),
             }
         })
         .collect()
