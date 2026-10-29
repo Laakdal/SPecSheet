@@ -1135,8 +1135,11 @@ fn orbit_camera(
             }
             input.was_interior = true;
             if input.dragging {
-                input.head.x -= delta.x * ROTATE_SPEED;
-                input.head.y -= delta.y * ROTATE_SPEED;
+                // The view follows the drag, as the exterior orbit does:
+                // dragging right turns the head left (the user found the
+                // opposite reversed).
+                input.head.x += delta.x * ROTATE_SPEED;
+                input.head.y += delta.y * ROTATE_SPEED;
             }
             input.head.x = input.head.x.clamp(-MAX_HEAD_YAW, MAX_HEAD_YAW);
             input.head.y = input.head.y.clamp(-MAX_HEAD_PITCH, MAX_HEAD_PITCH);
