@@ -8,7 +8,8 @@ How the app draws game materials. The effect files themselves are described in [
 
 | Effect tokens | `MaterialInfo` | Bevy |
 |---|---|---|
-| `shadowonly`, `fakeshadow`, `decalshadow`, `mlaaweight` | `Hidden` | not drawn (filtered in `build_mesh`) |
+| `shadowonly` | `ShadowOnly` | only casts sun shadows: `ShadowOnlyMaterial` discards every colour fragment, front faces culled |
+| `fakeshadow`, `decalshadow`, `mlaaweight` | `Hidden` | not drawn (filtered in `build_mesh`) |
 | `glass`, `decal`, `over`, `water` | `Blend` | `AlphaMode::Blend`; glass opacity 0.35, water 0.6 |
 | `add` not followed by `env` (e.g. `dif.lum.add`) | `Additive` | `AlphaMode::Add` (light shafts, glows) |
 | `a` | `AlphaTest` | `AlphaMode::Mask(0.5)` |
