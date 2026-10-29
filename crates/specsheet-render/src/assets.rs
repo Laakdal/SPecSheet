@@ -395,6 +395,14 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
         BlendMode::Additive => AlphaMode::Add,
         BlendMode::Opaque | BlendMode::ShadowOnly | BlendMode::Hidden => AlphaMode::Opaque,
     };
+    if info.is_engine_screen() {
+        // A screen with the engine off: dark, no display.
+        return StandardMaterial {
+            base_color: Color::BLACK,
+            perceptual_roughness: 0.4,
+            ..default()
+        };
+    }
     StandardMaterial {
         // `.mat` colours are linear, like paint colours.
         base_color: Color::linear_rgba(r, g, b, opacity),
@@ -953,6 +961,43 @@ mod tests {
         assert_eq!(cutout.alpha_mode, AlphaMode::Mask(0.5));
         let glow = material(&info("eut2.dif.lum.add", BlendMode::Additive), None);
         assert_eq!(glow.alpha_mode, AlphaMode::Add);
+    }
+
+    #[test]
+    fn the_engines_screens_are_black_with_the_engine_off() {
+        // The cockpit's GPS and dashboard screens: `eut2.dif.lum` on
+        // placeholder textures the engine draws its displays into.
+        let screen = |texture: &str| MaterialInfo {
+            path: String::new(),
+            effect: "eut2.dif.lum.rfx".to_owned(),
+            blend: BlendMode::Opaque,
+            diffuse: [0.132868; 3],
+            base_texture: Some(texture.to_owned()),
+            paintable: false,
+            emissive: true,
+            decal: false,
+            specular: None,
+            shininess: None,
+            env_factor: None,
+            fresnel: None,
+            reflection_texture: None,
+            additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
+        };
+        let gps = material(
+            &screen("/vehicle/truck/share/gps.tobj"),
+            Some(Handle::default()),
+        );
+        assert_eq!(gps.base_color, Color::BLACK);
+        assert_eq!(gps.emissive, LinearRgba::BLACK);
+        assert!(gps.base_color_texture.is_none());
+        let other = material(
+            &screen("/vehicle/truck/x/buttons.tobj"),
+            Some(Handle::default()),
+        );
+        assert!(other.base_color_texture.is_some());
     }
 
     #[test]
