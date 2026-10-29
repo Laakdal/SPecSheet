@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_truck::{
     Accessory, AccessoryKind, ChangeSet, ConfigError, Configuration, Hookup, Incompatibility,
-    TruckCatalog,
+    PaintChannel, TruckCatalog,
 };
 
 use specsheet_assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
@@ -304,6 +304,12 @@ impl TruckSession {
             .set_hookup(&self.catalog, host, position, &positions, hookup)?;
         self.reassemble(game);
         Ok(changes)
+    }
+
+    /// Sets one paint colour (`None` uses the paint job's own). Paint needs
+    /// no re-assembly: the truck redraws with the new colours.
+    pub fn set_paint_color(&mut self, channel: PaintChannel, color: Option<[f32; 3]>) {
+        self.config.set_channel_color(channel, color);
     }
 
     /// Switches between left- and right-hand drive models.

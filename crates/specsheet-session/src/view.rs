@@ -6,9 +6,10 @@ use std::collections::HashSet;
 
 use specsheet_core::colour::linear_to_srgb;
 use specsheet_core::{AccessoryId, SlotId, TruckId};
+use specsheet_data::paint::piece_paint;
 use specsheet_truck::{
-    Accessory, AccessoryKind, Incompatibility, DEFAULT_BASE_COLOR, DEFAULT_FLAKE_COLOR,
-    DEFAULT_FLIP_COLOR,
+    Accessory, AccessoryKind, Incompatibility, PaintChannel, DEFAULT_BASE_COLOR,
+    DEFAULT_FLAKE_COLOR, DEFAULT_FLIP_COLOR,
 };
 
 use crate::{GameSession, SlotOption, TruckSession};
@@ -520,6 +521,54 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
         price: session.config().price(catalog),
         warnings,
     }
+}
+
+/// A paint colour the player may set, with its current value.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PaintColorView {
+    /// Which colour.
+    pub channel: PaintChannel,
+    /// What the picker calls it.
+    pub label: &'static str,
+    /// Its current value, linear RGB: the override, else the paint job's,
+    /// else the game's default.
+    pub color: [f32; 3],
+}
+
+/// The selected paint job's colours the player may set
+/// ([`specsheet_truck::PaintJob::editable_channels`]); empty without a paint
+/// job or when it locks them all.
+pub fn paint_colors(session: &TruckSession) -> Vec<PaintColorView> {
+    let (catalog, config) = (session.catalog(), session.config());
+    let Some(job) = config.paint_job(catalog) else {
+        return Vec::new();
+    };
+    let (Some(paint), Some(current)) = (
+        job.paint.as_deref(),
+        piece_paint(catalog, config, &job.slot, &job.id),
+    ) else {
+        return Vec::new();
+    };
+    paint
+        .editable_channels()
+        .into_iter()
+        .map(|channel| {
+            let (label, color) = match channel {
+                PaintChannel::Base => ("Colour", current.base_color),
+                PaintChannel::Mask(i) => (
+                    ["Colour 1", "Colour 2", "Colour 3"][i.min(2)],
+                    current.mask_colors[i.min(2)],
+                ),
+                PaintChannel::Flake => ("Flakes", current.flake.color),
+                PaintChannel::Flip => ("Flip", current.flip.color),
+            };
+            PaintColorView {
+                channel,
+                label,
+                color,
+            }
+        })
+        .collect()
 }
 
 /// The options of `slot` in display order, with verdicts.

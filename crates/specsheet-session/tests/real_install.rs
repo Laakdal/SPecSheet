@@ -1081,3 +1081,39 @@ fn every_vehicle_light_unit_loads_and_its_glow_model_exists() {
         .collect();
     assert!(missing.is_empty(), "glow models missing: {missing:?}");
 }
+
+#[test]
+fn the_custom_colour_paint_job_offers_its_base_colour_and_takes_a_new_one() {
+    use specsheet_core::{AccessoryId, TruckId};
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
+    use specsheet_truck::PaintChannel;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let mut session = game
+        .start_truck(&TruckId::from("scania.s_2016"))
+        .expect("truck");
+    // `color1.sii`, Ivory White, locks its colour.
+    session
+        .select(&game, &AccessoryId::from("color1.scania.s_2016.paint_job"))
+        .expect("ivory white");
+    assert!(view::paint_colors(&session).is_empty());
+    // `color0.sii`, Custom Colour: base (1, 1, 1), unlocked.
+    let custom = session
+        .catalog()
+        .accessories()
+        .find(|a| a.def_path.ends_with("/paint_job/color0.sii"))
+        .map(|a| a.id.clone())
+        .expect("custom colour");
+    session.select(&game, &custom).expect("custom colour");
+    let colours = view::paint_colors(&session);
+    assert_eq!(colours.len(), 1, "{colours:?}");
+    assert_eq!(
+        (colours[0].channel, colours[0].color),
+        (PaintChannel::Base, [1.0; 3])
+    );
+    session.set_paint_color(PaintChannel::Base, Some([0.2, 0.4, 0.6]));
+    assert_eq!(view::paint_colors(&session)[0].color, [0.2, 0.4, 0.6]);
+}
