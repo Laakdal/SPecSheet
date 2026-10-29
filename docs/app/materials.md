@@ -8,6 +8,7 @@ How the app draws game materials. The effect files themselves are described in [
 
 | Effect tokens | `MaterialInfo` | Bevy |
 |---|---|---|
+| base texture `/vehicle/truck/share/gps.tobj` or `dashboard.tobj` | (any) | black, no glow: the cockpit's screens with the engine off (`MaterialInfo::is_engine_screen`; the engine draws its displays into these placeholders, Hypothesis) |
 | any `.mat` with `specular` 0 | (any) | `reflectance` 0, not Bevy's default 4 %: e.g. the `ui_shadow` quad, which otherwise turned grey at grazing angles |
 | `shadowonly` | `ShadowOnly` | only casts sun shadows: `ShadowOnlyMaterial` discards every colour fragment, front faces culled |
 | `fakeshadow`, `decalshadow`, `mlaaweight` | `Hidden` | not drawn (filtered in `build_mesh`) |

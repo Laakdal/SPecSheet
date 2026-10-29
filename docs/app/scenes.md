@@ -25,6 +25,8 @@ The hub ("desktop") scenes from `/def/desktop/config*.sii` follow in the picker 
 | Truck pose | `truck_position`, `truck_rot` (degrees) | `TruckRoot` transform; markers follow it | Rendered |
 | Not used | `floor_reflection`, `pre_exposure`, scene animations (`.pma`), `vehicle_lights_on`, `truck_steering_rot` | | |
 
+**Interior view.** Dragging turns the driver's head with the drag, as the exterior orbit moves the view (the user found the opposite reversed).
+
 **Light units are the game's.** Bevy's camera exposure is set to a factor of 1 (`UNIT_EXPOSURE`), and `SUN_LUX` = π cancels Bevy's 1/π diffuse, so a Bevy-lit stand-in gets the game's `Camb + Csun·N·L` like the game materials do. `ENVIRONMENT_NITS` (0.5) is ours. `light_specular` and the vehicle reflection keys reach the game materials ([materials.md](materials.md)).
 
 **Pre-exposure.** `Scene::limited_pre_exposure` is the scene's `pre_exposure`, else derived from its lights (0.0973 for the tuning screen; Confirmed, `exposure-tonemap-data.txt` §6). It scales only emissive inputs (lamps, backlights, flares); the sun and ambient reach the materials unscaled (§9 there). The flares use it (below). An A/B on the Scania S Vortex agrees: scaling the lights by it, with the exposure compensated, washed out the garage and turned the paint into a mirror.
