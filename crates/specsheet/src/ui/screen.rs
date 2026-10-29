@@ -56,20 +56,23 @@ mod ids {
     /// Paint channel buttons (`btn.truck_chnl_s`); also the id of the
     /// centre layout's own channel row, which stays hidden.
     pub const CHANNELS: i64 = 410;
+    /// The remove button (`btn.remove_acc`), shown while the open slot's
+    /// selection may be removed.
+    pub const REMOVE: i64 = 8005;
     /// The R, G and B values of the picked colour.
     pub const RGB_FIELDS: [i64; 3] = [460, 461, 462];
     /// Picker widgets not wired up yet: preset and save buttons, user
     /// colours, the channel overflow list, the RGB/HSV switch and the
     /// button beside the channels.
     pub const PICKER_UNWIRED: [i64; 7] = [440, 445, 446, 450, 415, 465, 473];
-    /// Shown only by behaviour not wired up yet: remove button, messages,
+    /// Shown only by behaviour not wired up yet: messages,
     /// conflict marker, walk-camera notice and crosshair, cart, accessory
     /// origin badge, buy-mode price labels and the cart and checkout
     /// buttons, money, unfolded analysis, control hints, tab-key hints,
     /// search and filter.
-    pub const HIDDEN: [i64; 21] = [
-        8005, 600, 620, 333, 587, 355, 390, 391, 386, 210, 11, 6000, 111, 575, 576, 577, 578, 401,
-        402, 403, 404,
+    pub const HIDDEN: [i64; 20] = [
+        600, 620, 333, 587, 355, 390, 391, 386, 210, 11, 6000, 111, 575, 576, 577, 578, 401, 402,
+        403, 404,
     ];
 }
 
@@ -150,6 +153,8 @@ pub enum Click {
     /// A slot picked from an accessory tab's list.
     Slot(SlotId),
     Select(AccessoryId),
+    /// The remove button: empty the open slot.
+    Remove(SlotId),
     /// A colour picked for a paint channel (linear RGB).
     PaintColor(PaintChannel, [f32; 3]),
 }
@@ -267,6 +272,7 @@ pub fn draw(
     let mut clicks = Vec::new();
     let mut blocking = Vec::new();
     let picking = !colours.is_empty();
+    let removable = options.is_some_and(|o| o.removable);
     if state.channel >= colours.len() {
         state.channel = 0;
     }
@@ -291,12 +297,25 @@ pub fn draw(
             if !visible(layout, index, list_open, state.tab.is_some(), picking) {
                 continue;
             }
+            if widget.id == ids::REMOVE && !removable {
+                continue;
+            }
             let target = cx.mapping.rect(layout.keep_aspect, &widget.rect);
             let size = [widget.rect.width(), widget.rect.height()];
             let painted = match widget.id {
                 ids::TAB_ROW => tab_row(ui, cx, assets, widget, target, state, &mut clicks),
                 ids::CHANNELS => channel_row(ui, cx, assets, widget, target, colours, state),
                 ids::PICKER => colour_picker(ui, cx, widget, target, colours, state, &mut clicks),
+                ids::REMOVE => {
+                    let response = ui.interact(target, Id::new("remove"), Sense::click());
+                    if response.clicked() {
+                        if let Some(o) = options {
+                            clicks.push(Click::Remove(o.slot.clone()));
+                        }
+                    }
+                    widget_markup(assets, widget, None, &mut || response.hovered())
+                        .and_then(|markup| cx.paint(&markup, size, target))
+                }
                 id if ids::RGB_FIELDS.contains(&id) => {
                     let channel = ids::RGB_FIELDS.iter().position(|&f| f == id);
                     rgb_field(cx, target, colours, state, channel)

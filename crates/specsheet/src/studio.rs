@@ -63,6 +63,8 @@ pub enum Action {
     /// Shows a slot's options in the sidebar; `None` returns to the list.
     ShowSlot(Option<SlotId>),
     Select(AccessoryId),
+    /// Empties an optional slot.
+    Clear(SlotId),
     /// Sets one of the paint job's colours (linear RGB).
     SetPaintColor(PaintChannel, [f32; 3]),
     SetDrive(Drive),
@@ -217,6 +219,19 @@ fn apply(studio: &mut Studio, action: Action) {
             studio.spawn("select", move || {
                 let result = session
                     .select(&game, &accessory)
+                    .map(|_| ())
+                    .map_err(|e| e.to_string());
+                JobOutput::Changed(session, result)
+            });
+        }
+        Action::Clear(slot) => {
+            let (Some(game), Some(mut session)) = (studio.game.clone(), studio.session.take())
+            else {
+                return;
+            };
+            studio.spawn("clear", move || {
+                let result = session
+                    .clear(&game, &slot)
                     .map(|_| ())
                     .map_err(|e| e.to_string());
                 JobOutput::Changed(session, result)

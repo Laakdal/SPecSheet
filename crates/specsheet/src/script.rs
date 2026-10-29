@@ -6,6 +6,7 @@
 //! wait                     until no job runs and every model has loaded
 //! truck <truck id>         slot <slot id>        back
 //! select <accessory id>    pick <n>              (n-th selectable option of the open slot)
+//! clear <slot id>          (empties an optional slot, as the remove button)
 //! drive left|right         scene <index>
 //! tab <token>              orbit <yaw°> <pitch°> <distance>
 //! sleep <frames>           echo <text>           (logs the text, to sync external drivers)
@@ -126,6 +127,7 @@ pub(crate) fn parse(source: &str) -> Result<Vec<Step>, String> {
             "truck" => Step::Act(Action::LoadTruck(TruckId::new(one()?))),
             "slot" => Step::Act(Action::ShowSlot(Some(SlotId::new(one()?)))),
             "select" => Step::Act(Action::Select(AccessoryId::new(one()?))),
+            "clear" => Step::Act(Action::Clear(SlotId::new(one()?))),
             "pick" => Step::Pick(one()?.parse().map_err(|_| error())?),
             "drive" => Step::Act(Action::SetDrive(match one()? {
                 "left" => Drive::Left,

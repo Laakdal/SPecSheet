@@ -219,6 +219,7 @@ fn ui(
                     actions.0.push(Action::ShowSlot(Some(slot)));
                 }
                 Click::Select(id) => actions.0.push(Action::Select(id)),
+                Click::Remove(slot) => actions.0.push(Action::Clear(slot)),
                 Click::PaintColor(channel, color) => {
                     actions.0.push(Action::SetPaintColor(channel, color));
                 }
