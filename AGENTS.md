@@ -129,6 +129,7 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | Meshes, materials, textures to GPU (with upload checks) | `specsheet-render/src/assets.rs` | unit |
 | Clean-room game materials (truck paint, `dif.spec`), their texture loader, the game's lighting, its tonemap pass and the shadow-only casters | `specsheet-render/src/{lib,truckpaint,difspec,textures,lighting,tonemap,shadow}.rs`, `truckpaint.wgsl`, `difspec.wgsl`, `game_lighting.wgsl`, `tonemap.wgsl`, `shadow.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
+| Vehicle light flares at light locators (placement, facing, which lights are on) | `specsheet/src/flares.rs` | unit; `SPECSHEET_SCRIPT` screenshot of a lit hub scene |
 | The game's truck configuration screen (layout drawing, tabs, lists), UI textures, SpecSheet window | `specsheet/src/ui/{mod,screen,textures}.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
 | Pins over the 3D view (projection, fade by facing, disc-linked wheel pins) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
 | Dev script mode | `specsheet/src/script.rs` | unit |

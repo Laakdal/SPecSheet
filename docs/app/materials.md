@@ -11,6 +11,7 @@ How the app draws game materials. The effect files themselves are described in [
 | `shadowonly` | `ShadowOnly` | only casts sun shadows: `ShadowOnlyMaterial` discards every colour fragment, front faces culled |
 | `fakeshadow`, `decalshadow`, `mlaaweight` | `Hidden` | not drawn (filtered in `build_mesh`) |
 | `glass`, `decal`, `over`, `water` | `Blend` | `AlphaMode::Blend`; glass opacity 0.35, water 0.6 |
+| `flare` | `Additive` | unlit `AlphaMode::Add`, no culling: the vehicle light glow ([scenes.md](scenes.md)) |
 | `add` not followed by `env` (e.g. `dif.lum.add`) | `Additive` | `AlphaMode::Add` (light shafts, glows) |
 | `a` | `AlphaTest` | `AlphaMode::Mask(0.5)` |
 | `truckpaint` | `paintable` | the truck paint material (below) |
