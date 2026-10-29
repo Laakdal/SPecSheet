@@ -53,7 +53,12 @@ Only lighting is darkened: albedo, emission and anything drawn after composition
 | Jitter and bias `b` | U | A 4-tap rotated kernel of about 1 texel; `b` about 1 texel |
 | Map resolution | U | 512 × 512 |
 
-**Whether the tuning screen draws it** is U from the executable. The user reports a shadow under the truck in the game's garage, which this pass explains, since the garage itself casts nothing (shadows-and-fake-lights §1). Treat it as on.
+**On the tuning screen, use the UI shadow model instead (C data, H use).** Every chassis names a `ui_shadow` model (all 164 chassis, 70 models; `research/evidence/shader-spec-fake-shadow.txt`):
+- It's a flat quad on the ground (4.35 × 8.34 m for the Volvo 4x2) with an `eut2.dif.over` material.
+- Its texture is the chassis's own shadow texture (`extended_shadow_texture`, e.g. `shadow_4x2.tobj`), clamped to the border.
+- The chassis's other keys (`extended_shadow_intensity`, `extended_shadow_fadeout_start`/`_length`) are (H) the in-world projected shadow of this page: the same texture as `m`, faded with distance.
+- So in UI scenes the shadow under the truck is (H, strong) the `ui_shadow` quad, drawn with the ordinary `dif.over` maths of [dif-spec.md](dif-spec.md) (alpha-blended, lit). The projector pass above is the world's version.
+- Place it at the chassis placement. The look that matches the cab is U; `default` is the stand-in.
 
 ## 4. The non-`.dist` variant (C, for completeness)
 
