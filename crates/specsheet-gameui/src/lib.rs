@@ -462,14 +462,20 @@ pub struct UiMaterial {
     pub distance_field: bool,
 }
 
-/// Loads the material an `<img src=…>` names; a missing extension means
-/// `.mat` (the accessory tile template writes `…/accessory/%1`).
-pub fn load_ui_material(fs: &GameFs, src: &str) -> Result<UiMaterial> {
-    let path = if src.rsplit('/').next().is_some_and(|f| f.contains('.')) {
+/// The file an `<img src=…>` names: `.mat` unless it already names a
+/// `.mat` or `.tobj` (the accessory tile template writes `…/accessory/%1`,
+/// and Toys DLC icons have a dot in their name: `glass_set_4.dlc_toys`).
+pub fn ui_material_path(src: &str) -> String {
+    if src.ends_with(".mat") || src.ends_with(".tobj") {
         src.to_owned()
     } else {
         format!("{src}.mat")
-    };
+    }
+}
+
+/// Loads the material an `<img src=…>` names ([`ui_material_path`]).
+pub fn load_ui_material(fs: &GameFs, src: &str) -> Result<UiMaterial> {
+    let path = ui_material_path(src);
     let material = Material::parse(&fs.read(&path)?).map_err(|source| GameDataError::Format {
         path: path.clone(),
         source,
@@ -496,6 +502,28 @@ pub fn accessory_icon(icon: &str) -> String {
 mod tests {
     use super::*;
     use specsheet_formats::sii;
+
+    #[test]
+    fn an_image_source_without_a_material_extension_names_a_mat() {
+        // The accessory tile template writes `…/accessory/%1`; Toys DLC
+        // icons have a dot in their name (`glass_set_4.dlc_toys`).
+        assert_eq!(
+            ui_material_path("/material/ui/accessory/glass_set_4.dlc_toys"),
+            "/material/ui/accessory/glass_set_4.dlc_toys.mat"
+        );
+        assert_eq!(
+            ui_material_path("/material/ui/accessory/cab_a"),
+            "/material/ui/accessory/cab_a.mat"
+        );
+        assert_eq!(
+            ui_material_path("/material/ui/white.mat"),
+            "/material/ui/white.mat"
+        );
+        assert_eq!(
+            ui_material_path("/material/ui/x.tobj"),
+            "/material/ui/x.tobj"
+        );
+    }
 
     #[test]
     fn substitutes_single_digit_parameters_only() {
