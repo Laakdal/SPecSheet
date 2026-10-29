@@ -79,7 +79,23 @@ pub struct MaterialInfo {
     pub mult_texture: Option<String>,
 }
 
+/// Placeholder textures of the cockpit's screens, which the engine draws
+/// its GPS and dashboard displays into (Hypothesis: the shipped textures
+/// only say "GPS"). With the engine off, as on the tuning screen, the
+/// screens are dark (the user's report).
+const ENGINE_SCREENS: [&str; 2] = [
+    "/vehicle/truck/share/gps.tobj",
+    "/vehicle/truck/share/dashboard.tobj",
+];
+
 impl MaterialInfo {
+    /// Draws one of the engine's screens ([`ENGINE_SCREENS`]).
+    pub fn is_engine_screen(&self) -> bool {
+        self.base_texture
+            .as_deref()
+            .is_some_and(|t| ENGINE_SCREENS.contains(&t))
+    }
+
     /// A vehicle light's glow (`eut2.flare`, flare.md).
     pub fn is_flare(&self) -> bool {
         self.effect.split('.').any(|t| t == "flare")
