@@ -330,8 +330,10 @@ fn piece_mesh(piece: MeshPiece, attributes: MeshAttributes) -> Result<Mesh, Stri
 /// otherwise; three.js used the same values (`docs/RENDERING.md`).
 const GLASS_OPACITY: f32 = 0.35;
 const WATER_OPACITY: f32 = 0.6;
-/// Emissive strength of lamp materials, in Bevy's luminance units.
-const EMISSIVE_LUMINANCE: f32 = 40.0;
+/// Emissive strength of self-lit stand-ins in the game's scene units (ours):
+/// the faint glow they had at Bevy's old exposure, 40 × 0.001. Lamps get
+/// none: the tuning screen's lights are off (lamp.md §7).
+const EMISSIVE_LUMINANCE: f32 = 0.04;
 /// Depth bias that keeps decals in front of the surface they sit on.
 const DECAL_DEPTH_BIAS: f32 = 8.0;
 /// Below this perceptual roughness Bevy's specular highlights alias.
@@ -392,8 +394,8 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
     StandardMaterial {
         // `.mat` colours are linear, like paint colours.
         base_color: Color::linear_rgba(r, g, b, opacity),
-        emissive: if info.emissive {
-            LinearRgba::rgb(1.0, 1.0, 1.0) * EMISSIVE_LUMINANCE
+        emissive: if info.emissive && !tokens.contains(&"lamp") {
+            LinearRgba::rgb(EMISSIVE_LUMINANCE, EMISSIVE_LUMINANCE, EMISSIVE_LUMINANCE)
         } else {
             LinearRgba::BLACK
         },
@@ -935,6 +937,39 @@ mod tests {
         assert_eq!(cutout.alpha_mode, AlphaMode::Mask(0.5));
         let glow = material(&info("eut2.dif.lum.add", BlendMode::Additive), None);
         assert_eq!(glow.alpha_mode, AlphaMode::Add);
+    }
+
+    #[test]
+    fn lamps_are_off_and_luminous_surfaces_glow_faintly_in_game_units() {
+        let emissive = |effect: &str| {
+            let info = MaterialInfo {
+                path: String::new(),
+                effect: effect.to_owned(),
+                blend: BlendMode::Opaque,
+                diffuse: [1.0; 3],
+                base_texture: None,
+                paintable: false,
+                emissive: true,
+                decal: false,
+                specular: None,
+                shininess: None,
+                env_factor: None,
+                fresnel: None,
+                reflection_texture: None,
+                additional_ambient: None,
+                normal_texture: None,
+                normal_detail_texture: None,
+                mult_texture: None,
+            };
+            material(&info, None).emissive
+        };
+        // The tuning screen's lights are off (lamp.md §7): no glow, so the
+        // headlight is its plain surface, not a white blob.
+        assert_eq!(emissive("eut2.lamp.add.env.rfx"), LinearRgba::BLACK);
+        // Other self-lit surfaces keep the faint glow they had before the
+        // lights moved to game units, far below white.
+        let lum = emissive("eut2.dif.lum.rfx");
+        assert!(lum.red > 0.0 && lum.red < 0.1, "{lum:?}");
     }
 
     #[test]
