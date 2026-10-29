@@ -160,8 +160,8 @@ pub struct SlotOption<'a> {
 
 /// Sorts a slot's options for the list: by price, catalog order within a
 /// price (a stable sort). Neither the selection nor the verdicts move an
-/// option, so the list stays put when something is picked, as in the game
-/// (the user's in-game screenshot of the colour tab; Hypothesis beyond it).
+/// option, so the list stays put when something is picked (the user's
+/// report of the game). The price order itself is a Hypothesis.
 fn display_order(options: &mut [SlotOption<'_>]) {
     options.sort_by_key(|o| o.accessory.price.unwrap_or(0));
 }
@@ -352,8 +352,8 @@ mod tests {
 
     #[test]
     fn the_list_keeps_its_order_when_something_is_selected() {
-        // The game lists by price; selecting an option does not move it
-        // (the user's in-game screenshot of the colour tab).
+        // Selecting an option does not move it (the user's report of the
+        // game); price order is our Hypothesis.
         let (white, yellow, vortex) = (
             accessory("white", 1000),
             accessory("yellow", 2500),
