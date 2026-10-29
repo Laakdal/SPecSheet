@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Paint jobs render like the game's:** two-tone colour masks, airbrush liveries (logos, stripes, the 770 designs) and metallic flip colours that shift with the viewing angle. Each part takes its own paint, and the game's baked shading on painted panels is applied, so paint looks darker than before. The lighting is still an approximation. Metallic flakes are wired in but not visible yet.
 - **Metallic flakes show:** paint jobs that leave out a flake or flip value now take the game's defaults instead of zero, so flake patterns appear in the highlights (e.g. Under Wraps' gift wrap on the MAN TGX Euro 6). Missing mask colours default to red, green and blue as in the game.
 - **Paint-job thumbnails for plain colours:** stock colours without an icon (the RAL colours) show a swatch of their colour, and metallic ones a layered swatch with the flip and flake colours, as in the game.
+- **Remove accessories:** the game's remove button (✕) empties an optional slot, e.g. a glass set or a light bar.
+- **Dark screens with the engine off:** the cockpit's GPS and dashboard screens are black instead of showing their placeholder images.
+- **Toys DLC icons:** accessories whose icon name has a dot (the Toys DLC glass sets) show their icons.
+- **Interior look follows the drag:** dragging in the driver's view turns the head the other way than before.
 - **Paint colour picker:** paint jobs with unlocked colours (Custom Colour, Custom Metallic, two-tone liveries) show the game's own picker panel on the right: a button per colour, the hue bar and colour square, and the R, G, B values. The truck takes the colour when you release the mouse.
 - **A shadow under the truck:** the game's own shadow quad under each chassis is drawn on the tuning screen.
 - **Options for other parts are hidden:** paint jobs and accessories made for another cabin or chassis no longer show as locked tiles; conflicting options still show their reason.
