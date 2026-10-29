@@ -162,6 +162,21 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
     - [x] `#![warn(missing_docs)]` on every library crate, with every public item documented (2026-10-29). `specsheet-data::scene` too, now that de's edits landed (its allow is gone);
     - bundle the theme's fonts (OFL) and build the app's own screens on the tokens (D16);
     - `deny.toml` (cargo-deny): waits for the user's OK to install `cargo-deny`.
+13. **Performance (user, 2026-10-29).** The app renders through Vulkan (wgpu's default here) on an NVIDIA GeForce MX450, an entry-level laptop GPU. Measure first, then fix what the numbers show, in this order:
+    1. **Logging (first):**
+       - a log file next to the app's settings, so release runs (which have no console) keep their log;
+       - opt-in performance logging (e.g. `SPECSHEET_PERF=1`): Bevy's frame-time diagnostics (average frame time and FPS every few seconds) plus timings of the start-up steps (mount, catalog, assembly, models, textures, first frame).
+    2. **Measure:** one `SPECSHEET_SCRIPT` run (garage plus truck, orbiting) on Vulkan and one on DX12 (`WGPU_BACKEND=dx12`); a GPU capture (RenderDoc or Nsight) of one frame to see which pass costs most.
+    3. **Then, by what the numbers show:**
+       - Redraw only on change: Bevy's desktop-app update mode, staying continuous while something animates (scene animations, flare fades, eye adaptation).
+       - Shadows: a smaller map or one cascade, or re-render the map only when the truck or sun changes.
+       - Build the reflection environment map once per scene, if it regenerates every frame.
+       - Anti-aliasing: 4× MSAA to 2× or FXAA.
+       - A lower internal resolution for the 3D view, with the UI at full resolution.
+       - Game-material shaders: one shader variant per flavour, instead of runtime branches.
+       - GPU instancing for repeated parts (wheel nuts, hubs, twin tyres).
+       - Free cached models and textures of trucks no longer shown.
+    Items 1 and 3 are in the app and render crates (de's area); coordinate before editing.
 
 ## Blockers and notes
 
