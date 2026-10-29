@@ -56,8 +56,8 @@ mod ids {
     /// Paint channel buttons (`btn.truck_chnl_s`); also the id of the
     /// centre layout's own channel row, which stays hidden.
     pub const CHANNELS: i64 = 410;
-    /// The remove button (`btn.remove_acc`), shown while the open slot's
-    /// selection may be removed.
+    /// The remove button (`btn.remove_acc`): a bubble whose arrow points up
+    /// at the open slot's pin, shown while its selection may be removed.
     pub const REMOVE: i64 = 8005;
     /// The R, G and B values of the picked colour.
     pub const RGB_FIELDS: [i64; 3] = [460, 461, 462];
@@ -266,13 +266,13 @@ pub fn draw(
     overview: &TruckOverview,
     options: Option<&SlotOptions>,
     colours: &[PaintColorView],
+    remove_under: Option<Pos2>,
     prices: Prices,
     state: &mut ScreenState,
 ) -> (Vec<Click>, Vec<egui::Rect>) {
     let mut clicks = Vec::new();
     let mut blocking = Vec::new();
     let picking = !colours.is_empty();
-    let removable = options.is_some_and(|o| o.removable);
     if state.channel >= colours.len() {
         state.channel = 0;
     }
@@ -297,7 +297,7 @@ pub fn draw(
             if !visible(layout, index, list_open, state.tab.is_some(), picking) {
                 continue;
             }
-            if widget.id == ids::REMOVE && !removable {
+            if widget.id == ids::REMOVE && remove_under.is_none() {
                 continue;
             }
             let target = cx.mapping.rect(layout.keep_aspect, &widget.rect);
@@ -307,6 +307,12 @@ pub fn draw(
                 ids::CHANNELS => channel_row(ui, cx, assets, widget, target, colours, state),
                 ids::PICKER => colour_picker(ui, cx, widget, target, colours, state, &mut clicks),
                 ids::REMOVE => {
+                    // Hung under the pin, centred, at the template's size.
+                    let anchor = remove_under.unwrap_or(target.center_top());
+                    let target = egui::Rect::from_min_size(
+                        Pos2::new(anchor.x - target.width() / 2.0, anchor.y),
+                        target.size(),
+                    );
                     let response = ui.interact(target, Id::new("remove"), Sense::click());
                     if response.clicked() {
                         if let Some(o) = options {

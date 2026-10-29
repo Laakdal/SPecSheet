@@ -181,6 +181,27 @@ fn ui(
             .as_ref()
             .is_some_and(|o| o.slot.as_str() == PAINT_JOB_SLOT);
         let colours: &[_] = if picking { &studio.paint_colors } else { &[] };
+        // The remove button hangs under the open slot's pin on the
+        // accessory tabs, while its part may be removed (btn.remove_acc).
+        let pin_tab = state.screen.tab.filter(|t| t.has_pins());
+        let remove_under = studio
+            .options
+            .as_ref()
+            .filter(|o| o.removable)
+            .and_then(|o| {
+                overview
+                    .hotspots
+                    .iter()
+                    .filter(|h| h.slot == o.slot && Some(h.tab) == pin_tab)
+                    .find_map(|h| {
+                        let world = truck.transform_point(Vec3::from(h.position));
+                        let p = camera.world_to_viewport(camera_transform, world).ok()?;
+                        let center = window.min + egui::vec2(p.x, p.y);
+                        window
+                            .contains(center)
+                            .then(|| center + egui::vec2(0.0, MARKER_SIZE / 2.0 + 2.0))
+                    })
+            });
         let clicks = egui::Area::new(Id::new("game-screen"))
             .order(Order::Background)
             .fixed_pos(window.min)
@@ -201,6 +222,7 @@ fn ui(
                     overview,
                     studio.options.as_ref(),
                     colours,
+                    remove_under,
                     Prices {
                         original: studio.original_price.unwrap_or(overview.price),
                         total: overview.price,
