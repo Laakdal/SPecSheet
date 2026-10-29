@@ -275,6 +275,8 @@ pub struct SlotOptions {
     pub label: String,
     /// The options, in list order.
     pub options: Vec<OptionView>,
+    /// The selection may be removed (the slot is not required).
+    pub removable: bool,
 }
 
 /// A truck of the installation with its display name.
@@ -584,6 +586,7 @@ pub fn slot_options(game: &GameSession, session: &TruckSession, slot: &SlotId) -
             .iter()
             .map(|option| option_view(game, option))
             .collect(),
+        removable: session.removable(slot),
     }
 }
 

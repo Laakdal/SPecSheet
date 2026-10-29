@@ -1117,3 +1117,34 @@ fn the_custom_colour_paint_job_offers_its_base_colour_and_takes_a_new_one() {
     session.set_paint_color(PaintChannel::Base, Some([0.2, 0.4, 0.6]));
     assert_eq!(view::paint_colors(&session)[0].color, [0.2, 0.4, 0.6]);
 }
+
+#[test]
+fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
+    use specsheet_core::{AccessoryId, SlotId, TruckId};
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let mut session = game
+        .start_truck(&TruckId::from("scania.s_2016"))
+        .expect("truck");
+    // `set_glass/set4.dlc_toys.sii`, Terminus.
+    let glass = AccessoryId::from("glass_set4.scania.s_2016.set_glass");
+    if session.catalog().accessory(&glass).is_none() {
+        return; // the Toys DLC is not installed
+    }
+    session.select(&game, &glass).expect("select the glass set");
+    let slot = SlotId::from("set_glass");
+    assert!(view::slot_options(&game, &session, &slot).removable);
+    session.clear(&game, &slot).expect("remove the glass set");
+    assert_eq!(session.config().selected(&slot), None);
+    assert!(!view::slot_options(&game, &session, &slot).removable);
+    let cabin = SlotId::from("cabin");
+    assert!(!session.removable(&cabin));
+    assert!(
+        session.clear(&game, &cabin).is_err(),
+        "the cabin is required"
+    );
+}

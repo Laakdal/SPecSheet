@@ -270,6 +270,23 @@ impl TruckSession {
         Ok(changes)
     }
 
+    /// Empties `slot` (fails for required slots) and re-assembles the truck.
+    pub fn clear(&mut self, game: &GameSession, slot: &SlotId) -> Result<ChangeSet, ConfigError> {
+        let availability = |config: &Configuration| {
+            slot_availability(game.fs(), game.models(), &self.catalog, config, self.drive)
+        };
+        let changes = self.config.clear(&self.catalog, &availability, slot)?;
+        self.reassemble(game);
+        Ok(changes)
+    }
+
+    /// Whether `slot` holds something that may be removed: it is not
+    /// required and something is selected.
+    pub fn removable(&self, slot: &SlotId) -> bool {
+        self.config.selected(slot).is_some()
+            && !self.config.required_slots(&self.catalog).contains(slot)
+    }
+
     /// Hookups that fit on the accessory in `host` (accessories mounted on
     /// accessories, finding F11), and the positions its model offers.
     pub fn hookup_options(&self, host: &SlotId) -> (Vec<&Hookup>, &[HookupPosition]) {
