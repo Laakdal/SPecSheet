@@ -48,3 +48,16 @@ Side finding (game data, Confirmed by reading the files)
   configs set it true (config, christmasbg, halloween_2023, hangar, night_city, northlights,
   under_bridge, xmas); dark_studio and waves do not set it. /def/truck_config_scene.sii does
   not set it. Which lights it switches on is not read.
+
+Where vehicle_lights_on goes (static, tools/research/{xref,attr_tables,disasm}.py)
+- No code references the key's string; the attribute table maps it to the scene unit's +0x21e.
+- The only function that reads +0x21c, +0x21d and +0x21e together, 0x140f88110 (scene apply),
+  copies +0x21e into the UI scene object's +0x331.
+- FUN_140f8acc0 (above, step 2) turns that byte into the render view's light mask (+0x2a0):
+  0xd01b when set, 0 otherwise. Confirmed.
+- What the mask's bits mean is Unknown. One name-to-number table of vehicle light types
+  (0x142c3c598: front_left_turn_signal 0, rear_left_turn_signal 1, reverse 2, high_beam 3,
+  front_right_turn_signal 4, daytime_running 5, front_positional 6, none 7, rear_positional 8,
+  rear_right_turn_signal 10, brake 11, low_beam 12) does not explain it: read with it, 0xd01b
+  would switch on three of the four turn signals and no positional lights, and bits 14 and 15
+  have no name there. So the mask uses another numbering.
