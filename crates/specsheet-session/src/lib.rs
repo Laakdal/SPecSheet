@@ -6,7 +6,7 @@
 
 #![warn(missing_docs)]
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use specsheet_core::{AccessoryId, SlotId, TruckId};
@@ -16,6 +16,7 @@ use specsheet_truck::{
 };
 
 use specsheet_assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
+use specsheet_data::flare::{vehicle_lights, VehicleLight};
 use specsheet_data::localization::Localization;
 use specsheet_data::model::ModelCache;
 use specsheet_data::scene::{list_scenes, tuning_scene, PinSpec, Scene};
@@ -41,6 +42,8 @@ pub struct GameSession {
     interior_only: Vec<String>,
     trucks: Vec<TruckSummary>,
     catalogs: Mutex<HashMap<TruckId, Arc<TruckCatalog>>>,
+    /// The vehicle light units by name (F19); empty when they fail to load.
+    vehicle_lights: BTreeMap<String, VehicleLight>,
     /// Archives that failed to open (reported, not fatal).
     pub mount_failures: Vec<String>,
 }
@@ -55,6 +58,7 @@ impl GameSession {
         let (pins, interior_only) = tuning_scene(&fs)
             .map(|t| (t.pins, t.interior_only))
             .unwrap_or_default();
+        let (vehicle_lights, _) = vehicle_lights(&fs).unwrap_or_default();
         Ok(Self {
             install,
             fs,
@@ -64,6 +68,7 @@ impl GameSession {
             interior_only,
             trucks,
             catalogs: Mutex::new(HashMap::new()),
+            vehicle_lights,
             mount_failures: failures
                 .into_iter()
                 .map(|(path, error)| format!("{}: {error}", path.display()))
@@ -74,6 +79,11 @@ impl GameSession {
     /// The game installation.
     pub fn install(&self) -> &GameInstall {
         &self.install
+    }
+
+    /// The vehicle light unit a light locator's hookup names (F19).
+    pub fn vehicle_light(&self, hookup: &str) -> Option<&VehicleLight> {
+        self.vehicle_lights.get(hookup)
     }
 
     /// The mounted game files.
