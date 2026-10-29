@@ -24,6 +24,8 @@ The geometry is never visible. It only casts sun shadows (the wiki says the same
 
 **For our renderer:** never draw it in the main pass. When real-time sun shadows exist, use it as a shadow caster only.
 
+**Who casts (C, game data):** only `shadowonly` and effects with the `shadow` flavour have a shadow-map pass. The garage and the other tuning scenes have no such material (only the showroom scene has two), so in the tuning screen the sun shadow comes from the truck alone. Whether the game enables the sun shadow on the tuning screen at all is U. Sources: `research/evidence/shader-spec-glass-lamp-lum.txt`.
+
 ## 2. `decalshadow` (C)
 
 Baked contact shadows, such as the dark patch under a toy on the dashboard.
