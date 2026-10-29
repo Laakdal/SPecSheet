@@ -54,6 +54,8 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 - The app is `crates/specsheet` (Bevy 0.19 + bevy_egui 0.42).
 - Without `ETS2_DIR` it tries the remembered directory, then Steam discovery.
 - Release builds have no console window. Debug builds keep one for logs.
+- **Log file:** every run also writes its log to `%APPDATA%\dev.specsheet.app\specsheet.log` (next to `settings.json`), and keeps the previous run's as `specsheet.prev.log`.
+- **Performance log:** `SPECSHEET_PERF=1` adds the frame time and FPS every 5 s, and how long each background job took (`perf: open game took … ms`, `load truck`, `select`, `set drive`). It only writes to the log and draws nothing, so `SPECSHEET_SCRIPT` screenshots are unchanged. To compare graphics APIs, set `WGPU_BACKEND=vulkan` or `WGPU_BACKEND=dx12`; the log's `AdapterInfo` line names the backend used.
 - The first build compiles Bevy and takes several minutes. When other sessions use the repo, build with your own `CARGO_TARGET_DIR` so the shared `target/` isn't locked.
 
 ### Dev script mode (seeing changes work)
