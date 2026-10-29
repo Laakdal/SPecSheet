@@ -33,6 +33,7 @@ SCS truck space is x right, y up, −z forward. It is right-handed with y up, th
 - **Base models:** chassis and cabin are placed at the origin.
 - **Addons:** placed at every visible base locator of their slot.
 - **Interior:** the selected interior's light exterior model (`ext_model`) is placed at the cabin's `ext_interior` locator (F10).
+- **Cockpit moving parts:** an interior's `animated_model` (`interior/anim.pmd`: steering column, stalks, gauges, switches) is placed with the cockpit, in its space, look and variant, at rest (its animations are not played).
 - **Cabin windows and wipers:** a cabin's `windows_model` (the side windows' glass) and `wiper_model` (`wiper_model_uk` in right-hand drive) are placed at the cab's own transform, at rest (their `.pma` animations are not played). Without them the side windows had no glass.
 - **Shadow under the truck:** the chassis's `ui_shadow` model, one quad on the floor (`eut2.dif.over`, a black texture whose alpha is the shadow), is placed at the chassis's transform with its default look (what picks its other looks is Unknown). This is the shadow under the truck on the tuning screen; the sun shadow falls behind it ([app/scenes.md](app/scenes.md)).
 - **Wheel parts:** placed at the `wheel_f*` / `wheel_r*` chassis locators, using the model variant `left` for x < 0 and `right` otherwise (`assembly::wheel_placements`).

@@ -74,6 +74,7 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 | `scene <index>` | switch scene (0 = default garage) |
 | `tab <token>` | open a tab of the game screen: `cabin`, `chassis`, `engine`, `transmission`, `color`, `e_accessories`, `interior`, `i_accessories` |
 | `orbit <yaw°> <pitch°> <distance>` | place the camera around the current target |
+| `look <yaw°> <pitch°>` | aim the driver's head in the interior view (0 0 looks ahead; positive yaw left, positive pitch up) |
 | `clear <slot id>` | empty an optional slot, as the remove button does |
 | `exposure <E>` | set the tonemap's fixed exposure scale (default 5.555, so k = 1) |
 | `paint <base\|mask1\|mask2\|mask3\|flake\|flip> <r> <g> <b>` | set one of the paint job's colours (linear RGB), as the colour picker does |
