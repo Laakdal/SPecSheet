@@ -38,6 +38,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "part {:<16} pieces {:?} visible-by-variant {:?}",
                 part.name, part.pieces, visible
             );
+            for (index, piece) in pmg.pieces[part.pieces.clone()].iter().enumerate() {
+                let (lo, hi) =
+                    piece
+                        .positions
+                        .iter()
+                        .fold(([f32::MAX; 3], [f32::MIN; 3]), |(lo, hi), p| {
+                            (
+                                std::array::from_fn(|i| lo[i].min(p[i])),
+                                std::array::from_fn(|i| hi[i].max(p[i])),
+                            )
+                        });
+                println!(
+                    "    piece {:<3} material {:<3} vertices {:<6} bounds {lo:.2?}..{hi:.2?}",
+                    part.pieces.start + index,
+                    piece.material,
+                    piece.positions.len()
+                );
+            }
             for l in &pmg.locators[part.locators.clone()] {
                 println!(
                     "    locator {:<14} pos {:?} rot {:?} scale {} hookup {:?}",
