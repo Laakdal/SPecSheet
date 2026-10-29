@@ -9,6 +9,7 @@
 
 use specsheet_archive::{pixel_layout, PackedTexture, PixelLayout};
 use specsheet_formats::mat::{MatValue, Material};
+use specsheet_formats::pmg::Locator;
 use specsheet_formats::sii::resolve_relative;
 
 use crate::error::{GameDataError, Result};
@@ -79,6 +80,11 @@ pub struct MaterialInfo {
 }
 
 impl MaterialInfo {
+    /// A vehicle light's glow (`eut2.flare`, flare.md).
+    pub fn is_flare(&self) -> bool {
+        self.effect.split('.').any(|t| t == "flare")
+    }
+
     /// Casts sun shadows: `shadowonly`, and the `shadow` flavour, which adds
     /// a shadow-map pass (dif-spec.md §2). Other effects cast none.
     pub fn casts_shadow(&self) -> bool {
@@ -112,6 +118,9 @@ impl MaterialInfo {
         let has = |t: &str| tokens.contains(&t);
         let blend = if has("shadowonly") {
             BlendMode::ShadowOnly
+        } else if has("flare") {
+            // `eut2.flare` blends additively (flare.md §2).
+            BlendMode::Additive
         } else if ["fakeshadow", "decalshadow", "mlaaweight"]
             .iter()
             .any(|t| has(t))
@@ -207,6 +216,34 @@ pub struct MeshData {
     pub aabb_min: [f32; 3],
     /// Bounds, largest corner.
     pub aabb_max: [f32; 3],
+    /// The visible parts' light locators: where vehicle lights sit (F19).
+    pub lights: Vec<LightLocator>,
+}
+
+/// A locator whose hookup names a vehicle light (`flare.*`, F19).
+#[derive(Clone, Debug, PartialEq)]
+pub struct LightLocator {
+    /// The light unit's name, e.g. `flare.vehicle.headl`.
+    pub hookup: String,
+    /// Position in model space.
+    pub position: [f32; 3],
+    /// Rotation quaternion in `(w, x, y, z)` order.
+    pub rotation_wxyz: [f32; 4],
+}
+
+impl LightLocator {
+    /// The locator as a light, when its hookup names one.
+    pub fn of(locator: &Locator) -> Option<Self> {
+        let hookup = locator
+            .hookup
+            .as_ref()
+            .filter(|h| h.starts_with("flare."))?;
+        Some(Self {
+            hookup: hookup.clone(),
+            position: locator.position,
+            rotation_wxyz: locator.rotation_wxyz,
+        })
+    }
 }
 
 /// The UV slot of the "UV Normal" stream (`docs/formats/models.md`, piece +8).
@@ -274,11 +311,21 @@ pub fn build_mesh(
 
     let variant = model.variant_index(variant);
     let mut pieces = Vec::new();
+    let mut lights = Vec::new();
     for (part_index, part) in model.pmg.parts.iter().enumerate() {
         let selected = parts.is_empty() || parts.contains(&part.name);
         if !selected || !model.pmd.is_part_visible(variant, part_index) {
             continue;
         }
+        lights.extend(
+            model
+                .pmg
+                .locators
+                .get(part.locators.clone())
+                .unwrap_or_default()
+                .iter()
+                .filter_map(LightLocator::of),
+        );
         for piece in &model.pmg.pieces[part.pieces.clone()] {
             let material = piece.material as usize;
             if materials
@@ -330,6 +377,7 @@ pub fn build_mesh(
         pieces,
         aabb_min: model.pmg.aabb.min,
         aabb_max: model.pmg.aabb.max,
+        lights,
     };
     (mesh, warnings)
 }
@@ -566,6 +614,26 @@ mod tests {
         assert_eq!(vertex_colors(&[]), None);
         let colors = vertex_colors(&[0xff00_80ff]).expect("colours");
         assert_eq!(colors, [[1.0, 128.0 / 255.0, 0.0, 1.0]]);
+    }
+
+    #[test]
+    fn flares_blend_additively_and_only_flare_locators_are_lights() {
+        let flare = material("eut2.flare.rfx");
+        assert!(flare.is_flare());
+        assert_eq!(flare.blend, BlendMode::Additive);
+        assert!(!material("eut2.dif.spec.rfx").is_flare());
+        let locator = |hookup: Option<&str>| Locator {
+            name: "light_h_0".to_owned(),
+            position: [1.0, 2.0, 3.0],
+            scale: 1.0,
+            rotation_wxyz: [1.0, 0.0, 0.0, 0.0],
+            hookup: hookup.map(str::to_owned),
+        };
+        let light = LightLocator::of(&locator(Some("flare.vehicle.headl"))).expect("a light");
+        assert_eq!(light.hookup, "flare.vehicle.headl");
+        assert_eq!(light.position, [1.0, 2.0, 3.0]);
+        assert_eq!(LightLocator::of(&locator(Some("license.plate"))), None);
+        assert_eq!(LightLocator::of(&locator(None)), None);
     }
 
     #[test]

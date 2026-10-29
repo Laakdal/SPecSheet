@@ -272,7 +272,7 @@ impl Scene {
     /// (Confirmed by static disassembly, `exposure-tonemap-data.txt` §6):
     /// 0.0973 for the tuning screen. `None` without both light colours.
     /// It scales only emissive inputs (lamp and backlight colours, material
-    /// luminance), not the sun or ambient (§9 there).
+    /// luminance, so the light flares), not the sun or ambient (§9 there).
     pub fn limited_pre_exposure(&self) -> Option<f32> {
         if let Some(p) = self.pre_exposure.filter(|&p| p > 0.0) {
             return Some(p);

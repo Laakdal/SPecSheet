@@ -49,9 +49,27 @@ pub struct VehicleLight {
     /// The glow model (`model`), e.g. `/model/flare/uniform_white_amplified.pmd`;
     /// `None` for units that only light the scene.
     pub model: Option<String>,
+    /// `dir_type`: `narrow` (a cone around the locator's forward axis) or
+    /// `wide` (flare.md §4, Hypothesis).
+    pub dir_type: Option<String>,
+    /// `flare_inner_angle` in degrees: full strength inside it (Hypothesis).
+    pub inner_angle: Option<f32>,
+    /// `default_scale`: the glow quad's size in metres near the camera
+    /// (Hypothesis).
+    pub default_scale: Option<f32>,
+    /// `scale_factor`: the size grows to `default_scale × scale_factor`
+    /// between `scaling_start_distance` and `scaling_end_distance`
+    /// (Hypothesis).
+    pub scale_factor: Option<f32>,
+    /// `scaling_start_distance`, `scaling_end_distance` in metres.
+    pub scaling_distances: Option<[f32; 2]>,
+    /// `visual_offset`: metres along the locator's forward axis, out of the
+    /// lamp housing (Hypothesis).
+    pub visual_offset: Option<f32>,
 }
 
 fn light_from_unit(unit: &Unit) -> Option<VehicleLight> {
+    let number = |key: &str| unit.get_f32(key).filter(|v| v.is_finite());
     Some(VehicleLight {
         name: unit.name.clone(),
         kind: LightKind::of(&unit.class)?,
@@ -60,6 +78,14 @@ fn light_from_unit(unit: &Unit) -> Option<VehicleLight> {
             .get_str("model")
             .filter(|path| !path.is_empty())
             .map(str::to_owned),
+        dir_type: unit.get_str("dir_type").map(str::to_owned),
+        inner_angle: number("flare_inner_angle"),
+        default_scale: number("default_scale"),
+        scale_factor: number("scale_factor"),
+        scaling_distances: number("scaling_start_distance")
+            .zip(number("scaling_end_distance"))
+            .map(|(start, end)| [start, end]),
+        visual_offset: number("visual_offset"),
     })
 }
 
@@ -98,8 +124,14 @@ mod tests {
 flare_vehicle: flare.vehicle.headl
 {
 	dir_type: narrow
+	flare_inner_angle: 7
 	light_type: low_beam
 	model: "/model/flare/uniform_white_amplified.pmd"
+	visual_offset: 0.6
+	default_scale: 1.53
+	scale_factor: 3
+	scaling_start_distance: 0
+	scaling_end_distance: 60.0
 }
 flare_blink: flare.vehicle.lblinkerl
 {
@@ -125,7 +157,14 @@ particle_gen: some.particles
             lights[0].model.as_deref(),
             Some("/model/flare/uniform_white_amplified.pmd")
         );
+        assert_eq!(lights[0].dir_type.as_deref(), Some("narrow"));
+        assert_eq!(lights[0].inner_angle, Some(7.0));
+        assert_eq!(lights[0].default_scale, Some(1.53));
+        assert_eq!(lights[0].scale_factor, Some(3.0));
+        assert_eq!(lights[0].scaling_distances, Some([0.0, 60.0]));
+        assert_eq!(lights[0].visual_offset, Some(0.6));
         assert_eq!(lights[1].kind, LightKind::Blink);
+        assert_eq!(lights[1].default_scale, None);
         assert_eq!(
             (lights[2].kind, lights[2].model.as_deref()),
             (LightKind::Beacon, None)
