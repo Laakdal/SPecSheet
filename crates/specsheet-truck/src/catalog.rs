@@ -85,6 +85,20 @@ pub struct ModelRef {
     /// Right-hand-drive replacement of `cockpit` (`interior_model_uk`).
     #[serde(default)]
     pub cockpit_uk: Option<String>,
+    /// Cabins: the side windows' glass, a model of its own in the cabin's
+    /// space (`windows_model`; animated open by `left/right_window_anim`).
+    #[serde(default)]
+    pub windows: Option<String>,
+    /// Cabins: the wipers (`wiper_model`), in the cabin's space.
+    #[serde(default)]
+    pub wipers: Option<String>,
+    /// Right-hand-drive replacement of `wipers` (`wiper_model_uk`).
+    #[serde(default)]
+    pub wipers_uk: Option<String>,
+    /// Chassis: the shadow quad under the truck on the tuning screen
+    /// (`ui_shadow`), in the chassis's space.
+    #[serde(default)]
+    pub ui_shadow: Option<String>,
 }
 
 /// One purchasable/selectable part.
