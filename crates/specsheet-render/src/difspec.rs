@@ -326,7 +326,10 @@ impl DifSpecSurface {
         if !family
             || info.paintable
             || info.emissive
-            || matches!(info.blend, BlendMode::Additive | BlendMode::Hidden)
+            || matches!(
+                info.blend,
+                BlendMode::Additive | BlendMode::ShadowOnly | BlendMode::Hidden
+            )
         {
             return None;
         }

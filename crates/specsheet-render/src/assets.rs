@@ -87,6 +87,9 @@ pub struct GpuModel {
     pub pieces: Vec<(Handle<Mesh>, Handle<StandardMaterial>)>,
     /// Per piece: the clean-room material it takes instead of the stand-in.
     pub game: Vec<Option<GamePiece>>,
+    /// Per piece: whether it casts sun shadows
+    /// ([`MaterialInfo::casts_shadow`]).
+    pub casts_shadow: Vec<bool>,
     /// The reflection cube (`texture_reflection`) of every reflective
     /// material, once per material; the viewer uses the most common one as
     /// the environment map that lights the stand-ins.
@@ -100,6 +103,8 @@ pub enum GamePiece {
     /// Truck paint, which takes the paint of the placement it belongs to.
     Paint(PaintPiece),
     DifSpec(DifSpecSurface),
+    /// `shadowonly`: only casts sun shadows (`crate::ShadowOnlyMaterial`).
+    ShadowOnly,
 }
 
 /// A `truckpaint` piece of a [`GpuModel`].
@@ -154,6 +159,7 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         .collect();
     let mut pieces = Vec::new();
     let mut game = Vec::new();
+    let mut casts_shadow = Vec::new();
     for (index, piece) in mesh.pieces.into_iter().enumerate() {
         let (Some(material), Some(info)) = (
             materials.get(piece.material),
@@ -200,8 +206,10 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
         }) {
             Ok((m, alternate)) => {
                 pieces.push((stores.meshes.add(m), material.clone()));
+                casts_shadow.push(info.casts_shadow());
                 let alternate_mesh = alternate.map(|m| stores.meshes.add(m));
                 game.push(match (paint, dif_spec) {
+                    _ if info.blend == BlendMode::ShadowOnly => Some(GamePiece::ShadowOnly),
                     (Some(surface), _) => Some(GamePiece::Paint(PaintPiece {
                         surface,
                         alternate_mesh,
@@ -225,6 +233,7 @@ pub fn upload(payload: ModelPayload, stores: &mut Stores<'_>) -> (Arc<GpuModel>,
     let model = GpuModel {
         pieces,
         game,
+        casts_shadow,
         reflections,
         aabb_min: Vec3::from(mesh.aabb_min),
         aabb_max: Vec3::from(mesh.aabb_max),
@@ -378,7 +387,7 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
         BlendMode::AlphaTest => AlphaMode::Mask(0.5),
         BlendMode::Blend => AlphaMode::Blend,
         BlendMode::Additive => AlphaMode::Add,
-        BlendMode::Opaque | BlendMode::Hidden => AlphaMode::Opaque,
+        BlendMode::Opaque | BlendMode::ShadowOnly | BlendMode::Hidden => AlphaMode::Opaque,
     };
     StandardMaterial {
         // `.mat` colours are linear, like paint colours.

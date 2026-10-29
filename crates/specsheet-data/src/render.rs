@@ -26,7 +26,10 @@ pub enum BlendMode {
     Blend,
     /// Additively blended (`add` not followed by `env`, e.g. light glows).
     Additive,
-    /// Not drawn in a preview (shadow-only and helper effects).
+    /// Never drawn in colour; only casts sun shadows (`shadowonly`,
+    /// shadows-and-fake-lights.md §1).
+    ShadowOnly,
+    /// Not drawn in a preview (helper effects).
     Hidden,
 }
 
@@ -76,6 +79,12 @@ pub struct MaterialInfo {
 }
 
 impl MaterialInfo {
+    /// Casts sun shadows: `shadowonly`, and the `shadow` flavour, which adds
+    /// a shadow-map pass (dif-spec.md §2). Other effects cast none.
+    pub fn casts_shadow(&self) -> bool {
+        self.blend == BlendMode::ShadowOnly || self.effect.split('.').any(|t| t == "shadow")
+    }
+
     fn fallback(path: &str) -> Self {
         Self {
             path: path.to_owned(),
@@ -101,7 +110,9 @@ impl MaterialInfo {
     fn from_material(path: &str, material: &Material) -> Self {
         let tokens: Vec<&str> = material.effect.split('.').collect();
         let has = |t: &str| tokens.contains(&t);
-        let blend = if ["shadowonly", "fakeshadow", "decalshadow", "mlaaweight"]
+        let blend = if has("shadowonly") {
+            BlendMode::ShadowOnly
+        } else if ["fakeshadow", "decalshadow", "mlaaweight"]
             .iter()
             .any(|t| has(t))
         {
@@ -558,8 +569,19 @@ mod tests {
     }
 
     #[test]
+    fn only_shadowonly_and_the_shadow_flavour_cast_shadows() {
+        assert!(material("eut2.shadowonly.rfx").casts_shadow());
+        assert!(material("eut2.shadowonly.nocull.rfx").casts_shadow());
+        assert!(material("eut2.dif.spec.add.env.nofresnel.shadow.rfx").casts_shadow());
+        assert!(!material("eut2.dif.spec.add.env.rfx").casts_shadow());
+        assert!(!material("eut2.fakeshadow.rfx").casts_shadow());
+        assert!(!material("eut2.decalshadow.rfx").casts_shadow());
+    }
+
+    #[test]
     fn classifies_effects() {
-        assert_eq!(material("eut2.shadowonly.rfx").blend, BlendMode::Hidden);
+        assert_eq!(material("eut2.shadowonly.rfx").blend, BlendMode::ShadowOnly);
+        assert_eq!(material("eut2.fakeshadow.rfx").blend, BlendMode::Hidden);
         assert_eq!(material("eut2.glass.rfx").blend, BlendMode::Blend);
         assert_eq!(
             material("eut2.dif.spec.add.env.a.decal.rfx").blend,

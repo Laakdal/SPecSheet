@@ -10,7 +10,7 @@
     mesh_view_bindings::view,
 }
 #import specsheet::game_lighting::{
-    GameLight, eye_vector, sun_light, reflection_visibility, reflection_lookup,
+    GameLight, eye_vector, sun_light, sun_visibility, reflection_visibility, reflection_lookup,
     schlick_fresnel, to_output,
 }
 
@@ -120,7 +120,8 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let a_mat = paint.shading.z;
 
     // Forward lighting (lighting §5).
-    let sun = sun_light(light, n, e, power, false);
+    let shadow = sun_visibility(in.world_position, normalize(in.world_normal), in.position.xy);
+    let sun = sun_light(light, n, e, power, false, shadow);
     var lit = (sun.diffuse + light.additional_ambient.rgb * a_mat) * albedo + sun.specular * specular;
 
     // The environment reflection with Schlick's fresnel.

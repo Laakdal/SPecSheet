@@ -11,7 +11,7 @@
     mesh_view_bindings::view,
 }
 #import specsheet::game_lighting::{
-    GameLight, eye_vector, sun_light, reflection_visibility, reflection_lookup,
+    GameLight, eye_vector, sun_light, sun_visibility, reflection_visibility, reflection_lookup,
     linear_fresnel, to_output,
 }
 
@@ -201,7 +201,8 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let specular = select(select(remapped, mask * ks * c2, weight), mask * m.a * ks, is_mult);
 
     // Sun and ambient (§5.4) and the combination (§5.6).
-    let sun = sun_light(light, n, e, material.specular.w, weight);
+    let shadow = sun_visibility(in.world_position, normalize(in.world_normal), in.position.xy);
+    let sun = sun_light(light, n, e, material.specular.w, weight, shadow);
     // fn tints the albedo only (§5.2); M multiplies it (dif-spec-mult §3).
     let albedo = base.rgb * m.rgb * normal.albedo;
     var lit = (sun.diffuse + light.additional_ambient.rgb * material.environment.w) * albedo

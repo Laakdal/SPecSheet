@@ -5,6 +5,12 @@
 
 #define_import_path specsheet::game_lighting
 
+#import bevy_pbr::{
+    mesh_view_bindings as view_bindings,
+    mesh_view_types::DIRECTIONAL_LIGHT_FLAGS_SHADOWS_ENABLED_BIT,
+    shadows::fetch_directional_shadow,
+}
+
 // Mirrors `GameLight` in lighting.rs.
 struct GameLight {
     to_sun: vec4<f32>,             // L, unit, towards the sun
@@ -25,17 +31,43 @@ fn eye_vector(p: vec3<f32>) -> vec3<f32> {
     return -p / sqrt(max(dot(p, p), 1e-6));
 }
 
+// The scene sun's shadow at a surface: 1 lit, 0 in shadow. The sun is
+// Bevy's only directional light; `normal` is the geometric normal, for the
+// shadow bias.
+fn sun_visibility(world_position: vec4<f32>, normal: vec3<f32>, frag_coord: vec2<f32>) -> f32 {
+    let lights = &view_bindings::lights;
+    if (*lights).n_directional_lights == 0u
+        || ((*lights).directional_lights[0].flags & DIRECTIONAL_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) == 0u {
+        return 1.0;
+    }
+    let view_z = dot(vec4<f32>(
+        view_bindings::view.view_from_world[0].z,
+        view_bindings::view.view_from_world[1].z,
+        view_bindings::view.view_from_world[2].z,
+        view_bindings::view.view_from_world[3].z
+    ), world_position);
+    return fetch_directional_shadow(0u, world_position, normal, view_z, frag_coord);
+}
+
 // Blinn-Phong without normalisation. The gate is sat(10·N·L), or N·L for
-// the `weight` flavour.
-fn sun_light(light: GameLight, n: vec3<f32>, e: vec3<f32>, power: f32, weight_gate: bool) -> SunLight {
+// the `weight` flavour. The sun's `visibility` (its shadow) scales its
+// diffuse and specular, not the ambient (dif-spec §9).
+fn sun_light(
+    light: GameLight,
+    n: vec3<f32>,
+    e: vec3<f32>,
+    power: f32,
+    weight_gate: bool,
+    visibility: f32,
+) -> SunLight {
     let l = light.to_sun.xyz;
     let nl = saturate(dot(n, l));
     let nh = saturate(dot(n, normalize(e + l)));
     let lobe = select(0.0, pow(nh, power), nh > 0.0);
     let gate = select(saturate(10.0 * nl), nl, weight_gate);
     var out: SunLight;
-    out.diffuse = light.ambient.rgb + light.sun_diffuse.rgb * nl;
-    out.specular = light.sun_specular.rgb * lobe * gate;
+    out.diffuse = light.ambient.rgb + light.sun_diffuse.rgb * nl * visibility;
+    out.specular = light.sun_specular.rgb * lobe * gate * visibility;
     return out;
 }
 

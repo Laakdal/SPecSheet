@@ -6,6 +6,7 @@
 pub mod assets;
 mod difspec;
 mod lighting;
+mod shadow;
 mod textures;
 mod tonemap;
 mod truckpaint;
@@ -18,6 +19,7 @@ use specsheet_session::GameSession;
 
 pub use difspec::{DifSpecMaterial, DifSpecMaterials, DifSpecSurface};
 pub use lighting::{GameLight, GameLighting};
+pub use shadow::{ShadowOnly, ShadowOnlyMaterial};
 pub use textures::{vehicle_slot_cube, GameTextures};
 pub use tonemap::GameTonemap;
 pub use truckpaint::{Paint, PaintMaterials, PaintSurface, TruckPaintMaterial};
@@ -33,6 +35,7 @@ impl Plugin for GameMaterialsPlugin {
             truckpaint::TruckPaintPlugin,
             difspec::DifSpecPlugin,
             tonemap::GameTonemapPlugin,
+            shadow::ShadowOnlyPlugin,
         ))
         .init_resource::<GameTextures>()
         .add_systems(Update, textures::finish_game_textures);

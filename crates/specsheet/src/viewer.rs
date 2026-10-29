@@ -8,7 +8,9 @@ use std::sync::Arc;
 use bevy::camera::{Exposure, Hdr};
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll, MouseScrollUnit};
-use bevy::light::{EnvironmentMapLight, GeneratedEnvironmentMapLight};
+use bevy::light::{
+    CascadeShadowConfigBuilder, EnvironmentMapLight, GeneratedEnvironmentMapLight, NotShadowCaster,
+};
 use bevy::pbr::{DistanceFog, FogFalloff};
 use bevy::prelude::*;
 use bevy::render::renderer::RenderDevice;
@@ -24,7 +26,7 @@ use crate::studio::{FrameSet, Studio};
 use specsheet_render::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
 use specsheet_render::{
     vehicle_slot_cube, DifSpecMaterial, DifSpecMaterials, GameLight, GameLighting, GameTextures,
-    GameTonemap, MaterialContext, Paint, PaintMaterials, TruckPaintMaterial,
+    GameTonemap, MaterialContext, Paint, PaintMaterials, ShadowOnly, TruckPaintMaterial,
 };
 
 /// The truck, the scene, lights and the orbit camera.
@@ -255,9 +257,17 @@ fn setup(
         Sun,
         DirectionalLight {
             illuminance: DEFAULT_SUN * SUN_LUX,
-            shadow_maps_enabled: false,
+            shadow_maps_enabled: true,
             ..default()
         },
+        // Ours: two cascades over the garage, sharp near the truck.
+        CascadeShadowConfigBuilder {
+            num_cascades: 2,
+            first_cascade_far_bound: 12.0,
+            maximum_distance: 40.0,
+            ..default()
+        }
+        .build(),
         Transform::default().looking_to(DEFAULT_SUN_DIRECTION, Vec3::Y),
     ));
     commands.insert_resource(GlobalAmbientLight {
@@ -702,6 +712,7 @@ struct PieceMaterials<'w> {
     dif_spec_materials: ResMut<'w, Assets<DifSpecMaterial>>,
     lighting: ResMut<'w, GameLighting>,
     buffers: ResMut<'w, Assets<ShaderBuffer>>,
+    shadow_only: Res<'w, ShadowOnly>,
 }
 
 impl PieceMaterials<'_> {
@@ -725,15 +736,23 @@ impl PieceMaterials<'_> {
             textures: &mut self.textures,
             light: &self.lighting.buffer,
         };
-        for ((mesh, material), game) in model.pieces.iter().zip(&model.game) {
-            match game {
-                None => {
-                    commands.spawn((
-                        Mesh3d(mesh.clone()),
-                        MeshMaterial3d(material.clone()),
-                        ChildOf(parent),
-                    ));
-                }
+        let pieces = model
+            .pieces
+            .iter()
+            .zip(&model.game)
+            .zip(&model.casts_shadow);
+        for (((mesh, material), game), &casts_shadow) in pieces {
+            let entity = match game {
+                None => commands.spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    ChildOf(parent),
+                )),
+                Some(GamePiece::ShadowOnly) => commands.spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(self.shadow_only.0.clone()),
+                    ChildOf(parent),
+                )),
                 Some(GamePiece::Paint(painted)) => {
                     let mesh = painted
                         .alternate_mesh
@@ -751,7 +770,7 @@ impl PieceMaterials<'_> {
                         Mesh3d(mesh.clone()),
                         MeshMaterial3d(material),
                         ChildOf(parent),
-                    ));
+                    ))
                 }
                 Some(GamePiece::DifSpec(surface)) => {
                     let material = self.dif_specs.get(
@@ -764,8 +783,13 @@ impl PieceMaterials<'_> {
                         Mesh3d(mesh.clone()),
                         MeshMaterial3d(material),
                         ChildOf(parent),
-                    ));
+                    ))
                 }
+            }
+            .id();
+            // Only `shadowonly` and the `shadow` flavour cast sun shadows.
+            if !casts_shadow {
+                commands.entity(entity).insert(NotShadowCaster);
             }
         }
     }
