@@ -1147,4 +1147,7 @@ fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
         session.clear(&game, &cabin).is_err(),
         "the cabin is required"
     );
+    // `data.sii` `fallback[]: "accessory|steering_w/standard.sii"`: swapped,
+    // never removed.
+    assert!(!session.removable(&SlotId::from("steering_w")));
 }
