@@ -101,6 +101,7 @@ pub(super) fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Opt
             cockpit_look: unit.get_str("look").map(str::to_owned),
             cockpit_variant: unit.get_str("variant").map(str::to_owned),
             cockpit_uk: None,
+            ..ModelRef::default()
         }
     } else if kind.is_base() || kind == AccessoryKind::Wheel {
         ModelRef {
@@ -112,6 +113,10 @@ pub(super) fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Opt
             look: unit.get_str("look").map(str::to_owned),
             variant: unit.get_str("variant").map(str::to_owned),
             variant_uk: unit.get_str("variant_uk").map(str::to_owned),
+            windows: unit.get_str("windows_model").map(str::to_owned),
+            wipers: unit.get_str("wiper_model").map(str::to_owned),
+            wipers_uk: unit.get_str("wiper_model_uk").map(str::to_owned),
+            ui_shadow: unit.get_str("ui_shadow").map(str::to_owned),
             ..ModelRef::default()
         }
     } else {
@@ -126,6 +131,7 @@ pub(super) fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Opt
             cockpit_look: unit.get_str("look").map(str::to_owned),
             cockpit_variant: unit.get_str("variant").map(str::to_owned),
             cockpit_uk: unit.get_str("interior_model_uk").map(str::to_owned),
+            ..ModelRef::default()
         }
     };
     // Cabins list required addon slots in `require[]`.
