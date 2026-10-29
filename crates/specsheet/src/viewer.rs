@@ -134,11 +134,15 @@ impl Orbit {
         let finite = |v: f32, default: f32| if v.is_finite() { v } else { default };
         let distance = finite(spec.zoom * spec.relative_bounds[0], MIN_DISTANCE).max(MIN_DISTANCE);
         let [low, high] = spec.elevation_limit;
-        let (min_pitch, max_pitch) = if low.is_finite() && high.is_finite() {
-            (low.min(high), low.max(high))
+        // The scene's lowest angle, but up to nearly overhead: the game's
+        // own limits allow only 20° (−0.35…0), which the user found too
+        // tight (ours).
+        let min_pitch = if low.is_finite() && high.is_finite() {
+            low.min(high)
         } else {
-            (MIN_PITCH, MAX_PITCH)
+            MIN_PITCH
         };
+        let max_pitch = MAX_PITCH;
         let target = Vec3::from(spec.aim);
         let target = if target.is_finite() {
             target
@@ -1192,7 +1196,7 @@ mod tests {
         };
         let orbit = Orbit::from_spec(&spec);
         assert!(orbit.position().distance(Vec3::from(spec.position())) < 1e-4);
-        assert_eq!((orbit.min_pitch, orbit.max_pitch), (-0.35, 0.0));
+        assert_eq!((orbit.min_pitch, orbit.max_pitch), (-0.35, MAX_PITCH));
         // Slightly below the aim, looking up at the cab.
         assert!(orbit.position().y < spec.aim[1] && orbit.position().y > 1.5);
         // Zoomed out at the lowest pitch, the camera stays above the floor.
