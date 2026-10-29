@@ -478,7 +478,7 @@ pub struct ModelCache {
 
 impl ModelCache {
     /// The model if it is ready; starts loading it otherwise.
-    fn get(&mut self, studio: &Studio, key: &ModelKey) -> Option<Arc<GpuModel>> {
+    pub(crate) fn get(&mut self, studio: &Studio, key: &ModelKey) -> Option<Arc<GpuModel>> {
         match self.models.get(key) {
             Some(ModelState::Ready(model)) => Some(Arc::clone(model)),
             Some(_) => None,
@@ -695,6 +695,7 @@ fn sync_truck(
             .spawn((transform, Visibility::default(), *part, ChildOf(*root)))
             .id();
         paints.spawn(&mut commands, &studio, entity, &model, &paint_of(placement));
+        crate::flares::spawn_flares(&mut commands, &studio, entity, &model);
         instances.entities.insert(key.clone(), entity);
     }
     instances.bounds = bounds;

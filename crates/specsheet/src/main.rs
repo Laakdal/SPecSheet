@@ -5,6 +5,7 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod flares;
 mod hotspots;
 mod parity;
 mod script;
@@ -17,6 +18,7 @@ use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_egui::EguiPlugin;
 
+use crate::flares::FlarePlugin;
 use crate::script::ScriptPlugin;
 use crate::studio::StudioPlugin;
 use crate::ui::UiPlugin;
@@ -55,6 +57,7 @@ fn main() -> AppExit {
             EguiPlugin::default(),
             StudioPlugin,
             ViewerPlugin,
+            FlarePlugin,
             GameMaterialsPlugin,
             UiPlugin,
             script,
