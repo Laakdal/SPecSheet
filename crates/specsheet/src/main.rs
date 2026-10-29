@@ -16,10 +16,10 @@ mod ui;
 mod viewer;
 
 use bevy::prelude::*;
-use bevy::window::WindowResolution;
+use bevy::window::{PresentMode, WindowResolution};
 use bevy_egui::EguiPlugin;
 
-use crate::diagnostics::PerfPlugin;
+use crate::diagnostics::{PerfPlugin, PerfSwitches};
 use crate::flares::FlarePlugin;
 use crate::script::ScriptPlugin;
 use crate::studio::StudioPlugin;
@@ -53,6 +53,11 @@ fn main() -> AppExit {
                     primary_window: Some(Window {
                         title: "SpecSheet".into(),
                         resolution: WindowResolution::new(1440, 900),
+                        present_mode: if PerfSwitches::from_env().no_vsync {
+                            PresentMode::AutoNoVsync
+                        } else {
+                            PresentMode::AutoVsync
+                        },
                         ..default()
                     }),
                     ..default()

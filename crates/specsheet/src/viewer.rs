@@ -22,6 +22,7 @@ use specsheet_assembly::Placement;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
+use crate::diagnostics::PerfSwitches;
 use crate::studio::{FrameSet, Studio};
 use specsheet_render::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
 use specsheet_render::{
@@ -40,6 +41,7 @@ impl Plugin for ViewerPlugin {
             .init_resource::<SceneState>()
             .init_resource::<ViewportInput>()
             .init_resource::<ExposureSettings>()
+            .insert_resource(PerfSwitches::from_env())
             .add_systems(Startup, setup)
             .add_systems(
                 Update,
@@ -230,34 +232,45 @@ fn setup(
     mut images: ResMut<Assets<Image>>,
     mut lighting: ResMut<GameLighting>,
     mut buffers: ResMut<Assets<ShaderBuffer>>,
+    perf: Res<PerfSwitches>,
 ) {
     lighting.set(&mut buffers, game_light(None));
     let orbit = Orbit::from_pose(DEFAULT_CAMERA, DEFAULT_TARGET);
-    commands.spawn((
-        Camera3d::default(),
-        Projection::Perspective(PerspectiveProjection {
-            fov: DEFAULT_FOV_DEGREES.to_radians(),
-            near: 0.1,
-            far: 500.0,
-            ..default()
-        }),
-        Camera {
-            clear_color: ClearColorConfig::Custom(BACKGROUND),
-            ..default()
-        },
-        Hdr,
-        Tonemapping::None,
-        UNIT_EXPOSURE,
-        tonemap(FIXED_EXPOSURE),
-        environment(&mut images, DEFAULT_ENVIRONMENT),
-        orbit.transform(),
-        orbit,
-    ));
+    let camera = commands
+        .spawn((
+            Camera3d::default(),
+            Projection::Perspective(PerspectiveProjection {
+                fov: DEFAULT_FOV_DEGREES.to_radians(),
+                near: 0.1,
+                far: 500.0,
+                ..default()
+            }),
+            Camera {
+                clear_color: ClearColorConfig::Custom(BACKGROUND),
+                ..default()
+            },
+            Hdr,
+            Tonemapping::None,
+            UNIT_EXPOSURE,
+            orbit.transform(),
+            orbit,
+        ))
+        .id();
+    let mut camera = commands.entity(camera);
+    if !perf.no_tonemap {
+        camera.insert(tonemap(FIXED_EXPOSURE));
+    }
+    if !perf.no_envmap {
+        camera.insert(environment(&mut images, DEFAULT_ENVIRONMENT));
+    }
+    if perf.no_msaa {
+        camera.insert(Msaa::Off);
+    }
     commands.spawn((
         Sun,
         DirectionalLight {
             illuminance: DEFAULT_SUN * SUN_LUX,
-            shadow_maps_enabled: true,
+            shadow_maps_enabled: !perf.no_shadows,
             ..default()
         },
         // Ours: two cascades over the garage, sharp near the truck.
@@ -372,7 +385,11 @@ fn update_reflection(
     mut images: ResMut<Assets<Image>>,
     device: Option<Res<RenderDevice>>,
     camera: Single<Entity, With<Camera3d>>,
+    perf: Res<PerfSwitches>,
 ) {
+    if perf.no_envmap {
+        return;
+    }
     let reflection = &mut *reflection;
     let generations = (studio.truck_generation, cache.generation);
     if reflection.counted != generations {
@@ -826,10 +843,10 @@ fn tonemap(exposure: f32) -> GameTonemap {
 /// Sets the tonemap's exposure when [`ExposureSettings`] change.
 fn apply_exposure(
     settings: Res<ExposureSettings>,
-    mut camera_tonemap: Single<&mut GameTonemap, With<Camera3d>>,
+    camera_tonemap: Option<Single<&mut GameTonemap, With<Camera3d>>>,
 ) {
-    if settings.is_changed() {
-        camera_tonemap.exposure = settings.exposure;
+    if let Some(mut tonemap) = camera_tonemap.filter(|_| settings.is_changed()) {
+        tonemap.exposure = settings.exposure;
     }
 }
 
@@ -867,6 +884,7 @@ fn apply_scene(
         ),
         With<Camera3d>,
     >,
+    perf: Res<PerfSwitches>,
 ) {
     let (camera_entity, mut orbit, mut projection) = camera.into_inner();
     if state.generation != studio.scene_generation {
@@ -910,7 +928,7 @@ fn apply_scene(
                     generated.intensity = intensity;
                 }
             }
-        } else {
+        } else if !perf.no_envmap {
             camera_commands.insert(environment(&mut images, strength));
         }
         match (scene.fog_color, scene.fog_density) {

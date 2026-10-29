@@ -66,6 +66,46 @@ pub fn perf_enabled() -> bool {
     *ENABLED.get_or_init(|| perf_requested(std::env::var("SPECSHEET_PERF").ok().as_deref()))
 }
 
+/// A/B switches for the performance plan (TASKS 13). Each only works with
+/// `SPECSHEET_PERF` set, so plain runs can never change:
+/// `SPECSHEET_PERF_NO_SHADOWS`, `_NO_ENVMAP`, `_NO_MSAA`, `_NO_TONEMAP`,
+/// `_NO_VSYNC`.
+#[derive(Resource, Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PerfSwitches {
+    /// The sun casts no shadows.
+    pub no_shadows: bool,
+    /// No environment map on the camera (the stand-ins' reflections).
+    pub no_envmap: bool,
+    /// MSAA off.
+    pub no_msaa: bool,
+    /// No game tonemap pass.
+    pub no_tonemap: bool,
+    /// Presents without waiting for vsync, so the frame time is the real
+    /// one: with vsync, a frame just over 16.7 ms shows as 33 ms at 60 Hz.
+    pub no_vsync: bool,
+}
+
+impl PerfSwitches {
+    /// The switches of this run.
+    pub fn from_env() -> Self {
+        Self::read(perf_enabled(), |key| std::env::var(key).ok())
+    }
+
+    fn read(perf: bool, var: impl Fn(&str) -> Option<String>) -> Self {
+        if !perf {
+            return Self::default();
+        }
+        let on = |key: &str| perf_requested(var(key).as_deref());
+        Self {
+            no_shadows: on("SPECSHEET_PERF_NO_SHADOWS"),
+            no_envmap: on("SPECSHEET_PERF_NO_ENVMAP"),
+            no_msaa: on("SPECSHEET_PERF_NO_MSAA"),
+            no_tonemap: on("SPECSHEET_PERF_NO_TONEMAP"),
+            no_vsync: on("SPECSHEET_PERF_NO_VSYNC"),
+        }
+    }
+}
+
 /// Frame time and FPS in the log when the performance log is on.
 pub struct PerfPlugin;
 
@@ -90,6 +130,7 @@ impl Plugin for PerfPlugin {
             },
         ));
         info!("perf: performance log on (SPECSHEET_PERF)");
+        info!("perf: switches {:?}", PerfSwitches::from_env());
     }
 }
 
@@ -124,6 +165,25 @@ impl JobTimer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn perf_switches_work_only_with_the_performance_log() {
+        let all = |key: &str| {
+            key.starts_with("SPECSHEET_PERF_NO_")
+                .then(|| "1".to_owned())
+        };
+        assert_eq!(PerfSwitches::read(false, all), PerfSwitches::default());
+        let on = PerfSwitches::read(true, all);
+        assert!(on.no_shadows && on.no_envmap && on.no_msaa && on.no_tonemap && on.no_vsync);
+        let shadows = |key: &str| (key == "SPECSHEET_PERF_NO_SHADOWS").then(|| "1".to_owned());
+        assert_eq!(
+            PerfSwitches::read(true, shadows),
+            PerfSwitches {
+                no_shadows: true,
+                ..PerfSwitches::default()
+            }
+        );
+    }
 
     #[test]
     fn the_performance_log_is_off_unless_asked_for() {
