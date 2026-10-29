@@ -5,6 +5,7 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod diagnostics;
 mod flares;
 mod hotspots;
 mod parity;
@@ -18,6 +19,7 @@ use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_egui::EguiPlugin;
 
+use crate::diagnostics::PerfPlugin;
 use crate::flares::FlarePlugin;
 use crate::script::ScriptPlugin;
 use crate::studio::StudioPlugin;
@@ -45,20 +47,25 @@ fn main() -> AppExit {
         }
     };
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "SpecSheet".into(),
-                resolution: WindowResolution::new(1440, 900),
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "SpecSheet".into(),
+                        resolution: WindowResolution::new(1440, 900),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(diagnostics::log_plugin()),
+        )
         .add_plugins((
             EguiPlugin::default(),
             StudioPlugin,
             ViewerPlugin,
             FlarePlugin,
             GameMaterialsPlugin,
+            PerfPlugin,
             UiPlugin,
             script,
         ))

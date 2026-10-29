@@ -16,6 +16,7 @@ use specsheet_data::GameInstall;
 use specsheet_session::view::{self, SlotOptions, TruckEntry, TruckOverview};
 use specsheet_session::{GameSession, TruckSession};
 
+use crate::diagnostics::JobTimer;
 use crate::settings::{self, Settings};
 
 /// The app's state and its action flow. Owns the per-frame order every
@@ -116,6 +117,8 @@ pub struct Studio {
     /// The truck's price when it was loaded, before any change.
     pub original_price: Option<i64>,
     job: Option<Task<JobOutput>>,
+    /// When the running job started, for the performance log.
+    job_timer: Option<JobTimer>,
     pub error: Option<String>,
     /// True until the first attempt to open a game has finished.
     pub discovering: bool,
@@ -134,7 +137,8 @@ impl Studio {
         self.job.is_some()
     }
 
-    fn spawn(&mut self, work: impl FnOnce() -> JobOutput + Send + 'static) {
+    fn spawn(&mut self, label: &'static str, work: impl FnOnce() -> JobOutput + Send + 'static) {
+        self.job_timer = Some(JobTimer::start(label));
         self.job = Some(AsyncComputeTaskPool::get().spawn(async move { work() }));
     }
 
@@ -178,14 +182,16 @@ fn apply(studio: &mut Studio, action: Action) {
     match action {
         Action::OpenGame(dir) => {
             let saved = settings::load().game_dir;
-            studio.spawn(move || JobOutput::Opened(open_game(dir, saved)));
+            studio.spawn("open game", move || {
+                JobOutput::Opened(open_game(dir, saved))
+            });
         }
         Action::LoadTruck(truck) => {
             let Some(game) = studio.game.clone() else {
                 return;
             };
             studio.options = None;
-            studio.spawn(move || {
+            studio.spawn("load truck", move || {
                 JobOutput::Truck(game.start_truck(&truck).map_err(|e| e.to_string()))
             });
         }
@@ -202,7 +208,7 @@ fn apply(studio: &mut Studio, action: Action) {
             else {
                 return;
             };
-            studio.spawn(move || {
+            studio.spawn("select", move || {
                 let result = session
                     .select(&game, &accessory)
                     .map(|_| ())
@@ -215,7 +221,7 @@ fn apply(studio: &mut Studio, action: Action) {
             else {
                 return;
             };
-            studio.spawn(move || {
+            studio.spawn("set drive", move || {
                 session.set_drive(&game, drive);
                 JobOutput::Changed(session, Ok(()))
             });
@@ -274,6 +280,9 @@ fn finish_jobs(mut studio: ResMut<Studio>, mut actions: ResMut<Actions>) {
         return;
     };
     studio.job = None;
+    if let Some(timer) = studio.job_timer.take() {
+        timer.finish();
+    }
     match output {
         JobOutput::Opened(result) => {
             studio.discovering = false;

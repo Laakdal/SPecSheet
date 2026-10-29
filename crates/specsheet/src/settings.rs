@@ -17,8 +17,13 @@ pub struct Settings {
     pub truck: Option<String>,
 }
 
+/// The app's config directory, which also holds its log file.
+pub fn app_dir() -> Option<PathBuf> {
+    Some(dirs::config_dir()?.join(APP_DIR))
+}
+
 fn path() -> Option<PathBuf> {
-    Some(dirs::config_dir()?.join(APP_DIR).join(FILE))
+    Some(app_dir()?.join(FILE))
 }
 
 /// Loads the settings; a missing or unreadable file yields defaults.
