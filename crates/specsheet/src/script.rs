@@ -9,6 +9,7 @@
 //! drive left|right         scene <index>
 //! tab <token>              orbit <yaw°> <pitch°> <distance>
 //! sleep <frames>           echo <text>           (logs the text, to sync external drivers)
+//! exposure <E>             (the tonemap's fixed exposure scale)
 //! screenshot <png path>    exit
 //! ```
 
@@ -23,7 +24,7 @@ use specsheet_session::view::Tab;
 
 use crate::studio::{Action, Actions, FrameSet, Studio};
 use crate::ui::UiState;
-use crate::viewer::{ModelCache, Orbit};
+use crate::viewer::{ExposureSettings, ModelCache, Orbit};
 
 pub(crate) const ENV_VAR: &str = "SPECSHEET_SCRIPT";
 
@@ -76,6 +77,8 @@ pub enum Step {
         distance: f32,
     },
     Wait,
+    /// Sets the tonemap's fixed exposure scale E.
+    Exposure(f32),
     Sleep(u32),
     Echo(String),
     Screenshot(PathBuf),
@@ -129,6 +132,13 @@ pub(crate) fn parse(source: &str) -> Result<Vec<Step>, String> {
             })),
             "scene" => Step::Act(Action::SetScene(one()?.parse().map_err(|_| error())?)),
             "tab" => Step::Tab(Tab::from_token(one()?).ok_or_else(error)?),
+            "exposure" => Step::Exposure(
+                one()?
+                    .parse()
+                    .ok()
+                    .filter(|e: &f32| e.is_finite() && *e > 0.0)
+                    .ok_or_else(error)?,
+            ),
             "sleep" => Step::Sleep(one()?.parse().map_err(|_| error())?),
             "echo" => Step::Echo(args.join(" ")),
             "screenshot" => Step::Screenshot(PathBuf::from(args.join(" "))),
@@ -160,6 +170,7 @@ fn run(
     mut actions: ResMut<Actions>,
     cache: Res<ModelCache>,
     mut ui: ResMut<UiState>,
+    mut exposure: ResMut<ExposureSettings>,
     mut orbit: Single<&mut Orbit>,
     mut exit: MessageWriter<AppExit>,
 ) {
@@ -196,6 +207,7 @@ fn run(
                 ui.open_tab(tab, overview, &mut actions);
             }
         }
+        Step::Exposure(e) => exposure.exposure = e,
         Step::Sleep(frames) => script.cooldown = frames,
         Step::Echo(text) => info!("script: {text}"),
         Step::Orbit {
@@ -255,6 +267,10 @@ echo ready now"
             .expect("valid"),
             vec![Step::Sleep(30), Step::Echo("ready now".to_owned())]
         );
+        assert_eq!(
+            parse("exposure 5.555").expect("valid"),
+            vec![Step::Exposure(5.555)]
+        );
     }
 
     #[test]
@@ -263,5 +279,6 @@ echo ready now"
         assert!(error.starts_with("line 2"), "{error}");
         assert!(parse("orbit 1 2\n").is_err());
         assert!(parse("teleport\n").is_err());
+        assert!(parse("exposure -1\n").is_err());
     }
 }

@@ -9,10 +9,9 @@ use bevy::render::render_resource::ShaderType;
 use bevy::render::storage::ShaderBuffer;
 use bevy::shader::load_shader_library;
 
-/// The game's colours are linear HDR, and how its eye adaptation and tone
-/// mapping turn them into pixels is Unknown (F16; REA on the tonemap
-/// parameters is queued). Ours, without a reference: they go straight into
-/// Bevy's tonemapper.
+/// The game's colours are linear HDR in scene units, which go unscaled into
+/// the game's tonemap pass ([`crate::GameTonemap`]); its exposure does the
+/// scaling (tonemap.md §4.2).
 const OUTPUT_SCALE: f32 = 1.0;
 
 pub struct GameLightingPlugin;

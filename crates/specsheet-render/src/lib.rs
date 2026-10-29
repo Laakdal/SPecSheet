@@ -7,6 +7,7 @@ pub mod assets;
 mod difspec;
 mod lighting;
 mod textures;
+mod tonemap;
 mod truckpaint;
 
 use std::sync::Arc;
@@ -18,9 +19,11 @@ use specsheet_session::GameSession;
 pub use difspec::{DifSpecMaterial, DifSpecMaterials, DifSpecSurface};
 pub use lighting::{GameLight, GameLighting};
 pub use textures::{vehicle_slot_cube, GameTextures};
+pub use tonemap::GameTonemap;
 pub use truckpaint::{Paint, PaintMaterials, PaintSurface, TruckPaintMaterial};
 
-/// The game lighting, the clean-room materials and their textures.
+/// The game lighting, the clean-room materials, their textures and the
+/// game's tonemap pass.
 pub struct GameMaterialsPlugin;
 
 impl Plugin for GameMaterialsPlugin {
@@ -29,6 +32,7 @@ impl Plugin for GameMaterialsPlugin {
             lighting::GameLightingPlugin,
             truckpaint::TruckPaintPlugin,
             difspec::DifSpecPlugin,
+            tonemap::GameTonemapPlugin,
         ))
         .init_resource::<GameTextures>()
         .add_systems(Update, textures::finish_game_textures);

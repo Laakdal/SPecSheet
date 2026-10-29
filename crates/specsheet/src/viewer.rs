@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bevy::camera::Exposure;
+use bevy::camera::{Exposure, Hdr};
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll, MouseScrollUnit};
 use bevy::light::{EnvironmentMapLight, GeneratedEnvironmentMapLight};
@@ -24,7 +24,7 @@ use crate::studio::{FrameSet, Studio};
 use specsheet_render::assets::{self, GamePiece, GpuModel, ModelKey, ModelPayload, Stores};
 use specsheet_render::{
     vehicle_slot_cube, DifSpecMaterial, DifSpecMaterials, GameLight, GameLighting, GameTextures,
-    MaterialContext, Paint, PaintMaterials, TruckPaintMaterial,
+    GameTonemap, MaterialContext, Paint, PaintMaterials, TruckPaintMaterial,
 };
 
 /// The truck, the scene, lights and the orbit camera.
@@ -37,12 +37,14 @@ impl Plugin for ViewerPlugin {
             .init_resource::<TruckInstances>()
             .init_resource::<SceneState>()
             .init_resource::<ViewportInput>()
+            .init_resource::<ExposureSettings>()
             .add_systems(Startup, setup)
             .add_systems(
                 Update,
                 (
                     finish_models,
                     apply_scene,
+                    apply_exposure,
                     update_reflection,
                     sync_truck,
                     frame_truck,
@@ -191,13 +193,27 @@ const DEFAULT_FOV_DEGREES: f32 = 40.0;
 const DEFAULT_SUN_DIRECTION: Vec3 = Vec3::new(6.0, -10.0, 8.0);
 const BACKGROUND: Color = Color::srgb(0.082, 0.094, 0.114);
 
-/// Lux per unit of the game's `light_diffuse`, and cd/m² per unit of
-/// `light_ambient` and `light_environment`, at `Exposure::BLENDER`. These
-/// reproduce the three.js viewer's balance; the game's own light units are
-/// Unknown.
-const SUN_LUX: f32 = 1000.0;
-const AMBIENT_NITS: f32 = 1500.0;
-const ENVIRONMENT_NITS: f32 = 500.0;
+/// Bevy's exposure at factor 1 (`2^−ev100 / 1.2 = 1`), so Bevy-lit
+/// surfaces come out in the game's scene units, like the game materials,
+/// and the tonemap pass applies the only exposure.
+const UNIT_EXPOSURE: Exposure = Exposure {
+    ev100: -0.263_034_4,
+};
+/// Lux per unit of the game's `light_diffuse`: Bevy's diffuse divides by π,
+/// the game's does not (`Ld = Camb + Csun·NL`), so a white surface gets the
+/// game's light.
+const SUN_LUX: f32 = std::f32::consts::PI;
+/// cd/m² per unit of `light_ambient`: the game's ambient term as it is.
+const AMBIENT_NITS: f32 = 1.0;
+/// cd/m² per unit of `light_environment` for the stand-ins' environment
+/// map. Ours: keeps the three.js viewer's balance.
+const ENVIRONMENT_NITS: f32 = 0.5;
+/// The tonemap's exposure multiplier and fixed exposure scale. Ours
+/// (Hypothesis): the `black` and `integrity` climates' fixed exposure,
+/// `target_gray` 0.18 at a scale of 5.555, so k = 1 (tonemap.md §4.1).
+/// Which climate the tuning screen uses is Unknown.
+const TARGET_GRAY: f32 = 0.18;
+const FIXED_EXPOSURE: f32 = 5.555;
 const DEFAULT_SUN: f32 = 1.6;
 /// three.js used 0xdde6ff at 0.6 against 1.5 for scenes, folded into the colour.
 const DEFAULT_AMBIENT: [f32; 3] = [0.29, 0.32, 0.4];
@@ -227,8 +243,10 @@ fn setup(
             clear_color: ClearColorConfig::Custom(BACKGROUND),
             ..default()
         },
-        Tonemapping::AcesFitted,
-        Exposure::BLENDER,
+        Hdr,
+        Tonemapping::None,
+        UNIT_EXPOSURE,
+        tonemap(FIXED_EXPOSURE),
         environment(&mut images, DEFAULT_ENVIRONMENT),
         orbit.transform(),
         orbit,
@@ -750,6 +768,43 @@ impl PieceMaterials<'_> {
                 }
             }
         }
+    }
+}
+
+/// E, the tonemap's fixed exposure scale; the dev script changes it. The
+/// scene's `limited_pre_exposure` does not enter: it scales only emissive
+/// inputs, and the sun and ambient reach the materials unscaled
+/// (tonemap.md §8.3).
+#[derive(Resource, Clone, Copy, Debug, PartialEq)]
+pub struct ExposureSettings {
+    pub exposure: f32,
+}
+
+impl Default for ExposureSettings {
+    fn default() -> Self {
+        Self {
+            exposure: FIXED_EXPOSURE,
+        }
+    }
+}
+
+/// The tonemap pass with the identity curve (Ours: the curve the game
+/// derives from `contrast` and `shoulder_length` is Unknown) at exposure
+/// scale `exposure`.
+fn tonemap(exposure: f32) -> GameTonemap {
+    let mut tonemap = GameTonemap::default();
+    tonemap.t0.x = TARGET_GRAY;
+    tonemap.exposure = exposure;
+    tonemap
+}
+
+/// Sets the tonemap's exposure when [`ExposureSettings`] change.
+fn apply_exposure(
+    settings: Res<ExposureSettings>,
+    mut camera_tonemap: Single<&mut GameTonemap, With<Camera3d>>,
+) {
+    if settings.is_changed() {
+        camera_tonemap.exposure = settings.exposure;
     }
 }
 

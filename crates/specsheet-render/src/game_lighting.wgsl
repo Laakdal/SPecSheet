@@ -11,7 +11,7 @@ struct GameLight {
     sun_diffuse: vec4<f32>,        // Csun_d
     sun_specular: vec4<f32>,       // Csun_s
     ambient: vec4<f32>,            // Camb; w: Aenv, the reflection visibility
-    additional_ambient: vec4<f32>, // Cadd; w: our scale into Bevy's tonemapper
+    additional_ambient: vec4<f32>, // Cadd; w: our scale into the tonemap pass
 }
 
 // The sun and ambient terms of dif-spec §5.4: Ld and Ls.
@@ -63,7 +63,7 @@ fn linear_fresnel(bias: f32, scale: f32, n_dot_e: f32) -> f32 {
     return saturate(bias + scale * (1.0 - n_dot_e));
 }
 
-// The game writes linear HDR; this is the one scale into Bevy's tonemapper.
+// The game writes linear HDR; this is the one scale into the tonemap pass.
 fn to_output(light: GameLight, colour: vec3<f32>) -> vec3<f32> {
     return colour * light.additional_ambient.w;
 }
