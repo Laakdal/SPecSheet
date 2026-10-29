@@ -117,8 +117,8 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - render the garage's own reflection cube in Bevy, to replace that stand-in;
       - [x] the tonemap pass from `shader-specs/tonemap.md` §4 (`specsheet_render::GameTonemap`), with the lights in the game's units; fixed exposure k = 1 and the identity curve are ours (docs/app/scenes.md). The pre-exposure A/B agrees with F18: the lights stay unscaled;
       - eye adaptation (§3: histogram, trimmed mean, retention), which the tuning screen runs (71, `rea-ui-scene-update.txt`); its limits and `T0.x` are Unknown, so tune them against a reference screenshot. Then bloom (§5) and the curve coefficients from `contrast`/`shoulder_length` (Unknown);
-      - real-time shadows from the scene's main light;
-      - the scene fields still unused: `light_specular`, `floor_reflection`, `cube_reflection`.
+      - [x] real-time shadows from the scene's main light: `shadowonly` and the `shadow` flavour cast, nothing else; the shadow scales the sun term only (docs/app/scenes.md). Open: whether the game draws them on the tuning screen (a reference screenshot), and the `nocull`/`.a` caster variants;
+      - the scene fields still unused: `floor_reflection` (`light_specular` and `cube_reflection` are used).
    2. **Textures** (d3, data only, no shader text):
       - [x] DXGI 67 (R9G9B9E5_SHAREDEXP) unpacks and uploads (`hdr-textures.txt`).
       - [x] `MaterialInfo` carries `normal_texture`, `normal_detail_texture` and `mult_texture`; `MeshPiece` carries `tangents` and `normal_uvs` (the set routed to UV slot 6). de wires them to the GPU; BC5 already uploads natively.
@@ -133,7 +133,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - [x] specs by 71: `glass`, `lamp`, `dif.lum`, `unlit.*`, and `decalshadow`/`light.tex`/`fakeshadow`/`shadowonly`/`none` (`docs/app/shader-specs/`). `tsnmap`/`tsnmapuv` were already in `dif-spec.md` and `truckpaint*.md`; added: UV slot *n* is vertex attribute 8 + *n*, and truckpaint `asafew.a`/`shadow`. The engine inputs they leave open (`texture_reflection_modulator`, lamp colours and contrast, material luminosity) are in each spec's last table, with stand-ins;
       - specs by d3's agent: `dif.spec.mult.dif.spec`, `showroom_v2`, `baked`;
       - [x] REA, answered statically without Ghidra (F18): the cube lookup mirrors z (envmap matrix row 2 negated); `limited_pre_exposure` scales only emissive inputs, so the scene's light colours reach the shaders unscaled; `g` = 1 on the tuning screen; F0 is a constant per effect flag (truckpaint 0.035, glass 0.07); `Ke = env_factor ⊙ specular`; the luminance rule. Render follow-ups: truckpaint F0 = 0.035 (a8fd7be) and `Ke` = clamped `env_factor` ⊙ `specular` in `difspec.rs` (b5454cd), both test-first and awaiting their first build in the combined check; the z flip was already in the cube sampling (de).
-   4. **Other:** bloom, and `fakeshadow`/`shadowonly`.
+   4. **Other:** bloom, and `fakeshadow` (`shadowonly` casts sun shadows, done).
 1. **Materials:** chrome renders as metal from `env_factor`/`shininess`, and the truck's own reflection cube is the environment map (docs/app/materials.md). Next: the cube's exposure, then normal maps and `texture_mult`.
 2. **Paint jobs:** data (F15) and the truckpaint surface are done. Next:
    - the game's lighting: the shared module (`specsheet-render/src/game_lighting.wgsl`) lights truckpaint and `dif.spec`, each with its own `.mat` reflection cube (done). The vehicle_reflection slot is filled by the scene (done). Next: normal maps (needs tangents), then the game's sun profile, eye adaptation and curve for the tonemap pass (done: the pass itself, fixed exposure);
