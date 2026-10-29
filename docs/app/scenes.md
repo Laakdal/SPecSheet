@@ -17,14 +17,21 @@ The hub ("desktop") scenes from `/def/desktop/config*.sii` follow in the picker 
 |---|---|---|---|
 | Scene model | `scene_model_path`, look, variant, position; only the parts in `part_order[]` (the `coll` collision part is skipped) | Loaded like a truck model, under `SceneRoot` | Rendered |
 | Camera | Static `camera_position`/`camera_aim`/`camera_fov`, then frame 0 of each `scene_cinematic_camera` animation. The first pose more than 5 m from the truck whose view ray passes within 5 m of it is used, with the target moved to the closest point on that ray. | Orbit camera starts at that pose; FOV is vertical, as in Bevy | Design: the game's choice between the two is unknown |
-| Sun | `light_direction` (direction travelled), `light_diffuse` | `DirectionalLight`, colour = diffuse / its peak, illuminance = peak × 1000 lux | Approximation |
-| Ambient | `light_ambient` | `GlobalAmbientLight` colour, 1500 cd/m² | Approximation |
-| Environment | `light_environment` | The truck's most common reflection cube as a `GeneratedEnvironmentMapLight` (gradient until it loads), intensity = value × 500 (capped at 4) × an exposure balance ([materials.md](materials.md)) | Approximation: the cube is the game's, its exposure is ours |
+| Sun | `light_direction` (direction travelled), `light_diffuse` | `DirectionalLight`, colour = diffuse / its peak, illuminance = peak × π lux; the game materials take it as is ([materials.md](materials.md)) | Game units |
+| Ambient | `light_ambient` | `GlobalAmbientLight` colour, 1 cd/m² | Game units |
+| Environment | `light_environment` | The truck's most common reflection cube as a `GeneratedEnvironmentMapLight` (gradient until it loads), intensity = value × 0.5 (capped at 4) × an exposure balance ([materials.md](materials.md)) | Approximation: the cube is the game's, its exposure is ours |
 | Fog | `fog_color`, `fog_density` | `DistanceFog` with `ExponentialSquared` falloff | Rendered |
 | Truck pose | `truck_position`, `truck_rot` (degrees) | `TruckRoot` transform; markers follow it | Rendered |
-| Not used | `light_specular`, `floor_reflection`, `cube_reflection`, `vehicle_reflection`, scene animations (`.pma`), `vehicle_lights_on`, `truck_steering_rot` | | |
+| Not used | `floor_reflection`, `pre_exposure`, scene animations (`.pma`), `vehicle_lights_on`, `truck_steering_rot` | | |
 
-The light units are our own. The camera uses `Exposure::BLENDER` and ACES tone mapping. The light factors in `viewer.rs` (`SUN_LUX`, `AMBIENT_NITS`, `ENVIRONMENT_NITS`) reproduce the balance of the earlier three.js viewer; how the game scales its light values is Unknown. Night scenes (Halloween Fields, Night City) are dark because their definitions are: Halloween Fields has ambient 0.04 and sun 0.15 with vehicle lights on, which we don't render yet.
+**Light units are the game's.** Bevy's camera exposure is set to a factor of 1 (`UNIT_EXPOSURE`), and `SUN_LUX` = π cancels Bevy's 1/π diffuse, so a Bevy-lit stand-in gets the game's `Camb + Csun·N·L` like the game materials do. `ENVIRONMENT_NITS` (0.5) is ours. `light_specular` and the vehicle reflection keys reach the game materials ([materials.md](materials.md)).
+
+**Pre-exposure.** `Scene::limited_pre_exposure` is the scene's `pre_exposure`, else derived from its lights (0.0973 for the tuning screen; Confirmed, `exposure-tonemap-data.txt` §6). It scales only emissive inputs (lamps, backlights); the sun and ambient reach the materials unscaled (§9 there). We draw no emissives yet, so it is unused. An A/B on the Scania S Vortex agrees: scaling the lights by it, with the exposure compensated, washed out the garage and turned the paint into a mirror.
+
+**Tonemap.** Bevy's tonemapper is off and the camera is HDR. `specsheet_render::GameTonemap` runs the game's `def.tonemap` pass (written clean-room from [shader-specs/tonemap.md](shader-specs/tonemap.md) §4): low-light tint, exposure `k = T0.x·E`, optional colour correction, then the tone curve with its hue handling, into the sRGB target. The UI is drawn after it and is unaffected. Ours, each a Hypothesis:
+- **Fixed exposure** `k` = 0.18 × 5.555 = 1, the `black`/`integrity` climates' fixed exposure. The game adapts instead: the UI scene's per-frame update sets no exposure or tonemap parameter, so the histogram eye adaptation (§3) runs on the tuning screen (Confirmed, `research/evidence/rea-ui-scene-update.txt`). Its limits, speeds and `T0.x` are the defaults or the last climate's, values Unknown. Eye adaptation is not built yet. The dev script's `exposure <E>` changes E.
+- **Identity curve** (the spec's §7 test vector): colours up to white pass unchanged, and brighter ones desaturate towards white per §4.5. How the engine builds the curve from `contrast` and `shoulder_length` is Unknown.
+- No bloom, no low-light tint, no colour correction. Night scenes (Halloween Fields, Night City) are dark because their definitions are: Halloween Fields has ambient 0.04 and sun 0.15 with vehicle lights on, which we don't render yet.
 
 ## Defaults
 

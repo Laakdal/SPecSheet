@@ -146,7 +146,7 @@ The game copies these into the material unscaled.
 The scene's light reaches every game material through one shared storage buffer (`render::GameLighting`), filled from the scene's `light_direction`, `light_diffuse`, `light_specular` (else the diffuse colour), `light_ambient` and `light_environment` (Aenv, Hypothesis), or the viewer's defaults.
 
 Ours, each a Hypothesis:
-- **Output scale 1.** The game's linear HDR goes straight into Bevy's ACES tonemapper, without a reference. The game's eye adaptation and tone mapping are Unknown (F16); REA on its tonemap parameters is queued.
+- **Output scale 1.** The game's linear HDR goes unscaled into the game's tonemap pass ([scenes.md](scenes.md)), which applies the exposure.
 - **Cube direction.** The reflected vector in world space, with z flipped as Bevy samples its environment cubes, which keeps the orientation the viewer's reflections had. The game's x/z mirroring is Unknown; if reflections look left/right flipped, suspect that.
 
 Seen working: Under Wraps now reads dark crimson like its thumbnail (brown under Bevy's lighting), with the forest cube of `vehicle_reflection.tobj` upright on the cab (before the vehicle slot; the tuning scene now uses the grey stand-in).

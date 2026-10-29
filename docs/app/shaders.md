@@ -12,7 +12,7 @@ The work so far went into *what* is drawn: the right trucks, parts, positions an
 | The paint still looks too smooth | **The surface is done:** colour masks, airbrush liveries, flip colour and vertex colour follow the clean-room spec (`render/truckpaint.{rs,wgsl}`). It is still lit by Bevy's PBR, so the game's highlight, clear-coat reflection and flake sparkle are missing. |
 | Chrome and metal look dull or dark | The truck's most common reflection cube is used as Bevy's environment light (`viewer::ReflectionCube`), with our own exposure. The game samples each material's own cube with its own fresnel; that comes with the shared lighting module. |
 | No shadows on or under the truck | The `fakeshadow`/`shadowonly` geometry is hidden, and real-time shadows are off. |
-| The overall light feels off | The scene lights are mapped approximately; the game's exposure, tonemapping and bloom are not reproduced. |
+| The overall light feels off | The lights are in the game's units and the game's tonemap pass runs, but with a fixed exposure and an identity curve: the tuning screen's sun profile, eye adaptation and bloom are not reproduced ([scenes.md](scenes.md)). |
 
 ## Which shaders the trucks use
 
