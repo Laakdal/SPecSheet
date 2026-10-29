@@ -101,6 +101,7 @@ pub(super) fn accessory_from_unit(unit: &Unit, slot: &SlotId, path: &str) -> Opt
             cockpit_look: unit.get_str("look").map(str::to_owned),
             cockpit_variant: unit.get_str("variant").map(str::to_owned),
             cockpit_uk: None,
+            cockpit_animated: unit.get_str("animated_model").map(str::to_owned),
             ..ModelRef::default()
         }
     } else if kind.is_base() || kind == AccessoryKind::Wheel {
