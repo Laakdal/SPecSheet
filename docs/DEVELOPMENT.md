@@ -140,6 +140,10 @@ cargo run --release -p specsheet-research --example hdr_textures -- "<game>"/*.s
 # Every vehicle light (flare) hookup on truck models, and the unit and glow model it resolves to
 cargo run --release -p specsheet-research --example flare_survey
 
+# A texture's format, sizes and channel means; TEXTURE_INFO_DUMP=<dir> also writes the top mip's raw bytes (keep them out of the repo)
+cargo run --release -p specsheet-research --example texture_info -- /vehicle/truck/scania_2016/shadow_4x2.tobj
+# model_info lists each piece's material and bounds under its part
+
 # Definition statistics / samples (optional last argument: root directory, default /def/vehicle/truck)
 cargo run --release -p specsheet-research --example def_stats
 cargo run --release -p specsheet-research --example def_stats -- /def/vehicle/f_disc

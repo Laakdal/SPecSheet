@@ -8,6 +8,7 @@ How the app draws game materials. The effect files themselves are described in [
 
 | Effect tokens | `MaterialInfo` | Bevy |
 |---|---|---|
+| any `.mat` with `specular` 0 | (any) | `reflectance` 0, not Bevy's default 4 %: e.g. the `ui_shadow` quad, which otherwise turned grey at grazing angles |
 | `shadowonly` | `ShadowOnly` | only casts sun shadows: `ShadowOnlyMaterial` discards every colour fragment, front faces culled |
 | `fakeshadow`, `decalshadow`, `mlaaweight` | `Hidden` | not drawn (filtered in `build_mesh`) |
 | `glass`, `decal`, `over`, `water` | `Blend` | `AlphaMode::Blend`; glass opacity 0.35, water 0.6 |

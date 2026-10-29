@@ -43,8 +43,8 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
 | Path | Unit | Contents |
 |---|---|---|
 | `data.sii` | `accessory_truck_data` | `info[]`, `fallback[]` (`"<slot>\|<file>"`), `require[]` (slots that must be filled) |
-| `chassis/*.sii` | `accessory_chassis_data` | `model`/`detail_model`, `variant`, `look`, `defaults[]` (including the default cabin) |
-| `cabin/*.sii` | `accessory_cabin_data` | `model`/`detail_model`, `variant`/`variant_uk`, `look`, `suitable_for[]` (chassis), `defaults[]` |
+| `chassis/*.sii` | `accessory_chassis_data` | `model`/`detail_model`, `variant`, `look`, `defaults[]` (including the default cabin); `ui_shadow` (the shadow quad under the truck on the tuning screen; all 164 chassis set it, 71) |
+| `cabin/*.sii` | `accessory_cabin_data` | `model`/`detail_model`, `variant`/`variant_uk`, `look`, `suitable_for[]` (chassis), `defaults[]`; `windows_model` (the side windows' glass, in the cab's space, opened by `left/right_window_anim`) and `wiper_model[_uk]` (with `wiper_anim[_uk]`) |
 | `accessory/<slot>/*.sii` | `accessory_addon_data` and specialised `accessory_addon_*_data` classes | `exterior_model[_uk]`, `interior_model[_uk]`, `look`, `variant`, `suitable_for[]`, `conflict_with[]`, `defaults[]`, `overrides[]`, `hide_in` |
 | `engine/`, `transmission/`, `head_light/`, `interior/`, `paint_job/` | own classes | |
 
