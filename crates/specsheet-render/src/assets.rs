@@ -418,6 +418,13 @@ pub fn material(info: &MaterialInfo, texture: Option<Handle<Image>>) -> Standard
         // is culled.
         unlit: info.is_flare(),
         cull_mode: (!info.is_flare()).then_some(Face::Back),
+        // A `.mat` without specular reflects nothing, not Bevy's default
+        // 4 % (the chassis's `ui_shadow` quad turned into a grey sheet).
+        reflectance: if info.specular == Some([0.0; 3]) {
+            0.0
+        } else {
+            StandardMaterial::default().reflectance
+        },
         ..default()
     }
 }
@@ -946,6 +953,41 @@ mod tests {
         assert_eq!(cutout.alpha_mode, AlphaMode::Mask(0.5));
         let glow = material(&info("eut2.dif.lum.add", BlendMode::Additive), None);
         assert_eq!(glow.alpha_mode, AlphaMode::Add);
+    }
+
+    #[test]
+    fn a_material_without_specular_reflects_nothing() {
+        // The chassis's `ui_shadow` quad: `eut2.dif.over`, specular 0, a
+        // black texture whose alpha is the shadow. Bevy's default
+        // reflectance made it a grey sheet at grazing angles.
+        let info = |specular| MaterialInfo {
+            path: String::new(),
+            effect: "eut2.dif.over.rfx".to_owned(),
+            blend: BlendMode::Blend,
+            diffuse: [1.0; 3],
+            base_texture: None,
+            paintable: false,
+            emissive: false,
+            decal: true,
+            specular,
+            shininess: Some(1.0),
+            env_factor: None,
+            fresnel: None,
+            reflection_texture: None,
+            additional_ambient: None,
+            normal_texture: None,
+            normal_detail_texture: None,
+            mult_texture: None,
+        };
+        assert_eq!(material(&info(Some([0.0; 3])), None).reflectance, 0.0);
+        assert_eq!(
+            material(&info(Some([0.5; 3])), None).reflectance,
+            StandardMaterial::default().reflectance
+        );
+        assert_eq!(
+            material(&info(None), None).reflectance,
+            StandardMaterial::default().reflectance
+        );
     }
 
     #[test]
