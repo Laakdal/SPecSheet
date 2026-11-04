@@ -86,7 +86,8 @@ Command: rea function <exe> --procedure=0x140fcce14 (resolved to
 FUN_140fccdb0, 0x140fccdb0-0x140fcd1ff, two ranges), 2026-10-28 15:00-15:28.
 Evidence ID: ev_6f37f791d2d22c81a2aecc5e05b6dfb9e0e35d0ca7a250a56196d656a84191ba
 The decompilation stays outside the repository
-(%USERPROFILE%ea-ets2unction-pin-create.json). Our observations:
+(%USERPROFILE%
+ea-ets2unction-pin-create.json). Our observations:
   - Arguments: the screen object and a pin index n. The screen keeps an array
     of acc_info_t records, 0x40 bytes each (the array's bounds check names
     array_t<acc_info_t>); n is checked against its count.
@@ -279,3 +280,8 @@ low and 1.9 m forward of where it belongs. So the "vehicle" transform the
 builder adds in the interior pass most likely includes the cockpit's
 placement at the eye point (Hypothesis: the interior is its own placed object
 whose transform the virtual call returns). Not settled by code.
+
+Correction (2026-11-04): "plus its model's placement offset" above holds only
+for the axle models; the cabin, chassis and the interior's exterior model
+give the raw locator. The model search order and the default of
+use_non_wheel_pin_data_from_model are in rea-pin-model-order.txt.

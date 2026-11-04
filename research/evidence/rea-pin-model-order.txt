@@ -1,0 +1,186 @@
+Which model a tuning-screen pin takes its base locator from (F5 follow-up)
+==========================================================================
+
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Static only: nothing was executed, no Ghidra run. Image base 0x140000000.
+Listings stay in the session scratchpad (D13); below are our own observations.
+
+Method (Git Bash, from tools/research; EXE = the path above):
+  python -I disasm.py "$EXE" <addr>          # one function, chained ranges
+  python -I triage.py "$EXE" <offs> <addr>…  # strings, calls, chosen offsets
+  python -I xref.py   "$EXE" <string>        # functions that load a string
+  python -I attr_tables.py "$EXE" use_non_wheel_pin_data_from_model residual_travel
+plus four throw-away scratch scripts (not committed) that use the same PE
+reading as the tools: direct E8 callers of a function, 8-byte pointers to a
+function inside .rdata (vtable slots), RIP-relative LEA/MOV references into
+an .rdata window (vtable starts), and instructions with a given displacement.
+Also the decompile of FUN_140fcf210 already on disk from the earlier run
+(%USERPROFILE%\rea-ets2\function-pin-build.json, ev_ddace5e…).
+
+Data side (ETS2_DIR set, MSYS_NO_PATHCONV=1, prebuilt examples):
+  target/release/examples/def_grep.exe accessory_interior_data ext_model 2000
+  target/release/examples/def_grep.exe accessory_chassis_data pendle_axle_model 1000
+  target/release/examples/model_info.exe <each model>  | grep locator
+  target/release/examples/scs.exe find vehicle/truck .pmd | grep /chassis/
+  target/release/examples/scs.exe cat def/vehicle/truck/renault.t/{data,cabin/*,interior/*}.sii
+
+
+1. The builder asks the vehicle object, through a virtual call, for the model
+---------------------------------------------------------------------------
+FUN_140fcf210 (pin builder), exterior pass, per slot token:
+  0x140fcfaf4  call [vtable + 0x118](vehicle, out pose, &slot token)
+It returns the model object whose locator matched (or null) and the
+locator's pose. After the call the builder loops over the vehicle's model
+array at +0x188 (count +0x190): only when the returned model is element i of
+that array does it add a translation, taken from the chassis data object
+(vehicle +0x200) array at +0x650 (vec3, count +0x658), index i; the last
+element also adds the float at (vehicle +0x1f8 object) +0x17c to z.
+For any model not in +0x188 (cabin, chassis, the +0xf88 model) the base is
+the raw locator position in that model's own coordinates; nothing else is
+added except the vehicle's offset to the scene root (same for every pin).
+(Confirmed, 0x140fcfaf4-0x140fcfced, asm and decompile agree.)
+
+The locator search inside one model, FUN_1415209e0 (Confirmed, asm):
+parts in model order, skipping parts whose "visible" attribute is off, then
+that part's locators in order; first match wins (prefix compare by token
+digit for slot names under 12 characters, exact compare at 12). It returns
+position and rotation unchanged: no instance placement is applied.
+
+2. The five implementations of vtable slot 0x118
+------------------------------------------------
+Pointers to FUN_1415209e0 callers inside .rdata, and the code-referenced
+vtable starts (start = slot address - 0x118 is LEA'd by constructors in
+every case):
+  vtable 0x1421bb3b0  slot 0x118 = FUN_14062ab10   (ctor FUN_1409a7ac0)
+  vtable 0x1421ba0c0  slot 0x118 = FUN_140837c10   (ctor FUN_1409a0bc0)
+  vtable 0x14215a598  slot 0x118 = FUN_140837c10
+  vtable 0x14217e530  slot 0x118 = FUN_140837c10   (base ctor FUN_14075d160)
+  vtable 0x142196c70  slot 0x118 = FUN_140837c10
+FUN_14062ab10 occurs in no other vtable. The class-name strings stored just
+before the two first vtables are "game_physics_vehicle_u" (0x1421bb300)
+and "physics_trailer_actor_u" (0x1421ba090) (names: Hypothesis, the strings
+are only adjacent data).
+
+FUN_140837c10 (base vehicle; trailers) search order (Confirmed, asm):
+  1. every model of the array at +0x188, in index order;
+  2. element 0 of the array at +0x158 (the chassis model).
+
+FUN_14062ab10 (the override) search order (Confirmed, asm):
+  1. the single model at +0xf88, if set;
+  2. element 0 of the array at +0xf60 (data +0xf68, count +0xf70);
+  3. every model of the array at +0x188, in index order;
+  4. element 0 of the array at +0x158 (data +0x160, count +0x168).
+First model whose FUN_1415209e0 search succeeds is returned.
+
+The tuning truck must use FUN_14062ab10: it is the only implementation that
+looks in the cabin, and cabin locators (beacon, mirror_s, doorhndl_s) get
+pins (pin-survey.txt). (Hypothesis, by elimination; strong.)
+
+3. What the arrays and +0xf88 hold
+----------------------------------
+- +0x158[0] = chassis, +0xf60[0] = cabin (Confirmed). FUN_1406299d0 creates
+  a node named "chassis" (string at 0x140629a09) from +0x158[0] and one
+  named "cabin" (0x140629a98) from +0xf60[0], and logs "colors used on
+  chassis %u, colors used on cabin %u". FUN_14061d180 passes &+0x158 and
+  &+0xf60 to the loader FUN_140645870, whose error is "Missing chassis
+  accessory data! (%s)".
+- +0xf88 = the model placed at the cabin's ext_interior locator (Confirmed):
+  FUN_14061d180 passes &+0xf88 as the loader's 8th argument; FUN_140645870
+  (0x140645b65-0x140645c17) then looks up the token 0x5eed65d076e8ae3b,
+  which decodes to "ext_interior", in cabin[0] (chassis[0] when there is no
+  cabin), and writes that locator's pose into the +0xf88 object's placement
+  (+0x30 position, +0x40 rotation). That this object is the interior's
+  ext_model is a Hypothesis (strong): ext_model is the only model the data
+  hangs on ext_interior (F10).
+- +0x188 = one model per chassis "axle_<n>" locator (Hypothesis, strong):
+  FUN_1406510d0 is called with (chassis data, chassis[0], &+0x180, &+0x1a8);
+  it formats "axle_%Iu", finds that locator in the chassis model and appends
+  its position to chassis data +0x650 until the count equals the +0x180
+  array's count (0x140651190-0x1406512df); messages "Chassis %s contains
+  fewer axle locators than axle models, expect crash." and the
+  axle_pndl_%02Iu / pendle-axle variants.
+  Data: 0 of 74 truck chassis models (every *.pmd under vehicle/truck/*/
+  chassis/) carry an axle* locator. (def_grep for pendle_axle_model printed
+  nothing, also over all of /def/vehicle; without a positive control that is
+  weak, so it is not relied on.) So for 1.60 trucks step 3 finds nothing
+  (Hypothesis: the array is empty or carries no slot locators).
+- The builder's own offset table confirms the pairing: index i of +0x188
+  gets chassis data +0x650[i], the axle_<i> position (Confirmed, asm).
+
+4. Effective order for a 1.60 truck, and where it differs from ours
+-------------------------------------------------------------------
+Engine: ext_interior model (the interior's ext_model) -> cabin -> axle
+models -> chassis. First match wins, per model in part/locator order,
+visible parts only.
+Ours (specsheet-assembly pins::slot_locator over cabin then chassis): the
+same for cabin vs chassis, so "cabin before chassis" is right (Confirmed).
+Missing: the ext_model step before the cabin.
+
+Which ext_models carry locators (model_info over all 88 unique ext_model
+paths of every accessory_interior_data under /def/vehicle/truck):
+  78 of 88 carry no locator at all.
+  10 of 88 do, all Renault T (vehicle/truck/renault_t/interior/external/):
+    stock.pmd, stock_uk.pmd: interior-only names (toy*, set_*, l_pillow,
+      intlight_bck, curtain_f, cup_holder), skipped by the exterior pass.
+    antracite_sl_24, antracite_slh_24, carbon_sl_24, carbon_slh_24 and
+    their _uk twins (8 models): also exterior slots f_light_top, flag_l,
+    flag_r, drv_plate, codrv_plate.
+  Excerpt (antracite_sl_24.pmd vs the cabins):
+    f_light_top  ext (0, 3.526, -2.207)   cabin_a (0, 3.526, -2.207)
+                                          cabin_b (0, 3.285, -2.207)
+    drv_plate    ext (-0.739, 2.388, -2.846)  cabin_a (-0.79, 2.377, -2.836)
+    ext_interior cabin_a (0, 0, 0)        cabin_b (0, -0.241, 0)
+  Visibility: each of the 8 *_24 ext_models has one variant ("default")
+  and one part, part1, visible-by-variant [true], and every interior def
+  using them says ext_variant: Default. So the engine's visible-part filter
+  keeps these locators and the ext_model step does match (Confirmed on data).
+  antracite_24_low / carbon_24_low (the *_sl_24 ext_models) are
+  suitable_for sleeper.renault.t.cabin = cabin_b.pmd; the *_24_high ones
+  for high_sleeper = cabin_a.pmd.
+Consequence (Hypothesis, prediction from 1-3; to check in game): on a
+Renault T with a 2024 interior, the f_light_top, flag_l/r and drv/codrv
+plate pins sit on the ext_model's locators, not the cabin's. On the high
+sleeper (cabin_a) that differs by up to 5 cm (plates). On the low sleeper
+(cabin_b) the ext_model's coordinates are those of cabin_a and the builder
+adds no ext_interior placement, so those pins would sit about 0.24 m above
+the parts. (The parts themselves most likely do get the placement:
+FUN_1406299d0 walks two token lists of the vehicle, +0x720 and +0x748,
+searching chassis, then the +0xf88 model, then the cabin, and for a hit on
+the +0xf88 model combines its placement (+0x30) with the locator before
+attaching; that these lists are the addons is a Hypothesis. Note this is
+chassis-first, unlike the pin search.) All other trucks: no change.
+
+5. use_non_wheel_pin_data_from_model default
+--------------------------------------------
+attr_tables.py: the table at 0x142c39ae0, class descriptor 0x141d27eb0,
+holds fallback +0x1b8, use_non_wheel_pin_data_from_model +0x1e0 (type 57,
+a bool), pin_group +0x1e8 … double_sided +0x2b0. The descriptor's name
+pointer (0x142c39a78 -> 0x1421b7380) is "accessory_vehicle_data", so the
+fields sit on the common vehicle accessory-data base. Its factory
+FUN_140977550 calls the constructor FUN_140977730, which zeroes r14d at
+0x140977752 and stores r14b to +0x1e0 at 0x1409777ba with no write to r14
+in between. Default: false (Confirmed). No 1.60 file sets the key
+(pin-attributes.txt §3), so every truck runs with false.
+What it switches (Confirmed earlier, pin-attributes.txt §8, same builder
+code at the test of +0x1e0): when true and the truck's own table did not
+override the group, the non-wheel pin sits on the raw locator with the
+locator's rotation; when false the scene table's offset/dir apply. Wheels
+ignore it.
+
+6. Interior pass base model (Q3)
+--------------------------------
+In the interior pass the builder does not make the virtual call: it takes
+the vehicle's interior object (vehicle +0x268), its model at +0x10, and
+calls FUN_1415209e0 on that model alone (decompile line near 0x140fcfab5;
+call site 0x140fcfab5). No cabin, chassis or ext_model fallback, and no
+axle offset. The UK flag for pin_dir_uk is the interior object's byte
++0x109. (Confirmed.) The model at interior +0x10 being the full cockpit
+model.pmd is a Hypothesis consistent with the data (only it carries the
+interior slot locators, pin-attributes.txt). Whether the scene-root offset
+the builder adds carries the cockpit's eye-point placement is Unknown:
+next step, find who fills vehicle +0x268 and +0x460/+0x260 (the root
+object the builder reads through vtable +0xf8), e.g. the writers of
++0xf90/+0xf98/+0xfa0 in FUN_140645870's last block, which places one more
+model at a locator token chosen by flag 0x200 (tokens at 0x142614aa0 /
+0x142614aa8 are filled at run time).
