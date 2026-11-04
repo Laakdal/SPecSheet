@@ -1,0 +1,163 @@
+How the game places the steering-wheel accessory in the cockpit (slot steering_w)
+===============================================================================
+
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Static only: nothing was executed, no Ghidra run. Image base 0x140000000.
+Listings stay in the session scratchpad (D13); below are our own observations,
+no decompiled code. Follows rea-pin-roots.txt / rea-interior-camera.txt.
+
+Method (Git Bash, from tools/research; EXE = the path above):
+  python -I disasm.py "$EXE" <addr>   # 140530ba0 140530040 140525f80 14051fa00
+                                       # 14061d180 140644240 140645870 1406299d0
+                                       # 14151c800 14015f790 1405231d0
+  python -I triage.py / xref.py / attr_tables.py "$EXE" interior_model_uk
+plus scratch scripts (not committed): token encoder, 8-byte value search,
+RIP-reference scan, disp32 scan, linear disassembly of leaves (0x14015f5c0,
+0x140181fc0, 0x141314b40), and a small interpreter of our own that replays
+the SSE instructions of 0x140530150-0x140530359 as text on numbers we chose
+(the game was not run; it checks which quaternion product the code forms).
+Data side (ETS2_DIR set, MSYS_NO_PATHCONV=1): def_grep accessory_interior_data
+animated_model 2000 (108 model/animated_model pairs, 52 animated models);
+scs.exe cat <model>.pmg into the session scratchpad; a scratch PMG reader
+for the bone table and locators (layout below). Extracted files stay in the
+scratchpad.
+
+PMG layout used (Confirmed, the engine reads file bytes directly; offsets
+match our pmg.rs header): +0x0c bone count, +0x14 locator count, +0x48 bone
+table, +0x4c parts, +0x50 locators. Bone record 0xc8 bytes: name token at
++0x00, 4x4 matrix at +0x08 (row-major, translation at floats 3, 7, 11).
+Locator record 0x2c: token +0x00, position +0x08, quaternion +0x18.
+
+
+1. Locator quaternion order (Confirmed, asm)
+--------------------------------------------
+FUN_1415209e0 copies locator +0x18 (16 bytes) unchanged into the pose
+rotation (0x141520d14-0x141520d2d). Engine rotations store w first: every
+identity it writes has 1.0 in the first float (e.g. 0x14051fe6d,
+0x140645b90), and FUN_1412e2c20 forms a conjugate by negating floats 1-3
+only. So the file order is (w, x, y, z), as our parser reads it.
+
+2. Attach: model, locator, rotation (Confirmed, asm)
+----------------------------------------------------
+FUN_140530ba0 (the [visual_interior] addon loader, called from FUN_14051fa00
+at 0x1405201ae) walks the vehicle's accessories (vehicle_addon_accessory,
+class 0x141d25cf0):
+  - Model: interior_model_uk when the interior def's UK byte (+0x104a) is
+    set and that string is not empty, else interior_model
+    (0x140530e30-0x140530e4f, 0x140530fd7-0x140530ff2, 0x140531140-
+    0x14053115f; the strings sit at def +0x218/+0x1d8, class 0x141d27290).
+  - Locator: the slot token, searched first in the cockpit model (interior
+    +0x10) and then in chassis[0] (vehicle +0x158), not in the cabin
+    (0x140531038-0x140531133).
+  - The addon model is attached under the matched model's node and gets the
+    locator's position and quaternion unchanged as its local placement
+    (0x140531608-0x140531681). The EU/UK choice of the cockpit model
+    (model / model_uk) decides which locator is used; nothing is mirrored.
+  - For a slot name ending in "steering_w" (string compare at 0x14053151f-
+    0x140531568, string 0x14212dfd8) the addon model is also kept at
+    interior +0x14c8. (Names "gps" and "compass" get their own handling at
+    0x140531317-0x140531519.)
+The exterior attach FUN_1406299d0 skips steering_w and trlr_cables
+(0x140629b70-0x140629b87).
+
+3. The wheel is re-posed from the animated model's bone (Confirmed, asm)
+------------------------------------------------------------------------
+FUN_140525f80 (from FUN_14051fa00 at 0x14051fce2) looks up the bone named
+"steering_w" in the animated model (interior +0x18), or in the cockpit
+model when there is no animated model, and stores its index at interior
++0x14d0 (0x140526084-0x140526111). It then takes that bone's pose
+(FUN_14151c800), inverts it (FUN_140181fc0, a general 4x4 inverse), turns it
+into a quaternion (FUN_14015f5c0) and Euler angles (FUN_14015f790), and keeps
+the first angle at +0x14d4 (0x14052611e-0x14052618e).
+FUN_140530040 (from FUN_14051fa00 at 0x140521de8, after the addon loader):
+  - pose = FUN_14151c800(model, +0x14d0). With the model's flag +0x198 bit 0
+    set this is the bone's matrix from the file as is (0x14151c838-
+    0x14151c85e). Otherwise the animated matrix is applied to it.
+  - angle (degrees) = vehicle +0x640 * (an integer setting) * 0.5 +
+    rest (+0x14d4); half of it in radians -> q_s = (cos, 0, sin, 0), a turn
+    about the wheel's own y axis (0x1405300f6-0x14053016d). Assigning sin to
+    lane 0 of the result of FUN_141c99eb0 is a Hypothesis; it is the only
+    order that gives the identity at angle 0.
+  - rotation = q_bone * q_s, with q_bone the quaternion of the bone matrix
+    (our interpreter's replay of 0x140530150-0x140530359 matches q_bone *
+    q_s to 5 decimals and not q_s * q_bone);
+    position = the bone matrix translation (floats 3, 7, 11).
+  - Both are written to the wheel model's local placement (+0x30 position,
+    +0x40 rotation; 0x14053030e-0x140530359). FUN_141314b40 in between only
+    marks the node dirty and does not change rax.
+The animated model sits at the same placement as the cockpit (both at the
+eye point, rea-pin-roots.txt §7), so the bone pose is in cockpit space.
+So the steering_w locator only sets the start pose. When the animated model
+has a steering_w bone, the bone sets the final position and orientation.
+In the tuning screen the vehicle's steering value is presumably 0 (not
+traced; Hypothesis).
+
+4. Rest angle (Confirmed, asm; data check below)
+------------------------------------------------
+FUN_14015f790 returns (heading, pitch, bank) in degrees: pitch = asin of
+-m12, bank = atan2(m10, m11), and heading = -atan2(-m02, m22) wrapped to
+[0, 360). Only heading is kept (+0x14d4). Because the matrix is inverted
+first, rest = heading of the bone's inverse rotation. Adding it to q_s
+cancels the bone's turn about its own y axis.
+
+5. Data: what the rule gives (Confirmed on files, rule from 3-4)
+----------------------------------------------------------------
+- Every one of the 108 interior defs' animated models (52 unique) has a
+  steering_w bone. The cockpit models all carry a steering_w locator.
+- Applying 3-4 with no steering, the wheel's rest rotation is a pure turn
+  about x in 52 of 52 animated models (|y|, |z| <= 0.004). The tilt runs
+  from 34.8 deg (Renault T, wxyz (0.954, 0.299, 0, 0)) to 74 deg (DAF 2021,
+  (0.798, 0.602, 0, 0)).
+- EU and UK give the same rotation in every pair. Examples (wxyz):
+    Scania 2016 EU and UK       (0.948, 0.317, 0, 0)  bone t (0.00, -0.275, -0.481)
+    Volvo FH 2021 EU and UK     (0.898, 0.440, 0, 0)
+    Iveco S-Way EU and UK       (0.915, 0.404, 0, 0)
+    MAN TGX Euro 6 EU and UK    (0.844, 0.536, 0, 0)
+    DAF XF Electric EU and UK   (0.828, 0.561, 0, 0)
+    Iveco Hi-Way EU and UK      (0.873, 0.488, 0.002, 0.003)
+  The bone's x is about 0 because the cockpit origin is the driver's eye.
+- The locators are not a consistent wheel frame. Measured against the
+  bone's y axis (the axis the wheel model turns about), the locator's own
+  axes differ per truck and between EU and UK:
+    Scania 2016: locator y is perpendicular to the bone's y; locator z is
+      -bone y (EU) or +bone y (UK);
+    MAN TGX Euro 6: locator y . bone y = +0.37 (EU), -0.95 (UK);
+    Iveco S-Way: +0.97 (EU), -0.97 (UK);
+    DAF XF Electric: -0.86 (EU), +0.86 (UK);
+    Volvo FH 2012-2024: +0.93 (EU and UK).
+  Scania 2016: the bone sits 0.122 m from the locator along the bone's y
+  axis (the wheel model's depth is 0.122 m). Other trucks: 0.02-0.30 m, not
+  along that axis.
+
+6. The +0xfa0 object at swheel (Confirmed, asm)
+-----------------------------------------------
+FUN_140644240 (called by FUN_140645870 with &+0xf90, &+0xfa0, &+0xf98)
+fills +0xfa0 with the model /vehicle/driver/swheel.pmd (path string
+pointer at 0x142c146b0, load at 0x14064553d-0x140645558; the file exists,
+aabb x +-0.229). FUN_140645870 then places it at the cabin's (or chassis's)
+swheel locator, or swheel_uk when flag 0x200 (UK interior) is set
+(0x140645c35-0x140645ce3). So +0xfa0 is the driver character's steering
+wheel, not the accessory. The truck loader FUN_14061d180 also keeps the
+steering_w accessory's entry from the exterior addon list +0x720 at
++0xfa8, with its placement copied to +0xfb0..+0xfcc (0x14061db3a-
+0x14061dc14). What uses +0xfa8 is Unknown.
+
+7. Drawing (Confirmed, asm)
+---------------------------
+FUN_1405231d0 draws the interior addon lists. Entries whose slot is
+steering_w are drawn only when a setting (the object at 0x142bea880, read
+through FUN_1401c7650) is non-zero (0x1405232d0-0x1405232ea,
+0x140523340-0x14052335a). This is presumably the option to hide the
+steering wheel (Hypothesis).
+
+
+Unknowns
+--------
+- The setting multiplied with vehicle +0x640 and whether the tuning screen
+  leaves the steering value at 0. Next: writers of vehicle +0x640.
+- Whether the animated path of FUN_14151c800 is active in the tuning screen
+  (flag +0x198 bit 0). If it is, the animation's current frame is applied on
+  top of the bone matrix. Next: writers of model +0x198.
+- What uses +0xfa8 (the steering_w accessory's exterior model). Next:
+  readers of +0xfa8 / +0xfb0.
