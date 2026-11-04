@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use specsheet_core::SlotId;
-use specsheet_formats::pmg::Locator;
+use specsheet_formats::pmg::{Bone, Locator};
 use specsheet_truck::{Accessory, AccessoryKind, TruckCatalog};
 
 use super::{Drive, Placement, Transform};
@@ -48,6 +48,92 @@ fn to_truck_space(parent: &Transform, locator: &Locator) -> Locator {
     }
 }
 
+/// The bone and the slot of the steering wheel (rea-steering-wheel.txt).
+const STEERING_WHEEL: &str = "steering_w";
+
+/// The steering wheel's pose in the cockpit's space, the game's way
+/// (`research/evidence/rea-steering-wheel.txt`): from the `steering_w`
+/// bone of the interior's animated model, else of the cockpit model. The
+/// position is the bone's translation; the rotation is the bone's,
+/// followed by a turn about the wheel's own y axis that cancels the bone's
+/// heading (the heading of the inverse bone). The cockpit's `steering_w`
+/// locators are not a consistent frame between trucks or drive sides.
+pub(super) fn steering_pose(
+    fs: &GameFs,
+    cache: &ModelCache,
+    models: &[&Placement],
+) -> Option<Transform> {
+    models.iter().find_map(|placement| {
+        let model = cache.load(fs, &placement.model).ok()?;
+        model.pmg.bone(STEERING_WHEEL).map(bone_pose)
+    })
+}
+
+/// A bone's rest pose with its heading cancelled (see [`steering_pose`]).
+fn bone_pose(bone: &Bone) -> Transform {
+    let m = &bone.matrix;
+    let rest = m[2][0].atan2(m[2][2]);
+    let (s, c) = rest.sin_cos();
+    // The bone's rotation times a turn by `rest` about y.
+    let r = |i: usize| {
+        [
+            m[i][0] * c - m[i][2] * s,
+            m[i][1],
+            m[i][0] * s + m[i][2] * c,
+        ]
+    };
+    Transform {
+        translation: bone.translation(),
+        rotation: quaternion([r(0), r(1), r(2)]),
+        scale: 1.0,
+    }
+}
+
+/// The unit quaternion `(x, y, z, w)` of a rotation matrix (rows, for
+/// column vectors).
+fn quaternion(m: [[f32; 3]; 3]) -> [f32; 4] {
+    let trace = m[0][0] + m[1][1] + m[2][2];
+    let q = if trace > 0.0 {
+        let s = (trace + 1.0).sqrt() * 2.0;
+        [
+            (m[2][1] - m[1][2]) / s,
+            (m[0][2] - m[2][0]) / s,
+            (m[1][0] - m[0][1]) / s,
+            0.25 * s,
+        ]
+    } else if m[0][0] > m[1][1] && m[0][0] > m[2][2] {
+        let s = (1.0 + m[0][0] - m[1][1] - m[2][2]).sqrt() * 2.0;
+        [
+            0.25 * s,
+            (m[0][1] + m[1][0]) / s,
+            (m[0][2] + m[2][0]) / s,
+            (m[2][1] - m[1][2]) / s,
+        ]
+    } else if m[1][1] > m[2][2] {
+        let s = (1.0 + m[1][1] - m[0][0] - m[2][2]).sqrt() * 2.0;
+        [
+            (m[0][1] + m[1][0]) / s,
+            0.25 * s,
+            (m[1][2] + m[2][1]) / s,
+            (m[0][2] - m[2][0]) / s,
+        ]
+    } else {
+        let s = (1.0 + m[2][2] - m[0][0] - m[1][1]).sqrt() * 2.0;
+        [
+            (m[0][2] + m[2][0]) / s,
+            (m[1][2] + m[2][1]) / s,
+            0.25 * s,
+            (m[1][0] - m[0][1]) / s,
+        ]
+    };
+    let norm = q.iter().map(|v| v * v).sum::<f32>().sqrt();
+    if norm > 1e-6 {
+        q.map(|v| v / norm)
+    } else {
+        Transform::IDENTITY.rotation
+    }
+}
+
 /// Interior-only accessories (an interior model, no exterior one) need the
 /// cockpit's locators.
 fn interior_only(accessory: &Accessory) -> bool {
@@ -83,11 +169,13 @@ pub(super) fn cockpit_slots<'a>(
 /// not the cabin has one for the slot). A slot without one (Scania
 /// carpets) sits at the cockpit's origin, the driver's eye point: such
 /// models are authored in the cockpit's frame (Hypothesis). Right-hand
-/// drive uses `interior_model_uk` when given.
+/// drive uses `interior_model_uk` when given. The steering wheel takes
+/// `steering`, its bone pose in the cockpit's space, when there is one.
 pub(super) fn interior_part_placements(
     selected: &[&Accessory],
     by_slot: &BTreeMap<SlotId, Vec<&Locator>>,
     cockpit: Option<&Transform>,
+    steering: Option<&Transform>,
     drive: Drive,
     warnings: &mut Vec<String>,
 ) -> Vec<Placement> {
@@ -104,7 +192,11 @@ pub(super) fn interior_part_placements(
         let Some(model) = model else {
             continue;
         };
+        let wheel = accessory.slot.as_str().ends_with(STEERING_WHEEL);
         let transforms: Vec<Transform> = match (by_slot.get(&accessory.slot), cockpit) {
+            (_, Some(eye)) if wheel && steering.is_some() => {
+                steering.map(|pose| eye.compose(pose)).into_iter().collect()
+            }
             (Some(locators), _) => locators
                 .iter()
                 .map(|l| super::transform::from_locator(l))
@@ -182,6 +274,75 @@ mod tests {
         assert!((x + 0.683).abs() < 1e-5 && (y - 2.333).abs() < 1e-5 && (z + 2.417).abs() < 1e-5);
     }
 
+    /// The Scania 2016 animated cockpit's `steering_w` bone, rounded: its
+    /// rotation turns about y as well as x, and the game cancels the turn
+    /// (rea-steering-wheel.txt), leaving a 37° tilt about x.
+    fn scania_wheel_bone() -> Bone {
+        Bone {
+            name: "steering_w".to_owned(),
+            matrix: [
+                [-0.0056, 0.0, 1.0, 0.001],
+                [0.6019, 0.7985, 0.0034, -0.2746],
+                [-0.7985, 0.6019, -0.0045, -0.4814],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        }
+    }
+
+    #[test]
+    fn the_wheel_bone_gives_a_pure_tilt_about_x() {
+        let pose = bone_pose(&scania_wheel_bone());
+        assert_eq!(pose.translation, [0.001, -0.2746, -0.4814]);
+        let [x, y, z, w] = pose.rotation;
+        assert!(y.abs() < 0.005 && z.abs() < 0.005, "{:?}", pose.rotation);
+        let tilt = 2.0 * x.atan2(w).to_degrees();
+        assert!((tilt - 37.0).abs() < 0.5, "{tilt}");
+    }
+
+    #[test]
+    fn the_steering_wheel_takes_the_bone_pose_over_its_locator() {
+        let slots: BTreeSet<SlotId> = ["steering_w"].map(SlotId::from).into();
+        // A locator turned another way, as the UK Scania cockpit's is.
+        let mut turned = locator("steering_w", [0.0, -0.372, -0.555]);
+        turned.rotation_wxyz = [0.894, -0.447, 0.0, 0.0];
+        let cockpit = [turned];
+        let by_slot = locators_by_slot(&slots, cockpit.iter());
+        let wheel = addon(
+            "std.t.steering_w",
+            "steering_w",
+            ModelRef {
+                cockpit: Some("/steering.pmd".to_owned()),
+                ..ModelRef::default()
+            },
+        );
+        let eye = Transform {
+            translation: [-0.683, 2.705, -1.862],
+            ..Transform::IDENTITY
+        };
+        let pose = bone_pose(&scania_wheel_bone());
+        let mut warnings = Vec::new();
+        let placed = interior_part_placements(
+            &[&wheel],
+            &by_slot,
+            Some(&eye),
+            Some(&pose),
+            Drive::Right,
+            &mut warnings,
+        );
+        assert_eq!(placed.len(), 1);
+        assert_eq!(placed[0].transform, eye.compose(&pose));
+        // Without a bone, the locator.
+        let placed = interior_part_placements(
+            &[&wheel],
+            &by_slot,
+            Some(&eye),
+            None,
+            Drive::Left,
+            &mut warnings,
+        );
+        assert_eq!(placed[0].transform.translation, [0.0, -0.372, -0.555]);
+    }
+
     #[test]
     fn interior_only_parts_use_cockpit_slots_the_cabin_lacks() {
         let slots: BTreeSet<SlotId> = ["steering_w", "mirror"].map(SlotId::from).into();
@@ -220,6 +381,7 @@ mod tests {
             &[&wheel, &side_mirror],
             &by_slot,
             None,
+            None,
             Drive::Left,
             &mut warnings,
         );
@@ -247,13 +409,15 @@ mod tests {
             &[&carpet],
             &by_slot,
             Some(&eye),
+            None,
             Drive::Right,
             &mut warnings,
         );
         assert_eq!(placed.len(), 1);
         assert_eq!(placed[0].model, "/carpet_uk.pmd");
         assert_eq!(placed[0].transform, eye);
-        let none = interior_part_placements(&[&carpet], &by_slot, None, Drive::Left, &mut warnings);
+        let none =
+            interior_part_placements(&[&carpet], &by_slot, None, None, Drive::Left, &mut warnings);
         assert!(none.is_empty());
         assert_eq!(warnings.len(), 1, "no cockpit at all is reported");
     }

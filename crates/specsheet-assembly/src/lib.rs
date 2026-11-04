@@ -41,7 +41,9 @@ pub use hookups::HookupPosition;
 use crate::pins::PinBases;
 use crate::slots::locators_by_slot;
 use base::{addon_slots, base_layout};
-use cockpit::{cockpit_locators, cockpit_slots, interior_part_placements, interior_slots};
+use cockpit::{
+    cockpit_locators, cockpit_slots, interior_part_placements, interior_slots, steering_pose,
+};
 use hookups::hookup_placements;
 use interior::{cockpit_placements, exterior_model_locators, interior_placements};
 use specsheet_data::model::ModelCache;
@@ -184,10 +186,14 @@ pub fn assemble(
     // has one for the slot too (the Renault T carpet: `carpet` on the
     // cockpit floor, `carpet_hi` on the cabin).
     let part_locators = locators_by_slot(&interior_slots, cockpit_locs.iter());
+    // The wheel follows the animated model's bone, else the cockpit's.
+    let steering_models: Vec<&Placement> = cockpit_animated.iter().chain(&cockpit).collect();
+    let steering = steering_pose(fs, cache, &steering_models);
     assembly.interior_parts = interior_part_placements(
         &selected,
         &part_locators,
         cockpit.as_ref().map(|c| &c.transform),
+        steering.as_ref(),
         drive,
         &mut assembly.warnings,
     );
