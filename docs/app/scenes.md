@@ -74,9 +74,10 @@ Without a scene camera, the orbit target follows the centre of the truck's bound
 
 ## Interior view
 
-The Interior and Interior Accessories tabs look from the driver's seat (Design: the game's interior camera is assumed, until a reference screenshot confirms it).
+The Interior and Interior Accessories tabs look from the driver's seat with the truck's own interior camera unit (F10, Confirmed; `specsheet-data::camera`).
 
-- **Eye point:** the camera sits at `Assembly::cockpit`'s transform, the driver's eye point: the cabin's first visible `interior*` locator (F10, Confirmed). The driving camera's `head_offset` is not applied (Unknown whether the tuning view uses it).
-- **Looking around:** it starts looking ahead and slightly down (pitch −0.2). A drag turns the head, by up to ±2.6 rad of yaw and ±1.2 rad of pitch. There is no pan or zoom.
+- **Eye point:** `Assembly::cockpit`'s transform (the cabin's first visible `interior*` locator) plus the camera's `head_offset` in truck axes, its x mirrored for right-hand drive.
+- **Field of view:** the camera's `camera_fov`, the horizontal angle of a 4:3 view, kept as a vertical angle on wider views. The scene's field of view comes back when the view ends.
+- **Looking around:** it starts at the camera's mouse defaults (ahead, pitch `mouse_up_down_default`; a truck without a camera unit looks down 0.2 rad). A drag turns the head, by up to ±2.6 rad of yaw and ±1.2 rad of pitch (ours; the game's limits are in the unit and not applied yet). There is no pan or zoom.
 - **What is drawn:** the interior's full cockpit, and the interior-only accessories on its locators (`Assembly::interior_parts`: steering wheel, curtains, toys, glass sets, carpets; a part whose slot has no cockpit locator sits at the eye point), replace the light exterior-view interior. The pins are those of the interior tab, with no far-side culling inside the cab.
 - **Leaving:** switching to any other tab returns to the orbit camera unchanged.

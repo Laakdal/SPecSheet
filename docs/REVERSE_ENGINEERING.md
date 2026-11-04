@@ -205,7 +205,10 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
   - The interior's `model`/`look`/`variant` (the cockpit) and its `animated_model` are placed there with the position only, unrotated (`FUN_14051fa00`). `ext_interior` carries only `ext_model`. The two points coincide only on the EU Scania 2016 cabins; on most other cabins `ext_interior` is the truck's origin.
   - The cockpit's locators are head-relative: in every cockpit checked `steering_w` is at x ≈ 0, 0.32–0.54 m below the origin.
   - The interior accessories' locators (`steering_w`, `carpet`, `curtain_f`, `toyhang`/`toybed`/`toyseat`, `set_glass`, cup-holder sets, `intlight_*`, `flag_l`/`flag_r`, `frntglss_mid`, …) are on the cockpit model. Interior-only accessories take those locators even where the cabin has one that matches the slot (the Renault T cabin's `carpet_hi`).
-  - The driving camera unit (`interior_camera` in the truck's `data.sii`, `/def/camera/units/interior_*.sui`) adds its own `head_offset` on the camera side only (Renault T: (0, −0.17, 0.01)). Whether the tuning screen's interior view uses it is Unknown.
+  - **The interior camera (Confirmed, `research/evidence/rea-interior-camera.txt`).** The tuning screen's interior tabs use a copy of the truck's own camera unit (`interior_camera` in its `data.sii`, written in `/def/camera/units/interior_*.sui`), with the profile's seat adjustment left out.
+    - Eye: the eye point plus the unit's `head_offset`, in truck axes, x mirrored in a right-hand-drive cab (Renault T: (0, −0.17, 0.01), so its eye is 0.17 m below the locator). Pins don't add it.
+    - Field of view: `camera_fov` is the horizontal angle in degrees of a 4:3 view; wider views keep that view's vertical angle, 2·atan(0.75·tan(fov/2)) (72° gives 57.2° vertical).
+    - Start look: yaw `mouse_left_right_default` (mirrored for right-hand drive; no 1.60 unit sets it) and pitch `mouse_up_down_default`, in degrees. `look_presets_defaults` is not used. That negative pitch looks down is a Hypothesis.
   - Implementation: `Assembly::cockpit`; tests `real_install::every_preset_has_a_cockpit_at_the_drivers_eye` and `an_interior_part_takes_the_cockpits_locator_even_when_the_cabin_has_one`.
   - Correction (2026-11-04): this was a Hypothesis that the cockpit sits at `ext_interior`, drawn from the Scania, where the two points coincide.
 
