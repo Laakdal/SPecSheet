@@ -1163,6 +1163,72 @@ fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
 }
 
 #[test]
+fn every_steering_wheel_tilts_about_x_alike_in_both_drives() {
+    // research/evidence/rea-steering-wheel.txt: the game poses the wheel
+    // from the animated model's `steering_w` bone, which comes out as a
+    // pure tilt about x, close for EU and UK (the old Scania R cockpits'
+    // own bones differ by 7°: 55.5° and 62.8°). The cockpit locators' axes
+    // disagree between trucks and between EU and UK, by up to 180°.
+    use specsheet_assembly::Drive;
+    use specsheet_core::SlotId;
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
+    use specsheet_truck::AccessoryKind;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let wheel = SlotId::from("steering_w");
+    let (mut failures, mut checked) = (Vec::new(), 0);
+    for truck in view::trucks(&game) {
+        let mut session = game.start_truck(&truck.id).expect("truck");
+        let interiors: Vec<_> = session
+            .catalog()
+            .accessories()
+            .filter(|a| a.kind == AccessoryKind::Interior)
+            .map(|a| a.id.clone())
+            .collect();
+        for interior in interiors {
+            if session.select(&game, &interior).is_err() {
+                continue;
+            }
+            let mut tilts = Vec::new();
+            for drive in [Drive::Left, Drive::Right] {
+                session.set_drive(&game, drive);
+                let Some(part) = session
+                    .assembly()
+                    .interior_parts
+                    .iter()
+                    .find(|p| p.slot == wheel)
+                else {
+                    continue;
+                };
+                checked += 1;
+                let [x, y, z, w] = part.transform.rotation;
+                let tilt = 2.0 * x.atan2(w).to_degrees();
+                if y.abs() > 0.01 || z.abs() > 0.01 || !(20.0..80.0).contains(&tilt) {
+                    failures.push(format!(
+                        "{} {interior} {drive:?}: wheel rotation {:?}",
+                        truck.id, part.transform.rotation
+                    ));
+                }
+                tilts.push(tilt);
+            }
+            if let [left, right] = tilts[..] {
+                if (left - right).abs() > 10.0 {
+                    failures.push(format!(
+                        "{} {interior}: tilt {left:.1}° left, {right:.1}° right",
+                        truck.id
+                    ));
+                }
+            }
+        }
+    }
+    assert!(checked > 100, "only {checked} wheels checked");
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
 fn every_truck_names_an_interior_camera_that_exists() {
     // research/evidence/interior-locators.md: each truck's data.sii names
     // its `vehicle_interior_camera` unit, written in /def/camera/units.
