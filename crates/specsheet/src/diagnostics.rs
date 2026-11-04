@@ -69,7 +69,7 @@ pub fn perf_enabled() -> bool {
 /// A/B switches for the performance plan (TASKS 13). Each only works with
 /// `SPECSHEET_PERF` set, so plain runs can never change:
 /// `SPECSHEET_PERF_NO_SHADOWS`, `_NO_ENVMAP`, `_NO_MSAA`, `_NO_TONEMAP`,
-/// `_NO_VSYNC`.
+/// `_NO_VSYNC`, `_REFILTER_ENVMAP`.
 #[derive(Resource, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct PerfSwitches {
     /// The sun casts no shadows.
@@ -83,6 +83,9 @@ pub struct PerfSwitches {
     /// Presents without waiting for vsync, so the frame time is the real
     /// one: with vsync, a frame just over 16.7 ms shows as 33 ms at 60 Hz.
     pub no_vsync: bool,
+    /// Keeps refiltering the environment map every frame, as before the
+    /// fix, to time the difference.
+    pub refilter_envmap: bool,
 }
 
 impl PerfSwitches {
@@ -102,6 +105,7 @@ impl PerfSwitches {
             no_msaa: on("SPECSHEET_PERF_NO_MSAA"),
             no_tonemap: on("SPECSHEET_PERF_NO_TONEMAP"),
             no_vsync: on("SPECSHEET_PERF_NO_VSYNC"),
+            refilter_envmap: on("SPECSHEET_PERF_REFILTER_ENVMAP"),
         }
     }
 }
@@ -168,13 +172,11 @@ mod tests {
 
     #[test]
     fn perf_switches_work_only_with_the_performance_log() {
-        let all = |key: &str| {
-            key.starts_with("SPECSHEET_PERF_NO_")
-                .then(|| "1".to_owned())
-        };
+        let all = |key: &str| key.starts_with("SPECSHEET_PERF_").then(|| "1".to_owned());
         assert_eq!(PerfSwitches::read(false, all), PerfSwitches::default());
         let on = PerfSwitches::read(true, all);
         assert!(on.no_shadows && on.no_envmap && on.no_msaa && on.no_tonemap && on.no_vsync);
+        assert!(on.refilter_envmap);
         let shadows = |key: &str| (key == "SPECSHEET_PERF_NO_SHADOWS").then(|| "1".to_owned());
         assert_eq!(
             PerfSwitches::read(true, shadows),

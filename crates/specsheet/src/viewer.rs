@@ -500,6 +500,7 @@ const FILTER_FRAMES: u32 = 30;
 /// the filter has run.
 fn settle_environment_map(
     mut commands: Commands,
+    perf: Res<PerfSwitches>,
     mut frames: Local<u32>,
     camera: Single<
         (
@@ -511,7 +512,7 @@ fn settle_environment_map(
     >,
 ) {
     let (entity, filtered, generating) = *camera;
-    if !(generating && filtered) {
+    if perf.refilter_envmap || !(generating && filtered) {
         *frames = 0;
         return;
     }
