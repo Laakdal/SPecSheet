@@ -66,7 +66,8 @@ pub(super) fn interior_slots(catalog: &TruckCatalog) -> BTreeSet<SlotId> {
 }
 
 /// The cockpit locators of slots the cabin does not offer, matched with the
-/// same longest-prefix rule as the cabin's (F4).
+/// same longest-prefix rule as the cabin's (F4): the slots that get only an
+/// interior pin.
 pub(super) fn cockpit_slots<'a>(
     addon_slots: &BTreeSet<SlotId>,
     exterior: &BTreeMap<SlotId, Vec<&Locator>>,
@@ -78,9 +79,11 @@ pub(super) fn cockpit_slots<'a>(
 }
 
 /// Places the selected interior-only accessories at their cockpit
-/// locators. A slot without one (carpets) sits at the cockpit's origin,
-/// the driver's eye point: such models are authored in the cockpit's frame
-/// (Hypothesis). Right-hand drive uses `interior_model_uk` when given.
+/// locators (`by_slot`, matched over the cockpit's own locators, whether or
+/// not the cabin has one for the slot). A slot without one (Scania
+/// carpets) sits at the cockpit's origin, the driver's eye point: such
+/// models are authored in the cockpit's frame (Hypothesis). Right-hand
+/// drive uses `interior_model_uk` when given.
 pub(super) fn interior_part_placements(
     selected: &[&Accessory],
     by_slot: &BTreeMap<SlotId, Vec<&Locator>>,

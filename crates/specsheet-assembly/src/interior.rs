@@ -1,10 +1,13 @@
 //! The interior's exterior-view model at the cabin's `ext_interior`
-//! locator (finding F10), and its full cockpit at the same locator for the
-//! interior camera. The cockpit's locators are relative to the driver's
-//! eye (the steering wheel at (0, −0.37, −0.55), the cab centre at
-//! x +0.683, and `ext_interior` at x −0.683 in truck space), so the
-//! locator is the eye point (Hypothesis).
+//! locator (finding F10), and its full cockpit at the driver's eye point for
+//! the interior camera. The eye point is the first visible locator whose
+//! name starts with `interior` (`interior`/`interior_uk`, `interior_s`/
+//! `interior_s1`, `interior1`, …): the cockpit's locators are relative to
+//! it (the steering wheel at x ≈ 0, 0.3–0.5 m below), and the game places
+//! the cockpit there, position only (`research/evidence/rea-pin-roots.txt`,
+//! `research/evidence/interior-locators.md`).
 
+use specsheet_core::Transform;
 use specsheet_formats::pmg::Locator;
 use specsheet_truck::AccessoryKind;
 
@@ -16,10 +19,9 @@ use super::{Drive, Placement};
 /// Cabin locator the interior's exterior-view model attaches to.
 const INTERIOR_LOCATOR: &str = "ext_interior";
 
-/// Places the selected interior's exterior-view model at the cabin's
-/// `ext_interior` locator (all 26 presets fit there; six would not fit at
-/// the origin, interior survey E3).
-/// Returns the exterior-view placements and the cockpit, if any.
+/// Prefix of the locator names that hold the driver's eye point.
+const EYE_LOCATOR: &str = "interior";
+
 /// The visible locators of the interiors' exterior models, in each model's
 /// own coordinates: the game's pin builder searches them before the
 /// cabin's, without their `ext_interior` placement (F5,
@@ -41,15 +43,16 @@ pub(super) fn exterior_model_locators(
         .collect()
 }
 
+/// Places the selected interior's exterior-view model at the cabin's
+/// `ext_interior` locator (all 26 presets fit there; six would not fit at
+/// the origin, interior survey E3).
 pub(super) fn interior_placements(
     selected: &[&specsheet_truck::Accessory],
     base_locators: &[Locator],
     drive: Drive,
     warnings: &mut Vec<String>,
-) -> (Vec<Placement>, Option<Placement>, Option<Placement>) {
+) -> Vec<Placement> {
     let mut placements = Vec::new();
-    let mut cockpit = None;
-    let mut animated = None;
     for accessory in selected
         .iter()
         .filter(|a| a.kind == AccessoryKind::Interior)
@@ -72,29 +75,63 @@ pub(super) fn interior_placements(
             ));
             continue;
         };
-        let transform = super::transform::from_locator(locator);
         placements.push(Placement {
             slot: accessory.slot.clone(),
             accessory: accessory.id.clone(),
             model: model.clone(),
             look: accessory.model.look.clone(),
             variant: variant.cloned(),
-            transform,
+            transform: super::transform::from_locator(locator),
         });
-        if let Some(full) = &accessory.model.cockpit {
-            let in_cockpit = |model: &String| Placement {
-                slot: accessory.slot.clone(),
-                accessory: accessory.id.clone(),
-                model: model.clone(),
-                look: accessory.model.cockpit_look.clone(),
-                variant: accessory.model.cockpit_variant.clone(),
-                transform,
-            };
-            cockpit = Some(in_cockpit(full));
-            // The moving parts sit in the cockpit's space, at rest (their
-            // animations are not played).
-            animated = accessory.model.cockpit_animated.as_ref().map(in_cockpit);
-        }
     }
-    (placements, cockpit, animated)
+    placements
+}
+
+/// The driver's eye point: the position of the first of `locators` whose
+/// name starts with `interior`, unrotated. `locators` are in the game's
+/// search order (the interior's exterior model, the cabin, the chassis)
+/// and hold the visible parts only, so the cabin's variant picks the drive
+/// side (`interior` on the EU variant, `interior_uk` on the UK one).
+fn eye_point(locators: &[Locator]) -> Option<Transform> {
+    locators
+        .iter()
+        .find(|l| l.name.starts_with(EYE_LOCATOR))
+        .map(|l| Transform {
+            translation: l.position,
+            ..Transform::IDENTITY
+        })
+}
+
+/// The selected interior's full cockpit and its moving parts, at the
+/// driver's eye point found in `locators` (see [`eye_point`]).
+pub(super) fn cockpit_placements(
+    selected: &[&specsheet_truck::Accessory],
+    locators: &[Locator],
+    warnings: &mut Vec<String>,
+) -> (Option<Placement>, Option<Placement>) {
+    let Some(accessory) = selected.iter().find(|a| a.kind == AccessoryKind::Interior) else {
+        return (None, None);
+    };
+    let Some(full) = &accessory.model.cockpit else {
+        return (None, None);
+    };
+    let Some(transform) = eye_point(locators) else {
+        warnings.push(format!(
+            "{}: cabin has no visible `{EYE_LOCATOR}*` locator",
+            accessory.id
+        ));
+        return (None, None);
+    };
+    let in_cockpit = |model: &String| Placement {
+        slot: accessory.slot.clone(),
+        accessory: accessory.id.clone(),
+        model: model.clone(),
+        look: accessory.model.cockpit_look.clone(),
+        variant: accessory.model.cockpit_variant.clone(),
+        transform,
+    };
+    // The moving parts sit in the cockpit's space, at rest (their
+    // animations are not played).
+    let animated = accessory.model.cockpit_animated.as_ref().map(in_cockpit);
+    (Some(in_cockpit(full)), animated)
 }

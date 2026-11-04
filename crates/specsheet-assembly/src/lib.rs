@@ -11,7 +11,9 @@
 //!   model, composed with the host's own placement (finding F11).
 //! * The selected interior's light exterior-view model (`ext_model`) is
 //!   placed at the cabin's `ext_interior` locator, so the cab is not hollow
-//!   when seen through the windows (`research/evidence/interior-survey.txt`).
+//!   when seen through the windows (`research/evidence/interior-survey.txt`);
+//!   its full cockpit at the driver's eye point, the first visible
+//!   `interior*` locator (`research/evidence/rea-pin-roots.txt`).
 //! * Pin bases: each exterior slot's first matching locator and every wheel
 //!   position, from which [`crate::pins`] builds the game's pins (F5).
 
@@ -41,7 +43,7 @@ use crate::slots::locators_by_slot;
 use base::{addon_slots, base_layout};
 use cockpit::{cockpit_locators, cockpit_slots, interior_part_placements, interior_slots};
 use hookups::hookup_placements;
-use interior::{exterior_model_locators, interior_placements};
+use interior::{cockpit_placements, exterior_model_locators, interior_placements};
 use specsheet_data::model::ModelCache;
 use specsheet_data::GameFs;
 use wheels::wheel_placements;
@@ -164,21 +166,27 @@ pub fn assemble(
     let rear = wheel_locators(REAR_WHEELS);
     let wheels = wheel_placements(&selected, &front, &rear, &mut assembly.warnings);
     assembly.placements.extend(wheels);
-    let (interior, cockpit, cockpit_animated) =
-        interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
-    // Pins search the interior's exterior model first, then the cabin, then
-    // the chassis (F5).
+    let interior = interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
+    // The game searches the interior's exterior model first, then the cabin,
+    // then the chassis, for pins and for the driver's eye point (F5).
     let mut pin_locators = exterior_model_locators(fs, cache, &interior);
     pin_locators.extend(base_locators.iter().cloned());
     assembly.placements.extend(interior);
+    let (cockpit, cockpit_animated) =
+        cockpit_placements(&selected, &pin_locators, &mut assembly.warnings);
     let cockpit_locs = cockpit
         .as_ref()
         .map(|c| cockpit_locators(fs, cache, c, &mut assembly.warnings))
         .unwrap_or_default();
-    let cockpit_by_slot = cockpit_slots(&interior_slots(catalog), &by_slot, &cockpit_locs);
+    let interior_slots = interior_slots(catalog);
+    let cockpit_by_slot = cockpit_slots(&interior_slots, &by_slot, &cockpit_locs);
+    // Interior-only parts take the cockpit's locators even where the cabin
+    // has one for the slot too (the Renault T carpet: `carpet` on the
+    // cockpit floor, `carpet_hi` on the cabin).
+    let part_locators = locators_by_slot(&interior_slots, cockpit_locs.iter());
     assembly.interior_parts = interior_part_placements(
         &selected,
-        &cockpit_by_slot,
+        &part_locators,
         cockpit.as_ref().map(|c| &c.transform),
         drive,
         &mut assembly.warnings,
@@ -355,16 +363,52 @@ mod tests {
         interior.model.cockpit = Some("/cockpit.pmd".to_owned());
         interior.model.cockpit_variant = Some("cab_s_a_std".to_owned());
         interior.model.cockpit_animated = Some("/anim.pmd".to_owned());
-        let (placements, cockpit, animated) =
-            interior_placements(&[&interior], &locators, Drive::Left, &mut warnings);
+        let placements = interior_placements(&[&interior], &locators, Drive::Left, &mut warnings);
         assert!(warnings.is_empty(), "{warnings:?}");
         assert_eq!(placements.len(), 1);
         assert_eq!(placements[0].transform.translation, [-0.683, 2.705, -1.862]);
         assert_eq!(placements[0].variant.as_deref(), Some("s_h_std_eu"));
+
+        let uk = interior_placements(&[&interior], &locators, Drive::Right, &mut warnings);
+        assert_eq!(uk[0].model, "/uk.pmd");
+        assert_eq!(uk[0].variant.as_deref(), Some("s_h_std_uk"));
+
+        let none = interior_placements(&[&interior], &locators[..1], Drive::Left, &mut warnings);
+        assert!(none.is_empty());
+        assert_eq!(warnings.len(), 1, "a missing locator is reported");
+    }
+
+    /// rea-pin-roots.txt: the cockpit goes to the first visible locator
+    /// whose name starts with `interior`, position only; `ext_interior`
+    /// does not start with it.
+    #[test]
+    fn cockpit_sits_at_the_first_interior_locator_unrotated() {
+        let mut interior = wheel_part("std.t.interior", "interior", WheelPart::Tire);
+        interior.kind = AccessoryKind::Interior;
+        interior.wheel = None;
+        interior.model.cockpit = Some("/cockpit.pmd".to_owned());
+        interior.model.cockpit_variant = Some("cab_a_std".to_owned());
+        interior.model.cockpit_animated = Some("/anim.pmd".to_owned());
+        let mut eye = locator("interior_s", [-0.7, 2.98, -1.75]);
+        eye.rotation_wxyz = [0.0, 0.0, 1.0, 0.0];
+        let locators = [
+            locator("ext_interior", [0.0, 0.0, 0.0]),
+            eye,
+            locator("interior_s1", [0.7, 2.98, -1.75]),
+        ];
+        let mut warnings = Vec::new();
+        let (cockpit, animated) = cockpit_placements(&[&interior], &locators, &mut warnings);
+        assert!(warnings.is_empty(), "{warnings:?}");
         let cockpit = cockpit.expect("cockpit");
         assert_eq!(cockpit.model, "/cockpit.pmd");
-        assert_eq!(cockpit.variant.as_deref(), Some("cab_s_a_std"));
-        assert_eq!(cockpit.transform, placements[0].transform, "same eye point");
+        assert_eq!(cockpit.variant.as_deref(), Some("cab_a_std"));
+        assert_eq!(
+            cockpit.transform,
+            Transform {
+                translation: [-0.7, 2.98, -1.75],
+                ..Transform::IDENTITY
+            }
+        );
         // `animated_model`: the steering column, stalks and gauges.
         let animated = animated.expect("the cockpit's moving parts");
         assert_eq!(animated.model, "/anim.pmd");
@@ -373,14 +417,9 @@ mod tests {
             (cockpit.variant, cockpit.transform)
         );
 
-        let (uk, _, _) = interior_placements(&[&interior], &locators, Drive::Right, &mut warnings);
-        assert_eq!(uk[0].model, "/uk.pmd");
-        assert_eq!(uk[0].variant.as_deref(), Some("s_h_std_uk"));
-
-        let (none, no_cockpit, _) =
-            interior_placements(&[&interior], &locators[..1], Drive::Left, &mut warnings);
-        assert!(none.is_empty() && no_cockpit.is_none());
-        assert_eq!(warnings.len(), 1, "a missing locator is reported");
+        let (none, _) = cockpit_placements(&[&interior], &locators[..1], &mut warnings);
+        assert!(none.is_none());
+        assert_eq!(warnings.len(), 1, "a missing eye point is reported");
     }
 
     #[test]
