@@ -50,6 +50,7 @@ impl Plugin for ViewerPlugin {
                     apply_scene,
                     apply_exposure,
                     update_reflection,
+                    settle_environment_map,
                     sync_truck,
                     frame_truck,
                     orbit_camera,
@@ -487,6 +488,41 @@ fn update_reflection(
         });
     info!("environment map: {path} (exposure x{balance:.2})");
     reflection.active = Some((path, balance));
+}
+
+/// Frames Bevy filters a generated environment map before the generator
+/// is dropped. Bevy refilters it on every frame while the generator stays,
+/// which cost half the frame (TASKS 13's A/B); the cube only changes with
+/// the truck or the scene, and `update_reflection` then starts a new one.
+const FILTER_FRAMES: u32 = 30;
+
+/// Keeps the filtered `EnvironmentMapLight` and drops its generator once
+/// the filter has run.
+fn settle_environment_map(
+    mut commands: Commands,
+    mut frames: Local<u32>,
+    camera: Single<
+        (
+            Entity,
+            Has<EnvironmentMapLight>,
+            Has<GeneratedEnvironmentMapLight>,
+        ),
+        With<Camera3d>,
+    >,
+) {
+    let (entity, filtered, generating) = *camera;
+    if !(generating && filtered) {
+        *frames = 0;
+        return;
+    }
+    *frames += 1;
+    if *frames >= FILTER_FRAMES {
+        commands
+            .entity(entity)
+            .remove::<GeneratedEnvironmentMapLight>();
+        info!("environment map filtered; its generator dropped");
+        *frames = 0;
+    }
 }
 
 enum ModelState {
