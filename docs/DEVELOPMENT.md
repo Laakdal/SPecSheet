@@ -140,6 +140,9 @@ cargo run --release -p specsheet-research --example texture_layout -- "<game>/ba
 # Every R9G9B9E5 (HDR) texture: size, mips, decoded mean and peak colour
 cargo run --release -p specsheet-research --example hdr_textures -- "<game>"/*.scs
 
+# Exterior pins of every truck's starting configuration and their overlaps (or one truck in full)
+cargo run --release -p specsheet-research --example pin_dump [-- scania.s_2016]
+
 # Every vehicle light (flare) hookup on truck models, and the unit and glow model it resolves to
 cargo run --release -p specsheet-research --example flare_survey
 

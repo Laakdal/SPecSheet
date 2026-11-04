@@ -21,6 +21,8 @@ The game builds one record per pin from the truck's locators and the pin table o
 
 Measured on every preset (`research/evidence/pin-survey.txt`): the pins land on their parts, with a median of 0 m and 90 % within 0.1 m.
 
+Overlaps (`research/evidence/pin-overlaps.txt`, example `pin_dump`): on the 26 trucks' starting configurations, 27 of 1,629 exterior pins land within 5 cm of another. 12 are a `double_sided` `r_deflector` whose offset x is 0, so its mirror lands on itself; the rest are slots whose locators nearly coincide. The game merges nothing (F5), so it shows the same overlaps (Hypothesis).
+
 ## Which slots get a pin (`specsheet-session::view::overview`)
 
 Only accessory slots get a pin; base parts are picked through their fixed tab (F5, see [ui.md](ui.md)).
