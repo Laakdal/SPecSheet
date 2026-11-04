@@ -41,7 +41,7 @@ use crate::slots::locators_by_slot;
 use base::{addon_slots, base_layout};
 use cockpit::{cockpit_locators, cockpit_slots, interior_part_placements, interior_slots};
 use hookups::hookup_placements;
-use interior::interior_placements;
+use interior::{exterior_model_locators, interior_placements};
 use specsheet_data::model::ModelCache;
 use specsheet_data::GameFs;
 use wheels::wheel_placements;
@@ -166,6 +166,10 @@ pub fn assemble(
     assembly.placements.extend(wheels);
     let (interior, cockpit, cockpit_animated) =
         interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
+    // Pins search the interior's exterior model first, then the cabin, then
+    // the chassis (F5).
+    let mut pin_locators = exterior_model_locators(fs, cache, &interior);
+    pin_locators.extend(base_locators.iter().cloned());
     assembly.placements.extend(interior);
     let cockpit_locs = cockpit
         .as_ref()
@@ -193,7 +197,7 @@ pub fn assemble(
     // Every accessory slot can have an exterior and an interior pin (F5).
     let mut pin_slots = addon_slots.clone();
     pin_slots.extend(cockpit_by_slot.into_keys());
-    assembly.pin_bases = pins::bases(&pin_slots, &base_locators, &cockpit_locs, &front, &rear);
+    assembly.pin_bases = pins::bases(&pin_slots, &pin_locators, &cockpit_locs, &front, &rear);
     assembly
 }
 

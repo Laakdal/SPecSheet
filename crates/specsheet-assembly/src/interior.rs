@@ -8,6 +8,9 @@
 use specsheet_formats::pmg::Locator;
 use specsheet_truck::AccessoryKind;
 
+use specsheet_data::model::ModelCache;
+use specsheet_data::GameFs;
+
 use super::{Drive, Placement};
 
 /// Cabin locator the interior's exterior-view model attaches to.
@@ -17,6 +20,27 @@ const INTERIOR_LOCATOR: &str = "ext_interior";
 /// `ext_interior` locator (all 26 presets fit there; six would not fit at
 /// the origin, interior survey E3).
 /// Returns the exterior-view placements and the cockpit, if any.
+/// The visible locators of the interiors' exterior models, in each model's
+/// own coordinates: the game's pin builder searches them before the
+/// cabin's, without their `ext_interior` placement (F5,
+/// `research/evidence/rea-pin-model-order.txt`). In 1.60 only the Renault T
+/// 2024 interiors carry exterior slots there (roof light, flags, plates).
+pub(super) fn exterior_model_locators(
+    fs: &GameFs,
+    cache: &ModelCache,
+    placements: &[Placement],
+) -> Vec<Locator> {
+    placements
+        .iter()
+        .filter_map(|p| {
+            let model = cache.load(fs, &p.model).ok()?;
+            let variant = model.variant_index(p.variant.as_deref());
+            Some(model.visible_locators(variant).cloned().collect::<Vec<_>>())
+        })
+        .flatten()
+        .collect()
+}
+
 pub(super) fn interior_placements(
     selected: &[&specsheet_truck::Accessory],
     base_locators: &[Locator],
