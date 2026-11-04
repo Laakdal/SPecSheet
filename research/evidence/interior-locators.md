@@ -70,17 +70,17 @@ Each truck's `data.sii` names a driving camera, e.g. `interior_camera: camera.in
 | `camera.interior.daf.2021`, `.daf.xd`, `.daf.xf_electric`, `iveco.sway`, `man.tgx_2020` | 65 | (0, 0, 0.04) | −8 (MAN −9) |
 | `camera.interior.man.tgx` | 77 | (0, 0, −0.04) | −5 |
 
-Each unit also has look limits and presets, a shake animation and per-azimuth `head_offset_offset` ranges. Whether the tuning screen's interior view uses this driving camera at all is Unknown.
+Each unit also has look limits and presets, a shake animation and per-azimuth `head_offset_offset` ranges. The tuning screen's interior tabs use this unit (Confirmed, `rea-interior-camera.txt`).
 
 ## Labels
 
 - **Confirmed (data):** the locator names, positions and order above; cockpit models are head-relative; the camera unit values.
 - **Confirmed (exe, `rea-pin-roots.txt`):** the game places the cockpit `model` at the first visible locator whose name starts with `interior`, position only, searched like the pins (the interior's exterior model, the cabin, the axle models, the chassis). There is no separate UK name: the cabin's variant decides, because each drive side's locator sits on its own variant's part. "First in model order" above is how the data looks, not the rule.
 - **Confirmed (exe):** the interior pins add the same eye point in the interior camera. The camera unit's `head_offset` is not used for pins.
-- **Unknown:** whether the camera's `head_offset` moves the eye in the tuning screen's interior view, and which field of view that view uses.
+- **Confirmed (exe, `rea-interior-camera.txt`):** the tuning screen's interior view adds the camera's `head_offset` to the eye (truck axes, x mirrored for right-hand drive) and uses `camera_fov` as the horizontal angle of a 4:3 view.
 
 ## Done and next
 
 - Done: the cockpit is placed at the eye point (test `real_install::every_preset_has_a_cockpit_at_the_drivers_eye`, every truck in both drives); F10, `docs/app/scenes.md` and `docs/app/hotspots.md` corrected.
 - Found while checking: interior-only parts skipped a cockpit locator when the cabin had one matching the slot, so the Renault T 2024 carpet (`carpet` on the cockpit floor, `carpet_hi` on the cabin) sat at the eye point and covered the view. Fixed; test `an_interior_part_takes_the_cockpits_locator_even_when_the_cabin_has_one`.
-- Next: whether the tuning screen's interior view applies the camera unit's `head_offset` and `camera_fov`.
+- Done: the app's interior view uses the truck's camera unit (`specsheet-data::camera`). Next: its look limits and azimuth ranges.

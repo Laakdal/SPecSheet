@@ -1,0 +1,182 @@
+The tuning screen's interior camera: which unit, eye position, FOV, start look (F5/F10 follow-up)
+==============================================================================================
+
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Static only: nothing was executed, no Ghidra run. Image base 0x140000000.
+Listings stay in the session scratchpad (D13); below are our own observations,
+no decompiled code. Follows rea-pin-roots.txt (eye point = vehicle +0x1020).
+
+Method (Git Bash, from tools/research; EXE = the path above):
+  python -I disasm.py "$EXE" <addr>   # 1410daa10 1410d6280 1410d8380 14061c610
+                                       # 140873b40 140874500 140874700 140876ae0
+                                       # 140770660 141305cd0 140873140
+  python -I triage.py "$EXE" <offs> <addr>…
+  python -I attr_tables.py "$EXE" head_offset mouse_up_down_default camera_fov user_head_offset
+  python -I xref.py "$EXE" vehicle_interior_camera_u
+plus the scratch scripts of rea-pin-roots.txt (direct E8 callers, .rdata
+pointers / vtable slots, RIP-relative references, disp32 scans, qword dumps)
+and a dump of the attribute entries around the string "interior_camera".
+Data: target/release/examples/scs.exe cat /def/camera/units/interior_renault_t.sui
+(ETS2_DIR set, MSYS_NO_PATHCONV=1).
+
+Field map (Confirmed, attribute tables)
+---------------------------------------
+vehicle_interior_camera (class 0x141d24a70, vtable 0x14219acf8, ctor
+FUN_140873140): head_offset +0x498 (vec3), outside +0x548,
+look_presets_defaults +0x520, mouse_left_limit +0x5a4, mouse_right_limit
++0x5a8, mouse_left_right_default +0x5ac, mouse_up_limit +0x5b4,
+mouse_down_limit +0x5b8, mouse_up_down_default +0x5bc, zoom_fov_factor
++0x5c4. Base camera table (class 0x141d222a0): mouse_sensitivity +0x1c,
+camera_fov +0x20, near_plane +0x24, far_plane +0x28.
+Truck data (class 0x141d26ad0): behind_camera +0x360, interior_camera
++0x368, interior_camera_oculus +0x370, window_camera +0x378, bumper +0x380,
+cabin +0x388, wheel +0x390, top +0x398.
+Economy vehicle unit (class 0x141d23820, the object at vehicle +0x1f8):
+user_mirror_rot +0x1c0, user_head_offset +0x1e8, user_fov +0x1f4,
+user_wheel_up_down +0x1f8, user_wheel_front_back +0x1fc,
+user_mouse_left_right_default +0x200, user_mouse_up_down_default +0x204.
+
+
+1. Which camera the interior tabs use (Confirmed, asm)
+------------------------------------------------------
+P (the object the pin code reads through FUN_140375ce0(screen+0x1b8,
+0x190)) has the same fields as ui_truck_scene_u: FUN_1410d6280 is slot 0xf0
+of the ui_truck_scene_u vtable 0x14225ab88 (the class strings
+"ui_truck_scene_u" / "ui_truck_scene" sit just before it) and uses
++0x140 camera, +0x260 vehicle, +0x268 interior, +0x460 pending vehicle,
+interior +0x109. (P = the ui_truck_scene_u: Hypothesis, strong.)
+FUN_1410d8380 is the test "scene camera +0x140 is a vehicle_interior_camera
+(or a unit_proxy)".
+FUN_1410daa10, called from the tuning screen at 0x140fc7baf
+(FUN_140fc7900), switches the scene to the interior camera when it is not
+one already:
+  - saves the current camera pose (+0x40..+0x5c) to scene +0x438..+0x454;
+  - V = P+0x460, else P+0x260 (0x1410daaaa-0x1410daab6);
+  - scene camera = a clone (virtual +0x10) of V+0x1048 (0x1410daabd-
+    0x1410daad0);
+  - head_offset of the clone is reset to the truck data's interior_camera
+    unit's own head_offset (V+0xfe0 -> +0x368 -> +0x498; 0x1410daad5-
+    0x1410dab55);
+  - mouse_left_limit (+0x5a4) is set to the smallest +0x10 value among the
+    flagged entries of the camera's +0x558 list (meaning Unknown,
+    0x1410daaf8-0x1410dab44);
+  - flags +0x5e8 = 0, +0x4b2 = 1; UK byte +0x4b1 = interior +0x109;
+  - attaches it to V (virtual +0xf0), resets the look (virtual +0x70 with 1,
+    point 4), and sets the projection from the 3D view's size (virtual
+    +0x80, point 3; 0x1410dabc4-0x1410dac48).
+Vehicle +0x1048 is the truck's own interior camera: FUN_14061c610 (called
+from FUN_14061bbf0, the eye-point setup) clones the truck data's
+interior_camera (+0x368), or interior_camera_oculus (+0x370) when the
+global at 0x143523b20 is set (VR: Hypothesis), into +0x1048
+(0x14061cb4a-0x14061cbfe).
+Answer (1): the truck's own unit from data.sii interior_camera (e.g.
+camera.interior.renault.t), cloned; not a tuning-specific camera unit.
+Two tuning-specific changes: head_offset forced back to the unit's value,
+and mouse_left_limit overwritten as above.
+
+2. What the vehicle copy carries (Confirmed, asm)
+-------------------------------------------------
+FUN_14061c610 after the clone:
+  - +0x408 = camera_fov, +0x4a4..+0x4ac = head_offset, +0x5b0 =
+    mouse_left_right_default, +0x5c0 = mouse_up_down_default: copies of the
+    unit's values made before any adjustment (0x14061cc1e-0x14061cc71).
+  - Then, when the vehicle has an economy unit (+0x1f8): head_offset +=
+    user_head_offset, mouse_left_right_default +=
+    user_mouse_left_right_default, mouse_up_down_default +=
+    user_mouse_up_down_default, camera_fov += user_fov
+    (0x14061cc77-0x14061cd0b).
+So the vec3 at +0x4a4 that FUN_14051fa00 adds to the eye point is the
+unit's own head_offset, saved before the profile's seat adjustment. It is
+not a seat limit.
+In the tuning camera, head_offset is reset to the unit value (point 1), so
+the seat adjustment (user_head_offset) does not move the tuning eye. The
+clone is made from the adjusted vehicle copy, so user_fov and the
+user_mouse_* defaults would carry over (Hypothesis: depends on what the
+virtual +0x10 clone copies).
+
+3. FOV (Confirmed, asm)
+-----------------------
+Virtual +0x80 (FUN_140770660) takes the view width and height, divides
+them for the aspect and calls FUN_141305cd0(&+0x38, &+0x3c, camera_fov,
+aspect, flag +0x2c). Then a positive +0x30 or +0x34 overrides +0x38 or
++0x3c, and FUN_141305b40 builds the projection at +0x60 from +0x38/+0x3c,
+near_plane and far_plane.
+FUN_141305cd0, with t = tan(camera_fov * pi/360) (camera_fov in degrees):
+  flag clear: reference aspect 4/3. aspect >= 4/3: tan(v/2) = 0.75 t,
+    tan(h/2) = 0.75 t * aspect. aspect < 4/3: tan(h/2) = t,
+    tan(v/2) = t / aspect.
+  flag set: reference aspect 1.6. aspect >= 1.6: as above (0.75 t);
+    aspect < 1.6: tan(h/2) = 1.2 t, tan(v/2) = 1.2 t / aspect.
+  +0x38 = h and +0x3c = v, in degrees.
+So camera_fov is the horizontal FOV in degrees of a 4:3 view. On wider
+screens the vertical FOV stays at 2 atan(0.75 tan(fov/2)) (Hor+). For
+camera_fov 72 on 16:9: v = 57.2 deg, h = 88.2 deg. What sets flag +0x2c is
+Unknown.
+FUN_140876ae0 uses +0x38/2 and +0x3c/2 against the yaw and pitch limits in
+degrees, consistent with h/v.
+
+4. Start look direction (Confirmed, asm)
+----------------------------------------
+Virtual +0x70 = FUN_140873b40 (called with 1 by the tuning switch):
+  yaw (+0x598) = mouse_left_right_default (+0x5ac) in degrees, times
+  pi/180, negated when the UK byte +0x4b1 is set;
+  pitch (+0x59c) = mouse_up_down_default (+0x5bc) times pi/180;
+  roll (+0x5a0) unchanged; copies to +0x5d4..+0x5dc; clears the offsets
+  at +0x414..+0x440.
+It also picks the +0x558 entry whose [+0x10, +0x14) range holds the yaw and
+passes it to FUN_140876ae0 (the head-offset blend, point 5).
+look_presets_defaults (+0x520) is not read by this reset or by the tuning
+switch. Whether something else in the tuning screen reads it: Unknown.
+For camera.interior.renault.t (no mouse_left_right_default in the file;
+the default value is Unknown): pitch = -5.5 deg. The sign convention
+(negative = down) is a Hypothesis.
+Afterwards the scene drives yaw and pitch: FUN_1410d6280 copies the
+camera's +0x598..+0x5a0 to scene +0x4d4..+0x4dc and calls FUN_140874040
+with the scene's angles (0x1410d6b1c-0x1410d6b2b) while the camera is an
+interior one.
+
+5. Eye position per frame (Confirmed, asm; frame names Hypothesis)
+------------------------------------------------------------------
+Camera update = virtual +0x100, FUN_140874500:
+  B (+0x4d4 pos/cells, +0x4e4 rot) = FUN_140771110(vehicle +0x3e8)
+    (the vehicle's world placement: Hypothesis);
+  A (+0x4b4 pos, cells +0x4c0/+0x4c2, rot +0x4c4) = FUN_140624fb0(vehicle)
+    (the cabin's placement relative to the vehicle, with cabin physics
+    from vehicle +0x1200: Hypothesis);
+  then FUN_140874700.
+FUN_140874700, 0x140874b80-0x140874d4c:
+  offset = A.pos + vehicle +0x1020 (the interior* locator)
+           + head (+0x57c..+0x584) + (+0x48c..+0x494) + (+0xe0..+0xe8)
+  eye = B.pos + B.rot * offset    (FUN_140770790)
+  camera rotation = B.rot * A.rot (stored at +0x50..+0x5c).
+head (+0x57c) is head_offset when no azimuth range applies
+(0x140876ce2-0x140876d1d), else a value blended from the range's data
+against head_offset or the saved default (+0x4a4) (0x140876b04-
+0x140876cc2). With the UK byte set its x is negated (0x140876d52-
+0x140876d5d).
+So head_offset is added in vehicle axes: rotated by the vehicle's world
+rotation only, not by the cabin's rotation and not by the look direction,
+and mirrored in x for UK. The eye locator gets only the cabin's offset
+added, not its rotation. +0x48c and +0xe0 (base camera fields; shake or
+head movement: Hypothesis) are Unknown.
+For the tuning screen, with the truck un-rotated and the cabin at rest:
+eye (truck space) = interior* locator + head_offset (x mirrored for UK).
+For camera.interior.renault.t on cabin_a: (-0.7, 2.98, -1.75) +
+(0, -0.17, 0.01) = (-0.7, 2.81, -1.74).
+Pins (rea-pin-roots.txt) use the eye locator without head_offset.
+
+
+Unknowns
+--------
+- The default of mouse_left_right_default when a unit leaves it out
+  (constructor FUN_140873140). Next: read its store to +0x5ac.
+- Flag +0x2c (4:3 or 16:10 reference) and the overrides +0x30/+0x34.
+  Next: writers of camera +0x2c/+0x30/+0x34.
+- The +0x558 list (azimuth ranges with head offsets: Hypothesis) and why the
+  tuning switch sets mouse_left_limit from it. Next: its attribute table
+  (camera_azimuth_range_u).
+- What the virtual +0x10 clone copies (whether user_fov and the
+  user_mouse_* adjustments carry into the tuning camera). Next: disasm
+  slot 0x10 of vtable 0x14219acf8 (FUN_140873060).
+- Camera +0x48c and +0xe0. Next: their writers.
