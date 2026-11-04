@@ -92,12 +92,13 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
   - **`double_sided`:** adds a mirrored pin, with offset x and direction x negated.
   - **Wheels:** the exterior tab only. Pins for tire, disc, hub, cover and nuts on every wheel: left wheels at wheel + offset, right wheels mirrored when `double_sided`. **Rims, `f_wheel` and `r_wheel` never get a pin.** Hub, cover and nut pins link to their wheel's disc pin and show only while that disc pin is open: selecting a pin stores its index at the field the update compares.
   - **Per-truck table:** a truck's own pin table replaces matching scene entries. Its `use_non_wheel_pin_data_from_model` puts non-wheel pins on their raw locators; its default is false (Confirmed: constructor `FUN_140977730`; the fields live on `accessory_vehicle_data`), and no 1.60 truck sets it.
-  - **Interior pass (Confirmed):** only the interior object's model (`vehicle+0x268` → `+0x10`) is searched, with no cabin, chassis or exterior-model fallback; `pin_dir_uk` follows the interior object's byte `+0x109`.
+  - **Interior pass (Confirmed):** only the interior object's model (`P+0x268` → `+0x10`) is searched, with no cabin, chassis or exterior-model fallback; `pin_dir_uk` follows the interior object's byte `+0x109`. The record is the raw cockpit locator; in the interior camera the per-frame update adds the driver's eye point (F10), unrotated, and shows those pins at full opacity (`research/evidence/rea-pin-roots.txt`).
+  - **Exterior base (Confirmed, `rea-pin-roots.txt`):** the record is the raw locator of the matched model, composed with the truck's world placement. No model placement is applied, so on the Renault T sleeper (`cabin_b`) with a `*_sl_24` interior the roof-light, flag and plate pins sit about 0.24 m above their parts, as the app shows them (not yet seen in game).
   - **Every frame:** opacity = clamp((cos θ − 0.1) / 0.9, 0, 1), where θ is between the pin's facing and the camera's view axis. A pin is hidden outside the view depth or at zero opacity. The button is 32 px square, 36 px in one state. **No merging of nearby pins and no depth test.**
   - **Correction (2026-10-28):** the user's earlier in-game note "the rim pin sits on the wheel's locator" cannot be a rim pin, since no rim record exists. It is most likely the **hub** pin (offset −0.1 / −0.12, at the wheel centre). To re-check in game.
   - Data side: `research/evidence/pin-table.txt` (the 65 entries), `pin-survey.txt` (pins on every preset land on their parts: median 0 m, 90 % within 0.1 m).
 - **Input (Confirmed, REA static).** The single caller `FUN_140fbf860` is the screen's input handler, not pin creation (`ev_f6f0551…`, `research/evidence/rea-pin-handler.txt`). It handles `joy_sec_prv`/`joy_sec_nxt` (tabs, by name), `joy_nav_prv`/`joy_nav_nxt` (pin to pin), `j_trzoom_in`/`j_trzoom_out`, select and back, and treats ids 10000–19999 as pins.
-- **Unknown:** the interior pass's root offset (whether it includes the cockpit's eye-point placement), and what the pulsing ring (record flag +0x3c) marks.
+- **Unknown:** what the pulsing ring (record flag +0x3c) marks.
 
 ### F6: Preset configurations use the save-game vehicle structure (Confirmed)
 - `/def/vehicle/truck_desktop/<truck>.sii` holds one `vehicle` unit whose `accessories[]` point to:
@@ -199,11 +200,14 @@ Evidence: `research/evidence/interior-survey.txt` (peer research, reproduced by 
   - **Rule:** the twin is in the same directory, and its file name is the left-hand-drive one with one extra `uk` word (`uk_a`, `a_uk`, `standard_low` → `standard_uk_low`). It pairs all 219 one-to-one with no ambiguity.
   - **Implementation:** `specsheet-data` stores the twin's exterior model as `exterior_uk` / `variant_uk` and places it in right-hand drive.
   - **Tests:** `every_interior_has_a_right_hand_drive_twin` (219 of 438), and the preset test's RHD branch.
-- **The full cockpit sits at the same locator, which is the driver's eye (Hypothesis, strong).**
-  - The interior's `model`/`look`/`variant` (the cockpit) is placed at the cabin's `ext_interior` locator, like `ext_model`.
-  - The cockpit's locators are head-relative. In `/vehicle/truck/scania_2016/interior/model.pmd`, `steering_w` is at (−0.0007, −0.372, −0.555) and the cab-centre locators sit at x +0.6827, while `ext_interior` is at x −0.683 in truck space. So the cockpit origin is the driver's seat.
-  - The interior accessories' locators (`steering_w`, `curtain_f`, `toyhang`/`toybed`/`toyseat`, `set_glass`, cup-holder sets, `intlight_*`, `flag_l`/`flag_r`, `frntglss_mid`, …) are on the cockpit model, not the cabin. This explains why those slots get no pin on the exterior.
-  - Implementation: `Assembly::cockpit` (peer commit d19ebca); test `real_install::every_preset_has_a_cockpit_at_the_eye_point`.
+- **The full cockpit sits at the driver's eye point (Confirmed, `research/evidence/rea-pin-roots.txt`, `research/evidence/interior-locators.md`).**
+  - The eye point is the position of the first visible locator whose name starts with `interior`, searched like the pins: the interior's exterior model, the cabin, the axle models, the chassis. Every 1.60 cabin has one per drive side: `interior`/`interior_uk`, `interior_s`/`interior_s1`, `interior`/`interior1`, or the same name twice on two variant parts (Scania R, Volvo FH16 2009). The cabin's variant picks the side; `ext_interior` never matches.
+  - The interior's `model`/`look`/`variant` (the cockpit) and its `animated_model` are placed there with the position only, unrotated (`FUN_14051fa00`). `ext_interior` carries only `ext_model`. The two points coincide only on the EU Scania 2016 cabins; on most other cabins `ext_interior` is the truck's origin.
+  - The cockpit's locators are head-relative: in every cockpit checked `steering_w` is at x ≈ 0, 0.32–0.54 m below the origin.
+  - The interior accessories' locators (`steering_w`, `carpet`, `curtain_f`, `toyhang`/`toybed`/`toyseat`, `set_glass`, cup-holder sets, `intlight_*`, `flag_l`/`flag_r`, `frntglss_mid`, …) are on the cockpit model. Interior-only accessories take those locators even where the cabin has one that matches the slot (the Renault T cabin's `carpet_hi`).
+  - The driving camera unit (`interior_camera` in the truck's `data.sii`, `/def/camera/units/interior_*.sui`) adds its own `head_offset` on the camera side only (Renault T: (0, −0.17, 0.01)). Whether the tuning screen's interior view uses it is Unknown.
+  - Implementation: `Assembly::cockpit`; tests `real_install::every_preset_has_a_cockpit_at_the_drivers_eye` and `an_interior_part_takes_the_cockpits_locator_even_when_the_cabin_has_one`.
+  - Correction (2026-11-04): this was a Hypothesis that the cockpit sits at `ext_interior`, drawn from the Scania, where the two points coincide.
 
 ### F11: Addon hookups mount on numbered positions of their host accessory (Confirmed data, Hypothesis on position rules)
 Evidence:

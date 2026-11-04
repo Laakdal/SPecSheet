@@ -41,7 +41,7 @@ Slots without a pin are listed in `TruckOverview::general` with their tab.
 ## Interior pins (`specsheet-assembly`)
 
 The game's interior pass, with the same rules as the exterior slots (`pins::interior_pins`):
-- **Base point:** the first locator of the selected interior's full cockpit whose name starts with the slot name. Only that model carries the interior slots' locators, and they are head-relative (F10), so the cockpit's placement at the eye point (`ext_interior`, or the UK eye for right-hand drive) puts them in the cab. The exe adds a per-vehicle translation whose content the decompile doesn't settle, so this is a **Hypothesis** consistent with the data (`research/evidence/pin-attributes.txt`).
+- **Base point:** the first locator of the selected interior's full cockpit whose name starts with the slot name, plus the driver's eye point (the cabin's first visible `interior*` locator, unrotated). **Confirmed** (F5, F10, `research/evidence/rea-pin-roots.txt`): the game adds that eye point in the interior camera, and draws those pins at full opacity.
 - **Position, facing, mirroring:** base + `pin_offset`, `pin_dir`, and `double_sided` twins, as for the exterior.
 - **Which slots:** every accessory slot whose name matches a cockpit locator, so `flag_l`/`flag_r` get interior pins too. The interior pass has no wheel pins.
 - **Tab:** interior accessories.
