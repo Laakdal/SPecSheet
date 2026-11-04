@@ -10,6 +10,7 @@ use bevy::prelude::*;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_assembly::{Drive, Placement};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
+use specsheet_data::camera::InteriorCamera;
 use specsheet_data::paint::{piece_paint, PiecePaint};
 use specsheet_data::scene::{tuning_scene, OrbitSpec, Scene};
 use specsheet_data::GameInstall;
@@ -114,6 +115,10 @@ pub struct Studio {
     pub cockpit: Option<Placement>,
     /// Interior-only accessories on the cockpit, shown with it.
     pub interior_parts: Vec<Placement>,
+    /// The truck's interior camera unit: the driver's view settings.
+    pub interior_camera: Option<InteriorCamera>,
+    /// The cab is right-hand drive (the interior camera mirrors there).
+    pub right_hand_drive: bool,
     /// The paint of every placed accessory with a paint job (F15).
     pub paints: HashMap<(SlotId, AccessoryId), PiecePaint>,
     /// Bumped whenever `placements` or the paint colour change.
@@ -158,6 +163,8 @@ impl Studio {
         self.placements = session.assembly().placements.clone();
         self.cockpit = session.assembly().cockpit.clone();
         self.interior_parts = session.assembly().interior_parts.clone();
+        self.interior_camera = session.interior_camera().cloned();
+        self.right_hand_drive = session.drive() == Drive::Right;
         self.paints = self
             .placements
             .iter()

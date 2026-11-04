@@ -19,6 +19,7 @@ use bevy::render::storage::ShaderBuffer;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
 use specsheet_assembly::Placement;
+use specsheet_data::camera::InteriorCamera;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
 
@@ -643,8 +644,13 @@ fn instance_key(placement: &Placement, paint: &Paint<'_>) -> String {
 #[derive(Resource, Default)]
 pub struct TruckInstances {
     entities: HashMap<String, Entity>,
-    /// Truck-space driver's eye: the cockpit's placement.
+    /// Truck-space camera position in the interior view: the cockpit's
+    /// placement (the cabin's eye locator) plus the camera's head offset.
     pub eye: Option<Vec3>,
+    /// The interior view's starting look, `(yaw, pitch)` in radians.
+    pub interior_look: Vec2,
+    /// The truck's interior camera, for its field of view.
+    pub interior_camera: Option<InteriorCamera>,
     /// (truck generation, model-cache generation) last synced.
     synced: (u64, u64),
     /// Truck-space bounds of the placed models.
@@ -723,7 +729,14 @@ fn sync_truck(
             )
         }))
         .collect();
-    instances.eye = cockpit.map(|c| Vec3::from(c.transform.translation));
+    let (eye, look) = interior_view(
+        cockpit,
+        studio.interior_camera.as_ref(),
+        studio.right_hand_drive,
+    );
+    instances.eye = eye;
+    instances.interior_look = look;
+    instances.interior_camera = studio.interior_camera.clone();
     instances.entities.retain(|key, entity| {
         let keep = wanted.contains_key(key);
         if !keep {
@@ -1109,6 +1122,8 @@ pub struct ViewportInput {
     pub(crate) head: Vec2,
     /// Whether the last frame was the interior view.
     was_interior: bool,
+    /// The field of view outside, restored when the interior view ends.
+    outside_fov: Option<f32>,
     dragging: bool,
     /// Cursor position last frame, for drag deltas.
     last_cursor: Option<Vec2>,
@@ -1116,8 +1131,31 @@ pub struct ViewportInput {
     home: Option<Orbit>,
 }
 
-/// The driver's initial look: ahead and slightly down at the dashboard.
+/// The driver's initial look when the truck names no interior camera:
+/// ahead and slightly down at the dashboard.
 const INTERIOR_LOOK: Vec2 = Vec2::new(0.0, -0.2);
+
+/// The interior view's camera position (truck space) and starting look
+/// (yaw, pitch in radians), the game's way (rea-interior-camera.txt): the
+/// cockpit's eye locator plus the camera's `head_offset`, in truck axes;
+/// the look from the camera's mouse defaults. A right-hand-drive cab
+/// mirrors the offset's x and the yaw. Negative pitch looks down
+/// (Hypothesis).
+fn interior_view(
+    cockpit: Option<&Placement>,
+    camera: Option<&InteriorCamera>,
+    right_hand_drive: bool,
+) -> (Option<Vec3>, Vec2) {
+    let eye = cockpit.map(|c| {
+        let offset = camera.map_or([0.0; 3], |c| c.head_offset(right_hand_drive));
+        Vec3::from(c.transform.translation) + Vec3::from(offset)
+    });
+    let look = camera.map_or(INTERIOR_LOOK, |c| {
+        let (yaw, pitch) = c.start_look(right_hand_drive);
+        Vec2::new(yaw.to_radians(), pitch.to_radians())
+    });
+    (eye, look)
+}
 /// How far the driver may turn the head.
 const MAX_HEAD_YAW: f32 = 2.6;
 const MAX_HEAD_PITCH: f32 = 1.2;
@@ -1143,9 +1181,9 @@ fn orbit_camera(
     mut input: ResMut<ViewportInput>,
     instances: Res<TruckInstances>,
     truck: Single<&GlobalTransform, With<TruckRoot>>,
-    camera: Single<(&mut Orbit, &mut Transform, &Projection)>,
+    camera: Single<(&mut Orbit, &mut Transform, &mut Projection)>,
 ) {
-    let (mut orbit, mut transform, projection) = camera.into_inner();
+    let (mut orbit, mut transform, mut projection) = camera.into_inner();
     let pressed = [MouseButton::Left, MouseButton::Right, MouseButton::Middle];
     let cursor = window.cursor_position().filter(|_| window.focused);
     if buttons.any_just_pressed(pressed) && input.hovered && cursor.is_some() {
@@ -1168,9 +1206,21 @@ fn orbit_camera(
     if input.interior_view {
         if let Some(eye) = instances.eye {
             if !input.was_interior {
-                input.head = INTERIOR_LOOK;
+                input.head = instances.interior_look;
+                if let Projection::Perspective(p) = &*projection {
+                    input.outside_fov = Some(p.fov);
+                }
             }
             input.was_interior = true;
+            // The camera's `camera_fov`, kept as the game keeps it when the
+            // view's shape changes.
+            if let (Projection::Perspective(p), Some(camera)) =
+                (&mut *projection, &instances.interior_camera)
+            {
+                if let Some(fov) = camera.vertical_fov(p.aspect_ratio) {
+                    p.fov = fov.to_radians();
+                }
+            }
             if input.dragging {
                 // The view follows the drag, as the exterior orbit does:
                 // dragging right turns the head left (the user found the
@@ -1184,6 +1234,13 @@ fn orbit_camera(
             return;
         }
     }
+    if input.was_interior {
+        if let (Projection::Perspective(p), Some(fov)) =
+            (&mut *projection, input.outside_fov.take())
+        {
+            p.fov = fov;
+        }
+    }
     input.was_interior = false;
     let motion = AccumulatedMouseMotion { delta };
     if input.dragging && motion.delta != Vec2::ZERO {
@@ -1191,7 +1248,7 @@ fn orbit_camera(
             next.yaw -= motion.delta.x * ROTATE_SPEED;
             next.pitch += motion.delta.y * ROTATE_SPEED;
         } else {
-            let fov = match projection {
+            let fov = match &*projection {
                 Projection::Perspective(p) => p.fov,
                 _ => DEFAULT_FOV_DEGREES.to_radians(),
             };
@@ -1251,6 +1308,38 @@ mod tests {
             "{}",
             low.position().y
         );
+    }
+
+    #[test]
+    fn the_interior_view_adds_the_head_offset_and_starts_at_the_cameras_look() {
+        let cockpit = Placement {
+            slot: "interior".into(),
+            accessory: "std.t.interior".into(),
+            model: "/cockpit.pmd".to_owned(),
+            look: None,
+            variant: None,
+            transform: specsheet_core::Transform {
+                translation: [-0.7, 2.98, -1.75],
+                ..specsheet_core::Transform::IDENTITY
+            },
+        };
+        let camera = InteriorCamera {
+            name: "camera.interior.t".to_owned(),
+            fov: Some(72.0),
+            head_offset: [0.05, -0.17, 0.01],
+            default_pitch: Some(-5.5),
+            default_yaw: None,
+        };
+        let (eye, look) = interior_view(Some(&cockpit), Some(&camera), false);
+        let eye = eye.expect("eye");
+        assert!(eye.distance(Vec3::new(-0.65, 2.81, -1.74)) < 1e-5, "{eye}");
+        assert!((look.x, look.y) == (0.0, (-5.5f32).to_radians()));
+        let (uk, _) = interior_view(Some(&cockpit), Some(&camera), true);
+        assert!(uk.expect("eye").x < -0.7, "the offset's x is mirrored");
+        // Without a camera unit: the eye locator and the default look.
+        let (bare, look) = interior_view(Some(&cockpit), None, false);
+        assert_eq!(bare, Some(Vec3::new(-0.7, 2.98, -1.75)));
+        assert_eq!(look, INTERIOR_LOOK);
     }
 
     #[test]
