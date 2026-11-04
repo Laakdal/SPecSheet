@@ -40,11 +40,16 @@ Evidence: `research/evidence/pmg-layout-derivation.txt`. Record sizes come from 
 
 **Header** (0x70 bytes):
 - `u8` version 0x15, then `gmP`;
-- `u32` counts at 0x04: pieces, parts, 0x0C (**Unknown**, 0 in every sample; bones?), 0x10 (**Unknown**, 0), locators;
+- `u32` counts at 0x04: pieces, parts, bones (0x0C, 0 for rigid models), 0x10 (**Unknown**, 0), locators;
 - `u64` at 0x18: **Unknown**, 0 in every sample;
 - bounding sphere at 0x20: centre `vec3` + radius. Every vertex lies inside it. It is not derived from the AABB;
 - AABB at 0x30: min, max;
-- `u32` at 0x48: an offset to an empty block (0x70; skeleton?), then offsets of parts, locators and pieces, then (offset, size) pairs for the string pool, vertex pool and index pool.
+- `u32` at 0x48: the bone table's offset (0x70 and empty in rigid models), then offsets of parts, locators and pieces, then (offset, size) pairs for the string pool, vertex pool and index pool.
+
+**Bone** (0xC8 bytes; Confirmed, `research/evidence/rea-steering-wheel.txt`, and our parser reads every animated cockpit's `steering_w` bone with a translation on the column):
+- token name;
+- the rest matrix in model space at +8: 16 `f32`, row-major for column vectors, translation in floats 3, 7 and 11;
+- the rest of the record (+0x48 to +0xC8) is **Unknown** and not read.
 
 **Part** (24 bytes): token name, piece count + start, locator count + start.
 
