@@ -6,6 +6,7 @@
 
 #![warn(missing_docs)]
 
+pub mod camera;
 mod catalog;
 mod error;
 pub mod extract;
