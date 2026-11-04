@@ -1151,3 +1151,39 @@ fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
     // never removed.
     assert!(!session.removable(&SlotId::from("steering_w")));
 }
+
+#[test]
+fn a_pin_takes_the_interiors_exterior_model_locator_before_the_cabins() {
+    // research/evidence/rea-pin-model-order.txt: the game searches the
+    // interior's exterior model, then the cabin, then the chassis. The
+    // Renault T 2024 high interior's model carries `drv_plate` at
+    // (-0.739, 2.388, -2.846); the high-sleeper cabin's is (-0.79, 2.377,
+    // -2.836).
+    use specsheet_core::{AccessoryId, SlotId, TruckId};
+    use specsheet_session::GameSession;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let mut session = game
+        .start_truck(&TruckId::from("renault.t"))
+        .expect("truck");
+    session
+        .select(&game, &AccessoryId::from("high_sleeper.renault.t.cabin"))
+        .expect("high sleeper");
+    session
+        .select(&game, &AccessoryId::from("ant_24_h.renault.t.interior"))
+        .expect("2024 interior");
+    let base = session
+        .assembly()
+        .pin_bases
+        .slots
+        .get(&SlotId::from("drv_plate"))
+        .expect("a driver's plate pin");
+    let [x, y, z] = base.position;
+    assert!(
+        (x + 0.739).abs() < 1e-3 && (y - 2.388).abs() < 1e-3 && (z + 2.846).abs() < 1e-3,
+        "{:?}",
+        base.position
+    );
+}
