@@ -750,7 +750,12 @@ fn choosing_an_interior_chooses_the_drive_side() {
 }
 
 #[test]
-fn every_preset_has_a_cockpit_at_the_eye_point() {
+fn every_preset_has_a_cockpit_at_the_drivers_eye() {
+    // research/evidence/rea-pin-roots.txt: the game places the cockpit at
+    // the first visible cabin locator whose name starts with `interior`,
+    // position only. Cockpit models are head-relative
+    // (research/evidence/interior-locators.md), so that point is the
+    // driver's eye: on the driver's side of the cab, at head height.
     use specsheet_assembly::Drive;
     use specsheet_session::view;
     use specsheet_session::GameSession;
@@ -772,14 +777,19 @@ fn every_preset_has_a_cockpit_at_the_eye_point() {
                             truck.id, cockpit.model
                         ));
                     }
-                    // The exterior-view interior shares the eye point.
-                    let exterior = session
-                        .assembly()
-                        .placements
-                        .iter()
-                        .find(|p| p.accessory == cockpit.accessory);
-                    if exterior.is_none_or(|p| p.transform != cockpit.transform) {
-                        failures.push(format!("{} {drive:?}: cockpit off the eye point", truck.id));
+                    let [x, y, _] = cockpit.transform.translation;
+                    let drivers_side = match drive {
+                        Drive::Left => x < -0.4,
+                        Drive::Right => x > 0.4,
+                    };
+                    if !drivers_side
+                        || y < 1.8
+                        || cockpit.transform.rotation != [0.0, 0.0, 0.0, 1.0]
+                    {
+                        failures.push(format!(
+                            "{} {drive:?}: cockpit at {:?}, not the driver's eye",
+                            truck.id, cockpit.transform
+                        ));
                     }
                 }
             }
@@ -1150,6 +1160,37 @@ fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
     // `data.sii` `fallback[]: "accessory|steering_w/standard.sii"`: swapped,
     // never removed.
     assert!(!session.removable(&SlotId::from("steering_w")));
+}
+
+#[test]
+fn an_interior_part_takes_the_cockpits_locator_even_when_the_cabin_has_one() {
+    // The Renault T 2024 cockpit carries a `carpet` locator on the cab
+    // floor (1.09 m below the eye), and its cabin a `carpet_hi` one that
+    // also matches the slot. The carpet model is a 0.2 m thin floor mat, so
+    // at the eye point it would cover the driver's view.
+    use specsheet_core::{SlotId, TruckId};
+    use specsheet_session::GameSession;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let session = game
+        .start_truck(&TruckId::from("renault.t"))
+        .expect("truck");
+    let assembly = session.assembly();
+    let eye = assembly.cockpit.as_ref().expect("a cockpit").transform;
+    let carpet = assembly
+        .interior_parts
+        .iter()
+        .find(|p| p.slot == SlotId::from("carpet"))
+        .expect("the preset's carpet");
+    let drop = eye.translation[1] - carpet.transform.translation[1];
+    assert!(
+        drop > 0.8,
+        "carpet at {:?}, eye at {:?}",
+        carpet.transform,
+        eye
+    );
 }
 
 #[test]
