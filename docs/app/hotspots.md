@@ -7,7 +7,7 @@ The clickable pins on the truck. The exterior pins follow the game's own rules, 
 The game builds one record per pin from the truck's locators and the pin table of `/def/truck_config_scene.sii` (`pin_group`, `pin_offset`, `pin_dir`, `pin_dir_uk`, `double_sided`; tabulated in `research/evidence/pin-table.txt`).
 
 - **Base point:** the first visible base-model locator whose name starts with the slot name (12-character names must match exactly). One base per slot, never a mean (`pins::slot_locator`). This differs from part placement, which uses the longest matching slot name (F4).
-  - Models are searched cabin first, then chassis. The game's model order is a Hypothesis.
+  - Models are searched the game's way (Confirmed, F5): the interior's exterior model (`ext_model`, in its own coordinates, without its `ext_interior` placement), then the cabin, then the chassis. Only the Renault T 2024 interiors carry exterior slots there.
   - A slot without a locator gets no pin.
 - **Position:** base + `pin_offset`, in truck space, neither rotated nor scaled. Many paired parts hang on one centre locator (`mirror_s` at x = 0), so their offset x is about half the truck's width.
 - **Facing:** the unit vector of `pin_dir`. A zero direction gives the identity rotation, which faces forward (−z, Hypothesis). On a right-hand-drive truck `pin_dir_uk` replaces it (Hypothesis).
@@ -17,7 +17,7 @@ The game builds one record per pin from the truck's locators and the pin table o
   - The base is the wheel locator.
   - Left wheels get base + offset; right wheels get the mirrored pin when the entry is `double_sided`.
   - Rims and complete wheels (`f_wheel`, `r_wheel`) never get a pin.
-- **Not used:** the per-truck pin table in `accessory_truck_data`, which in 1.60 only the Renault T and E-Tech T set (`f_light_top`). Also not used is its `use_non_wheel_pin_data_from_model` switch, taken as false (Hypothesis): otherwise the scene table's non-wheel offsets would never apply.
+- **Not used:** the per-truck pin table in `accessory_truck_data`, which in 1.60 only the Renault T and E-Tech T set (`f_light_top`). Its `use_non_wheel_pin_data_from_model` switch is false by default (Confirmed, F5) and no 1.60 truck sets it.
 
 Measured on every preset (`research/evidence/pin-survey.txt`): the pins land on their parts, with a median of 0 m and 90 % within 0.1 m.
 
