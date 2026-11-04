@@ -1,0 +1,284 @@
+Where the game puts a tuning-screen pin: exterior roots and the interior eye point (F5 follow-up)
+================================================================================================
+
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Static only: nothing was executed, no Ghidra run. Image base 0x140000000.
+Listings stay in the session scratchpad (D13); below are our own observations,
+no decompiled code. Follows rea-pin-model-order.txt and pin-attributes.txt §7.
+
+Method (Git Bash, from tools/research; EXE = the path above):
+  python -I disasm.py "$EXE" <addr>     # 14062ab10 1415209e0 140fcf210 1412e2c20
+                                         # 140fcba50 1406248a0 140624990 14061ae60
+                                         # 14061bbf0 140645870 14061d180 14051fa00
+  python -I triage.py "$EXE" <offs> <addr>…   # 14061ae60 14061bbf0 14051fa00 1410d6280
+plus throw-away scratch scripts (not committed), same PE reading as the tools:
+  - linear disassembly of a leaf without .pdata (0x14012b9e0, 0x1400ec2c0);
+  - every instruction with displacement 0x1020/0x1024/0x1028 (writers of
+    vehicle +0x1020), and 0x109 / 0x268 / 0x460;
+  - every RIP-relative reference to 0x142c146a0, 0x142c146a8, 0x1435348e0;
+  - qword dumps of class descriptors 0x141d24a70, 0x141cfa7d0, 0x141d25510
+    and of the vehicle vtable 0x1421bb3b0;
+  - token decoding (base 38: NUL, 0-9, a-z, _; check: 0x5eed65d076e8ae3b
+    decodes to "ext_interior" as in the earlier file).
+Also the old decompiles %USERPROFILE%\rea-ets2\function-pin-build.json
+(FUN_140fcf210) and function-pin-update.json (FUN_140fcba50), read only to
+find addresses; every claim below was checked in the disassembly.
+
+Data side (ETS2_DIR set, MSYS_NO_PATHCONV=1, prebuilt examples):
+  target/release/examples/def_grep.exe accessory_cabin_data model 2000      -> 34 cabin models
+  target/release/examples/scs.exe find vehicle/truck .pmd | grep /cabin/    -> 71 more paths
+  target/release/examples/def_grep.exe accessory_interior_data ext_model 2000 -> 88 ext_models
+  target/release/examples/model_info.exe <each model>
+  then a scratch script applying the engine's rule (per model variant: parts
+  whose visible-by-variant flag is true, in part order, then locators in
+  order; first name that starts with the query).
+
+
+Q1. Renault T low sleeper (cabin_b) with a 2024 interior: f_light_top
+=====================================================================
+
+1. The 0x118 override returns the pose untouched (Confirmed, asm)
+-----------------------------------------------------------------
+FUN_14062ab10 passes the caller's output pose pointer (rdx, kept in r14)
+straight to FUN_1415209e0 for each candidate model and, on the first hit,
+returns that model pointer at once (0x14062ab86 on the +0xf88 hit,
+0x14062ac37 for the others). Between the call and the return it reads no
+placement field (+0x30/+0x40) of the hit model and writes nothing into the
+pose. The +0xf88 object is passed to FUN_1415209e0 the same way as the cabin
+and chassis models.
+
+2. The locator search reads only PMD data (Confirmed, asm)
+----------------------------------------------------------
+FUN_1415209e0 reads the model object's +0x118/+0x120/+0x128 (the model
+resource and its parsed data), calls the object's virtual +0x140 once at
+entry with the result discarded, and writes the output pose only at
+0x141520d2a/0x141520d2d: position from locator record +0x08..+0x10,
+rotation from +0x18 (records 0x2c bytes apart). x and z go through
+0x14012b9e0, which only splits a float into a 512 m cell index (int16) and
+the remainder (truncate(v/512), v - 512*cell): a format change, not a
+transform. It never touches +0x30/+0x40 of the object.
+Name compare: the query's length is its base-38 digit count (0x1400ec2c0).
+Under 12 digits, a locator matches when its first <length> digits equal the
+query's (0x141520c26-0x141520c89), i.e. the query is a prefix of the
+locator name; at 12 it is an exact compare (0x141520b8d). (Confirmed.)
+
+3. From the virtual call to the stored pin position (Confirmed, asm)
+--------------------------------------------------------------------
+FUN_140fcf210 after 0x140fcfaf4:
+  - 0x140fcfb1c-0x140fcfce7: the axle-model offset, only when the returned
+    model is an element of vehicle +0x188 (rea-pin-model-order.txt §1).
+  - 0x140fcfd0f-0x140fcfdf6: adds the translation at rbp+0x248..+0x250 (and
+    its two cell shorts +0x254/+0x256) to the locator position. Only the
+    translation; the locator's rotation is kept as is.
+  - rbp+0x248 is written once per object at 0x140fcf9f4 by FUN_1412e2c20(
+    root placement, out, object placement). FUN_1412e2c20 computes the
+    object's placement in the root's frame: position difference rotated by
+    the conjugate of the root's quaternion, rotation conj(root) * object.
+  - Root placement: virtual +0xf8 of R = P+0x460, or P+0x260 when +0x460 is
+    null (0x140fcf76e-0x140fcf7a6), P = FUN_140375ce0(screen +0x1b8, 0x190).
+    Object placement: virtual +0xf8 of the current object (0x140fcf9dd).
+  - The object walk starts at R itself (0x140fcf809-0x140fcf837 store R as
+    the current object), so for the truck the offset is identity and the
+    position stays the raw locator. (That R is the truck: Hypothesis,
+    strong; the 0x118 call and the accessory data at +0x1f8 are made on it.)
+  - The record keeps that position and the raw locator rotation; pin_offset
+    / pin_dir from the scene table follow (pin-attributes.txt §8).
+No model placement, world matrix or parent node enters between the call and
+the record.
+
+4. The +0xf88 placement never reaches the search (Confirmed, asm)
+-----------------------------------------------------------------
+FUN_14061d180 calls the loader FUN_140645870 at 0x14061d33a with
+&+0x158 (chassis), &+0xf60 (cabin), ..., 8th &+0xf88, 9th &+0xf90,
+10th &+0xfa0, 11th &+0xf98, 12th flags; bit 9 (0x200) is set at
+0x14061d2c4 when the vehicle's accessory_interior_data (class 0x141d25510)
+has byte +0x104a set.
+The ext_interior block (0x140645b65-0x140645c17) attaches the +0xf88 object
+under the cabin's node (FUN_1413149c0 on object+0x10 and cabin model+0x10)
+and writes the ext_interior pose into the object's +0x30/+0x40. That is
+the object's local placement in the scene graph; the locator records the
+search reads (point 2) live in the model data and are not written.
+Whether the tuning-screen truck is built through FUN_14061d180 is a
+Hypothesis (it is the only loader that fills +0xf88; the 0x118 override that
+reads +0xf88 belongs to the same class, rea-pin-model-order.txt §2).
+
+5. Per-frame update, exterior view (Confirmed, asm)
+---------------------------------------------------
+FUN_140fcba50 gets R's world placement (virtual +0xf8, 0x140fcbb24, into
+rbp-0x30) and composes it with each record pose (FUN_1412e2e10 at
+0x140fcbfb2: base then record). No per-model term here either.
+
+Conclusion Q1: on a Renault T cabin_b with antracite_sl_24 (or the other
+*_sl_24 ext_models) the f_light_top pin is drawn at the ext_model's raw
+locator, y 3.526 in truck space, while the ext_model's part is drawn under
+the cabin node at ext_interior (y -0.241), i.e. at 3.285. The pin sits about
+0.24 m above the part. Every code step is Confirmed by static code; the
+visible result is not yet seen in the game (prediction).
+The other slots the *_24 ext_models carry (flag_l/r, drv_plate,
+codrv_plate) behave the same way.
+
+
+Q2. The interior pass: what the game adds to a cockpit locator
+==============================================================
+
+6. The vehicle's eye point, vehicle +0x1020 (Confirmed, asm)
+------------------------------------------------------------
+Constructor FUN_14061ae60 (it sets +0xf60, +0xf88 … for the vehicle class)
+fills +0x1008, +0x1014 and +0x1020 (vec3 each) from the .bss vector at
+0x1435348e0 (0x14061afa9-0x14061afbf). No RIP-relative store to 0x1435348e0
+exists (four functions only read it), so it is most likely the zero vector
+(Hypothesis).
+FUN_14061bbf0 sets them from cabin locators:
+  - 0x14061bde9-0x14061be6f: token 0x2fbcb838723 = "interior" through the
+    vehicle's own virtual +0x118 (FUN_14062ab10: +0xf88 ext_model, cabin,
+    axle models, chassis; visible parts only; name prefix, point 2). On a
+    hit, +0x1020 = the locator's position (cells folded back:
+    x + 512*cell_x, y, z + 512*cell_z). Rotation is dropped. On a miss the
+    field is left as it was.
+  - 0x14061be75-0x14061bf50 and 0x14061c142-0x14061c1d6: token
+    0x60e9f4200b93 = "cam_cabin" gives +0x1014, searched in the vehicle's
+    addon list (+0x720) first, then through +0x118.
+There is no second token for right-hand drive. The EU/UK choice comes from
+the cabin model's variant: the prefix "interior" matches the first visible
+locator named interior* (data, point 9).
+When it runs (Confirmed, asm): FUN_14061bbf0 is slot 0x80 of vtable
+0x14215b0f8; vtable 0x1421bb3b0 overrides slot 0x80 with FUN_1409a7e70,
+which calls FUN_14061bbf0 first (0x1409a7e79). Both vtables have slot 0x118
+= FUN_14062ab10 and slot 0x1c8 = FUN_14061d180 (the +0xf88 loader).
+game_actor_u::init (FUN_1405b8320; its strings name
+"?init@game_actor_u@prism@@…" and "[actor] Initialized at …") builds the
+vehicle with the 0x1421bb3b0 constructor FUN_1409a7ac0 (0x1405b8393),
+calls the vehicle's slot 0x80 (0x1405b8403), and only afterwards builds the
+visual interior (0x1405b85b9 -> FUN_14051f750 -> FUN_14051fa00), so the eye
+point exists before the cockpit is placed. That the tuning-screen truck is
+set up through this actor path is a Hypothesis (P below being a
+game_actor_u is not proven).
+
+7. The cockpit model is placed at that point, unrotated (Confirmed, asm)
+------------------------------------------------------------------------
+FUN_14051fa00 is the [visual_interior] loader (its strings name
+"[visual_interior]" and "interior"; r14 = the interior object, r14+0x118 =
+its vehicle). 0x14051fd7b-0x14051fde1 attaches the interior's model objects
+(+0x10, and +0x18 when set) under cabin[0]'s node (vehicle +0xf60), or
+chassis[0] (+0x158) when there is no cabin. 0x14051fde6-0x14051fe75 then
+sets the +0x10 model's local placement to position = vehicle +0x1020 and
+rotation = (1, 0, 0, 0); the +0x18 model gets the same right after.
+0x140520a39-0x140520a40 copies accessory_interior_data +0x104a to interior
++0x109, the byte the pin builder reads as the UK flag (pin_dir_uk).
+So the cockpit (the interior def's model) sits in cabin space at the
+"interior*" locator, with no rotation, and ext_interior plays no part.
+These two stores (0x14051fe69 / 0x14051fea1) are the only writes to the
+models' +0x30/+0x40 in the function. Later (0x140520f26-0x140520f64) it
+adds a vec3 at +0x4a4 of the object at vehicle +0x1048 to +0x1020 into a
+stack value (camera side). That is not head_offset of the camera unit:
+attr_tables.py places head_offset at +0x498 of vehicle_interior_camera
+(class 0x141d24a70); the class at vehicle +0x1048 is Unknown. It does not
+touch the cockpit placement or the pins.
+
+8. Interior pins: builder and per-frame update (Confirmed, asm)
+---------------------------------------------------------------
+Builder (FUN_140fcf210): the interior object is P+0x268 (0x140fcf70c-
+0x140fcf745, UK byte +0x109); the search runs on its +0x10 model alone
+(0x140fcfa97-0x140fcfab5); the result then gets the same object offset as
+in point 3, identity for the truck. So the record holds the raw cockpit
+locator (plus pin_offset).
+Update (FUN_140fcba50): P+0x140 is the active camera. Its class (virtual
++0x28) is checked for vehicle_interior_camera, descriptor 0x141d24a70 (name
+pointer 0x142c2c4a8 -> "vehicle_interior_camera"; its attribute table
+names head_offset) or a class derived from it, or exactly descriptor
+0x141cfa7d0 ("unit_proxy") (0x140fcbb2a-0x140fcbb76, 0x140fcbd80). The same
+"derived from X, or a unit_proxy" test appears in FUN_14061bbf0 for
+accessory_interior_data (0x14061bf79-0x14061bfb6), so it is the engine's
+generic type test that also accepts a proxy, not a second camera mode.
+When it matches, the base placement is replaced (0x140fcbb7c-0x140fcbdfe):
+  position = C.pos + C.rot * (vehicle +0x1020), rotation = identity,
+  where vehicle = P+0x260 and C = FUN_1406248a0(vehicle): the vehicle's
+  virtual +0xe8 placement composed with FUN_140624990's local placement
+  (identity when byte +0x1350 is set or +0x1210 is null, else a pose from
+  the +0x11f8 object). (C = the cabin's world placement: Hypothesis.)
+Each record is composed with that base (0x140fcbfb2), so
+  pin world = C.pos + C.rot * eye + cockpit_locator (+ pin_offset),
+  pin rotation = cockpit_locator rotation (world axes).
+The same flag (rbp+0x100) forces the pin alpha to full at 0x140fcc0ec,
+so cockpit pins do not fade by facing.
+Neither the builder nor the update reads the camera's head_offset (they
+read the vehicle's +0x1020 and the cabin pose only).
+P+0x268 being the [visual_interior] object of point 7: Hypothesis, strong
+(same fields: +0x10 model, +0x109 = interior def +0x104a). Its writer
+was not found.
+
+9. Which locator, per cabin (Confirmed on data, engine rule from 6)
+-------------------------------------------------------------------
+No ext_model has a locator that starts with "interior" or "cam_cabin"
+(0 of 88), so the cabin decides. 52 truck cabin models carry an interior*
+locator or ext_interior; in every variant of every one of them the rule
+finds an interior* locator (0 misses), and that covers all 34 cabin models
+named by accessory_cabin_data. Examples (first match, position):
+  renault_t cabin_a   default interior    (-0.7, 2.98, -1.75)    uk interior_uk (0.7, 2.98, -1.75)
+  renault_t cabin_b   default interior    (-0.7, 2.739, -1.75)   uk interior_uk (0.7, 2.739, -1.75)
+                      ext_interior (0, -0.241, 0)
+  scania_2016 cab_s_* default interior_s  (-0.683, 2.705, -1.862) uk interior_s1 (0.683, …)
+                      = ext_interior (-0.683, 2.705, -1.862)
+  scania_2016 cab_r_* default interior_r  (-0.683, 2.549, -1.863) uk interior_r (0.682, …)
+  man_tgx_2020        default interior    (-0.734, 2.804, -1.774) uk interior_uk
+                      ext_interior (-0.722, 2.72, -1.896)
+  mercedes_actros_2009 cabin_b/c  default interior3 (-0.748, 2.462, -1.876) uk interior2
+  volvo_fh16_2009     default interior (-0.71, 2.618, -2.056), cabin_uk interior (0.673, …):
+                      two locators with the same name, in parts of different variants
+  volvo_fh 2012-2024, daf, iveco, renault e-tech: ext_interior at or near
+                      (0, 0, 0), eye about (-0.72, 2.3-2.8, -1.8)
+UK cockpits are separate models whose origin is the UK eye: volvo_fh_2024
+interior/model/gt.pmd curtain_f x +0.692, interior/uk/gt.pmd x -0.692.
+
+Conclusion Q2: for a cockpit pin the game adds the position of the
+cabin's first visible locator whose name starts with "interior" (cabin
+model, active variant; the ext_model and chassis are searched by the same
+rule but hold none in 1.60), with no rotation, to the cockpit model's raw
+locator, then pin_offset. The eye is carried by the cabin's world pose; the
+cockpit locator is then added along world axes (base rotation identity).
+The cockpit model is placed at the same eye point but under the cabin node,
+so it turns with the cabin while the pins do not; the two agree only while
+the cabin's world rotation is identity (the scene's truck_rot and any cabin
+sway break that). ext_interior and the camera unit's head_offset do not
+enter. Equal to our ext_interior placement only on EU Scania 2016 cabins
+(interior_s / interior_r = ext_interior); UK Scania differs by 1.37 m in x,
+MAN TGX 2020 differs by about 0.15 m, Volvo FH16 2009 by about 0.75 m,
+MAN TGX Euro 6 by about 1 m, and the cabins whose ext_interior is at or
+near the origin by about 3.4 m.
+
+
+Corrections to earlier files
+----------------------------
+- rea-pin-model-order.txt §6 says "vehicle +0x268": the interior object is
+  P+0x268, P = FUN_140375ce0(screen +0x1b8, 0x190), the same object whose
+  +0x260/+0x460 give the root (0x140fcf70c-0x140fcf716). The 0x118 call is
+  made on the vehicle, not on P.
+- rea-pin-model-order.txt §6 and pin-attributes.txt ("interior base
+  points") expected the builder's object offset to carry the eye point.
+  It does not: that offset is identity for the truck (point 3), and the eye
+  enters only in FUN_140fcba50's interior-camera branch (point 8).
+- rea-pin-model-order.txt §6 said FUN_140645870's last block places one
+  more model at a run-time token chosen by flag 0x200. The tokens are
+  static .data at 0x142c146a0 = "swheel" and 0x142c146a8 = "swheel_uk"
+  (0x140645c35-0x140645ce3; earlier addresses 0x142614aa0/aa8 were
+  miscomputed); the block places the object at vehicle +0xfa0 at the
+  cabin's (or chassis's) swheel/swheel_uk locator. It is not the cockpit.
+
+Unknowns
+--------
+- Whether the cabin variant the engine uses for a UK interior is the cabin
+  model's "uk"/"cabin_uk" variant (where the interior_uk locator is the
+  only visible one): Hypothesis. Next: trace the variant chosen for
+  cabin[0] when flag 0x200 is set (callers of FUN_14061d180 /
+  FUN_140645870 and the variant argument).
+- The writer of P+0x268 and the meaning of P+0x460 vs P+0x260 (the
+  interior base always uses +0x260). Next: find P's class (type 0x190 in
+  FUN_140375ce0) and its writers.
+- That the cabin/ext_model loader (slot 0x1c8, FUN_14061d180) runs before
+  slot 0x80 for the same vehicle (otherwise the eye search finds no cabin).
+  Next: find the caller of slot 0x1c8 in the actor/vehicle setup.
+- The miss case (no interior* locator): the field keeps the .bss default,
+  most likely zero; it never happens in 1.60 (0 of 52).
+- The 0.24 m pin offset on Renault T cabin_b with a *_sl_24 interior has
+  not been seen in the game.
