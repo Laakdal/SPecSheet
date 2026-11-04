@@ -13,6 +13,8 @@ const VERSION: u8 = 0x15;
 const SIGNATURE: &[u8; 3] = b"gmP";
 const PART_LEN: usize = 24;
 const LOCATOR_LEN: usize = 44;
+/// A bone record: token name, row-major 4×4 matrix, then fields not read.
+const BONE_LEN: usize = 0xc8;
 const PIECE_LEN: usize = 100;
 /// Most UV sets a piece may declare. The base archives use at most 4
 /// across all 53,917 models; the cap keeps a hostile count from
@@ -96,17 +98,35 @@ pub struct Pmg {
     pub locators: Vec<Locator>,
     /// Every piece; parts index into it.
     pub pieces: Vec<Piece>,
-    /// Number of skinning bones (0 for rigid models).
-    pub bone_count: u32,
+    /// The skeleton's bones, in file order (empty for rigid models).
+    pub bones: Vec<Bone>,
+}
+
+/// One bone of a skinned model's skeleton.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Bone {
+    /// The bone's name, e.g. `steering_w`.
+    pub name: String,
+    /// The bone's rest matrix in model space, row-major, for column vectors:
+    /// rows 0–2 hold the rotation and the translation in their last float.
+    pub matrix: [[f32; 4]; 4],
+}
+
+impl Bone {
+    /// The translation (floats 3, 7 and 11).
+    pub fn translation(&self) -> [f32; 3] {
+        [self.matrix[0][3], self.matrix[1][3], self.matrix[2][3]]
+    }
 }
 
 /// The fixed 0x70-byte header (models.md, "PMG").
 struct Header {
     piece_count: usize,
     part_count: usize,
-    bone_count: u32,
+    bone_count: usize,
     locator_count: usize,
     aabb: Aabb,
+    bones: usize,
     parts: usize,
     locators: usize,
     pieces: usize,
@@ -126,7 +146,7 @@ impl Header {
         }
         let piece_count = r.count(PIECE_LEN)?;
         let part_count = r.count(PART_LEN)?;
-        let bone_count = r.u32()?;
+        let bone_count = r.count(BONE_LEN)?;
         let _unknown_10 = r.u32()?;
         let locator_count = r.count(LOCATOR_LEN)?;
         let _unknown_18 = r.u64()?;
@@ -135,13 +155,14 @@ impl Header {
             min: r.vec3()?,
             max: r.vec3()?,
         };
-        let _skeleton = r.u32()?;
+        let bones = r.u32()? as usize;
         Ok(Self {
             piece_count,
             part_count,
             bone_count,
             locator_count,
             aabb,
+            bones,
             parts: r.u32()? as usize,
             locators: r.u32()? as usize,
             pieces: r.u32()? as usize,
@@ -513,6 +534,22 @@ impl Pmg {
             });
         }
 
+        let mut bones = Vec::with_capacity(header.bone_count);
+        for index in 0..header.bone_count {
+            let at = index
+                .checked_mul(BONE_LEN)
+                .and_then(|o| o.checked_add(header.bones))
+                .filter(|at| at.checked_add(BONE_LEN).is_some_and(|end| end <= r.len()))
+                .ok_or_else(|| r.error("bone record outside the file"))?;
+            r.seek(at)?;
+            let name = r.token()?.decode();
+            let mut matrix = [[0.0; 4]; 4];
+            for row in &mut matrix {
+                *row = r.vec4()?;
+            }
+            bones.push(Bone { name, matrix });
+        }
+
         // In game data the pieces' streams never overlap, so together they
         // decode at most the pool sizes. Holding every file to that stops
         // pieces that share one range from multiplying memory.
@@ -545,8 +582,13 @@ impl Pmg {
             parts,
             locators,
             pieces,
-            bone_count: header.bone_count,
+            bones,
         })
+    }
+
+    /// The bone with exactly this name.
+    pub fn bone(&self, name: &str) -> Option<&Bone> {
+        self.bones.iter().find(|bone| bone.name == name)
     }
 
     /// The part with exactly this name (case-sensitive).
@@ -785,11 +827,45 @@ mod tests {
         Pmg::parse(&bytes)
     }
 
+    /// rea-steering-wheel.txt: the bone count at 0x0C, the table offset at
+    /// 0x48, 0xC8-byte records of a token and a row-major 4×4 matrix.
+    #[test]
+    fn reads_the_bone_table() {
+        let mut bytes = build(&fixture());
+        let at = bytes.len();
+        put(&mut bytes, 0x0c, 2);
+        put(&mut bytes, 0x48, at as u32);
+        for (name, ty) in [("steering_w", -0.275), ("root", 0.0)] {
+            let mut record = Vec::new();
+            record.extend(Token::encode(name).expect("token").0.to_le_bytes());
+            f32s(&mut record, &[1.0, 0.0, 0.0, 0.0]);
+            f32s(&mut record, &[0.0, 0.8, -0.6, ty]);
+            f32s(&mut record, &[0.0, 0.6, 0.8, -0.481]);
+            f32s(&mut record, &[0.0, 0.0, 0.0, 1.0]);
+            record.resize(BONE_LEN, 0);
+            bytes.extend(record);
+        }
+        let pmg = Pmg::parse(&bytes).expect("parse");
+        assert_eq!(pmg.bones.len(), 2);
+        let wheel = pmg.bone("steering_w").expect("bone");
+        assert_eq!(wheel.translation(), [0.0, -0.275, -0.481]);
+        assert_eq!(wheel.matrix[1], [0.0, 0.8, -0.6, -0.275]);
+        assert!(build(&fixture()).len() < bytes.len());
+        assert!(Pmg::parse(&build(&fixture()))
+            .expect("rigid")
+            .bones
+            .is_empty());
+
+        // A table running past the end is an error, not a panic.
+        let short = &bytes[..bytes.len() - 1];
+        assert!(Pmg::parse(short).is_err());
+    }
+
     #[test]
     fn parses_parts_locators_and_pieces() {
         let pmg = Pmg::parse(&build(&fixture())).unwrap();
         assert_eq!(pmg.aabb.max, [10.0; 3]);
-        assert_eq!(pmg.bone_count, 0);
+        assert!(pmg.bones.is_empty());
         assert_eq!(
             pmg.parts[0],
             Part {
@@ -854,10 +930,7 @@ mod tests {
     fn accepts_skinned_pieces() {
         let mut f = fixture();
         f.pieces[0].bones = true;
-        let mut bytes = build(&f);
-        put(&mut bytes, 0x0c, 12);
-        let pmg = Pmg::parse(&bytes).unwrap();
-        assert_eq!(pmg.bone_count, 12);
+        let pmg = Pmg::parse(&build(&f)).unwrap();
         assert_eq!(
             pmg.pieces[0].positions,
             (0..3).map(position).collect::<Vec<_>>()
