@@ -1163,6 +1163,32 @@ fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
 }
 
 #[test]
+fn every_truck_names_an_interior_camera_that_exists() {
+    // research/evidence/interior-locators.md: each truck's data.sii names
+    // its `vehicle_interior_camera` unit, written in /def/camera/units.
+    use specsheet_data::camera::{interior_camera_name, interior_cameras};
+    use specsheet_data::list_trucks;
+    let Some(fs) = game_fs() else { return };
+    let cameras = interior_cameras(&fs).expect("camera storage");
+    let mut failures = Vec::new();
+    let trucks = list_trucks(&fs).expect("trucks");
+    for truck in &trucks {
+        match interior_camera_name(&fs, &truck.id).expect("data.sii") {
+            None => failures.push(format!("{}: no interior_camera", truck.id)),
+            Some(name) => match cameras.get(&name) {
+                None => failures.push(format!("{}: {name} not found", truck.id)),
+                Some(camera) if camera.fov.is_none() => {
+                    failures.push(format!("{}: {name} has no camera_fov", truck.id))
+                }
+                Some(_) => {}
+            },
+        }
+    }
+    assert!(!trucks.is_empty());
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
 fn an_interior_part_takes_the_cockpits_locator_even_when_the_cabin_has_one() {
     // The Renault T 2024 cockpit carries a `carpet` locator on the cab
     // floor (1.09 m below the eye), and its cabin a `carpet_hi` one that

@@ -16,6 +16,7 @@ use specsheet_truck::{
 };
 
 use specsheet_assembly::{assemble, slot_availability, Assembly, Drive, HookupPosition};
+use specsheet_data::camera::{interior_camera_name, interior_cameras, InteriorCamera};
 use specsheet_data::flare::{vehicle_lights, VehicleLight};
 use specsheet_data::localization::Localization;
 use specsheet_data::model::ModelCache;
@@ -44,6 +45,9 @@ pub struct GameSession {
     catalogs: Mutex<HashMap<TruckId, Arc<TruckCatalog>>>,
     /// The vehicle light units by name (F19); empty when they fail to load.
     vehicle_lights: BTreeMap<String, VehicleLight>,
+    /// The trucks' interior camera units by name; empty when they fail to
+    /// load.
+    interior_cameras: BTreeMap<String, InteriorCamera>,
     /// Archives that failed to open (reported, not fatal).
     pub mount_failures: Vec<String>,
 }
@@ -59,6 +63,7 @@ impl GameSession {
             .map(|t| (t.pins, t.interior_only))
             .unwrap_or_default();
         let (vehicle_lights, _) = vehicle_lights(&fs).unwrap_or_default();
+        let interior_cameras = interior_cameras(&fs).unwrap_or_default();
         Ok(Self {
             install,
             fs,
@@ -69,6 +74,7 @@ impl GameSession {
             trucks,
             catalogs: Mutex::new(HashMap::new()),
             vehicle_lights,
+            interior_cameras,
             mount_failures: failures
                 .into_iter()
                 .map(|(path, error)| format!("{}: {error}", path.display()))
@@ -141,11 +147,16 @@ impl GameSession {
             Some(preset) => preset,
             None => (Configuration::new(truck.clone()), Vec::new()),
         };
+        let interior_camera = interior_camera_name(&self.fs, truck)
+            .ok()
+            .flatten()
+            .and_then(|name| self.interior_cameras.get(&name).cloned());
         let mut session = TruckSession {
             catalog,
             config,
             drive: Drive::Left,
             assembly: Assembly::default(),
+            interior_camera,
             load_warnings: warnings,
         };
         session.reassemble(self);
@@ -192,6 +203,9 @@ pub struct TruckSession {
     config: Configuration,
     drive: Drive,
     assembly: Assembly,
+    /// The truck's interior camera unit (`interior_camera` in its
+    /// `data.sii`), if it names one that loads.
+    interior_camera: Option<InteriorCamera>,
     load_warnings: Vec<LoadWarning>,
 }
 
@@ -209,6 +223,12 @@ impl TruckSession {
     /// The drive side.
     pub fn drive(&self) -> Drive {
         self.drive
+    }
+
+    /// The truck's interior camera: the driver's view settings
+    /// (`research/evidence/interior-locators.md`).
+    pub fn interior_camera(&self) -> Option<&InteriorCamera> {
+        self.interior_camera.as_ref()
     }
 
     /// The assembled truck of the current configuration.
