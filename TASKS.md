@@ -120,7 +120,8 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
       - [x] the cabin's side-window glass (`windows_model`) and wipers (`wiper_model[_uk]`) are placed with the cab; the orbit camera's elevation sign is flipped, so the default view is lower (docs/app/scenes.md);
       - [ ] the window glass and wiper animations (`left/right_window_anim`, `wiper_anim[_uk]`, `.pma`): the user's to-do;
       - [x] the shadow under the truck: the chassis's `ui_shadow` quad (71), drawn with no specular reflection. Open: which of its looks a cabin picks; the game's GTAO (`def_ssao`, second-order, 71) and the in-world fake shadow (`fake-shadow.md`);
-      - [ ] the environment map costs half the frame (item 13's A/B: 31 → 15–17 ms without it): filter it once per scene, or prefilter it;
+      - [x] the environment map is filtered once per cube, not every frame (`settle_environment_map`): 31–37 → 25–28 ms idle in the default garage (release, Vulkan, MX450, no vsync), same image. The rest of its cost is the stand-ins sampling it;
+      - [ ] pins: one REA run on the pin builder for the model search order and `use_non_wheel_pin_data_from_model` (the user chose REA over screenshots); overlaps measured (`pin-overlaps.txt`);
       - [ ] the interior view: the cab's pillars and roof lie outside the 50° view and behind the sidebar, the steering wheel looks misplaced to the user (its `steering_w` locator and rotation are applied), and pins sit beyond the windscreen; check all against an in-game interior screenshot;
       - [ ] live mirrors: the game renders each mirror from its own camera into the mirror glass; ours reflect the static cube. Needs render-to-texture cameras per mirror (`active_mirrors_part`, `passive_mirrors_part`);
       - [x] the interior's `animated_model` (steering column, stalks, gauges) is placed with the cockpit; the remove button hangs under the active pin, as its template's arrow says;
