@@ -24,9 +24,10 @@ Observations (Confirmed, from the output below):
 - Beacons also use flare_only.vehicle.beacon.blink_l/_r and
   light_only.vehicle.beacon.blink_l/_r, which are not in this folder (not
   resolved here).
-Not established: how the engine draws a flare (eut2.flare, spec pending),
-and which light types a scene's vehicle_lights_on switches on (light mask
-0xd01b, rea-ui-scene-update.txt).
+Not established here: how the engine draws a flare (eut2.flare, see
+shader-spec-flare.txt), and which light types a scene's vehicle_lights_on
+switches on (light mask 0xd01b, decoded as parking + low_beam + aux +
+electrics in rea-ui-scene-update.txt, Hypothesis).
 
 Output
 ------

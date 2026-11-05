@@ -43,3 +43,36 @@ The UI shadow model (game data, 2026-10-29)
   The chassis class attribute table (exe, class ptr 0x141d1fd70) stores ui_shadow at +0x400 as
   a path, next to the shadow keys at +0x378..+0x3d0. What chooses the look is not read; the
   FH16 2012 cabins all use look "default".
+
+The UI shadow's looks (game data, 2026-11-05)
+  Survey: def_grep accessory_chassis_data ui_shadow 400 (164 chassis, 70 distinct .pmd), then
+  model_info on each .pmd, and each look's material list (a temporary example, deleted).
+  - 54 of the 70 are one 4-vertex quad with one look and one variant. 16 differ: 6 are flat
+    meshes of 8 to 32 vertices (daf_2021, iveco_sway, three Volvo FH), and two families have
+    several looks: volvo_fh16_2012 / volvo_fh_2021 (13 looks: default, gt, gt_xl, gt_xxl, fh16,
+    fh16_xl, fh16_xxl, fh16_780(_xl/_xxl), fh16_750(_xl/_xxl)) and man_tgx_2020 (4 looks:
+    default, grey, beige, ind). All are one piece at floor height with one material slot.
+  - Each multi-look shadow has the same look list as its chassis model:
+    volvo_fh16_2012/chassis/chs_4x2.pmd lists the same 13 looks, man_tgx_2020/chassis/chs_4x2.pmd
+    the same 4. Cabin models (globe_xl_8x4.pmd) have only default. The MAN names match its
+    interiors' look values (beige, grey, ind); the Volvo names match its interior models
+    (interior/model/gt.pmd, gt_xl.pmd). Hypothesis: the looks come from the shared source
+    scene of the chassis, not from a shadow-specific choice.
+  - In every multi-look shadow but one, all looks point to the same material (e.g.
+    volvo_fh16_2012 ui_shadow_4x2: all 13 -> /automat/5f/5f21d5a642b652f3.mat, texture
+    volvo_fh16_2012/shadow_4x2.tobj; man_tgx_2020 ui_shadow_4x2: all 4 ->
+    /automat/82/82806249dbc2c2fa.mat, eut2.dif.spec.over, specular 0, shininess 4).
+    The exception is volvo_fh_2021/ui_shadow/ui_shadow_6x2.pmd (used by the 6x2_midlift and
+    6x2_4_midlift chassis of volvo.fh_2021 and volvo.fh_2024): default ->
+    /automat/8e/8ebc77a6c36d2226.mat (volvo_fh_2021/shadow_6x2.tobj); the other 12 looks ->
+    /automat/2d/2d884271f28ebd8c.mat (volvo_fh16_2012/shadow_6x2.tobj, the older truck's).
+  - Chassis look values: 158 "default", 6 "Default" (man.tgx_2020); no chassis names another
+    look. Volvo FH and MAN TGX 2020 cabins are all default too; only MAN interiors use
+    beige/grey/ind.
+  So the look the game draws is default under every rule that takes it from the chassis or
+  cabin (Hypothesis, strong: the chassis's look, +0x370 next to ui_shadow +0x400, is the only
+  look the chassis unit carries). Only a rule taking the interior's look would differ, and it
+  would change the drawing only for the FH 2021/2024 midlift 6x2 chassis, which have no
+  interior look either (all Default). The executable code that loads +0x400 was not found:
+  a static scan for reads of +0x400/+0x408 next to the chassis's model paths (+0x1b8, +0x1d8)
+  hit only constructors, destructors and a field swap between two layouts.

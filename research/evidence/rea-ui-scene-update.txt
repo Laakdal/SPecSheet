@@ -55,9 +55,19 @@ Where vehicle_lights_on goes (static, tools/research/{xref,attr_tables,disasm}.p
   copies +0x21e into the UI scene object's +0x331.
 - FUN_140f8acc0 (above, step 2) turns that byte into the render view's light mask (+0x2a0):
   0xd01b when set, 0 otherwise. Confirmed.
-- What the mask's bits mean is Unknown. One name-to-number table of vehicle light types
-  (0x142c3c598: front_left_turn_signal 0, rear_left_turn_signal 1, reverse 2, high_beam 3,
-  front_right_turn_signal 4, daytime_running 5, front_positional 6, none 7, rear_positional 8,
-  rear_right_turn_signal 10, brake 11, low_beam 12) does not explain it: read with it, 0xd01b
-  would switch on three of the four turn signals and no positional lights, and bits 14 and 15
-  have no name there. So the mask uses another numbering.
+- What the mask's bits mean (corrected 2026-11-04; an earlier reading of both tables below
+  paired each name with its neighbour's value, see shader-spec-flare.txt):
+  - The light_type enum of the flare units (C, shader-spec-flare.txt): parking 0x1,
+    low_beam 0x2, high_beam 0x4, aux 0x18, brake 0x20, left_blinker 0x40, right_blinker 0x80,
+    reverse 0x100, beacon 0x200, dim_aux 0xc00, police_hooter 0x2000, electrics 0x4000.
+  - Read with it, 0xd01b = parking + low_beam + aux (both bits) + electrics, plus 0x1000 and
+    0x8000, which have no name in the enum (U). Off: high_beam, brake, both blinkers,
+    reverse, beacon, dim_aux (neither bit), police_hooter. A parked truck with its lights on.
+  - Hypothesis (strong): the mask uses this numbering. No code was found that tests a
+    flare's light_type against the view's +0x2a0.
+  - The other vehicle light enum does not fit. Descriptor 0x141d28cb0 holds the dwords 12
+    and 13, then a pointer to 13 (value, name) entries at 0x142c3c560: front_positional 0,
+    rear_positional 1, side_positional 2, low_beam 3, high_beam 4,
+    front_left_turn_signal 5, front_right_turn_signal 6, rear_left_turn_signal 7,
+    rear_right_turn_signal 8, brake 9, reverse 10, daytime_running 11, none 12. As bit
+    numbers, 0xd01b would switch on high_beam and none, and bits 14 and 15 have no name.

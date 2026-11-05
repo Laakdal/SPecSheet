@@ -34,9 +34,16 @@ Executable (static, tools/research/attr_tables.py and a pointer-table scan)
   flare_outer_angle +0xc0, scaling_start_distance +0xc4, scaling_end_distance +0xc8,
   scale_factor +0xcc, default_scale +0xd0, model +0xd8, visual_offset +0x100,
   state_change_duration +0x104, model_hdr (-1, not stored).
-  light_type name table at 0x142c30d08 (name, value): aux 0x200, beacon 0x20, brake 0xc00,
-  dim_aux 0x4000, electrics 0x4, high_beam 0x40, left_blinker 0x2, low_beam 0x1,
-  parking 0x2000, police_hooter 0x100, reverse 0x80, right_blinker (value slot holds a pointer:
-  the table's layout ends there; value not read).
+  light_type enum (corrected 2026-11-04). Its descriptor at 0x141d25d90 holds the dwords 1 and
+  12, then a pointer to the entries at 0x142c30ca0: 12 entries of 16 bytes, value first, then
+  the name pointer (sorted by name): parking 0x1, low_beam 0x2, high_beam 0x4, aux 0x18,
+  brake 0x20, left_blinker 0x40, right_blinker 0x80, reverse 0x100, beacon 0x200,
+  dim_aux 0xc00, police_hooter 0x2000, electrics 0x4000. Confirmed: the count matches the 12
+  names, and the entries end at 0x142c30d60, where the attribute record of light_type begins
+  (a pointer, offset 0x230, type 0x3b, the enum descriptor, the name). An earlier reading
+  started at the first name and paired each name with the next entry's value (e.g.
+  low_beam 0x1, parking 0x2000), and so found no value for right_blinker. That reading is wrong.
+  The record's offset 0x230 is not one of flare_vehicle's fields above; which class holds it
+  was not traced.
   The code that reads the flare_vehicle fields was not identified (offset scans hit unrelated
   functions).
