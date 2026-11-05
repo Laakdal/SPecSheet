@@ -257,8 +257,8 @@ pub struct Scene {
     /// when the scene has no parts to customise for reflection (F16).
     pub floor_reflection: bool,
     /// `vehicle_lights_on`: the truck's lights are on in this scene (8 of the
-    /// 10 hub scenes; not the tuning screen's). Which lights is Unknown
-    /// (`research/evidence/rea-ui-scene-update.txt`).
+    /// 10 hub scenes; not the tuning screen's). Which lights:
+    /// [`Scene::vehicle_light_mask`].
     pub vehicle_lights_on: bool,
     /// Fog colour (`fog_color`).
     pub fog_color: Option<[f32; 3]>,
@@ -271,6 +271,18 @@ pub struct Scene {
 }
 
 impl Scene {
+    /// The light mask this scene gives the render view: the lights-on mask
+    /// with `vehicle_lights_on`, else none (Confirmed,
+    /// `research/evidence/rea-ui-scene-update.txt`). Test a light with
+    /// [`crate::flare::VehicleLight::is_lit_by`].
+    pub fn vehicle_light_mask(&self) -> u32 {
+        if self.vehicle_lights_on {
+            crate::flare::SCENE_LIGHTS_ON_MASK
+        } else {
+            0
+        }
+    }
+
     /// The engine's `limited_pre_exposure` for this scene: its
     /// `pre_exposure` when positive, else derived from its light colours
     /// (Confirmed by static disassembly, `exposure-tonemap-data.txt` §6):
@@ -550,6 +562,11 @@ vehicle_lights_on: true
         assert_eq!(hangar.pre_exposure, Some(1.0));
         assert!(!hangar.cube_reflection && !hangar.floor_reflection);
         let plain = scene_from_unit(&fs, "/def/s.sii", units.next().expect("plain"));
+        assert_eq!(
+            plain.vehicle_light_mask(),
+            crate::flare::SCENE_LIGHTS_ON_MASK
+        );
+        assert_eq!(hangar.vehicle_light_mask(), 0);
         assert_eq!((plain.vehicle_reflection, plain.pre_exposure), (None, None));
         assert!(plain.cube_reflection && plain.floor_reflection && plain.vehicle_lights_on);
         assert!(!hangar.vehicle_lights_on);

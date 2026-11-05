@@ -2,8 +2,9 @@
 //! hookup names (e.g. `flare.vehicle.headl` on a headlight locator), from
 //! `/unit/hookup/vehicle/flare/*.sii`. Each names the light it belongs to
 //! (`light_type`, e.g. `low_beam`) and usually a glow model under
-//! `/model/flare/` (effect `eut2.flare`). How the engine draws and switches
-//! them is not specified yet (`docs/app/shader-specs/`).
+//! `/model/flare/` (effect `eut2.flare`). How the engine draws them is in
+//! `docs/app/shader-specs/flare.md`; which ones a scene switches on follows
+//! the light bits below (flare.md §5).
 
 use std::collections::BTreeMap;
 
@@ -14,6 +15,39 @@ use crate::fs::GameFs;
 
 /// Where the vehicle light units live.
 pub const VEHICLE_LIGHT_DIR: &str = "/unit/hookup/vehicle/flare";
+
+/// The bits the engine gives each `light_type` (Confirmed: the enum in the
+/// executable, `research/evidence/shader-spec-flare.txt`; flare.md §4).
+const LIGHT_TYPE_BITS: [(&str, u32); 12] = [
+    ("parking", 0x1),
+    ("low_beam", 0x2),
+    ("high_beam", 0x4),
+    ("aux", 0x18),
+    ("brake", 0x20),
+    ("left_blinker", 0x40),
+    ("right_blinker", 0x80),
+    ("reverse", 0x100),
+    ("beacon", 0x200),
+    ("dim_aux", 0xc00),
+    ("police_hooter", 0x2000),
+    ("electrics", 0x4000),
+];
+
+/// The light mask a scene with `vehicle_lights_on` gives the render view
+/// (Confirmed, `research/evidence/rea-ui-scene-update.txt`). Read with
+/// [`light_type_bits`] it is `parking`, `low_beam`, `aux` and `electrics`,
+/// plus two bits with no name; that it uses this numbering is a strong
+/// Hypothesis (flare.md §5).
+pub const SCENE_LIGHTS_ON_MASK: u32 = 0xd01b;
+
+/// The engine's bits for a `light_type` name; `None` for a name it doesn't
+/// know.
+pub fn light_type_bits(light_type: &str) -> Option<u32> {
+    LIGHT_TYPE_BITS
+        .iter()
+        .find(|(name, _)| *name == light_type)
+        .map(|&(_, bits)| bits)
+}
 
 /// The unit class of a vehicle light.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -66,6 +100,18 @@ pub struct VehicleLight {
     /// `visual_offset`: metres along the locator's forward axis, out of the
     /// lamp housing (Hypothesis).
     pub visual_offset: Option<f32>,
+}
+
+impl VehicleLight {
+    /// Whether a light mask switches this light on: any of its bits in the
+    /// mask (our choice; for [`SCENE_LIGHTS_ON_MASK`] "any" and "all" agree
+    /// on every `light_type`). Lights without a known type stay off.
+    pub fn is_lit_by(&self, mask: u32) -> bool {
+        self.light_type
+            .as_deref()
+            .and_then(light_type_bits)
+            .is_some_and(|bits| bits & mask != 0)
+    }
 }
 
 fn light_from_unit(unit: &Unit) -> Option<VehicleLight> {
@@ -169,5 +215,66 @@ particle_gen: some.particles
             (lights[2].kind, lights[2].model.as_deref()),
             (LightKind::Beacon, None)
         );
+    }
+
+    fn light(light_type: Option<&str>) -> VehicleLight {
+        VehicleLight {
+            name: "flare.vehicle.x".to_owned(),
+            kind: LightKind::Flare,
+            light_type: light_type.map(str::to_owned),
+            model: None,
+            dir_type: None,
+            inner_angle: None,
+            default_scale: None,
+            scale_factor: None,
+            scaling_distances: None,
+            visual_offset: None,
+        }
+    }
+
+    #[test]
+    fn light_types_map_to_the_engine_bits() {
+        let expected = [
+            ("parking", 0x1),
+            ("low_beam", 0x2),
+            ("high_beam", 0x4),
+            ("aux", 0x18),
+            ("brake", 0x20),
+            ("left_blinker", 0x40),
+            ("right_blinker", 0x80),
+            ("reverse", 0x100),
+            ("beacon", 0x200),
+            ("dim_aux", 0xc00),
+            ("police_hooter", 0x2000),
+            ("electrics", 0x4000),
+        ];
+        for (name, bits) in expected {
+            assert_eq!(light_type_bits(name), Some(bits), "{name}");
+        }
+        assert_eq!(light_type_bits("headlight"), None);
+    }
+
+    #[test]
+    fn a_lit_scene_turns_on_parking_low_beam_aux_and_electrics_only() {
+        let on = ["parking", "low_beam", "aux", "electrics"];
+        let off = [
+            "high_beam",
+            "brake",
+            "left_blinker",
+            "right_blinker",
+            "reverse",
+            "beacon",
+            "dim_aux",
+            "police_hooter",
+            "unknown",
+        ];
+        for name in on {
+            assert!(light(Some(name)).is_lit_by(SCENE_LIGHTS_ON_MASK), "{name}");
+        }
+        for name in off {
+            assert!(!light(Some(name)).is_lit_by(SCENE_LIGHTS_ON_MASK), "{name}");
+        }
+        assert!(!light(None).is_lit_by(SCENE_LIGHTS_ON_MASK));
+        assert!(!light(Some("parking")).is_lit_by(0));
     }
 }

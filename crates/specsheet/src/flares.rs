@@ -27,9 +27,6 @@ impl Plugin for FlarePlugin {
 /// `ML.a = 10000 · p · 0.001` (flare.md §3; the per-draw object `o` is ours,
 /// 1).
 const LUMINANCE_PER_PRE_EXPOSURE: f32 = 10.0;
-/// The lights a scene with `vehicle_lights_on` turns on. Ours (flare.md §5):
-/// its light mask's numbering is Unknown.
-const LIGHTS_ON: [&str; 2] = ["parking", "low_beam"];
 /// The glow quad's size when a unit gives none.
 const DEFAULT_SCALE: f32 = 1.0;
 
@@ -173,14 +170,9 @@ fn fill_flares(
 
 /// Shows the flares of the lights the scene turns on.
 fn switch_flares(studio: Res<Studio>, mut flares: Query<(&Flare, &mut Visibility)>) {
-    let lights_on = current_scene(&studio).is_some_and(|s| s.vehicle_lights_on);
+    let mask = current_scene(&studio).map_or(0, Scene::vehicle_light_mask);
     for (flare, mut visibility) in &mut flares {
-        let on = lights_on
-            && flare
-                .light
-                .light_type
-                .as_deref()
-                .is_some_and(|t| LIGHTS_ON.contains(&t));
+        let on = flare.light.is_lit_by(mask);
         let wanted = if on {
             Visibility::Inherited
         } else {
