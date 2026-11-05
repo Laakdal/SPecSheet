@@ -43,7 +43,7 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
 | Path | Unit | Contents |
 |---|---|---|
 | `data.sii` | `accessory_truck_data` | `info[]`, `fallback[]` (`"<slot>\|<file>"`), `require[]` (slots that must be filled) |
-| `chassis/*.sii` | `accessory_chassis_data` | `model`/`detail_model`, `variant`, `look`, `defaults[]` (including the default cabin); `ui_shadow` (the shadow quad under the truck on the tuning screen; all 164 chassis set it, 71) |
+| `chassis/*.sii` | `accessory_chassis_data` | `model`/`detail_model`, `variant`, `look`, `defaults[]` (including the default cabin); `ui_shadow` (the shadow quad under the truck on the tuning screen; all 164 chassis set it, 71). Its looks: only the Volvo FH and MAN TGX 2020 shadows have more than default, the same list as their chassis model, and all but one share one material; every chassis's `look` is default (C). That the game draws the default look is H (strong); the loading code was not found |
 | `cabin/*.sii` | `accessory_cabin_data` | `model`/`detail_model`, `variant`/`variant_uk`, `look`, `suitable_for[]` (chassis), `defaults[]`; `windows_model` (the side windows' glass, in the cab's space, opened by `left/right_window_anim`) and `wiper_model[_uk]` (with `wiper_anim[_uk]`) |
 | `accessory/<slot>/*.sii` | `accessory_addon_data` and specialised `accessory_addon_*_data` classes | `exterior_model[_uk]`, `interior_model[_uk]`, `look`, `variant`, `suitable_for[]`, `conflict_with[]`, `defaults[]`, `overrides[]`, `hide_in` |
 | `engine/`, `transmission/`, `head_light/`, `interior/`, `paint_job/` | own classes | |
@@ -386,7 +386,7 @@ Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: stri
   - The contents of the lamp and backlight arrays in the garage.
   - The deferred light object's filling.
   - The adaptation limits and speeds on the tuning screen. The UI scene's per-frame update (`FUN_140f8acc0`, Ghidra, `research/evidence/rea-ui-scene-update.txt`) sets no exposure, adaptation or tonemap parameter (Confirmed), so the histogram adaptation runs with values the UI never sets.
-  - Which lights the scenes' `vehicle_lights_on: true` switches on (8 of 10 desktop scenes set it).
+  - Which lamps' glow follows the light state. The lights that `vehicle_lights_on: true` switches on are decoded in F19.
 
 ### F19: Vehicle lights are locator hookups that name `flare.*` units (Confirmed data; drawing Unknown)
 
@@ -395,7 +395,9 @@ Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: stri
 - Beacons also use `flare_only.*` and `light_only.*` hookups from outside this folder (not resolved yet).
 - Code: `specsheet-data::flare::vehicle_lights`; `Scene::vehicle_lights_on`.
 - The shader is specified in [app/shader-specs/flare.md](app/shader-specs/flare.md) (71): a 1×1 m quad, additive, no occlusion query; billboarding, size and angle fade happen on the CPU.
-- **Unknown:** how the engine uses `dir_type`, the angles and the scaling keys, and which light types a scene's lights-on mask switches on. The tuning screen's own scene does not set `vehicle_lights_on`, so it shows no flares there (Hypothesis, from the data).
+- **`light_type` bits (Confirmed, the enum in the executable):** `parking` 0x1, `low_beam` 0x2, `high_beam` 0x4, `aux` 0x18, `brake` 0x20, `left_blinker` 0x40, `right_blinker` 0x80, `reverse` 0x100, `beacon` 0x200, `dim_aux` 0xc00, `police_hooter` 0x2000, `electrics` 0x4000 (`research/evidence/shader-spec-flare.txt`).
+- **Which lights a lit scene turns on (Hypothesis, strong).** A scene with `vehicle_lights_on: true` (8 of 10 desktop scenes) sets the render view's light mask to 0xd01b (Confirmed). Read with the bits above, that's `parking`, `low_beam`, `aux` and `electrics` (gauge back-lights, no glow model), plus two bits with no name. It excludes the high beam, brake, blinkers, reverse, beacon, `dim_aux` and police lights. No code was found that tests a flare against the mask, hence Hypothesis (`research/evidence/rea-ui-scene-update.txt`).
+- **Unknown:** how the engine uses `dir_type`, the angles and the scaling keys; the mask bits 0x1000 and 0x8000. The tuning screen's own scene does not set `vehicle_lights_on`, so it shows no flares there (Hypothesis, from the data).
 
 ## Open questions
 

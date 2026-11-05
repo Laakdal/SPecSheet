@@ -41,7 +41,7 @@ The engine stores these keys in the `flare_vehicle` class (attribute table, C: `
 
 | Key | Values seen (47 units) | Meaning (H) |
 |---|---|---|
-| `light_type` | `parking`, `low_beam`, `high_beam`, `brake`, `left_blinker`, `right_blinker`, `reverse`, `aux`, `beacon`, `electrics`, `police_hooter` | Which light switches the flare on. The engine maps the name to a bit (C, table in the executable): `low_beam` 0x1, `left_blinker` 0x2, `electrics` 0x4, `beacon` 0x20, `high_beam` 0x40, `reverse` 0x80, `police_hooter` 0x100, `aux` 0x200, `brake` 0xc00, `parking` 0x2000, `dim_aux` 0x4000; `right_blinker` is listed without a readable value. (H) The flare shows when its bits meet the vehicle's light state. |
+| `light_type` | `parking`, `low_beam`, `high_beam`, `brake`, `left_blinker`, `right_blinker`, `reverse`, `aux`, `beacon`, `electrics`, `police_hooter` | Which light switches the flare on. The engine maps the name to bits (C, the enum in the executable): `parking` 0x1, `low_beam` 0x2, `high_beam` 0x4, `aux` 0x18, `brake` 0x20, `left_blinker` 0x40, `right_blinker` 0x80, `reverse` 0x100, `beacon` 0x200, `dim_aux` 0xc00, `police_hooter` 0x2000, `electrics` 0x4000. (H) The flare shows when its bits meet the vehicle's light state (§5). |
 | `dir_type` | `wide`, `narrow` | How directional the light is: (H) `narrow` (headlights, aux, reverse) shows only within the cone of `flare_inner_angle`…`flare_outer_angle` degrees around the locator's forward axis; `wide` (position, brake, indicators) over a wide angle. |
 | `flare_inner_angle`, `flare_outer_angle` | e.g. 7 (headlight) | (H) Full strength inside the inner angle, fading to zero at the outer. |
 | `default_scale` | 0.405 (parking) … 1.53 (low beam) | (H) The quad's size in metres near the camera. |
@@ -52,8 +52,10 @@ The engine stores these keys in the `flare_vehicle` class (attribute table, C: `
 ## 5. Which lights a scene turns on
 
 - A scene with `vehicle_lights_on: true` sets the render view's light mask to 0xd01b (C, `research/evidence/rea-ui-scene-update.txt`).
-- Read with the `light_type` bits above, 0xd01b contains `low_beam` (0x1), `left_blinker` (0x2) and `dim_aux` (0x4000), plus 0x8, 0x10, 0x1000 and 0x8000, which have no readable name. One of those four is `right_blinker`. A scene that lights one indicator but not parking lights is implausible, so (H) the scene mask uses another numbering than `light_type`. **U** until a screenshot of a lit garage shows which lamps glow.
-- **Stand-in (our choice):** with `vehicle_lights_on`, light `parking` and `low_beam` flares. That's what "lights on" means on a parked truck, and it's easy to change once the mask is decoded.
+- Read with the `light_type` bits of §4, 0xd01b is `parking` (0x1), `low_beam` (0x2), `aux` (0x18, both bits) and `electrics` (0x4000), plus 0x1000 and 0x8000, which have no name (U). The high beam, brake, blinkers, reverse, beacon, `dim_aux` and police lights stay off: a parked truck with its lights on.
+- **(H, strong):** the mask uses the `light_type` numbering. The decoded set is coherent, and the executable's other light enum gives nonsense for it, but no code was found that tests a flare's bits against the mask (`research/evidence/rea-ui-scene-update.txt`).
+- **The test (our choice):** a flare shows when `light_type bits & mask ≠ 0`. For this mask "any bit" and "all bits" agree on every `light_type`: `aux` has both its bits in the mask, `dim_aux` neither.
+- `electrics` units are the gauges' back-lights; they have no glow model, so they draw no flare.
 
 ## Sources
 

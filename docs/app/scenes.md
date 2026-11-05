@@ -38,7 +38,7 @@ The hub ("desktop") scenes from `/def/desktop/config*.sii` follow in the picker 
 In the game materials the shadow scales only the sun's diffuse and specular, not the ambient or the reflection (dif-spec §9, `sun_visibility` in `game_lighting.wgsl`). Whether the game draws real-time sun shadows on the tuning screen at all is Unknown: the UI scene sets no shadow parameter (`rea-ui-scene-update.txt`). A reference screenshot settles it.
 
 **Vehicle light flares** (`specsheet/src/flares.rs`, [shader-specs/flare.md](shader-specs/flare.md), F19). Each light locator of a placed model whose unit has a glow model gets the game's flare model (`/model/flare/*.pmd`), drawn as the spec's §3: unlit, `B·Kd·2c`, additive, no depth write, times `10·p` (`p` = the scene's pre-exposure; the per-draw object `o` is ours, 1). It shows only in scenes with `vehicle_lights_on`, which the tuning screen's own scene does not set. Ours, each a Hypothesis:
-- **Which lights:** `parking` and `low_beam` (flare.md §5: the scene's light mask is not decoded).
+- **Which lights:** the scene's light mask 0xd01b against each unit's `light_type` bits: `parking`, `low_beam`, `aux` and `electrics` (flare.md §5; the decode is a strong Hypothesis, `specsheet_data::flare::SCENE_LIGHTS_ON_MASK`).
 - **Facing and size:** the quad turns to the camera, `default_scale` metres, growing to `default_scale × scale_factor` between the scaling distances.
 - **`visual_offset`:** towards the camera, out of the lamp housing. Along the locator's forward axis (the spec's reading) put a headlight's glow 0.6 m in front of the lamp, beside the truck in a three-quarter view.
 - No cone fade for `narrow` lights, no soft depth fade, no fog.
