@@ -106,7 +106,7 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - [x] 8.3 alias collisions in extraction: a name that reaches another file through its short alias takes the next `~N`; MAN TG3 now writes all 7,551 files (was: stopped, or 24 skipped) (`research/evidence/extract-streaming.txt`).
   - [ ] (optional) A streaming `sniff`, so unnamed entries can stream too (`specsheet-formats`).
   - [ ] Extraction of game (v2) archives: non-texture files first; packed textures need a `.dds` and a standalone `.tobj` written (fields Unknown).
-  - [ ] Tree and filter options for the example (d7, in progress).
+  - [x] Tree and filter options for the example: `--list` (tree with sizes, renames and unnamed entries; reads no content) and repeatable `--only <pattern>` on archive paths; size limit after filtering. Unnamed entries are found by `HashFsV1Archive::entry_by_hash`, which replaces a linear scan.
 
 ## Next
 
