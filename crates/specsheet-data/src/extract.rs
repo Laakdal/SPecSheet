@@ -9,10 +9,15 @@
 //! without a recovered name go to `_unnamed/<hash>.<extension>`, the
 //! extension guessed from their content ([`specsheet_formats::sniff`]).
 //! Entries that cannot be read are listed in `_unreadable.txt`.
+//!
+//! Named entries are streamed to disk in 64 KiB pieces, so an entry of any
+//! size passes without being held in memory; one that fails halfway leaves
+//! no file, folder or reserved name behind. Unnamed entries are read whole
+//! (at most 2 GiB), since their extension is guessed from all their bytes.
 
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::{Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
 use specsheet_archive::{city_hash_64, EntryV1, HashFsV1Archive, ZipArchive};
@@ -27,6 +32,8 @@ const UNREADABLE: &str = "_unreadable.txt";
 const UNNAMED: &str = "_unnamed";
 /// Longest name part Windows file systems hold.
 const MAX_PART: usize = 255;
+/// Bytes copied per read while streaming an entry to disk.
+const CHUNK: usize = 64 << 10;
 /// Default limit on the bytes one extraction writes, against archives whose
 /// entries share data to declare far more than the file holds. The largest
 /// package on the test install unpacks to about 8.7 GB.
@@ -149,7 +156,11 @@ struct Item {
 
 trait Source {
     fn items(&self) -> Vec<Item>;
+    /// The whole content of an entry, for unnamed entries: their extension
+    /// is guessed from all of their bytes.
     fn read(&self, item: &Item) -> Option<Vec<u8>>;
+    /// A stream of a named entry's content.
+    fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>>;
 }
 
 struct V1Source<'a> {
@@ -182,6 +193,11 @@ impl Source for V1Source<'_> {
             None => self.archive.read_entry(self.entry(item.key)?).ok(),
         }
     }
+
+    fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>> {
+        let reader = self.archive.open_file(item.path.as_deref()?).ok()?;
+        Some(Box::new(reader))
+    }
 }
 
 struct ZipSource<'a>(&'a ZipArchive);
@@ -201,6 +217,11 @@ impl Source for ZipSource<'_> {
 
     fn read(&self, item: &Item) -> Option<Vec<u8>> {
         self.0.read(item.path.as_deref()?).ok()
+    }
+
+    fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>> {
+        let reader = self.0.open_file(item.path.as_deref()?).ok()?;
+        Some(Box::new(reader))
     }
 }
 
@@ -234,73 +255,100 @@ fn run(
         layout.taken.insert(reserved.to_lowercase());
     }
     let mut done = Extracted::default();
+    let mut buf = vec![0u8; CHUNK];
     for item in &items {
         let label = item
             .path
             .clone()
             .unwrap_or_else(|| format!("{:016x}", item.key));
-        // Unnamed entries need their bytes for the extension; a dry run
+        // Named entries are streamed. Unnamed ones are read whole, since
+        // their extension is guessed from all of their bytes; a dry run
         // reads nothing and labels them `.bin`.
-        let bytes = if options.dry_run {
-            None
-        } else {
-            match source.read(item) {
-                Some(bytes) => Some(bytes),
+        let (wanted, mut reader): (String, Option<Box<dyn Read + '_>>) = match &item.path {
+            _ if options.dry_run => (
+                item.path
+                    .clone()
+                    .unwrap_or_else(|| format!("{UNNAMED}/{:016x}.bin", item.key)),
+                None,
+            ),
+            Some(path) => match source.open(item) {
+                Some(reader) => (path.clone(), Some(reader)),
                 None => {
                     done.unreadable.push(label);
                     continue;
                 }
-            }
-        };
-        let rel = match &item.path {
-            Some(path) => {
-                let placed = layout.place(path);
-                if placed != path.trim_start_matches('/') {
-                    done.renamed.push((path.clone(), placed.clone()));
+            },
+            None => match source.read(item) {
+                Some(bytes) => {
+                    let ext = sniff::extension(&bytes);
+                    let wanted = format!("{UNNAMED}/{:016x}.{ext}", item.key);
+                    (wanted, Some(Box::new(Cursor::new(bytes))))
                 }
-                placed
-            }
-            None => {
-                done.unnamed += 1;
-                let ext = bytes.as_deref().map_or("bin", sniff::extension);
-                layout.place(&format!("{UNNAMED}/{:016x}.{ext}", item.key))
-            }
+                None => {
+                    done.unreadable.push(label);
+                    continue;
+                }
+            },
         };
-        let Some(bytes) = bytes else {
+        let placed = layout.place(&wanted);
+        let rename = item
+            .path
+            .as_ref()
+            .filter(|path| placed.rel != path.trim_start_matches('/'))
+            .map(|path| (path.clone(), placed.rel.clone()));
+        let Some(reader) = reader.as_mut() else {
             done.written += 1;
             done.bytes += item.size;
+            done.unnamed += usize::from(item.path.is_none());
+            done.renamed.extend(rename);
             continue;
         };
-        // Declared sizes may understate what an entry unpacks to.
-        let total = done.bytes.saturating_add(bytes.len() as u64);
-        if total > options.max_bytes {
-            return Err(ExtractError::TooLarge {
-                total,
-                limit: options.max_bytes,
-            });
-        }
-        let target = rel.split('/').fold(root.clone(), |p, part| p.join(part));
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).map_err(io(parent))?;
-        }
-        match OpenOptions::new()
+        let target = placed
+            .rel
+            .split('/')
+            .fold(root.clone(), |p, part| p.join(part));
+        let new_dirs = create_parents(&root, &target).map_err(io(&target))?;
+        let mut file = match OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&target)
         {
-            Ok(mut file) => {
-                if let Err(e) = file.write_all(&bytes) {
-                    drop(file);
-                    let _ = fs::remove_file(&target);
-                    return Err(io(&target)(e));
-                }
-                done.written += 1;
-                done.bytes += bytes.len() as u64;
-            }
+            Ok(file) => file,
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists && options.skip_existing => {
                 done.skipped += 1;
+                done.unnamed += usize::from(item.path.is_none());
+                done.renamed.extend(rename);
+                continue;
             }
             Err(e) => return Err(io(&target)(e)),
+        };
+        let copied = copy(reader, &mut file, &mut buf, done.bytes, options.max_bytes);
+        if copied.is_err() {
+            drop(file);
+            let _ = fs::remove_file(&target);
+        }
+        match copied {
+            Ok(n) => {
+                done.written += 1;
+                done.bytes += n;
+                done.unnamed += usize::from(item.path.is_none());
+                done.renamed.extend(rename);
+            }
+            Err(CopyError::Read) => {
+                if let Some(first) = new_dirs {
+                    remove_empty_dirs(&target, &first);
+                }
+                layout.forget(&placed);
+                done.unreadable.push(label);
+            }
+            Err(CopyError::Write(e)) => return Err(io(&target)(e)),
+            // Declared sizes may understate what an entry unpacks to.
+            Err(CopyError::Limit(total)) => {
+                return Err(ExtractError::TooLarge {
+                    total,
+                    limit: options.max_bytes,
+                })
+            }
         }
     }
     if !options.dry_run {
@@ -398,11 +446,22 @@ struct Layout {
     taken: HashSet<String>,
 }
 
+/// Where [`Layout::place`] put one path, and what it reserved for it.
+struct Placed {
+    /// The destination-relative path (`/`-separated).
+    rel: String,
+    /// Keys added to [`Layout::taken`].
+    taken: Vec<String>,
+    /// Keys added to [`Layout::dirs`].
+    dirs: Vec<String>,
+}
+
 impl Layout {
-    /// The destination-relative path (`/`-separated) for archive `path`.
-    fn place(&mut self, path: &str) -> String {
+    /// Places archive `path` (see [`Placed`]).
+    fn place(&mut self, path: &str) -> Placed {
         let parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
         let parts = if parts.is_empty() { vec!["_"] } else { parts };
+        let (mut taken, mut dirs) = (Vec::new(), Vec::new());
         let (mut original, mut placed) = (String::new(), String::new());
         for (i, part) in parts.iter().enumerate() {
             let last = i + 1 == parts.len();
@@ -431,15 +490,97 @@ impl Layout {
                     format!("{placed}/{name}")
                 };
                 if self.taken.insert(full.to_lowercase()) {
+                    taken.push(full.to_lowercase());
                     break full;
                 }
                 n += 1;
             };
             if !last {
-                self.dirs.insert(key, placed.clone());
+                self.dirs.insert(key.clone(), placed.clone());
+                dirs.push(key);
             }
         }
-        placed
+        Placed {
+            rel: placed,
+            taken,
+            dirs,
+        }
+    }
+
+    /// Releases what [`Self::place`] reserved for a file that was not
+    /// written, so later paths are placed as if it never came.
+    fn forget(&mut self, placed: &Placed) {
+        for key in &placed.taken {
+            self.taken.remove(key);
+        }
+        for key in &placed.dirs {
+            self.dirs.remove(key);
+        }
+    }
+}
+
+/// Why streaming one entry to disk stopped.
+enum CopyError {
+    /// The archive could not be read or decoded.
+    Read,
+    /// The destination could not be written.
+    Write(std::io::Error),
+    /// The bytes written so far would pass the limit (the total).
+    Limit(u64),
+}
+
+/// Copies `reader` to `file` through `buf`, keeping `already + copied`
+/// within `limit`. Returns the bytes copied.
+fn copy(
+    reader: &mut dyn Read,
+    file: &mut fs::File,
+    buf: &mut [u8],
+    already: u64,
+    limit: u64,
+) -> Result<u64, CopyError> {
+    let mut copied = 0u64;
+    loop {
+        let n = match reader.read(buf) {
+            Ok(0) => return Ok(copied),
+            Ok(n) => n,
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return Err(CopyError::Read),
+        };
+        copied += n as u64;
+        let total = already.saturating_add(copied);
+        if total > limit {
+            return Err(CopyError::Limit(total));
+        }
+        file.write_all(&buf[..n]).map_err(CopyError::Write)?;
+    }
+}
+
+/// Creates the folders above `target`, which lies under `root`. Returns the
+/// topmost folder it created below `root`, if any.
+fn create_parents(root: &Path, target: &Path) -> std::io::Result<Option<PathBuf>> {
+    let Some(parent) = target.parent() else {
+        return Ok(None);
+    };
+    let mut first_new = None;
+    let mut dir = parent;
+    while dir != root && dir.starts_with(root) && fs::metadata(dir).is_err() {
+        first_new = Some(dir.to_path_buf());
+        let Some(up) = dir.parent() else { break };
+        dir = up;
+    }
+    fs::create_dir_all(parent)?;
+    Ok(first_new)
+}
+
+/// Removes the empty folders from `target`'s parent up to and including
+/// `first_new` (from [`create_parents`]).
+fn remove_empty_dirs(target: &Path, first_new: &Path) {
+    let mut dir = target.parent();
+    while let Some(d) = dir {
+        if !d.starts_with(first_new) || fs::remove_dir(d).is_err() {
+            break;
+        }
+        dir = d.parent();
     }
 }
 
@@ -524,25 +665,151 @@ mod tests {
         }
     }
 
+    /// One file of a [`Fake`] archive.
+    struct FakeFile {
+        path: Option<&'static str>,
+        /// `None`: cannot be opened at all.
+        bytes: Option<&'static [u8]>,
+        /// The stream fails after yielding its bytes.
+        fails_midway: bool,
+        /// Declared size, if not the length of `bytes`.
+        declared: Option<u64>,
+    }
+
+    struct Fake(Vec<FakeFile>);
+
     /// Files given as (path or none, bytes); `None` bytes cannot be read.
-    struct Fake(Vec<(Option<&'static str>, Option<&'static [u8]>)>);
+    fn fake(files: Vec<(Option<&'static str>, Option<&'static [u8]>)>) -> Fake {
+        Fake(
+            files
+                .into_iter()
+                .map(|(path, bytes)| FakeFile {
+                    path,
+                    bytes,
+                    fails_midway: false,
+                    declared: None,
+                })
+                .collect(),
+        )
+    }
+
+    /// Yields its bytes in small pieces, then an error.
+    struct Breaking(&'static [u8]);
+
+    impl Read for Breaking {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            if self.0.is_empty() {
+                return Err(std::io::Error::other("stream broke"));
+            }
+            let n = buf.len().min(3).min(self.0.len());
+            buf[..n].copy_from_slice(&self.0[..n]);
+            self.0 = &self.0[n..];
+            Ok(n)
+        }
+    }
 
     impl Source for Fake {
         fn items(&self) -> Vec<Item> {
             self.0
                 .iter()
                 .enumerate()
-                .map(|(i, (path, bytes))| Item {
-                    path: path.map(str::to_owned),
+                .map(|(i, f)| Item {
+                    path: f.path.map(str::to_owned),
                     key: 0x1000 + i as u64,
-                    size: bytes.map_or(0, |b| b.len() as u64),
+                    size: f
+                        .declared
+                        .unwrap_or_else(|| f.bytes.map_or(0, |b| b.len() as u64)),
                 })
                 .collect()
         }
 
         fn read(&self, item: &Item) -> Option<Vec<u8>> {
-            self.0[(item.key - 0x1000) as usize].1.map(<[u8]>::to_vec)
+            let f = &self.0[(item.key - 0x1000) as usize];
+            f.bytes.filter(|_| !f.fails_midway).map(<[u8]>::to_vec)
         }
+
+        fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>> {
+            let f = &self.0[(item.key - 0x1000) as usize];
+            let bytes = f.bytes?;
+            Some(if f.fails_midway {
+                Box::new(Breaking(bytes))
+            } else {
+                Box::new(bytes)
+            })
+        }
+    }
+
+    #[test]
+    fn streams_entries_larger_than_one_chunk_intact() {
+        let big: &'static [u8] = Box::leak(
+            (0..(3 * CHUNK as u32 / 4 + 17))
+                .flat_map(|i| i.to_le_bytes())
+                .collect::<Vec<u8>>()
+                .into_boxed_slice(),
+        );
+        let dir = TempDir::new("big");
+        let dest = dir.0.join("out");
+        let done = run(
+            &fake(vec![(Some("big.bin"), Some(big))]),
+            &dest,
+            &[],
+            ExtractOptions::default(),
+        )
+        .unwrap();
+        assert_eq!((done.written, done.bytes), (1, big.len() as u64));
+        assert_eq!(fs::read(dest.join("big.bin")).unwrap(), big);
+    }
+
+    #[test]
+    fn a_stream_failing_midway_leaves_no_file_folder_or_name_behind() {
+        let dir = TempDir::new("midway");
+        let dest = dir.0.join("out");
+        let broken = |path| FakeFile {
+            path: Some(path),
+            bytes: Some(b"0123456789"),
+            fails_midway: true,
+            declared: None,
+        };
+        let source = Fake(vec![
+            broken("def/A.sii"),
+            FakeFile {
+                path: Some("def/a.sii"),
+                bytes: Some(b"ok"),
+                fails_midway: false,
+                declared: None,
+            },
+            broken("only/deep/x.bin"),
+        ]);
+        let done = run(&source, &dest, &[], ExtractOptions::default()).unwrap();
+        assert_eq!(done.unreadable, ["def/A.sii", "only/deep/x.bin"]);
+        assert_eq!((done.written, done.bytes), (1, 2));
+        // The failed `def/A.sii` does not push its case twin to `a~1.sii`.
+        assert!(done.renamed.is_empty(), "{:?}", done.renamed);
+        assert_eq!(files_under(&dest), ["_unreadable.txt", "def/a.sii"]);
+        assert!(!dest.join("only").exists());
+    }
+
+    #[test]
+    fn stops_when_a_stream_yields_more_than_the_limit() {
+        let dir = TempDir::new("overrun");
+        let dest = dir.0.join("out");
+        // Declares 5 bytes, under the limit, but yields 20.
+        let source = Fake(vec![FakeFile {
+            path: Some("a.bin"),
+            bytes: Some(b"01234567890123456789"),
+            fails_midway: false,
+            declared: Some(5),
+        }]);
+        let options = ExtractOptions {
+            max_bytes: 10,
+            ..Default::default()
+        };
+        let result = run(&source, &dest, &[], options);
+        assert!(
+            matches!(result, Err(ExtractError::TooLarge { limit: 10, .. })),
+            "{result:?}"
+        );
+        assert!(!dest.join("a.bin").exists());
     }
 
     fn files_under(root: &Path) -> Vec<String> {
@@ -580,7 +847,7 @@ mod tests {
             "/?30*3<*:/x.dds",
         ]
         .iter()
-        .map(|p| layout.place(p))
+        .map(|p| layout.place(p).rel)
         .collect();
         assert_eq!(
             placed,
@@ -607,7 +874,7 @@ mod tests {
     fn extracts_named_unnamed_and_lists_renames_and_failures() {
         let dir = TempDir::new("all");
         let dest = dir.0.join("out");
-        let source = Fake(vec![
+        let source = fake(vec![
             (Some("def/a.sii"), Some(b"SiiNunit\n{\n}\n")),
             (Some("def/CON.sii"), Some(b"x")),
             (None, Some(b"DDS |\0\0\0")),
@@ -646,7 +913,7 @@ mod tests {
         let dir = TempDir::new("skip");
         fs::create_dir_all(dir.0.join("def")).unwrap();
         fs::write(dir.0.join("def/a.sii"), b"mine").unwrap();
-        let source = Fake(vec![
+        let source = fake(vec![
             (Some("def/a.sii"), Some(b"theirs")),
             (Some("def/b.sii"), Some(b"new")),
         ]);
@@ -666,7 +933,7 @@ mod tests {
         let dir = TempDir::new("guard");
         let game = dir.0.join("Game");
         fs::create_dir_all(&game).unwrap();
-        let source = Fake(vec![(Some("a.sii"), Some(b"x"))]);
+        let source = fake(vec![(Some("a.sii"), Some(b"x"))]);
         let protected = [game.clone()];
         for dest in [
             game.join("out"),
@@ -704,7 +971,7 @@ mod tests {
     fn refuses_an_archive_over_the_size_limit_before_writing() {
         let dir = TempDir::new("limit");
         let dest = dir.0.join("out");
-        let source = Fake(vec![
+        let source = fake(vec![
             (Some("a.bin"), Some(b"0123456789")),
             (Some("b.bin"), Some(b"0123456789")),
         ]);
@@ -727,7 +994,7 @@ mod tests {
     fn a_dry_run_writes_nothing() {
         let dir = TempDir::new("dry");
         let dest = dir.0.join("out");
-        let source = Fake(vec![(Some("a.sii"), Some(b"abc")), (None, Some(b"zz"))]);
+        let source = fake(vec![(Some("a.sii"), Some(b"abc")), (None, Some(b"zz"))]);
         let options = ExtractOptions {
             dry_run: true,
             ..Default::default()

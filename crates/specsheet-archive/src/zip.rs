@@ -10,14 +10,11 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs::File;
-use std::io::Read;
 use std::path::{Path, PathBuf};
-
-use flate2::read::DeflateDecoder;
 
 use crate::error::{ArchiveError, Result};
 use crate::hashfs::DirListing;
-use crate::read_at::read_exact_at;
+use crate::read_at::{read_exact_at, read_whole, Codec, EntryReader, Stream};
 
 pub(crate) const END_SIGNATURE: u32 = 0x0605_4b50;
 const END_LEN: usize = 22;
@@ -118,8 +115,23 @@ impl ZipArchive {
         self.files.get(path.trim_start_matches('/')).map(|e| e.size)
     }
 
-    /// Reads and decompresses a file (`def/x.sii` or `/def/x.sii`).
+    /// Reads and decompresses a file (`def/x.sii` or `/def/x.sii`) into
+    /// memory, at most 2 GiB.
     pub fn read(&self, path: &str) -> Result<Vec<u8>> {
+        let entry = self.entry(path)?;
+        if entry.size > MAX_FILE_SIZE || entry.stored_size > MAX_FILE_SIZE {
+            return Err(self.corrupt(format!("`{path}`: size exceeds limit")));
+        }
+        read_whole(self.stream(path, entry)?)
+    }
+
+    /// Streams a file without holding it in memory (see [`EntryReader`]);
+    /// unlike [`Self::read`], no size limit applies.
+    pub fn open_file(&self, path: &str) -> Result<EntryReader<'_>> {
+        self.stream(path, self.entry(path)?)
+    }
+
+    fn entry(&self, path: &str) -> Result<&ZipEntry> {
         let entry = self
             .files
             .get(path.trim_start_matches('/'))
@@ -130,37 +142,33 @@ impl ZipArchive {
                 method: entry.method,
             });
         }
-        if entry.size > MAX_FILE_SIZE || entry.stored_size > MAX_FILE_SIZE {
-            return Err(self.corrupt(format!("`{path}`: size exceeds limit")));
-        }
+        Ok(entry)
+    }
+
+    fn stream(&self, path: &str, entry: &ZipEntry) -> Result<EntryReader<'_>> {
         let local = self.read_range(entry.local_offset, LOCAL_LEN as u64)?;
         if u32_le(&local, 0) != LOCAL_SIGNATURE {
             return Err(self.corrupt(format!("`{path}`: bad local header signature")));
         }
+        // In range: the local header itself lies in the file.
         let data_offset = entry.local_offset
             + LOCAL_LEN as u64
             + u64::from(u16_le(&local, 26))
             + u64::from(u16_le(&local, 28));
-        let stored = self.read_range(data_offset, entry.stored_size)?;
-        if entry.method == METHOD_STORED {
-            if entry.stored_size != entry.size {
-                return Err(self.corrupt(format!("`{path}`: stored entry with two sizes")));
-            }
-            return Ok(stored);
-        }
-        let mut out = Vec::new();
-        DeflateDecoder::new(&stored[..])
-            .take(entry.size + 1)
-            .read_to_end(&mut out)
-            .map_err(|e| self.corrupt(format!("`{path}`: deflate: {e}")))?;
-        if out.len() as u64 != entry.size {
-            return Err(self.corrupt(format!(
-                "`{path}`: inflated to {} bytes, expected {}",
-                out.len(),
-                entry.size
-            )));
-        }
-        Ok(out)
+        EntryReader::new(Stream {
+            file: &self.file,
+            file_len: self.file_len,
+            archive: &self.path,
+            label: format!("`{path}`"),
+            offset: data_offset,
+            stored_size: entry.stored_size,
+            size: entry.size,
+            codec: if entry.method == METHOD_STORED {
+                Codec::Stored
+            } else {
+                Codec::Deflate
+            },
+        })
     }
 
     /// Lists a directory (`""` is the root). Directories need no record of
@@ -388,7 +396,7 @@ fn u64_le(bytes: &[u8], at: usize) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::io::{Read, Write};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use flate2::write::DeflateEncoder;
@@ -584,6 +592,72 @@ mod tests {
         let zip = open(&bytes).unwrap();
         assert!(matches!(
             zip.read("a.txt"),
+            Err(ArchiveError::Corrupt { .. })
+        ));
+    }
+
+    /// Everything `reader` yields, read in 7-byte chunks.
+    fn drain(reader: &mut impl Read) -> std::io::Result<Vec<u8>> {
+        let (mut out, mut chunk) = (Vec::new(), [0u8; 7]);
+        loop {
+            match reader.read(&mut chunk)? {
+                0 => return Ok(out),
+                n => out.extend(&chunk[..n]),
+            }
+        }
+    }
+
+    #[test]
+    fn streams_stored_and_deflated_files_in_small_chunks() {
+        let text = b"SiiNunit\n{\n}\n".repeat(40);
+        let zip = open(&build(&[
+            spec("a.sii", &text, true),
+            spec("b.bin", b"plain", false),
+        ]))
+        .unwrap();
+        for (path, want) in [("a.sii", &text[..]), ("/b.bin", b"plain")] {
+            let mut reader = zip.open_file(path).unwrap();
+            assert_eq!(reader.size(), want.len() as u64);
+            assert_eq!(drain(&mut reader).unwrap(), want);
+        }
+        assert!(matches!(
+            zip.open_file("missing"),
+            Err(ArchiveError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn a_stream_fails_when_the_data_is_shorter_or_longer_than_declared() {
+        // The stream inflates to 150 bytes; the central record says otherwise.
+        for declared in [149u32, 151] {
+            let mut bytes = build(&[spec("a.txt", &b"abc".repeat(50), true)]);
+            let end = bytes.len() - 22;
+            let cd = u32::from_le_bytes(bytes[end + 16..end + 20].try_into().unwrap()) as usize;
+            bytes[cd + 24..cd + 28].copy_from_slice(&declared.to_le_bytes());
+            let zip = open(&bytes).unwrap();
+            let err = drain(&mut zip.open_file("a.txt").unwrap()).unwrap_err();
+            assert_eq!(err.kind(), std::io::ErrorKind::InvalidData, "{declared}");
+            assert!(matches!(
+                zip.read("a.txt"),
+                Err(ArchiveError::Corrupt { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn a_truncated_deflate_stream_is_an_error() {
+        let data: Vec<u8> = (0..4000u32)
+            .flat_map(|i| i.wrapping_mul(7919).to_le_bytes())
+            .collect();
+        let mut bytes = build(&[spec("a.bin", &data, true)]);
+        let end = bytes.len() - 22;
+        let cd = u32::from_le_bytes(bytes[end + 16..end + 20].try_into().unwrap()) as usize;
+        let stored = u32::from_le_bytes(bytes[cd + 20..cd + 24].try_into().unwrap());
+        bytes[cd + 20..cd + 24].copy_from_slice(&(stored / 2).to_le_bytes());
+        let zip = open(&bytes).unwrap();
+        assert!(drain(&mut zip.open_file("a.bin").unwrap()).is_err());
+        assert!(matches!(
+            zip.read("a.bin"),
             Err(ArchiveError::Corrupt { .. })
         ));
     }

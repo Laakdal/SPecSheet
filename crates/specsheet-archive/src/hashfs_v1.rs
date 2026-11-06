@@ -17,15 +17,12 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Read;
 use std::path::{Path, PathBuf};
-
-use flate2::read::ZlibDecoder;
 
 use crate::city::city_hash_64;
 use crate::error::{ArchiveError, Result};
 use crate::hashfs::DirListing;
-use crate::read_at::read_exact_at;
+use crate::read_at::{read_exact_at, read_whole, Codec, EntryReader, Stream};
 
 /// Header fields, from `mod-loader-survey.txt` section 2 (20 files).
 mod header {
@@ -161,6 +158,44 @@ impl HashFsV1Archive {
 
     /// Reads and decompresses a file (`def/x.sii` or `/def/x.sii`).
     pub fn read(&self, path: &str) -> Result<Vec<u8>> {
+        self.read_entry(self.file_entry(path)?)
+    }
+
+    /// Streams a file without holding it in memory; unlike [`Self::read`],
+    /// no size limit applies.
+    pub fn open_file(&self, path: &str) -> Result<EntryReader<'_>> {
+        self.open_entry(self.file_entry(path)?)
+    }
+
+    /// Reads the content of any entry (a file, or a directory's listing)
+    /// into memory, at most 2 GiB.
+    pub fn read_entry(&self, entry: &EntryV1) -> Result<Vec<u8>> {
+        if entry.size > MAX_ENTRY_SIZE || entry.stored_size > MAX_ENTRY_SIZE {
+            return Err(self.corrupt(format!("entry {:#018x}: size exceeds limit", entry.hash)));
+        }
+        read_whole(self.open_entry(entry)?)
+    }
+
+    /// Streams the content of any entry (see [`EntryReader`]).
+    pub fn open_entry(&self, entry: &EntryV1) -> Result<EntryReader<'_>> {
+        EntryReader::new(Stream {
+            file: &self.file,
+            file_len: self.file_len,
+            archive: &self.path,
+            label: format!("entry {:#018x}", entry.hash),
+            offset: entry.offset,
+            stored_size: u64::from(entry.stored_size),
+            size: u64::from(entry.size),
+            codec: if entry.is_compressed() {
+                Codec::Zlib
+            } else {
+                Codec::Stored
+            },
+        })
+    }
+
+    /// The entry of a plain file.
+    fn file_entry(&self, path: &str) -> Result<&EntryV1> {
         let entry = self.lookup(path)?;
         if entry.is_directory() {
             return Err(ArchiveError::WrongEntryKind {
@@ -168,38 +203,7 @@ impl HashFsV1Archive {
                 expected: "plain file",
             });
         }
-        self.read_entry(entry)
-    }
-
-    /// Reads the content of any entry (a file, or a directory's listing).
-    pub fn read_entry(&self, entry: &EntryV1) -> Result<Vec<u8>> {
-        if entry.size > MAX_ENTRY_SIZE || entry.stored_size > MAX_ENTRY_SIZE {
-            return Err(self.corrupt(format!("entry {:#018x}: size exceeds limit", entry.hash)));
-        }
-        let stored = self.bytes_at(entry.offset, u64::from(entry.stored_size))?;
-        if !entry.is_compressed() {
-            if entry.stored_size != entry.size {
-                return Err(self.corrupt(format!(
-                    "entry {:#018x}: uncompressed with two sizes",
-                    entry.hash
-                )));
-            }
-            return Ok(stored);
-        }
-        let mut content = Vec::new();
-        ZlibDecoder::new(stored.as_slice())
-            .take(u64::from(entry.size) + 1)
-            .read_to_end(&mut content)
-            .map_err(|e| self.corrupt(format!("entry {:#018x}: zlib: {e}", entry.hash)))?;
-        if content.len() != entry.size as usize {
-            return Err(self.corrupt(format!(
-                "entry {:#018x}: inflated to {} bytes, expected {}",
-                entry.hash,
-                content.len(),
-                entry.size
-            )));
-        }
-        Ok(content)
+        Ok(entry)
     }
 
     /// Decodes the listing of a directory (`""` is the root, often absent).
@@ -321,7 +325,7 @@ fn le64(b: &[u8], at: usize) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::io::{Read, Write};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     use flate2::write::ZlibEncoder;
@@ -516,6 +520,102 @@ mod tests {
         let mut count = sample(0);
         count[12..16].copy_from_slice(&u32::MAX.to_le_bytes());
         assert!(matches!(open(&count), Err(ArchiveError::Corrupt { .. })));
+    }
+
+    /// Everything `reader` yields, read in 7-byte chunks.
+    fn drain(reader: &mut impl Read) -> std::io::Result<Vec<u8>> {
+        let (mut out, mut chunk) = (Vec::new(), [0u8; 7]);
+        loop {
+            match reader.read(&mut chunk)? {
+                0 => return Ok(out),
+                n => out.extend(&chunk[..n]),
+            }
+        }
+    }
+
+    /// Offset of the table record of `path` in `bytes` (unsalted).
+    fn record_of(bytes: &[u8], path: &str) -> usize {
+        let table = u32::from_le_bytes(bytes[16..20].try_into().unwrap()) as usize;
+        let count = u32::from_le_bytes(bytes[12..16].try_into().unwrap()) as usize;
+        let hash = key(path, 0).to_le_bytes();
+        (0..count)
+            .map(|i| table + i * 32)
+            .find(|&at| bytes[at..at + 8] == hash)
+            .unwrap()
+    }
+
+    #[test]
+    fn streams_stored_and_compressed_entries_in_small_chunks() {
+        let archive = open(&sample(0)).unwrap();
+        for (path, want) in [
+            ("manifest.sii", b"SiiNunit\n{\n}\n".to_vec()),
+            ("/def/sign.sii", vec![b'a'; 300]),
+        ] {
+            let mut reader = archive.open_file(path).unwrap();
+            assert_eq!(reader.size(), want.len() as u64);
+            assert_eq!(drain(&mut reader).unwrap(), want);
+            let entry = archive.entry(path).unwrap();
+            assert_eq!(
+                drain(&mut archive.open_entry(entry).unwrap()).unwrap(),
+                want
+            );
+        }
+        assert!(matches!(
+            archive.open_file("def"),
+            Err(ArchiveError::WrongEntryKind { .. })
+        ));
+        assert!(matches!(
+            archive.open_file("missing"),
+            Err(ArchiveError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn streaming_has_no_in_memory_cap_but_still_checks_the_size() {
+        // A 300-byte stream declared as 3 GiB: too big to read into memory,
+        // and the stream ends short of what it declares.
+        let mut bytes = sample(0);
+        let at = record_of(&bytes, "def/sign.sii");
+        bytes[at + 24..at + 28].copy_from_slice(&(3u32 << 30).to_le_bytes());
+        let archive = open(&bytes).unwrap();
+        assert!(matches!(
+            archive.read("def/sign.sii"),
+            Err(ArchiveError::Corrupt { .. })
+        ));
+        let mut reader = archive.open_file("def/sign.sii").unwrap();
+        assert_eq!(reader.size(), 3 << 30);
+        let err = drain(&mut reader).unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn a_truncated_zlib_stream_is_an_error() {
+        let data: Vec<u8> = (0..4000u32)
+            .flat_map(|i| i.wrapping_mul(7919).to_le_bytes())
+            .collect();
+        let data: &'static [u8] = Box::leak(data.into_boxed_slice());
+        let mut bytes = build(&[file("a.bin", data, true)], 0);
+        let at = record_of(&bytes, "a.bin");
+        let stored = u32::from_le_bytes(bytes[at + 28..at + 32].try_into().unwrap());
+        bytes[at + 28..at + 32].copy_from_slice(&(stored / 2).to_le_bytes());
+        let archive = open(&bytes).unwrap();
+        assert!(drain(&mut archive.open_file("a.bin").unwrap()).is_err());
+        assert!(matches!(
+            archive.read("a.bin"),
+            Err(ArchiveError::Corrupt { .. })
+        ));
+    }
+
+    #[test]
+    fn an_uncompressed_entry_with_two_sizes_is_refused_before_streaming() {
+        let mut bytes = sample(0);
+        let at = record_of(&bytes, "manifest.sii");
+        bytes[at + 24..at + 28].copy_from_slice(&99u32.to_le_bytes());
+        let archive = open(&bytes).unwrap();
+        assert!(matches!(
+            archive.open_file("manifest.sii"),
+            Err(ArchiveError::Corrupt { .. })
+        ));
     }
 
     #[test]

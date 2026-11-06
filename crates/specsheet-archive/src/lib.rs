@@ -22,6 +22,7 @@ pub use city::city_hash_64;
 pub use error::{ArchiveError, Result};
 pub use hashfs::{hash_path, Archive, Blob, Content, DirListing, Entry, EntryKind, SkippedEntry};
 pub use hashfs_v1::{EntryV1, HashFsV1Archive};
+pub use read_at::EntryReader;
 pub use texture::{
     pixel_layout, AddressMode, ImageMeta, PackedTexture, PixelLayout, SampleMeta, Surface,
 };
