@@ -122,7 +122,13 @@ located yet (Unknown).
   adaptation from the dark/bright speeds with a time-step exponent.
 - Not established: which code fills R from the sun_profile keys (many
   functions touch the same offsets; candidates 0x14045dd90, 0x140ba27e0,
-  0x140ae2460); the bloom and colour-correction callbacks; which climate or
+  0x140ae2460);
+  Checked and ruled out (2026-11-07): the constructor 0x140691220 stores
+  constants at +0x1d4 (0.02), +0x1d8 (0.2, as a qword), +0x1e0 (0.5),
+  +0x1e4 (0.4) and +0xd8..+0xe0, but it stores pointers at +0x218..+0x238,
+  where R holds the tonemap floats T2..T4, so it is another class. Found by a
+  scan for 4-byte immediate stores to these offsets
+  (python, scratchpad only); the bloom and colour-correction callbacks; which climate or
   sun profile the tuning screen uses; where a scene's pre_exposure (scene
   class +0x44) enters (it is in none of these callbacks).
 

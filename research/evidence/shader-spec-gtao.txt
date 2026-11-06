@@ -1,0 +1,70 @@
+Shader spec sources: GTAO (docs/app/shader-specs/gtao.md), ETS2 1.60.1.7
+=========================================================================
+Date: 2026-11-07. Clean-room note (D13): the game's shaders were read only to learn the maths;
+extracted text stayed in the session scratchpad. This file lists what was read; it contains no
+shader text.
+
+Commands (Git Bash; ETS2_DIR set; the scs example from specsheet-research, release):
+  MSYS_NO_PATHCONV=1 scs ls /effect/deferred/def_ssao        (7 .rfx)
+  MSYS_NO_PATHCONV=1 scs cat /effect/deferred/def_ssao/<effect>.rfx   (glsl technique -> _shd objects)
+  MSYS_NO_PATHCONV=1 scs cat /effect/deferred/_shd/<hash>.glsl.{fso,vso} > <scratchpad>
+  then printable runs: tr -c '\11\12\15\40-\176' '\n'   (GLSL 330 text inside the container)
+Observation: for every object below, md5 of the object bytes equals the hash in its file name.
+
+AO passes (each .rfx: 6 techniques; glsl: 1 pass, semantics "defquad", profile "fullscreen",
+state /effect/deferred/rs/overwrite.rs, whose comment says it replaces the colour buffer
+  and ignores depth)
+  effect                          vertex object                        fragment object                      fso bytes
+  def.ssao.zfetch.rfx             cc1bfea39a433ea71390b9e648254546     19bfa0d0c9e7bcfb477d71eff057385f     10,758
+  def.ssao.zreduce.rfx            867415734a51904742af13b7bb84e945     3840e160e02c11463ce05423cab8a123     10,358
+  def.ssao.compute.rfx            be9bacc25ca573c6acad31987a251294     429f4b3dcb027169041b9ff6ff8eb601     23,615
+  def.ssao.spatial_denoise_a.rfx  0cbde83f37a6f07a63b1e21e1c406af0     c48ca81202e3a9ba577abb74a391f213     16,127
+  def.ssao.spatial_denoise_b.rfx  0cbde83f37a6f07a63b1e21e1c406af0     64e3504c42fd3395019fa559950a207a     18,791
+  def.ssao.temporal_denoise.rfx   312411ea2418d022dd19140348828e36     8a576e25b145375bfc8916a57b3172f6     17,487
+  def.ssao.upscale.rfx            312411ea2418d022dd19140348828e36     d206121b45d67d8fa34277b2ec054543     12,185
+  Vertex stages: a full-screen quad; the texture coordinate's xy is the scene uv and zw the pixel
+  position. The compute pass's vertex stage scales the viewport size by
+  gtao_viewport_pixel_scale.
+  Uniforms per pass (engine names): zreduce gtao_scene_texel_size; compute gtao_config0/1,
+  gtao_viewport_pixel_scale, the view-ray map; denoise a gtao_ao_texel_size,
+  gtao_denoise_sharpness; denoise b the same plus ao_apply_params; temporal the two pairs
+  gtao_v_to_prev_v_matrix0/1 and gtao_v_to_prev_vp_matrix0/1; upscale gtao_ao_texel_size.
+
+Where the AO is applied (same method)
+  /effect/deferred/def_apply_light_sun: 240 .rfx (216 distinct glsl fragment objects); 120 carry
+  the token "aoc". Compared: def.apply.light.sun.rfx (a1743c522350ff348d21ece38839f13a.glsl.fso)
+  with def.apply.light.sun.aoc.rfx (0cef7a5064829b02f9539a23dc82739b) and
+  def.apply.light.sun.aoc.spec.rfx (2fcfbeb0170a69f372724d3e31e9fb4b). The aoc objects add the
+  AO texture, ao_apply_params and the shadow-strength field of the G-buffer.
+  /effect/deferred/def_apply_light_list: def.apply.light.list.aoc.rfx
+  (00f36aa82771a39c42b97b54eecfa89b) applies the directional AO per light;
+  def.apply.light.list.rfx (60daed88305332ff5869c6448cb476b0) has no AO.
+  /effect/deferred/def_compose_lighting (10 .rfx, 8 objects): no AO term (the base
+  340f579c76caf9da2230f0b97b49fd24 composes the light buffers, albedo, specular and emittance).
+
+G-buffer flag bits (same method; eut2 G-buffer passes)
+  eut2.dif.spec defattr 8e789a42321c97a6f5e3ce5a5238d9c7, .weight e22df2e109a8a3395a495330828872b2,
+  .add.env c495654005d43da0f15cfcc6c6fed431, .a 1eaf72769aed6f15e24df0d01828270a: the mask starts
+  as the material tag's bit 1, clears 2 and 8; add.env sets 4, a sets 8 (and discards below
+  alpha 0.05). The mask's low 3 bits go to bits 13-15 of the flag target's w, the high 2 bits to
+  bits 0-1 of its z. Nothing read sets 2 or 16.
+
+Executable (eurotrucks2.exe, static; tools/research/xref.py, disasm.py, leaf.py; a string scan)
+  Strings: r_ssao, "r_ssao 0", ssao_quality, @@ssao_mode@@, gtao->initialize(),
+  "Failed to initialize GTAO: %s", pp_gtao, pp_gtao_u, the uniform names above, the seven
+  .rfx names, the render-target names "GTAO z fullres", "GTAO z halfres", "GTAO ao noisy",
+  "GTAO ao denoised spatial 1/2", "GTAO ao denoised spatial 2/2", "GTAO ao denoised temporal",
+  "GTAO ao fullres", "GTAO ao previous", "GTAO z previous", and the history names
+  gtao_depth_history_%p, gtao_result_history_%p; debug views "SSAO.Visibility",
+  "SSAO.Env Visibility", "SSAO.Bent Normals".
+  The sun pass's shadow-map strength uniform is named def_light_smap_strength (string present).
+  0x1413a4fa0 registers the uniforms with their callbacks (after the shared deferred uniforms of
+  0x1413c9f90): gtao_config0 -> 0x1413d76a0, gtao_config1 -> 0x1413d7620,
+  gtao_viewport_pixel_scale -> 0x1413d75c0, gtao_denoise_sharpness -> 0x1413d74a0
+  (gtao_scene_texel_size -> 0x1413d7500, not read). Each callback copies floats unchanged from
+  one parameter object: config0 = +0x18..+0x24, config1 = +0x28..+0x34, pixel scale
+  +0x38..+0x3c, sharpness +0x50..+0x54.
+  0x1413d3ca0 loads the seven effects and binds their textures ("Failed to initialize GTAO").
+  0x1413d5100 (references "GTAO ao noisy") sets up the render targets; its float constants
+  include no AO parameter. Which code fills the parameter object was not found; its values are
+  Unknown.
