@@ -370,3 +370,30 @@ Extractor 2026-07-29 --deep --list on _6_NMPREFABS names 2,068 files; its
 paths as candidates add 4 to ours (dlc/direction_blocker_curve.{pmd,pmg},
 model2/vegetation/bank_concrete_grass_blke.{pmd,pmg}), paths of older game
 versions that the 1.60 install does not hold.
+
+
+13. Accessory conventions from other packages (2026-11-07)
+----------------------------------------------------------
+Add-On MAN TG3 still had 1,085 unnamed entries. By content (mod_names
+--list, grouped in a one-off script): 480 .tobj, 439 .mat starting
+`material : "ui"`, 58 .pmg, 2 .dds, 106 other (raw texture payloads).
+The UI materials are accessory icons. Its definitions ZIP ("Add-On
+Definition MAN TG3 2020 by Gloover") sets `icon: "<p>"` in 2,306 accessory
+units (1,061 distinct icons), and an icon is material/ui/accessory/<p>.mat
+(Confirmed, docs/formats/ui.md). specsheet_formats::paths::unit_paths
+already turns those into paths, but only for the package being named:
+the folder scan (specsheet_data::mod_scan::package_candidates, used by
+--others) took only referenced_paths. So a definitions package never
+named the icons in its model package.
+Check before the fix: those 1,061 icons as .mat/.tobj/.dds paths, passed
+with --paths, named 858 more MAN TG3 entries (1,085 -> 227 unnamed).
+Fix: package_candidates adds unit_paths for every scanned file (ZIP and
+v1); the scan cache header became "specsheet mod-scan 2", so old caches
+are rebuilt (56 packages, 137 s). Test
+mod_scan::tests::a_packages_accessory_units_add_their_conventional_files.
+22 v1 packages, mod_names --others "<home>/mod":
+  named with all candidates   170,640 of 171,094 (was 169,816)
+  Add-On MAN TG3                7,297 of 7,558 (was 6,473), 261 unnamed
+  every other package           unchanged
+The rule finds 34 fewer than the --paths check, which named the .tobj and
+.dds of each icon directly; not looked into.
