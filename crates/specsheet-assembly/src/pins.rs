@@ -75,7 +75,8 @@ pub struct Pin {
 
 /// The locator a slot's pin starts from: the first one whose name starts
 /// with the slot name (exactly equal for 12-character names). Locators are
-/// searched in model order; the game's model order is a Hypothesis.
+/// searched in the game's model order (F5, Confirmed): the interior's
+/// exterior model, the cabin, the chassis.
 pub fn slot_locator<'a>(
     slot: &str,
     locators: impl IntoIterator<Item = &'a Locator>,
@@ -94,10 +95,10 @@ pub fn slot_locator<'a>(
 /// positions from the front (`wheel_f*`) and rear (`wheel_r*`) wheel
 /// locators.
 ///
-/// Interior pins start from the full cockpit, the only model that carries
-/// the interior slots' locators; they are head-relative, so the cockpit's
-/// placement at the eye point puts them in the cab (F5, Hypothesis
-/// consistent with the data).
+/// Interior pins start from the full cockpit, the only model the game
+/// searches for them; its locators are head-relative, and the game adds
+/// the eye point, which the cockpit's placement carries (F5, Confirmed,
+/// `research/evidence/rea-pin-roots.txt`).
 pub fn bases(
     slots: &BTreeSet<SlotId>,
     locators: &[Locator],
@@ -110,11 +111,20 @@ pub fn bases(
         rotation_wxyz: l.rotation_wxyz,
     };
     let wheels = |locators: &[&Locator]| {
-        let mut positions: Vec<[f32; 3]> = locators.iter().map(|l| l.position).collect();
-        // Axle by axle from the front, left (x < 0) before right. The
-        // game's own wheel order is a Hypothesis (even = left).
-        positions.sort_by(|a, b| a[2].total_cmp(&b[2]).then(a[0].total_cmp(&b[0])));
-        positions
+        let mut sorted = locators.to_vec();
+        // By the wheel index in the name, which puts the left wheel of
+        // every axle at an even index (`wheel-order-survey.txt`). Positions
+        // cannot: an axle's two locators differ by up to 5 mm in z. Names
+        // without an index go last, by position.
+        sorted.sort_by(|a, b| {
+            let (ia, ib) = (wheel_index(&a.name), wheel_index(&b.name));
+            ia.is_none()
+                .cmp(&ib.is_none())
+                .then(ia.cmp(&ib))
+                .then(a.position[2].total_cmp(&b.position[2]))
+                .then(a.position[0].total_cmp(&b.position[0]))
+        });
+        sorted.iter().map(|l| l.position).collect::<Vec<_>>()
     };
     let found = |locators: &[Locator]| -> BTreeMap<SlotId, PinBase> {
         slots
@@ -134,8 +144,34 @@ pub fn bases(
     }
 }
 
-/// The truck's exterior pins, built the game's way from `table` (the scene's
-/// pin table). `slots` are pinned in key order, wheels after them.
+/// The wheel index of a wheel locator's name: the first number after the
+/// group letter (`wheel_r_3_2` -> 3, `wheel_f_1` -> 1, `wheel_f1` -> 1).
+fn wheel_index(name: &str) -> Option<u32> {
+    let rest = name
+        .strip_prefix("wheel_")?
+        .trim_start_matches(|c: char| c.is_ascii_alphabetic())
+        .trim_start_matches('_');
+    let digits = rest.len() - rest.trim_start_matches(|c: char| c.is_ascii_digit()).len();
+    rest.get(..digits)?.parse().ok()
+}
+
+/// The scene's pin table with a truck's own entries applied, the game's way
+/// (`research/evidence/pin-attributes.txt` §8, Confirmed): each truck entry
+/// replaces the look, offset, directions and `double_sided` of the first
+/// scene entry of the same group; a truck entry without one is ignored.
+pub fn with_truck_entries(scene: &[PinSpec], truck: &[PinSpec]) -> Vec<PinSpec> {
+    let mut table = scene.to_vec();
+    for entry in truck {
+        if let Some(target) = table.iter_mut().find(|s| s.group == entry.group) {
+            *target = entry.clone();
+        }
+    }
+    table
+}
+
+/// The truck's exterior pins, built the game's way from `table` (the
+/// scene's pin table with the truck's own entries, [`with_truck_entries`]).
+/// `slots` are pinned in key order, wheels after them.
 pub fn pins(table: &[PinSpec], bases: &PinBases, drive: Drive) -> Vec<Pin> {
     let entry = |group: &str| table.iter().find(|p| p.group == group);
     let dir = |spec: &PinSpec| direction(spec, drive);
@@ -186,7 +222,8 @@ pub fn interior_pins(table: &[PinSpec], bases: &PinBases, drive: Drive) -> Vec<P
     pins
 }
 
-/// Hypothesis: the UK direction is the right-hand-drive one.
+/// The UK direction follows the interior's UK flag (F5, Confirmed); our
+/// drive side follows the interior.
 fn direction(spec: &PinSpec, drive: Drive) -> [f32; 3] {
     match drive {
         Drive::Right => spec.dir_uk,
@@ -366,9 +403,10 @@ mod tests {
 
     #[test]
     fn each_wheel_part_gets_its_own_pin_around_every_wheel() {
+        // In model order, the right wheel first, as on the MAN TGX.
         let front = [
-            locator("wheel_f0", [1.0, 0.5, -3.0]),
-            locator("wheel_f1", [-1.0, 0.5, -3.0]),
+            locator("wheel_f_1_0", [1.0, 0.5, -3.0]),
+            locator("wheel_f_0_0", [-1.0, 0.5, -3.0]),
         ];
         let rear = [
             locator("wheel_r0", [-1.0, 0.5, 1.0]),
@@ -441,6 +479,44 @@ mod tests {
         assert!(tires[0].position[0] < 0.0);
     }
 
+    /// The DAF 2021 4x2's rear axle (`wheel-order-survey.txt`): the right
+    /// wheel's locator sits 0.2 mm ahead of the left one, so ordering by
+    /// position put it first and gave it the left wheel's pins, offset into
+    /// the truck. The wheel index in the name orders them.
+    #[test]
+    fn wheels_take_the_order_of_their_names_not_their_positions() {
+        let rear = [
+            locator("wheel_r_3_2", [0.928, 0.5, 2.2440]),
+            locator("wheel_r_2_2", [-0.928, 0.5, 2.2442]),
+        ];
+        let bases = bases(
+            &BTreeSet::new(),
+            &[],
+            &[],
+            &[],
+            &rear.iter().collect::<Vec<_>>(),
+        );
+        let left = [-1.0, 0.0, 0.0];
+        let table = [spec("r_tire", [-0.3, 0.4, 0.0], left, true)];
+        let tires: Vec<_> = pins(&table, &bases, Drive::Left)
+            .into_iter()
+            .filter(|p| p.slot.as_str() == "r_tire")
+            .collect();
+        assert_eq!(tires.len(), 2);
+        assert!(
+            close(tires[0].position, [-1.228, 0.9, 2.2442]),
+            "{:?}",
+            tires[0]
+        );
+        assert!(close(tires[0].facing, left));
+        assert!(
+            close(tires[1].position, [1.228, 0.9, 2.2440]),
+            "{:?}",
+            tires[1]
+        );
+        assert!(close(tires[1].facing, [1.0, 0.0, 0.0]));
+    }
+
     #[test]
     fn right_hand_drive_uses_the_uk_direction() {
         let mut slots = BTreeMap::new();
@@ -507,5 +583,25 @@ mod tests {
             .expect("wheel");
         assert_eq!(wheel.position, [-0.7, 2.3, -2.4]);
         assert!(close(wheel.facing, FORWARD));
+    }
+
+    /// pin-attributes.txt §8: a truck entry replaces the first scene entry
+    /// of its group; one without a scene entry is ignored.
+    #[test]
+    fn a_trucks_own_entry_replaces_the_scenes_first_of_its_group() {
+        let scene = [
+            spec("f_light_top", [-0.9, 0.0, 0.0], [0.0; 3], true),
+            spec("f_light_top", [5.0, 0.0, 0.0], [0.0; 3], false),
+            spec("mirror", [0.0, 0.1, 0.0], [0.0, 0.0, -1.0], true),
+        ];
+        let truck = [
+            spec("f_light_top", [-1.1, 0.0, 0.0], [-1.0, 0.0, 0.0], true),
+            spec("no_such_group", [9.0, 0.0, 0.0], [0.0; 3], false),
+        ];
+        let table = with_truck_entries(&scene, &truck);
+        assert_eq!(table.len(), 3);
+        assert_eq!(table[0], truck[0]);
+        assert_eq!(table[1..], scene[1..]);
+        assert_eq!(with_truck_entries(&scene, &[]), scene.to_vec());
     }
 }
