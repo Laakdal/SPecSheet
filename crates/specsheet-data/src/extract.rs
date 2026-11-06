@@ -21,7 +21,7 @@ use std::fs::{self, OpenOptions};
 use std::io::{Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
-use specsheet_archive::{city_hash_64, EntryV1, HashFsV1Archive, ZipArchive};
+use specsheet_archive::{city_hash_64, HashFsV1Archive, ZipArchive};
 use specsheet_formats::sniff;
 
 use crate::mod_names::RecoveredNames;
@@ -129,20 +129,111 @@ pub struct Extracted {
     pub unreadable: Vec<String>,
 }
 
-/// Extracts every file of `archive` into `dest` (see the module docs).
-/// `protected` folders may neither contain `dest` nor lie inside it.
+/// Which entries to take, by archive path. In a pattern, `*` matches any
+/// run of characters, `/` included (`def/*`, `*.dds`); case and a leading
+/// `/` are ignored. Unnamed entries match by their label `_unnamed/<hash>`
+/// (16 hex digits), as their extension is known only once they are read.
+/// A filter without patterns takes every entry.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct PathFilter {
+    patterns: Vec<String>,
+}
+
+impl PathFilter {
+    /// A filter taking the entries that match any of `patterns`.
+    pub fn new<I>(patterns: I) -> Self
+    where
+        I: IntoIterator,
+        I::Item: AsRef<str>,
+    {
+        Self {
+            patterns: patterns
+                .into_iter()
+                .map(|p| normalize(p.as_ref()))
+                .collect(),
+        }
+    }
+
+    /// Whether the entry at archive path `path` is taken.
+    pub fn matches(&self, path: &str) -> bool {
+        let path = normalize(path);
+        self.patterns.is_empty() || self.patterns.iter().any(|p| glob(p, &path))
+    }
+}
+
+/// A path as [`PathFilter`] compares it.
+fn normalize(path: &str) -> String {
+    path.trim_start_matches('/').to_lowercase()
+}
+
+/// Whether `text` matches `pattern`, in which `*` matches any run of
+/// characters.
+fn glob(pattern: &str, text: &str) -> bool {
+    let mut pieces = pattern.split('*');
+    let head = pieces.next().unwrap_or("");
+    let Some(mut rest) = text.strip_prefix(head) else {
+        return false;
+    };
+    let pieces: Vec<&str> = pieces.collect();
+    let Some((tail, middle)) = pieces.split_last() else {
+        return rest.is_empty();
+    };
+    // Each piece taken at its first fit leaves the most room for the rest.
+    for piece in middle {
+        match rest.find(piece) {
+            Some(at) => rest = &rest[at + piece.len()..],
+            None => return false,
+        }
+    }
+    rest.ends_with(tail)
+}
+
+/// One file as an extraction into an empty folder would write it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Listed {
+    /// Destination-relative path (`/`-separated). Unnamed entries are
+    /// listed as `_unnamed/<hash>.bin`; extracting picks the extension
+    /// from their content.
+    pub path: String,
+    /// The archive path, `None` for an unnamed entry.
+    pub source: Option<String>,
+    /// Declared size in bytes.
+    pub size: u64,
+}
+
+/// Extracts the files of `archive` that `filter` takes into `dest` (see
+/// the module docs). `protected` folders may neither contain `dest` nor lie
+/// inside it. The size limit applies to the files taken.
 pub fn extract(
     archive: &Archive<'_>,
     dest: &Path,
     protected: &[PathBuf],
     options: ExtractOptions,
+    filter: &PathFilter,
 ) -> Result<Extracted, ExtractError> {
     match archive {
         Archive::V1 { archive, names } => {
             let source = V1Source { archive, names };
-            run(&source, dest, protected, options)
+            run(&Filtered::new(&source, filter), dest, protected, options)
         }
-        Archive::Zip(zip) => run(&ZipSource(zip), dest, protected, options),
+        Archive::Zip(zip) => run(
+            &Filtered::new(&ZipSource(zip), filter),
+            dest,
+            protected,
+            options,
+        ),
+    }
+}
+
+/// The files of `archive` that `filter` takes, in extraction order, named
+/// as [`extract`] would name them in an empty folder. Reads no content.
+pub fn list(archive: &Archive<'_>, filter: &PathFilter) -> Vec<Listed> {
+    match archive {
+        Archive::V1 { archive, names } => {
+            let source = V1Source { archive, names };
+            plan(&Filtered::new(&source, filter))
+        }
+        Archive::Zip(zip) => plan(&Filtered::new(&ZipSource(zip), filter)),
     }
 }
 
@@ -153,6 +244,16 @@ struct Item {
     /// Entry hash (v1) or position (ZIP); names unnamed output.
     key: u64,
     size: u64,
+}
+
+impl Item {
+    /// Where the entry goes when its content is not read: its path, or
+    /// `_unnamed/<hash>.bin`.
+    fn unread_name(&self) -> String {
+        self.path
+            .clone()
+            .unwrap_or_else(|| format!("{UNNAMED}/{:016x}.bin", self.key))
+    }
 }
 
 trait Source {
@@ -167,12 +268,6 @@ trait Source {
 struct V1Source<'a> {
     archive: &'a HashFsV1Archive,
     names: &'a RecoveredNames,
-}
-
-impl V1Source<'_> {
-    fn entry(&self, hash: u64) -> Option<&EntryV1> {
-        self.archive.entries().find(|e| e.hash == hash)
-    }
 }
 
 impl Source for V1Source<'_> {
@@ -191,7 +286,10 @@ impl Source for V1Source<'_> {
     fn read(&self, item: &Item) -> Option<Vec<u8>> {
         match &item.path {
             Some(path) => self.archive.read(path).ok(),
-            None => self.archive.read_entry(self.entry(item.key)?).ok(),
+            None => self
+                .archive
+                .read_entry(self.archive.entry_by_hash(item.key)?)
+                .ok(),
         }
     }
 
@@ -226,6 +324,56 @@ impl Source for ZipSource<'_> {
     }
 }
 
+/// The entries of a source that a [`PathFilter`] takes.
+struct Filtered<'a, S> {
+    source: &'a S,
+    filter: &'a PathFilter,
+}
+
+impl<'a, S> Filtered<'a, S> {
+    fn new(source: &'a S, filter: &'a PathFilter) -> Self {
+        Self { source, filter }
+    }
+}
+
+impl<S: Source> Source for Filtered<'_, S> {
+    fn items(&self) -> Vec<Item> {
+        let mut items = self.source.items();
+        items.retain(|item| match &item.path {
+            Some(path) => self.filter.matches(path),
+            None => self.filter.matches(&format!("{UNNAMED}/{:016x}", item.key)),
+        });
+        items
+    }
+
+    fn read(&self, item: &Item) -> Option<Vec<u8>> {
+        self.source.read(item)
+    }
+
+    fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>> {
+        self.source.open(item)
+    }
+}
+
+/// The items of `source` in extraction order: unnamed first, then by path.
+fn sorted_items(source: &impl Source) -> Vec<Item> {
+    let mut items = source.items();
+    items.sort_by(|a, b| a.path.cmp(&b.path).then(a.key.cmp(&b.key)));
+    items
+}
+
+fn plan(source: &impl Source) -> Vec<Listed> {
+    let mut layout = Layout::for_destination();
+    sorted_items(source)
+        .into_iter()
+        .map(|item| Listed {
+            path: layout.place(&item.unread_name(), &mut |_| false).rel,
+            source: item.path,
+            size: item.size,
+        })
+        .collect()
+}
+
 fn run(
     source: &impl Source,
     dest: &Path,
@@ -240,7 +388,7 @@ fn run(
     if !options.skip_existing && fs::read_dir(&root).is_ok_and(|mut d| d.next().is_some()) {
         return Err(ExtractError::NotEmpty(root));
     }
-    let mut items = source.items();
+    let items = sorted_items(source);
     let declared = items
         .iter()
         .fold(0u64, |sum, item| sum.saturating_add(item.size));
@@ -250,11 +398,7 @@ fn run(
             limit: options.max_bytes,
         });
     }
-    items.sort_by(|a, b| a.path.cmp(&b.path).then(a.key.cmp(&b.key)));
-    let mut layout = Layout::default();
-    for reserved in [RENAMED, UNREADABLE] {
-        layout.taken.insert(reserved.to_lowercase());
-    }
+    let mut layout = Layout::for_destination();
     let mut done = Extracted::default();
     let mut buf = vec![0u8; CHUNK];
     for item in &items {
@@ -266,12 +410,7 @@ fn run(
         // their extension is guessed from all of their bytes; a dry run
         // reads nothing and labels them `.bin`.
         let (wanted, mut reader): (String, Option<Box<dyn Read + '_>>) = match &item.path {
-            _ if options.dry_run => (
-                item.path
-                    .clone()
-                    .unwrap_or_else(|| format!("{UNNAMED}/{:016x}.bin", item.key)),
-                None,
-            ),
+            _ if options.dry_run => (item.unread_name(), None),
             Some(path) => match source.open(item) {
                 Some(reader) => (path.clone(), Some(reader)),
                 None => {
@@ -458,6 +597,16 @@ struct Placed {
 }
 
 impl Layout {
+    /// A layout for a destination root, where the lists written there are
+    /// reserved.
+    fn for_destination() -> Self {
+        let mut layout = Self::default();
+        for reserved in [RENAMED, UNREADABLE] {
+            layout.taken.insert(reserved.to_lowercase());
+        }
+        layout
+    }
+
     /// Places archive `path` (see [`Placed`]). A new folder or file name
     /// for which `clash` holds (see [`alias_clash`]) is passed over like a
     /// taken one.
@@ -1099,5 +1248,76 @@ mod tests {
         let done = run(&source, &dest, &[], options).unwrap();
         assert_eq!((done.written, done.unnamed, done.bytes), (2, 1, 5));
         assert!(!dest.exists());
+    }
+
+    #[test]
+    fn path_filters_match_globs_ignoring_case_and_a_leading_slash() {
+        let filter = PathFilter::new(["def/*", "*.DDS", "/manifest.sii"]);
+        for hit in ["def/a.sii", "/def/x/y.sii", "model/a.dds", "manifest.sii"] {
+            assert!(filter.matches(hit), "{hit}");
+        }
+        for miss in ["manifest.sii.bak", "model/a.pmg", "xdef/a.sii", "def"] {
+            assert!(!filter.matches(miss), "{miss}");
+        }
+        assert!(PathFilter::default().matches("anything"));
+        assert!(PathFilter::new(["a*b*b"]).matches("abxb"));
+        assert!(!PathFilter::new(["a*b*b"]).matches("ab"));
+    }
+
+    #[test]
+    fn a_filter_extracts_and_sizes_only_the_matching_entries() {
+        let source = fake(vec![
+            (Some("def/a.sii"), Some(b"0123456789")),
+            (Some("model/b.pmg"), Some(b"0123456789")),
+            (None, Some(b"DDS |\0\0\0")),
+        ]);
+        // 28 bytes in all, over the limit; each selection is under it.
+        let options = ExtractOptions {
+            max_bytes: 15,
+            ..Default::default()
+        };
+        let dir = TempDir::new("filter");
+        for (patterns, want) in [
+            (["def/*"], "def/a.sii"),
+            // Unnamed entries match by their `_unnamed/<hash>` label.
+            (["_unnamed/*"], "_unnamed/0000000000001002.dds"),
+        ] {
+            let dest = dir.0.join(patterns[0].replace(['/', '*'], "_"));
+            let filter = PathFilter::new(patterns);
+            let filtered = Filtered {
+                source: &source,
+                filter: &filter,
+            };
+            let done = run(&filtered, &dest, &[], options).unwrap();
+            assert_eq!(done.written, 1);
+            assert_eq!(files_under(&dest), [want]);
+        }
+    }
+
+    #[test]
+    fn a_listing_names_files_as_an_extraction_would() {
+        let source = fake(vec![
+            (Some("def/CON.sii"), Some(b"x")),
+            (Some("def/a.sii"), Some(b"abc")),
+            (None, Some(b"zz")),
+            (Some("model/b.pmg"), Some(b"q")),
+        ]);
+        let filter = PathFilter::new(["def/*", "_unnamed/*"]);
+        let listed = plan(&Filtered {
+            source: &source,
+            filter: &filter,
+        });
+        let listed: Vec<(&str, Option<&str>, u64)> = listed
+            .iter()
+            .map(|l| (l.path.as_str(), l.source.as_deref(), l.size))
+            .collect();
+        assert_eq!(
+            listed,
+            [
+                ("_unnamed/0000000000001002.bin", None, 2),
+                ("def/_CON.sii", Some("def/CON.sii"), 1),
+                ("def/a.sii", Some("def/a.sii"), 3),
+            ]
+        );
     }
 }

@@ -1,24 +1,41 @@
-//! Extracts a mod package (HashFS v1 or ZIP) to a folder (D19,
-//! `specsheet_data::extract`). File names of a v1 package are recovered
-//! first (`mod_names`), with every path of the mounted game as candidates
-//! and, with `--others <dir>`, the paths that the other packages in `<dir>`
-//! mention, cached per package in `%LOCALAPPDATA%\dev.specsheet.app\mod-scan`
-//! unless `--no-cache`. Word swaps learned from the game's file names add
-//! variants of found names. The destination must be absolute and may not
-//! overlap the game install, the ETS2 home folder, the folder holding the
-//! package, or this repository. Nothing is overwritten, and an archive that would write
-//! more than `--max-gb` (default 64 GiB) is refused.
+//! Extracts a mod package (HashFS v1 or ZIP) to a folder, or lists it as a
+//! tree (D19, `specsheet_data::extract`). File names of a v1 package are
+//! recovered first (`mod_names`), with every path of the mounted game as
+//! candidates and, with `--others <dir>`, the paths that the other packages
+//! in `<dir>` mention, cached per package in
+//! `%LOCALAPPDATA%\dev.specsheet.app\mod-scan` unless `--no-cache`. Word
+//! swaps learned from the game's file names add variants of found names.
+//!
+//! `--list` prints the files as a tree, named as an extraction would name
+//! them, and writes nothing. `--only <pattern>` (repeatable) takes only the
+//! entries whose archive path matches: `*` matches any run of characters,
+//! `/` included, and case is ignored (`def/*`, `*.dds`). Unnamed entries
+//! match as `_unnamed/<hash>`, e.g. `--only "_unnamed/*"`.
+//!
+//! The destination must be absolute and may not overlap the game install,
+//! the ETS2 home folder, the folder holding the package, or this
+//! repository. Nothing is overwritten, and an extraction that would write
+//! more than `--max-gb` (default 64 GiB) of the files taken is refused.
 //!
 //! Usage (ETS2_DIR set, or the install is discovered):
-//!   cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--others <dir>] [--no-cache] <package> <destination>
+//!   cargo run --release -p specsheet-research --example mod_extract -- --list [--only <pattern>]... [--others <dir>] [--no-cache] <package>
+//!   cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--only <pattern>]... [--others <dir>] [--no-cache] <package> <destination>
 
 use std::path::{Path, PathBuf};
 
 use specsheet_archive::{HashFsV1Archive, ZipArchive};
-use specsheet_data::extract::{extract, Archive, ExtractOptions};
-use specsheet_data::mod_names::{game_paths, learn_word_swaps, recover_v1_names};
+use specsheet_data::extract::{extract, list, Archive, ExtractOptions, Listed, PathFilter};
+use specsheet_data::mod_names::{game_paths, learn_word_swaps, recover_v1_names, RecoveredNames};
 use specsheet_data::mod_scan::folder_candidates;
 use specsheet_data::GameInstall;
+
+const USAGE: &str = "usage: mod_extract --list [--only <pattern>]... [--others <dir>] [--no-cache] <package>\n   or: mod_extract [--dry-run] [--skip-existing] [--max-gb <n>] [--only <pattern>]... [--others <dir>] [--no-cache] <package> <destination>";
+
+/// Prints the usage and exits.
+fn usage() -> ! {
+    eprintln!("{USAGE}");
+    std::process::exit(2)
+}
 
 /// Where the scan of `--others` is cached: the app's local data folder.
 fn cache_dir() -> Option<PathBuf> {
@@ -26,17 +43,29 @@ fn cache_dir() -> Option<PathBuf> {
     Some(Path::new(&local).join("dev.specsheet.app").join("mod-scan"))
 }
 
+/// What `main` does once the package is open.
+enum Task {
+    List,
+    Extract {
+        dest: PathBuf,
+        options: ExtractOptions,
+    },
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let mut flag = |name: &str, with_value: bool| -> Option<String> {
         let at = args.iter().position(|a| a == name)?;
         args.remove(at);
-        Some(if with_value {
-            args.remove(at)
-        } else {
-            String::new()
-        })
+        if !with_value {
+            return Some(String::new());
+        }
+        if at >= args.len() {
+            usage();
+        }
+        Some(args.remove(at))
     };
+    let listing = flag("--list", false).is_some();
     let mut options = ExtractOptions {
         dry_run: flag("--dry-run", false).is_some(),
         skip_existing: flag("--skip-existing", false).is_some(),
@@ -45,12 +74,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(gb) = flag("--max-gb", true) {
         options.max_bytes = gb.parse::<u64>()?.saturating_mul(1 << 30);
     }
+    let mut patterns = Vec::new();
+    while let Some(pattern) = flag("--only", true) {
+        patterns.push(pattern);
+    }
+    let filter = PathFilter::new(&patterns);
     let others = flag("--others", true);
     let no_cache = flag("--no-cache", false).is_some();
-    let [package, dest] = <[String; 2]>::try_from(args).map_err(|_| {
-        "usage: mod_extract [--dry-run] [--skip-existing] [--max-gb <n>] [--others <dir>] [--no-cache] <package> <destination>"
-    })?;
-    let package = PathBuf::from(package);
+    let (package, task) = match (listing, args.as_slice()) {
+        (true, [package]) => (PathBuf::from(package), Task::List),
+        (false, [package, dest]) => (
+            PathBuf::from(package),
+            Task::Extract {
+                dest: PathBuf::from(dest),
+                options,
+            },
+        ),
+        _ => usage(),
+    };
 
     let install = GameInstall::discover()?;
     let mut protected = vec![
@@ -68,10 +109,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    let done = if let Ok(zip) = ZipArchive::open(&package) {
-        extract(&Archive::Zip(&zip), Path::new(&dest), &protected, options)?
+    let zip;
+    let v1;
+    let names: RecoveredNames;
+    let archive = if let Ok(opened) = ZipArchive::open(&package) {
+        zip = opened;
+        Archive::Zip(&zip)
     } else {
-        let archive = HashFsV1Archive::open(&package)?;
+        v1 = HashFsV1Archive::open(&package)?;
         let (vfs, _) = install.mount()?;
         let mut candidates = game_paths(&vfs);
         let swaps = learn_word_swaps(&candidates);
@@ -84,24 +129,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
             candidates.extend(scan.paths);
         }
-        let names = recover_v1_names(&archive, candidates, &swaps);
+        names = recover_v1_names(&v1, candidates, &swaps);
         println!(
             "{}: {} entries, {} named, {} unnamed",
             package.display(),
-            archive.len(),
+            v1.len(),
             names.names.len(),
             names.unnamed.len()
         );
-        extract(
-            &Archive::V1 {
-                archive: &archive,
-                names: &names,
-            },
-            Path::new(&dest),
-            &protected,
-            options,
-        )?
+        Archive::V1 {
+            archive: &v1,
+            names: &names,
+        }
     };
+
+    let (dest, options) = match task {
+        Task::List => {
+            print_tree(&list(&archive, &filter));
+            return Ok(());
+        }
+        Task::Extract { dest, options } => (dest, options),
+    };
+    let done = extract(&archive, &dest, &protected, options, &filter)?;
     let verb = if options.dry_run {
         "would write"
     } else {
@@ -120,4 +169,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("    renamed {from} -> {to}");
     }
     Ok(())
+}
+
+/// Prints `listed` as an indented folder tree with sizes, noting renamed
+/// and unnamed entries, then a total.
+fn print_tree(listed: &[Listed]) {
+    let mut files: Vec<&Listed> = listed.iter().collect();
+    files.sort_by(|a, b| a.path.split('/').cmp(b.path.split('/')));
+    let mut open: Vec<&str> = Vec::new();
+    for file in &files {
+        let parts: Vec<&str> = file.path.split('/').collect();
+        let Some((name, dirs)) = parts.split_last() else {
+            continue;
+        };
+        let common = open.iter().zip(dirs).take_while(|(a, b)| *a == *b).count();
+        open.truncate(common);
+        for dir in &dirs[common..] {
+            println!("{}{dir}/", "  ".repeat(open.len()));
+            open.push(dir);
+        }
+        let note = match &file.source {
+            None => "  (unnamed)".to_owned(),
+            Some(source) if source.trim_start_matches('/') != file.path => {
+                format!("  <- {source}")
+            }
+            Some(_) => String::new(),
+        };
+        println!(
+            "{}{name}  {}{note}",
+            "  ".repeat(open.len()),
+            human(file.size)
+        );
+    }
+    let bytes: u64 = files.iter().map(|f| f.size).sum();
+    let unnamed = files.iter().filter(|f| f.source.is_none()).count();
+    println!(
+        "{} files ({}), {unnamed} unnamed",
+        files.len(),
+        human(bytes)
+    );
+}
+
+/// `bytes` with a unit, for reading.
+fn human(bytes: u64) -> String {
+    match bytes {
+        0..1_000 => format!("{bytes} B"),
+        1_000..1_000_000 => format!("{:.1} kB", bytes as f64 / 1e3),
+        1_000_000..1_000_000_000 => format!("{:.1} MB", bytes as f64 / 1e6),
+        _ => format!("{:.2} GB", bytes as f64 / 1e9),
+    }
 }
