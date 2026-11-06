@@ -16,6 +16,7 @@ A failure here is a format change. Derive it from the bytes as in [research-lab.
 
 ## 3. Re-check what the code relies on
 
+- **Commands:** each evidence file starts with the commands that made it. A bare tool name such as `scs cat <path>` means `cargo run --release -p specsheet-research --example scs -- cat <path>`, with `ETS2_DIR` set (and `MSYS_NO_PATHCONV=1` in Git Bash).
 - **Surveys:** rerun `def_stats`, `axle_survey`, `effect_usage`, `locator_check`, `wheel_fit` and the paint survey. Compare them with the files in `research/evidence/`. New attributes, classes, slots or effect names are work items.
 - **Extraction:** extract `def.scs`, `dlc_daf_xd.scs` and `core.scs` with `mod_extract` into a scratch folder and compare each with `extract_check`; every file must be equal (`research/evidence/extract-v2.txt`). The mount order test (`real_install::archives_mount_in_the_games_lookup_order`) covers new DLC priorities.
 - **Findings:** walk through REVERSE_ENGINEERING.md. Data findings are re-confirmed by the surveys and tests above.
