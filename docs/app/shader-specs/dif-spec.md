@@ -280,6 +280,7 @@ The diffuse, specular and gate terms are the same as §5.4. The specular gate fo
   - `occ = sat( (Y(Csun_d)·c·gs + Y(Camb)) / (Y(Csun_d)·c + Y(Camb)) ) · a`.
   - `Evis = sat(Aenv · occ)`.
 - An aurora light (night sky) adds another diffuse term, `Caurora·sat(N·Laurora)`. Ignore it.
+- The `aoc` variants add the screen-space ambient occlusion: [gtao.md](gtao.md) §5.4.
 
 Other lights (garage spot and point lights) come from the deferred light-list pass, which was not read (U). (H) They use the same Blinn-Phong lobe and gate per light, with distance attenuation.
 
