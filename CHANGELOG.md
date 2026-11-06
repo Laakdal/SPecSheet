@@ -6,6 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 - **Lit showrooms switch on the game's lights:** in the hub scenes with the truck's lights on, aux lamps (light bars, spot lamps) now glow along with the parking lights and dipped beams; high beams, brake lights, indicators and beacons stay off.
+- **Game files resolve in the game's order:** DLC archives now rank by the `relative_priority` in their manifests instead of by name, and `core`, `locale`, `base_cfg` and `effect` always win over base and DLC files, as in the game's file lookup. In 1.60.1.7 this changes which DLC supplies 348 shared files (4 of them differ in content).
 - **Extraction streams large files:** named entries are written to disk 64 KiB at a time instead of being held in memory whole, so entries over 2 GiB extract (`ZipArchive::open_file`, `HashFsV1Archive::open_file`/`open_entry`, `EntryReader`).
 - **More mod file names recovered:** a definitions package now names the accessory icons in another package (the MAN TG3 add-on: 7,297 of 7,558 files named, was 6,473). The mod-scan cache is rebuilt once.
 - **Paint reflections are as strong as the game's:** painted panels now use the game's own reflection strength at head-on angles instead of the material's fresnel value, so glossy paint mirrors its surroundings much less when seen face-on.
