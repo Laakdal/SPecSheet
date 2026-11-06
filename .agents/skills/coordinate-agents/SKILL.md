@@ -1,0 +1,44 @@
+---
+name: coordinate-agents
+description: Split a large piece of work across several subagents safely - decide whether parallelism pays off, build a task board with file ownership and dependencies, brief agents, integrate results, and run independent review and verification. Use when work has several independent parts or when asked to parallelize or use multiple agents.
+---
+
+# Coordinate several agents
+
+Protocol and roles: [collaboration.md](../../standards/collaboration.md). You are the lead.
+
+## Steps
+
+1. **Decide whether to parallelize.** Do it only if there are two or more tasks with disjoint files, or you need an independent review or a read-only research pass. Otherwise do the work yourself and stop here.
+2. **Build the board.** Write `.agents/state/tasks.md` from the [template](../../templates/tasks.md), or ask the `planner` subagent to. Each task gets:
+   - an id
+   - a one-line goal
+   - the `owns` paths or globs
+   - `depends`
+   - an acceptance check
+
+   Keep shared files (lockfiles, schemas, routes, migrations, central config) with yourself.
+3. **Validate the board:** `python .agents/tools/hub tasks check`. Fix overlaps by reassigning paths or adding a dependency.
+4. **Brief each `implementer`** with:
+   - the task row
+   - the acceptance check
+   - the relevant decisions and constraints
+   - what was already ruled out
+   - the instruction to stay inside `owns`
+   - the result format (changed files, quoted test output, requests for shared-file changes)
+
+   Use worktree isolation where the platform supports it.
+5. **Run independent tasks in parallel** and dependent ones in order. Update each task's status on the board as results arrive.
+6. **Check every result** before integrating: the evidence is quoted, the scope was respected, and the acceptance check passes.
+7. **Integrate.** Merge the results, apply the requested shared-file changes, and run the full suite. If tasks collided, re-plan rather than force-merge.
+8. **Close out:**
+   - the `reviewer` (and `security-reviewer` if relevant) reviews the integrated change in a fresh context
+   - the `verifier` runs the full checks
+   - fix the blocking findings
+9. **Report:** tasks completed, evidence, review outcome, and anything deferred. Write a handoff (`handoff`) if work continues later.
+
+Platform notes:
+- **Claude Code:** subagents come from `.claude/agents/`; `isolation: worktree` is supported.
+- **Codex:** spawn `.codex/agents/` roles by name.
+- **Copilot (VS Code):** custom agents from `.github/agents/`.
+- **Cursor:** `.cursor/agents/`.

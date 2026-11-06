@@ -1,0 +1,37 @@
+---
+name: investigate-bug
+description: Find the root cause of a failure, error, crash, flaky test or wrong output by reproducing it and narrowing it down with evidence, without changing behaviour yet. Use when something is broken or behaving unexpectedly and the cause is not obvious.
+---
+
+# Investigate a bug
+
+Goal: a root cause you can demonstrate, not a plausible story. Change nothing but diagnostics until the cause is proven.
+
+## Steps
+
+1. **Pin down the symptom.** Collect the exact error or output, the expected behaviour, the environment, and when it started (recent commits, dependency bumps, config changes).
+2. **Reproduce it.** Get the smallest reliable reproduction: a failing test if possible, otherwise a script or exact steps. If you can't reproduce it, say so and gather more data (logs, versions, inputs) instead of guessing.
+3. **Form hypotheses** that would explain *all* the observations. Rank them by likelihood and by how cheap they are to test.
+4. **Test one hypothesis at a time** with a decisive check:
+   - a targeted log or assertion
+   - a debugger breakpoint
+   - bisecting inputs
+   - `git bisect` across commits
+   - swapping one dependency or config value
+
+   Record each result.
+5. **Confirm the cause.** You can explain the mechanism, point to `path:line`, and predict the behaviour of a new input.
+6. **Remove the temporary diagnostics.**
+
+## Output
+
+```
+Symptom: ...
+Reproduction: test name / command
+Root cause: mechanism, at path:line
+Evidence: what proved it (quoted output)
+Ruled out: hypotheses tested and why rejected
+Fix options: 1-3, with trade-offs and the regression test each needs
+```
+
+To fix it, continue with `fix-bug` from its step 3.

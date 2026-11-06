@@ -1,0 +1,37 @@
+---
+name: analyze-project
+description: Build a working map of an unfamiliar codebase or subsystem (entry points, components, data flow, build and test commands, conventions, risks) before changing it. Use when starting work in code you have not seen, or when asked how something works or where something lives.
+---
+
+# Analyze a project or area
+
+Produce a map that is accurate, short, and cites files. Read only as much as the question needs.
+
+## Steps
+
+1. **Scope.** Settle whether this is the whole repository or one area, and what question the map must answer (for example "where would I add X?" or "how does Y flow?").
+2. **Start from the cheap sources:**
+   - the `AGENTS.md` project section and nested `AGENTS.md` files
+   - the architecture doc and decision record named in the `AGENTS.md` hub block
+   - the README
+   - `python .agents/tools/hub detect` for manifests and tooling
+3. **Find the entry points:** main or bootstrap files, routers, CLI command registration, job schedulers, exported library modules.
+4. **Trace one real flow end to end** (one request, command or job) through the layers. Note each hop as `path:line`.
+5. **Learn the conventions** from 2-3 representative files per layer: naming, error handling, data access, test style.
+6. **Find the commands** in CI config and manifests, and confirm them by running the fast ones (tests or lint) when that is safe.
+7. **Note the risks:** missing tests, dead or duplicated code, surprising coupling, TODOs in hot paths. Don't fix them.
+
+## Output
+
+```
+## Map: <scope>
+Purpose: ...
+Entry points: path - role
+Components: name - responsibility - location
+Key flow: step -> step (path:line each)
+Commands: build / test / lint / run (verified? yes/no)
+Conventions: ...
+Risks and unknowns: ...
+```
+
+If the map contains durable knowledge that the project docs lack, offer to add it to the architecture doc (`update-docs` skill). Don't write it unasked.

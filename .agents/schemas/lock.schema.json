@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hub ownership lock (.agents/hub.lock.json)",
+  "type": "object",
+  "required": ["version", "files", "generated"],
+  "properties": {
+    "version": {"type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+"},
+    "source": {"type": "string"},
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sha256", "owner"],
+        "properties": {
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "owner": {"type": "string", "pattern": "^(framework|pack:[a-z0-9-]+)$"},
+          "version": {"type": "string"}
+        }
+      }
+    },
+    "generated": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sha256", "source"],
+        "properties": {
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "ETS2 Tuning GUI",
+  "platforms": [
+    "claude-code"
+  ],
+  "packs": [
+    "rust"
+  ],
+  "disabled": {
+    "skills": [
+      "init-project",
+      "prepare-release"
+    ],
+    "agents": [],
+    "rules": []
+  },
+  "options": {
+    "claude_hooks": false,
+    "claude_permissions": true,
+    "copilot_instructions": false
+  },
+  "stack": {
+    "language": "Rust",
+    "app": "Bevy + egui",
+    "layout": "Cargo workspace, crates/specsheet-*"
+  },
+  "commands": {
+    "check": "cargo xtask check",
+    "check with the game": "ETS2_DIR=<game dir> cargo xtask check --real",
+    "format": "cargo fmt --all --check",
+    "lint": "cargo clippy --workspace --all-targets -- -D warnings"
+  },
+  "docs": {
+    "architecture": "docs/ARCHITECTURE.md",
+    "decisions": "docs/DECISIONS.md"
+  }
+}

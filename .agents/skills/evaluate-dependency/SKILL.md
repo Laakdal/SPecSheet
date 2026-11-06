@@ -1,0 +1,24 @@
+---
+name: evaluate-dependency
+description: Decide whether to add, upgrade, replace or remove a third-party dependency by checking need, maintenance, security record, license, size and alternatives. Use before adding any new package or library, for major version upgrades, or when asked whether a library is a good choice.
+---
+
+# Evaluate a dependency
+
+## Steps
+
+1. **Need.** What problem does it solve? Can the standard library or an existing dependency do it in reasonable code? Small, stable functionality is often cheaper to write than to depend on.
+2. **Candidates.** List 1-3 options, including "write it ourselves" where plausible.
+3. **Check each candidate,** using registry pages, the repository and advisories. Don't install or run it to "try it":
+   - **Maintenance:** last release, release cadence, open-issue trend, number of maintainers
+   - **Security:** known advisories (`npm audit`, `pip-audit`, `cargo audit`, OSV, GitHub advisories) and how fast past ones were fixed
+   - **License:** compatible with this project's license and distribution model
+   - **Footprint:** transitive dependencies, install size, native build requirements, supported runtimes and platforms
+   - **Fit:** API quality, typing, docs, community adoption, lock-in
+4. **For upgrades:** read the changelog and migration guide between the current and target versions. List the breaking changes that affect this code, found by searching for usages.
+5. **Decide and record:** the recommendation with reasons. Write an ADR (`review-architecture`) if it is a framework-level or hard-to-reverse choice.
+6. **If approved:** add it using the project's package manager, pin per the lockfile convention, commit the lockfile with the code that uses it, and run the full checks.
+
+## Output
+
+A comparison table (criteria × candidates), the recommendation, the risks, and the exact command to add or upgrade it.

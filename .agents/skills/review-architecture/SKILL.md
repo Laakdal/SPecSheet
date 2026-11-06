@@ -1,0 +1,29 @@
+---
+name: review-architecture
+description: Evaluate an architectural or design decision (new component, data model, framework, integration, major refactor) against requirements and alternatives, and record it as an ADR. Use when choosing between technical approaches or when a change is hard to reverse.
+---
+
+# Review architecture and record the decision
+
+## Steps
+
+1. **Frame the decision:**
+   - the problem
+   - the forces: functional needs, quality attributes such as performance, reliability, security and cost, team skills, existing constraints
+   - what "good enough" means
+2. **Learn the current state.** Read the architecture doc, the related entries in the decision record (both named in the `AGENTS.md` hub block), and the code the decision touches. Earlier decisions stay binding unless this decision supersedes them explicitly.
+3. **Generate 2-4 real options,** including "keep what we have" when relevant. For each, cover:
+   - how it works
+   - fit with the forces
+   - cost to build and run
+   - migration path
+   - reversibility
+   - risks
+4. **Recommend one.** Say why it wins on the forces that matter most, and what would change the recommendation.
+5. **Check the consequences:** follow-up work, docs, monitoring, and the decisions this forecloses.
+6. **Write the ADR** with status `proposed`; the user changes it to `accepted`. If the decision record is a folder, use the [template](../../templates/adr.md) as `<folder>/NNNN-<slug>.md` (next free number). If it is a single file, append an entry with the next number in the format that file already uses.
+7. **On acceptance,** update the architecture doc if the system shape changed (`update-docs`).
+
+## Output
+
+The options compared (a short table), the recommendation, and the ADR path. Ask the user to accept or adjust it.

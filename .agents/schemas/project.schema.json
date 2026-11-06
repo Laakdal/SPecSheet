@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hub project config (.agents/project.json)",
+  "type": "object",
+  "required": ["name", "platforms"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "name": {"type": "string", "minLength": 1},
+    "platforms": {
+      "type": "array",
+      "items": {"enum": ["claude-code", "codex", "copilot", "cursor"]}
+    },
+    "packs": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"}},
+    "disabled": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": {"type": "array", "items": {"type": "string"}},
+        "agents": {"type": "array", "items": {"type": "string"}},
+        "rules": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claude_hooks": {"type": "boolean"},
+        "claude_permissions": {"type": "boolean"},
+        "copilot_instructions": {"type": "boolean"}
+      }
+    },
+    "docs": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where this project keeps its architecture doc and decision record (a file, or a folder ending in /). Named in the AGENTS.md hub block.",
+      "properties": {
+        "architecture": {"type": "string", "minLength": 1},
+        "decisions": {"type": "string", "minLength": 1}
+      }
+    },
+    "stack": {"type": "object"},
+    "commands": {"type": "object", "additionalProperties": {"type": "string"}}
+  }
+}

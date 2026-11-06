@@ -1,0 +1,23 @@
+---
+name: develop-feature
+description: End-to-end workflow for building a feature or behaviour change, from request through plan, test-first implementation, verification, independent review and docs. Use when asked to add, build or implement functionality that spans more than a trivial edit.
+metadata:
+  kind: workflow
+---
+
+# Develop a feature
+
+This workflow sequences other skills. Skip steps that clearly don't apply, and say which ones you skipped.
+
+1. **Understand.** Restate the request and the definition of done. Unfamiliar area: `analyze-project`. Unresolved questions that change the outcome: ask now.
+2. **Plan.** Multi-file or ambiguous work: `plan-task`, and get approval for anything non-trivial. Architecture-level choice: `review-architecture`. New dependency: `evaluate-dependency`.
+3. **Decide on parallelism.** Independent tasks with disjoint files: `coordinate-agents`. Otherwise continue alone.
+4. **Implement, test-first, step by step** ([engineering](../../standards/engineering.md), [testing](../../standards/testing.md)):
+   - write the test for the next behaviour, and run it to see it fail for the right reason
+   - make the minimal change that passes it, then run it
+   - refactor if needed while keeping tests green
+   - repeat for each step
+5. **Verify.** Run the full test suite, lint and build. Quote the summary lines. Fix failures before going further.
+6. **Review.** Get a fresh-context review: the `reviewer` subagent, or `review-code` as a separate pass. Use `assess-security` if the change touches auth, input handling, secrets or permissions. Address blocking and important findings, each with a test where it is a bug.
+7. **Document.** `update-docs` for behaviour, interface, config or architecture changes, plus a changelog entry if the project keeps one.
+8. **Report.** What changed (files), verification evidence, review outcome, assumptions, and anything deferred. Commit or open a PR only if the user asked ([git](../../standards/git.md)).

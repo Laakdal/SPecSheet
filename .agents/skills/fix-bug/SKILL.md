@@ -1,0 +1,16 @@
+---
+name: fix-bug
+description: Workflow for fixing a reported bug - reproduce it with a failing test, find the root cause, apply the smallest correct fix, verify, and guard against regression. Use when asked to fix an error, crash, regression or incorrect behaviour.
+metadata:
+  kind: workflow
+---
+
+# Fix a bug
+
+1. **Investigate.** Run `investigate-bug` until you have a reproduction and a proven root cause. Don't patch symptoms. A fix without a known cause just moves the bug.
+2. **Write the regression test.** It reproduces the bug through the public interface. Run it and watch it **fail** for the reason the root cause predicts.
+3. **Fix the cause** with the smallest change that makes the test pass. If the right fix is large or risky, stop and present the options (`plan-task`).
+4. **Check for siblings.** Search for the same pattern elsewhere (same API misuse, same copy-pasted logic), and report or fix them with the user's agreement.
+5. **Verify** ([testing](../../standards/testing.md)): run the regression test, the full suite, lint and build, and quote the summary lines.
+6. **Review.** For non-trivial fixes, get a fresh-context review (`reviewer` subagent or `review-code`). Use `assess-security` if the bug had security impact.
+7. **Report:** the root cause in one or two sentences, the fix, the evidence, the siblings found, and any follow-up (monitoring, data repair, a changelog entry).

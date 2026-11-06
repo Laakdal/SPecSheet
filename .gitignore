@@ -8,3 +8,6 @@
 /research/screenshots/
 # Reference screenshots of the real game for parity checks (local only).
 /research/parity/
+
+# hub: session-local agent state (handoffs, task boards)
+.agents/state/

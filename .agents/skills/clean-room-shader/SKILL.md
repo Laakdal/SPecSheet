@@ -1,0 +1,37 @@
+---
+name: clean-room-shader
+description: Port one of the game's shader effects to our own WGSL under D13, in two separated phases. A spec agent reads the game's shaders and writes the maths to docs/app/shader-specs/<effect>.md; a different agent that has never seen them writes the Bevy material from that spec. Use for any new game material or a change to one.
+---
+
+# Clean-room shader port (D13)
+
+The rule and why it exists: the shader bullet under "Code rules" in `AGENTS.md`, and D13 in `docs/DECISIONS.md`. This skill is the procedure. Which effects are done, and in what order the rest come, is in `docs/app/shaders.md` ("Step 2").
+
+Two agents, never one: **A** reads the game's shaders and writes the spec; **B** writes the WGSL and never sees the shaders. In Claude Code, run each phase in a fresh subagent (a new agent, not a fork) or in a separate session. The session that coordinates them reads neither the shaders nor A's working notes.
+
+## 0. Pick the effect
+
+Take the next base in the order of `docs/app/shaders.md` (or the `TASKS.md` item). If its Spec column already says Done, go to phase 2.
+
+## 1. Spec (agent A)
+
+1. **Extract into the scratchpad only**, with our own tools: `scs ls effect/eut2`, then `scs cat` on the effect's `.rfx` and on its shader objects. The commands and environment are at the top of `research/evidence/shader-spec-dif-spec.txt`; the container format is in `docs/formats/effects.md`. Nothing extracted goes under the repository, not even `research/extracted/`.
+2. **Write `docs/app/shader-specs/<effect>.md`** in the shape of the existing specs (`dif-spec.md` is the model): effect names and flavors, inputs, texture lookups, equations per flavor, blending and passes, and what the engine supplies. Use our own notation and label every claim C, H or U. Copy no code, identifiers or comments from the shaders.
+3. **Write `research/evidence/shader-spec-<effect>.txt`**: the commands run and the files read, with no shader text.
+4. **Before handing over,** compare the spec with the dumps and remove anything that reads as copied (variable names, statement order, comments).
+5. **Update the indexes:** the Spec column in `docs/app/shaders.md`, and the spec lists in `docs/RENDERING.md` and `docs/README.md`.
+
+## 2. WGSL (agent B)
+
+1. **Brief B with paths only:** the spec page(s), `docs/app/materials.md`, `docs/RENDERING.md`, and our own render code (`crates/specsheet-render/src/`, for example `difspec.{rs,wgsl}` and `game_lighting.wgsl`). The brief carries no maths beyond what the spec says.
+2. **Out of bounds for B:** the shaders, any dump, `research/extracted/`, and the spec-source evidence files (`research/evidence/shader-spec-*.txt`, `*-spec-sources.txt`).
+3. **If the spec is unclear or wrong,** B stops and reports the question. Agent A answers it by fixing the spec; B never looks at a shader to settle it.
+4. **Write one Bevy material per base** in `crates/specsheet-render/src/`, with the flavors as shader defs, reusing the shared lighting module.
+5. **Record provenance** in `docs/app/materials.md` (who read what), as the truck paint entry does.
+
+Phase 2 is done when the "Done means" list in `AGENTS.md` holds. That includes a `SPECSHEET_SCRIPT` screenshot you have looked at.
+
+## 3. Measure and record
+
+- If reference screenshots exist, run `specsheet --parity` (`docs/DEVELOPMENT.md`, "Visual parity checks") and record the scores in `docs/PARITY.md`. Otherwise check the material by eye in a screenshot, and say that this is what you did.
+- Update the WGSL column in `docs/app/shaders.md`, then `TASKS.md` and `CHANGELOG.md`.
