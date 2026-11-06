@@ -13,11 +13,11 @@ The game builds one record per pin from the truck's locators and the pin table o
 - **Facing:** the unit vector of `pin_dir`. A zero direction gives the identity rotation, which faces forward (−z, Hypothesis). On a right-hand-drive truck `pin_dir_uk` replaces it (Hypothesis).
 - **Without a table entry:** the pin sits on the locator and faces the locator's own forward.
 - **`double_sided`:** a second, mirrored pin (offset x and direction x negated), built first.
-- **Wheels:** pins for the tyre, disc, hub, cover and nuts of every wheel, axle by axle from the front, left before right.
+- **Wheels:** pins for the tyre, disc, hub, cover and nuts of every wheel, in the order of the wheel index in the locator names (`wheel_r_3_2` is wheel 3), which puts every left wheel at an even index (`wheel-order-survey.txt`; Hypothesis, strong). Ordering by position swapped the sides of some axles, whose locators differ by up to 5 mm in z.
   - The base is the wheel locator.
   - Left wheels get base + offset; right wheels get the mirrored pin when the entry is `double_sided`.
   - Rims and complete wheels (`f_wheel`, `r_wheel`) never get a pin.
-- **Not used:** the per-truck pin table in `accessory_truck_data`, which in 1.60 only the Renault T and E-Tech T set (`f_light_top`). Its `use_non_wheel_pin_data_from_model` switch is false by default (Confirmed, F5) and no 1.60 truck sets it.
+- **Per-truck table:** a truck's own `pin_*` entries in `accessory_truck_data` replace the scene entry of the same group (F5, Confirmed; `pins::with_truck_entries`, kept per truck by `TruckSession::pin_table`). In 1.60 only the Renault T and E-Tech T set one: their roof-light pins sit 1.1 m out and face sideways. Its `use_non_wheel_pin_data_from_model` switch is false by default (Confirmed, F5) and no 1.60 truck sets it.
 
 Measured on every preset (`research/evidence/pin-survey.txt`): the pins land on their parts, with a median of 0 m and 90 % within 0.1 m.
 
@@ -72,6 +72,7 @@ The game draws its pins with its own button templates (`btn.custom_accn`, `btn.c
 ## Known gaps
 
 - Pin graphics are ours, not the game's button templates. The game also pulses a 64 px ring on some pins (Hypothesis: newly available parts).
-- Interior pins follow the game's interior pass, but the transform it adds is a Hypothesis (above); mirroring without a table entry relative to the interior object is not reproduced.
-- The per-truck pin table and `use_non_wheel_pin_data_from_model` are not read.
+- Mirroring an interior pin without a table entry relative to the interior object is not reproduced.
+- `use_non_wheel_pin_data_from_model` is not read; it is false by default and no 1.60 truck sets it.
+- The order the game fills its wheel list in is not read from the executable; the name order is taken from the data (`wheel-order-survey.txt` §2).
 - Badge slots and the Renault T's `s_panel` can take another slot's locator by the first-prefix rule (`pin-survey.txt`); to check in game.
