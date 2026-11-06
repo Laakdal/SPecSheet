@@ -156,6 +156,12 @@ impl HashFsV1Archive {
         self.by_hash.get(&self.hash_path(path))
     }
 
+    /// The entry with key `hash` (as [`Self::hash_path`] gives it), for
+    /// entries whose path is unknown.
+    pub fn entry_by_hash(&self, hash: u64) -> Option<&EntryV1> {
+        self.by_hash.get(&hash)
+    }
+
     /// Reads and decompresses a file (`def/x.sii` or `/def/x.sii`).
     pub fn read(&self, path: &str) -> Result<Vec<u8>> {
         self.read_entry(self.file_entry(path)?)
@@ -452,6 +458,14 @@ mod tests {
         assert_eq!(def.files, ["sign.sii"]);
         assert!(archive.entry("def").unwrap().is_directory());
         assert!(archive.entry("def/sign.sii").unwrap().is_compressed());
+    }
+
+    #[test]
+    fn entries_are_found_by_their_hash() {
+        let archive = open(&sample(0x4914)).unwrap();
+        let entry = archive.entry("def/sign.sii").unwrap();
+        assert_eq!(archive.entry_by_hash(entry.hash), Some(entry));
+        assert_eq!(archive.entry_by_hash(key("def/sign.sii", 0)), None);
     }
 
     #[test]
