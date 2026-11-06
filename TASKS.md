@@ -84,12 +84,12 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 - [x] Mod priority (F14, static, `mod-priority-static.txt`): mods mount with rising priorities from 1001 in active-list order, and devices are kept highest priority first, so the later active mod wins (Hypothesis, strong: the lookup walk is not read). Open: how the mod pool ranks against the scs pool.
 - [x] `\xNN` fix vs the app UI (checked with de): the markup parser passes multi-byte text through, and the affected widgets (prev/next tab glyphs, money) are hidden for now, so nothing on screen changes. Once wired, the glyphs need the `glyphs_xb` font.
 - [x] Binary SII parser (`bsii.rs`) and the text placement fix: all 86 saves decode (32 binary, 54 text), every nameless reference resolves, and 470 of 482 shared fields agree in kind with text (`save_check`, `bsii-derivation.txt`).
-- [ ] Placement float 3 (always just above 2^23, probably packed position offsets) and `nil` = u64::MAX are open (bsii.md). Settle them before showing save positions.
+- [x] Placement float 3 and `nil` (bsii.md, `bsii-placement-nil.txt`): float 3 packs the position's 512 m cell (high 12 bits z, low 12 bits x, each biased by 2048; Hypothesis, strong: 5 job-offer trailer spots land within 17 cm of text ones, no other layout lands any); `nil` is the field width's all-ones value (u16/u32/u64::MAX, Confirmed on 8 attributes). Nothing decodes save positions yet; do it where they are first shown.
 - [x] HashFS v1 reader (`HashFsV1Archive`, D15), written from `hashfs-v1-derivation.txt`: all 20 v1 mods open, counts equal the game log, 170,674 entries read, 0 failures.
 - [ ] Mods next (D15): mounting into the `Vfs` in profile order, home-directory and profile discovery in `specsheet-data`. Writing profiles only with the user's go-ahead.
 - [x] Mod writer (D18): `ZipWriter`, `write_new_package` (never replaces, refuses a taken package name), `mod_manifest`; the test package from `mod_write` passes Python's strict `zipfile` check (`mod-writer-checks.txt`).
 - [x] Mod file names (`mod_names`, `paths`): v1 packages without listings get names by hashing candidates; 167,657 of 171,094 entries in 22 packages with game and other-package candidates (`mod-name-recovery.txt`). Search limits added after a security review (section 6).
-- [ ] Mod names, open: `Add-On MAN TG3 2020 by Gloover.scs` keeps 1,085 of 7,558 entries unnamed even with its definitions package as candidates; find which references the scanner misses. When mods are shown in the app, pass the other packages' names as candidates.
+- [x] Mod names, MAN TG3: the folder scan now adds other packages' accessory conventions (icon materials, addon files), so the definitions ZIP names its icons: 7,297 of 7,558 (was 6,473), all 22 packages 170,640 of 171,094 (`mod-name-recovery.txt` §13). 261 still unnamed (.pmg, raw textures); the rule names 34 fewer than passing the icon paths directly. When mods are shown in the app, pass the other packages' names as candidates.
 - [ ] Mod writer in the game: the user copies `specsheet_test.scs` into the mod folder and enables it; check the mod manager and `game.log.txt` ("has been mounted"), then record the result in mods.md.
 - [ ] What a real package holds (the user's choice), e.g. a tuning configuration from the app. Needs mod priority (F14) first if it overrides game paths.
 - [ ] Extractor parity (D19; facts from sk-zk Extractor, each confirmed on our install first, own code; `mod-name-recovery.txt` sections 8–9):
@@ -102,9 +102,11 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - [ ] 3nK-encoded SII: 2 samples in MAN TG3, no repeating XOR key; needs the exe (REA) for the algorithm. Unknown.
   - [ ] Salt override for v1. Table-at-end v1: Unknown, no sample.
   - [x] Extraction of v1 and ZIP packages (`extract.rs`, `mod_extract`): checked on NG Sound (91 files). Size limit (default 64 GiB) checked before writing, after a security review.
-  - [ ] Stream large entries to disk instead of holding each in memory (needs a reader API in `specsheet-archive`).
+  - [x] Stream large entries to disk instead of holding each in memory (`EntryReader`; no 2 GiB cap on the stream path, total still capped). Streamed output equals the old in-memory output byte for byte on NG Sound (91 files), MAN TG3 (7,528) and promods-eu-map (42,108, 3.1 GB; peak memory 20 MB, was 33 MB). Unnamed entries are still read whole (≤2 GiB), since sniffing needs all their bytes (`research/evidence/extract-streaming.txt`).
+  - [x] 8.3 alias collisions in extraction: a name that reaches another file through its short alias takes the next `~N`; MAN TG3 now writes all 7,551 files (was: stopped, or 24 skipped) (`research/evidence/extract-streaming.txt`).
+  - [ ] (optional) A streaming `sniff`, so unnamed entries can stream too (`specsheet-formats`).
   - [ ] Extraction of game (v2) archives: non-texture files first; packed textures need a `.dds` and a standalone `.tobj` written (fields Unknown).
-  - [ ] Tree and filter options for the example.
+  - [ ] Tree and filter options for the example (d7, in progress).
 
 ## Next
 

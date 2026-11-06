@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 - **Lit showrooms switch on the game's lights:** in the hub scenes with the truck's lights on, aux lamps (light bars, spot lamps) now glow along with the parking lights and dipped beams; high beams, brake lights, indicators and beacons stay off.
+- **Extraction streams large files:** named entries are written to disk 64 KiB at a time instead of being held in memory whole, so entries over 2 GiB extract (`ZipArchive::open_file`, `HashFsV1Archive::open_file`/`open_entry`, `EntryReader`).
+- **More mod file names recovered:** a definitions package now names the accessory icons in another package (the MAN TG3 add-on: 7,297 of 7,558 files named, was 6,473). The mod-scan cache is rebuilt once.
 - **Paint reflections are as strong as the game's:** painted panels now use the game's own reflection strength at head-on angles instead of the material's fresnel value, so glossy paint mirrors its surroundings much less when seen face-on.
 - **Alternate-UV paint jobs land where the game puts them on every truck:** paint now reads each model's own UV routing, so liveries such as Golden Edge on the DAF 2021 XF show on the cab and doors.
 - **Paint jobs render like the game's:** two-tone colour masks, airbrush liveries (logos, stripes, the 770 designs) and metallic flip colours that shift with the viewing angle. Each part takes its own paint, and the game's baked shading on painted panels is applied, so paint looks darker than before. The lighting is still an approximation. Metallic flakes are wired in but not visible yet.
@@ -104,6 +106,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Game version pin:** `GameInstall::version()` reads the installed version from `version.scs`. The real-install tests fail with instructions on any version other than `TESTED_GAME_VERSION` (1.60.1.7).
 
 ### Fixed
+- **Extraction no longer stops on Windows short names:** a file whose name equals another file's 8.3 short alias (`______~1.dds` for `_________.dds`, 24 files in the MAN TG3 add-on) now takes the next free `~N` instead of stopping with "file exists".
 - Debug builds no longer panic on uncompressed game textures with mipmaps (flake noise, UI textures): Bevy's single-mip size check is bypassed for the full chain.
 - Chrome and polished metal no longer render nearly black: materials with an `env_factor` become PBR metal, with roughness from `shininess`.
 - Text SII placements `(x, y, z) (w; x, y, z)` parse as one value. They used to fail the whole file, so no save could be read.
