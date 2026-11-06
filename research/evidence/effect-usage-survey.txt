@@ -1,5 +1,5 @@
 # Shader effect usage of truck and UI scene models (docs/app/shaders.md): ETS2 1.60.1.7
-# Command: ETS2_DIR=<game> cargo run --release -p specsheet-data --example effect_usage
+# Command: ETS2_DIR=<game> cargo run --release -p specsheet-research --example effect_usage
 # Effect names come from .mat files only; no shader code was read (D13).
 # Columns: models using the effect, distinct materials with it, uses in model/ui scene models, effect.
 

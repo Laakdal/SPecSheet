@@ -1,0 +1,81 @@
+# Wheel radius and width: where the engine takes them from
+# ETS2 1.60.1.7, eurotrucks2.exe sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8.
+# Observations are written in our own words; no decompiled code is kept in the repository.
+# Commands (Git Bash, repo root, ETS2_DIR set, MSYS_NO_PATHCONV=1):
+#   1. cargo run --release -q -p specsheet-research --example def_stats -- /def/vehicle/f_tire   (and r_tire, /def/vehicle/truck, /def/vehicle)
+#   2. cargo run --release -q -p specsheet-research --example wheel_fit -- f_tire   (and r_tire, f_wheel, r_wheel; "r" = top of the model's bounding box)
+#   3. cargo run --release -q -p specsheet-research --example model_info -- <every tyre and complete wheel model from step 2>
+#   4. cargo run --release -q -p specsheet-research --example model_info -- /vehicle/truck/daf_2021/chassis/chs_4x2.pmd
+#   5. REA (rea-agents 6.4.0, Ghidra 12.1.4), see section 3 for the commands.
+
+## 1. The definitions hold no wheel size
+- Tyre units (`accessory_wheel_data`, 16 front / 15 rear) carry: icon, look, model, name, noise_volume,
+  paintable, part_type, price, roll_resistance, unlock, wet_grip, and on 3 DLC Michelin 385 tyres wheel_shift.
+  No radius or width.
+- Chassis units (`accessory_chassis_data`, 164) carry no ride height; their only suspension value is
+  residual_travel (0.08, 0.088 or 0.1). The single `physics_data` unit holds only global factors.
+
+## 2. The size lives in the models
+Outer radius of the tyre mesh (top of its bounding box) and the tyre model's only locator, `bb`:
+
+| model | mesh radius | bb (x, y, z) |
+|---|---|---|
+| tire/f_385-55_michelin(_arrow) | 0.5027 | (-0.1365, 0, 0.4975) |
+| tire/front_1, front_2 | 0.5119 | (-0.1366 / -0.1473, 0, 0.5060 / 0.5063) |
+| tire/f_315-70_* | 0.5119 | (-0.1347 .. -0.1422, 0, 0.5063 .. 0.5065) |
+| tire/f_385-65_michelin | 0.5416 | (-0.1365, 0, 0.5360) |
+| tire/f_315-80_goodyear, _michelin | 0.5449 | (-0.1366 / -0.1419, 0, 0.5377) |
+| tire/rear_1, rear_2, r_315-70_* | 0.5116 | (-0.2893 .. -0.3063, 0, 0.5060 .. 0.5063) |
+| tire/r_315-80_michelin | 0.5453 | (-0.2924, 0, 0.5377) |
+| complete wheels front_1..8, rear_1..3, steel front/rear | 0.5131 | (+0.096 .. +0.322, 0, 0.5124) |
+
+- All 31 tyre and complete-wheel models have exactly one locator, `bb`. Its z is 6-7 mm below the mesh's
+  outer radius; its x is the tread's outboard half-width (twin rear tyres: the outer tyre's edge).
+- Disc and hub models have no locator.
+- Chassis wheel locators sit at y = 0.500 (DAF 2021 chs_4x2: all four wheel_* locators).
+
+## 3. Engine code
+Evidence IDs from rea-agents 6.4.0 (provider ghidra):
+- trace "Suspicious wheel radius": ev_5b6875deee693223a8d730ce8dcc3c7a7d91e37f1e2119463f7151518fc39ef1
+  String 0x142195c80 "Suspicious wheel radius on wheel no. %Iu, falling back to default value."
+  One reference, at 0x14082bc6a in FUN_14082b610.
+- function FUN_14082b610: ev_7e25e70a85a6cc77e66f36d02764e9ea2b067ba5ad6e1bc8b53adf0559e1638f
+- function FUN_140647b20: ev_1923fc9f4a021b8444026cb0913333cfed3cca09528c46f9dfb49338f579206a
+
+### FUN_14082b610 (the vehicle's per-wheel physics setup) -- Confirmed
+- First calls FUN_140647b20 with three per-wheel float arrays of the vehicle (width, radius, lateral offset).
+- Wheel count = the count at +0x608 of the chassis data, the same per-vehicle wheel list the pin code reads
+  (`wheel-order-survey.txt` §2).
+- For each wheel i: width = the width array entry, but if under 0.01 it logs "Suspicious wheel width ..."
+  and uses 0.25; radius = the radius array entry, but if under 0.01 it logs "Suspicious wheel radius ..."
+  and uses 0.5.
+- Then creates one wheel object per wheel, passing axle index = an entry of an array indexed by i / 2,
+  so wheels 2k and 2k+1 form axle k.
+
+### FUN_140647b20 (fills width, radius, offset) -- Confirmed except where marked
+- Sizes the three arrays to the wheel count, with fallbacks x = 0.2 and z = 0.5.
+- Walks the vehicle's accessories; for each wheel accessory and each of its two instances (left, right):
+  - finds wheel i with FUN_140653180 (the i-th wheel of the accessory's group letter), axle = i / 2;
+  - looks up one named locator in wheel instance i's model. If found, reads its position; if not, it keeps
+    the previous value and reports "Missing wheel model locator '%s' (chassis '%s')" when an axle got none.
+  - writes, for both wheels of the axle (2k and 2k+1):
+    - radius = the locator's z;
+    - width = 2 x | locator x - |s| |, where s is a float of the accessory's data;
+    - lateral offset = +s for wheel 2k and -s for wheel 2k+1.
+- The locator name is a pointer (0x142c14700) not read in this run. That it is `bb` is a Hypothesis
+  (strong): `bb` is the only locator in every tyre and complete-wheel model (section 2), and its z matches
+  the 0.5 fallback scale and the chassis wheel height.
+- That s is the tyre's `wheel_shift` is a Hypothesis: it is the only per-tyre float with that role, and
+  only 3 tyres set it (0.0325).
+
+## 4. Reading
+- The engine's wheel radius per axle is the `bb` z of the wheel model: 0.4975 (385/55) to 0.5377 (315/80);
+  stock 0.506. Chassis wheel locators sit at 0.5, the engine's fallback radius.
+- The tuning-screen truck stands on its wheels (Confirmed, in-game observation by the user, 2026-11-06):
+  fitting a larger front tyre lifts the front of the truck "like a real physics". The amount was not
+  measured. Expected from section 2: the axle rises by the change in `bb` z, e.g. +3.2 cm for 315/80 over
+  stock (0.5377 - 0.506).
+- The tuning scene update (FUN_140f8acc0, earlier run) calls FUN_1408277b0 and FUN_14082f9f0 next to this
+  code; the callers of FUN_14082b610 are not listed yet (an xrefs run was stopped for low memory).
+- Unknown: the engine's resting height for the reference radius (how far the suspension sits under load in
+  the tuning scene), so only the change between tyres is predicted, not the absolute ride height.

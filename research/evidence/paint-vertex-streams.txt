@@ -2,7 +2,7 @@ Truck paint vertex streams: UV sets and vertex colours (truckpaint material)
 ==========================================================================
 
 Command (ETS2 1.60.1.7, install opened read-only):
-  ETS2_DIR=<game> cargo run --release -p specsheet-data --example paint_uv_survey
+  ETS2_DIR=<game> cargo run --release -p specsheet-research --example paint_uv_survey
 
 Every piece of every /vehicle/truck .pmd whose first-look material has a
 truckpaint effect, by effect, number of PMG UV sets and colour stream.

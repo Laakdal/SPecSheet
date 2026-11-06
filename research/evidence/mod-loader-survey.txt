@@ -10,7 +10,7 @@ Sources (all read-only):
   - String inventory of bin\win_x64\eurotrucks2.exe (1.60.1.7, sha256
     b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8), grep of
     printable runs; nothing was executed.
-  - Our probe: cargo run --release -p specsheet-archive --example mod_probe -- <mod dir>
+  - Our probe: cargo run --release -p specsheet-research --example mod_probe -- <mod dir>
   - Python zipfile/zlib (stdlib) over the ZIP packages, read-only.
 Mod contents (third-party data) are not reproduced; only attribute names,
 version-gating values, counts and header bytes are quoted.

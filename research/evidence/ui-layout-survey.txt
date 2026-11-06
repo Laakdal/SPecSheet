@@ -3,7 +3,7 @@ ETS2 1.60.1.7. Produced 2026-10-27. Counts and short excerpts only; no game file
 
 Commands (Git Bash, repo root)
   export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
-  SCS=<target>/release/examples/scs        # cargo build --release -p specsheet-archive --example scs
+  SCS=<target>/release/examples/scs        # cargo build --release -p specsheet-research --example scs
   # 1. extract /ui/ (488 .sii/.sui + credits.txt) and a few locale/font/def files into the gitignored research/extracted/
   $SCS find ui "" > /tmp/ui.lst
   while read p; do mkdir -p "research/extracted/$(dirname "$p")"; $SCS cat "$p" > "research/extracted/$p"; done < /tmp/ui.lst
@@ -16,11 +16,11 @@ Commands (Git Bash, repo root)
   python -I ../../../tools/research/ui_survey.py . stats | area | coords [files] | tree <f> | refs <f..> | templates <f..>
   python -I ../../../tools/research/ui_survey.py ../ui_tc5 stats
   python -I ../../../tools/research/ui_survey.py . loc ../locale <key | ~key-regex | =value-regex>...
-  # 3. icons (crates/specsheet-data/examples/ui_icon_survey.rs)
-  cargo run --release -p specsheet-data --example ui_icon_survey -- /def/vehicle/truck 3
-  cargo run --release -p specsheet-data --example ui_icon_survey -- /def/vehicle 0
-  cargo run --release -p specsheet-data --example ui_icon_survey -- - 0 <icon or /abs/path.tobj>...
-  cargo run --release -p specsheet-data --example def_stats -- /ui      # our SII parser over every /ui/*.sii
+  # 3. icons (crates/specsheet-research/examples/ui_icon_survey.rs)
+  cargo run --release -p specsheet-research --example ui_icon_survey -- /def/vehicle/truck 3
+  cargo run --release -p specsheet-research --example ui_icon_survey -- /def/vehicle 0
+  cargo run --release -p specsheet-research --example ui_icon_survey -- - 0 <icon or /abs/path.tobj>...
+  cargo run --release -p specsheet-research --example def_stats -- /ui      # our SII parser over every /ui/*.sii
   # 4. runtime: D:/SCS/Euro Truck Simulator 2/game.log.txt (pack set 1.60.1.7): grep -n "UI reference mode"
   Tree/value markup below is replaced by <markup>; only ids, classes, rects, attribute names and short tokens are kept.
 
@@ -1021,7 +1021,7 @@ grep -n "^ id: [0-9]\{5,\}" truck_configuration_*.sii truck_config_filters.sii (
   0 matches
 
 ==========================================================================
-L. Our SII parser over /ui/ (cargo run --release -p specsheet-data --example def_stats -- /ui)
+L. Our SII parser over /ui/ (cargo run --release -p specsheet-research --example def_stats -- /ui)
 ==========================================================================
   classes reported: 289 (lines without indent, incl. the exit line)
   def_stats /ui exit 0

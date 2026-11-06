@@ -15,7 +15,7 @@ Process
   token.rs), call sites, and its own dumps of game files. Forbidden and, per its
   report, not opened: %USERPROFILE%\refsrc, any TruckLib/Extractor code, the old
   implementation and its git history, tools/research/model_layout.py,
-  crates/specsheet-archive/examples/texture_layout.rs.
+  crates/specsheet-research/examples/texture_layout.rs.
 - Security review of the clean commits found three resource-exhaustion paths
   (UV set count, pieces sharing one stream range, variant x attribute values).
   They were fixed test-first before integration.

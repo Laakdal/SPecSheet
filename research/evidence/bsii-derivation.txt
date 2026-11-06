@@ -13,7 +13,7 @@ size order.
 Commands (read-only):
   python -I <scratch>/... (stdlib zlib + cryptography): decrypt the ScsC
       saves to scratch, dump bytes, count declared value types
-  cargo run --release -p specsheet-formats --example save_check -- "<home>/profiles"
+  cargo run --release -p specsheet-research --example save_check -- "<home>/profiles"
 
 Subject: 86 save/*/game.sii of 4 profiles, ETS2 1.60.1.7. 79 are ScsC: 47
 decrypt to SiiN, 32 to BSII. 7 are plain SiiN. All 32 BSII files are version 3.

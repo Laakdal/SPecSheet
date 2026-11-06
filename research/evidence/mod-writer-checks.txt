@@ -6,10 +6,10 @@ read only. Package file names are public mod names; no profile data. Values
 of manifests are not quoted except game-defined category names.
 
 Commands (read-only on the mod folder):
-  cargo run --release -p specsheet-archive --example mod_probe -- "<home>/mod"
+  cargo run --release -p specsheet-research --example mod_probe -- "<home>/mod"
   python -I <scratch>/manifest_shapes.py "<home>/mod"   (stdlib zipfile)
   python -I <scratch>/categories.py "<home>/mod"
-  cargo run --release -p specsheet-data --example mod_write -- <scratch dir>
+  cargo run --release -p specsheet-research --example mod_write -- <scratch dir>
 
 
 1. Directory records are not needed

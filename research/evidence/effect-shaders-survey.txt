@@ -2,9 +2,11 @@ effect.scs shader survey (ETS2 1.60.1.7)
 =========================================
 
 Commands (Git Bash, ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2", MSYS_NO_PATHCONV=1,
-research examples built with: cargo build --release -p specsheet-archive --example scs --example survey):
+research examples built with: cargo build --release -p specsheet-research --example scs --example survey):
 
   survey "$ETS2_DIR/effect.scs"
+  (re-run 2026-11-07: the reader now reaches all 24,481 entries, 0 skipped;
+  the 15,511 / 8,970 counts below are from the older reader)
   scs ls effect ; scs ls effect/eut2 ; scs ls effect/eut2/truckpaint ; scs ls effect/eut2/_shd
   scs ls effect/eut2/_shd | sed -E 's/^[0-9a-f]+\.//' | sort | uniq -c
   scs cat effect/eut2/_shd/<hash>.glsl.fso      (then: extract printable runs / find "void main")

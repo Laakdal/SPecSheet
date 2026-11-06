@@ -2,7 +2,7 @@ PMD v4 / PMG v0x15 layout derived from our own byte dumps (license-safety re-der
 =======================================================================================
 
 Inputs: six models from ETS2 1.60.1.7, dumped read-only from the install with
-  cargo run --release -p specsheet-archive --example scs -- cat <path> > <file>
+  cargo run --release -p specsheet-research --example scs -- cat <path> > <file>
   /vehicle/truck/scania_2016/accessory/s_mirror/side_mirror_01.{pmd,pmg}
   /vehicle/truck/scania_2016/cabin/cab_s_low.{pmd,pmg}
   /vehicle/truck/scania_2016/chassis/chs_4x2.{pmd,pmg}

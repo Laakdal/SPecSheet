@@ -7,7 +7,7 @@ No shader code (.rfx/.glsl/.spv/.fso/.vso contents) was opened (D13). Effect FIL
 Commands (Git Bash)
 -------------------
   export MSYS_NO_PATHCONV=1 ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2"
-  T=<scratch target dir>; cargo build --release -p specsheet-archive --example scs -p specsheet-data --example def_stats --example def_grep
+  T=<scratch target dir>; cargo build --release -p specsheet-research --example scs -p specsheet-research --example def_stats --example def_grep
   # [S1] whole-file reads quoted below as short excerpts
   $T/release/examples/scs cat def/vehicle/truck/scania.s_2016/paint_job/{770s_met_a.sii,770s_met_settings.sui,color0.sii,color0m.sii,at_big_s_s_settings.sui}
   $T/release/examples/scs cat def/vehicle/truck/scania.s_2016/paint_job/accessory/770s_met_a.sii

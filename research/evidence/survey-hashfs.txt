@@ -1,3 +1,8 @@
+# HashFS survey: entries, reachability, compression and texture formats
+# Command: cargo run --release -p specsheet-research --example survey -- "<game>/dlc_actros_tuning.scs" "<game>/base_vehicle.scs" "<game>/def.scs" "<game>/core.scs"
+# Re-run 2026-11-07 (ETS2 1.60.1.7): identical except the three TEXTURE ERROR
+# lines for DXGI format 35, which the texture reader now decodes.
+
 D:/Steam Library/steamapps/common/Euro Truck Simulator 2/dlc_actros_tuning.scs: 2321 entries, 2321 reachable, 0 listed-but-missing, 0 skipped
   .mat: {"stored/zlib": 396}
   .pmc: {"stored/zlib": 64}

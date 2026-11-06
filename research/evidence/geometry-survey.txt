@@ -1,3 +1,7 @@
+# Geometry survey: triangle winding vs stored normals, material effects of truck models
+# Command: ETS2_DIR=<game> cargo run --release -p specsheet-research --example geometry_survey
+# Re-run 2026-11-07 (ETS2 1.60.1.7): output identical to the lines below.
+
 models sampled: 1105, triangles ccw-vs-normal 32407, cw 4817123, material errors 0
   1239 eut2.shadowonly.rfx
   1093 eut2.dif.spec.weight.add.env.tsnmapuv.rfx

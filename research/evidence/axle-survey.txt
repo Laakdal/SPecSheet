@@ -1,5 +1,5 @@
 # Axle survey (finding F13): ETS2 1.60.1.7
-# Command: ETS2_DIR=<game> cargo run --release -p specsheet-data --example axle_survey
+# Command: ETS2_DIR=<game> cargo run --release -p specsheet-research --example axle_survey
 # Columns: chassis id, declared axles (len of powered_axle[]), powered/steerable/liftable per axle (1/0, empty = attribute absent),
 # wheel locator axles front-to-back as <type>x<count> (f = wheel_f*, r = wheel_r*), model path. '!!' marks a count mismatch.
 

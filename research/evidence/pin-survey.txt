@@ -1,9 +1,12 @@
 Pin survey: how far the game-rule pins land from their parts (F5)
 =================================================================
 
-Tool: crates/specsheet-data/examples/pin_survey.rs
-  ETS2_DIR=<game dir> cargo run --release -p specsheet-data --example pin_survey
+Tool: crates/specsheet-research/examples/pin_survey.rs
+  ETS2_DIR=<game dir> cargo run --release -p specsheet-research --example pin_survey
 Install: ETS2 1.60.1.7, every truck's game preset, left-hand drive.
+Re-run 2026-11-07, same game: the counts have changed with later assembly
+code (1,313 exterior pins on placed parts, 628 on empty slots; median
+0.000 m, p90 0.099 m, max 3.056 m). The conclusions below still hold.
 
 For every exterior pin (built by specsheet_data::pins from the scene's pin
 table, see pin-attributes.txt §8) whose slot has placed parts, the distance

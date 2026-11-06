@@ -28,7 +28,7 @@ re-run. <game> = D:/Steam Library/steamapps/common/Euro Truck Simulator 2
   rprobe --inflate <game>/base.scs <game>/base_vehicle.scs
   for a in <game>/*.scs; do rprobe "$a"; done     # all 115, zlib <=1 MiB
   # After the reader was written (crates/specsheet-archive/src/hashfs.rs):
-  cargo run --release -p specsheet-archive --example survey -- <game>/*.scs
+  cargo run --release -p specsheet-research --example survey -- <game>/*.scs
   readall <game>/{version,def,effect,dlc_actros_tuning,dlc_daf_xd,base_vehicle}.scs
 
 Totals over all 115 archives: 656,591 entries, 40,379,677,634 bytes.

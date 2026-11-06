@@ -8,7 +8,7 @@ file lists what was read. It contains no shader text.
 Commands (Git Bash)
   export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
   export CARGO_TARGET_DIR=<scratchpad>/target-specwriter
-  cargo build --release -j 2 -p specsheet-archive --example scs
+  cargo build --release -j 2 -p specsheet-research --example scs
       (the older prebuilt scs.exe could not open .rfx: metadata record 0x07)
   scs ls effect/eut2 ; scs ls effect/eut2/<dir>                  list effects
   scs cat effect/eut2/<dir>/<effect>.rfx                          effect -> passes -> shader objects

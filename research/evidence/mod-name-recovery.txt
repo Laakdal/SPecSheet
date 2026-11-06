@@ -6,7 +6,8 @@ mounted game (ETS2 1.60.1.7), read only. Package names are public mod
 names; no profile data.
 
 Commands (read-only):
-  cargo run --release -p specsheet-data --example mod_names -- [--list] [--zips "<home>/mod"] <v1 packages>
+  cargo run --release -p specsheet-research --example mod_names -- [--list] [--others "<home>/mod"] <v1 packages>
+  (the numbers below were taken with --zips, which --others replaced; see the end)
   one-off examples (deleted after use) for the convention counts in 3.
   python -I <scratch>/stems.py "<home>/mod"   (stdlib zipfile, ZIP mods)
 

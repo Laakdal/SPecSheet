@@ -2,7 +2,7 @@ Profile ScsC survey (docs/formats/profiles.md)
 ==============================================
 
 Commands (all read-only; profile files are never written):
-  cargo run --release -p specsheet-formats --example profile_mods -- \
+  cargo run --release -p specsheet-research --example profile_mods -- \
       "<home>/profiles/<hex name>/profile.sii" ...
   python -I <scratch>/scsc_probe.py <key source> <eurotrucks2.exe> <profile.sii> <out>
       (stdlib zlib + the `cryptography` package; first look, before the Rust

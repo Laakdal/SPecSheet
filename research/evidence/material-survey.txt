@@ -2,7 +2,7 @@ Truck material survey: shine and reflection attributes (materials task)
 =======================================================================
 
 Command (ETS2 1.60.1.7, install opened read-only):
-  ETS2_DIR=<game> cargo run --release -p specsheet-data --example material_survey
+  ETS2_DIR=<game> cargo run --release -p specsheet-research --example material_survey
 
 Every distinct .mat referenced by a /vehicle/truck .pmd look, grouped by effect
 family. Per family: each numeric attribute's count and min/max per component,

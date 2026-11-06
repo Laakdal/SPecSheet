@@ -1,3 +1,7 @@
+# Locator check (finding F4), current matching rule
+# Command: ETS2_DIR=<game> cargo run --release -p specsheet-research --example locator_check
+# Re-run 2026-11-07 (ETS2 1.60.1.7): output identical to the lines below.
+
 daf.2021 selected-exterior 28 missing []
     multi []
     unassigned ["cam_cabin_a", "light_h_11", "light_h_10", "light_h_12", "light_h_13", "ext_interior", "doors", "curtain_f", "toyhang", "set_glass", "driver", "swheel", "interior", "set_dashbrd", "cup_holder", "shadow_x_ori", "shadow_x_crn", "f_lp", "wheel_f_0_0", "wp_0", "wheel_f_1_0", "wp_1", "cabin", "hook_t_s", "wheel_r_2_2", "wheel_r_3_2", "wp_3_4x2", "wp_2_4x2", "r_lp"]

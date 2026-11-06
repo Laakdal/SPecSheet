@@ -1,3 +1,7 @@
+# Attribute counts per unit class under /def/vehicle/truck
+# Command: ETS2_DIR=<game> cargo run --release -p specsheet-research --example def_stats
+# Re-run 2026-11-07 (ETS2 1.60.1.7): output identical to the lines below.
+
 accessory_addon_data: 8939
     coll: 1078
     conflict_with: 795

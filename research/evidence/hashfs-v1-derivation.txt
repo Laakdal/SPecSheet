@@ -12,7 +12,7 @@ Commands (Git Bash, read-only):
   od -An -tx1 -N 20 <pkg>                       header
   od -An -tx1 -j <table offset> -N 64 <pkg>     first entry records
   od -An -tx1 -j <entry offset> -N 8 <pkg>      start of an entry's data
-  cargo run --release -p specsheet-archive --example mod_probe -- <mod dir>
+  cargo run --release -p specsheet-research --example mod_probe -- <mod dir>
 
 
 1. Header (0x14 bytes)

@@ -5,9 +5,11 @@ Input: ETS2 1.60.1.7 archives base, base_vehicle, base_map, base_cfg, core,
 base_share, def (opened read-only).
 
 Command:
-  cargo run --release -p specsheet-archive --example texture_layout -- \
+  cargo run --release -p specsheet-research --example texture_layout -- \
     "<game>/base.scs" "<game>/base_vehicle.scs" "<game>/base_map.scs" \
     "<game>/base_cfg.scs" "<game>/core.scs" "<game>/base_share.scs" "<game>/def.scs"
+Re-run 2026-11-07 (ETS2 1.60.1.7): identical except the `dxgi  67` line,
+now [0, 0, 3, 25], since the tool unpacks R9G9B9E5 textures.
 
 Method (image record, 0x01):
 - The image record's two u32 words are decoded with the bit layout in

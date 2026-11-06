@@ -12,8 +12,8 @@ Commands (Git Bash)
 -------------------
   export ETS2_DIR="D:/Steam Library/steamapps/common/Euro Truck Simulator 2" MSYS_NO_PATHCONV=1
   export CARGO_TARGET_DIR=<scratchpad>/target
-  cargo build --release -j 4 -p specsheet-archive --example scs
-  cargo build --release -j 4 -p specsheet-data --example model_info
+  cargo build --release -j 4 -p specsheet-research --example scs
+  cargo build --release -j 4 -p specsheet-research --example model_info
   SCS=$CARGO_TARGET_DIR/release/examples/scs.exe
 
   # 1. variant list (270 .rfx; 135 skinned, 132 shadow, 132 asafew.a variants not read)

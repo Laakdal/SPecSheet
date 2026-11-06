@@ -3,7 +3,7 @@ Pin table of the truck configuration screen (F5)
 
 Source: /def/truck_config_scene.sii in the mounted 1.60.1.7 install (def.scs),
 the config_path of the tuning screen's scene widget. Read with:
-  ETS2_DIR=<game dir> MSYS_NO_PATHCONV=1 cargo run --release -p specsheet-archive     --example scs -- cat /def/truck_config_scene.sii
+  ETS2_DIR=<game dir> MSYS_NO_PATHCONV=1 cargo run --release -p specsheet-research --example scs -- cat /def/truck_config_scene.sii
 and tabulated by hand. The parallel arrays pin_group / pin_look / pin_offset /
 pin_dir / pin_dir_uk / double_sided have 65 entries. Values below are our
 tabulation of those numbers. The app parses the same arrays into
