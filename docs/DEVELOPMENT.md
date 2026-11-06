@@ -177,9 +177,11 @@ cargo run --release -p specsheet-research --example save_check -- "<home>/profil
 # Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --others adds what the other packages of a folder hold or mention (cached per package in %LOCALAPPDATA%\dev.specsheet.app\mod-scan; --no-cache reads them all again); --paths adds one candidate per line of a file; --list adds folders, replaced game files, unnamed contents
 cargo run --release -p specsheet-research --example mod_names -- [--list] [--others "<home>/mod"] [--no-cache] [--paths <file>] "<home>/mod/<package>.scs" ...
 
-# Mod extraction (D19): list a v1 or ZIP package as a tree, or write its files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites. --only takes archive paths matching a pattern (`*` any run, `/` included; unnamed entries as `_unnamed/<hash>`), repeatable
+# Mod extraction (D19): list a v1 or ZIP package or a game archive (v2; packed textures are listed, not written) as a tree, or write its files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites. --only takes archive paths matching a pattern (`*` any run, `/` included; unnamed entries as `_unnamed/<hash>`), repeatable
 cargo run --release -p specsheet-research --example mod_extract -- --list [--only <pattern>]... [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs"
 cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--only <pattern>]... [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs" <absolute destination>
+# Compare an extracted game archive with the game, file by file (counts only)
+cargo run --release -p specsheet-research --example extract_check -- "<install>/<archive>.scs" <extracted folder>
 
 # Mod writer: a test package (manifest + description, no game files) as <dir>/specsheet_test.scs; refuses if it exists
 cargo run --release -p specsheet-research --example mod_write -- <dir>
