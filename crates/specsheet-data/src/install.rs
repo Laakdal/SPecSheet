@@ -30,6 +30,45 @@ pub const BASE_MOUNT_ORDER: &[&str] = &[
     "base_cfg.scs",
 ];
 
+/// The pool an archive mounts into. Lookups ask the core pool before the
+/// scs pool (F2, Confirmed static, `research/evidence/mod-pool-priority-static.txt`);
+/// the variants are in rising lookup rank.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Pool {
+    Scs,
+    Core,
+}
+
+/// Where an archive ranks in lookups: by pool, then by mount priority
+/// (higher wins). Archives of equal rank keep their mount order.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct MountRank {
+    pool: Pool,
+    priority: i64,
+}
+
+/// The game's rank for the archive `name` (F2, Confirmed static): effect
+/// 452 and core, locale, base_cfg 100000 in the core pool; def 51, a DLC its
+/// manifest's `relative_priority` + 100 (0 when it has none) and every other
+/// archive (the base ones) 50 in the scs pool.
+fn mount_rank(name: &str, relative_priority: Option<i64>) -> MountRank {
+    let (pool, priority) = match name {
+        "effect.scs" => (Pool::Core, 452),
+        "core.scs" | "locale.scs" | "base_cfg.scs" => (Pool::Core, 100_000),
+        "def.scs" => (Pool::Scs, 51),
+        _ if name.starts_with("dlc_") => (Pool::Scs, relative_priority.unwrap_or(0) + 100),
+        _ => (Pool::Scs, 50),
+    };
+    MountRank { pool, priority }
+}
+
+/// The `relative_priority` of a DLC manifest (`dlc_package`), if it has one.
+fn relative_priority(manifest: &[u8]) -> Option<i64> {
+    let document = sii::parse("/dlc.manifest.sii", manifest).ok()?;
+    let unit = document.units_of_class("dlc_package").next()?;
+    unit.get_i64("relative_priority")
+}
+
 /// A validated ETS2 installation directory.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameInstall {
@@ -87,8 +126,9 @@ impl GameInstall {
         })
     }
 
-    /// Archive paths in mount order: the base archives, then every
-    /// `dlc_*.scs` sorted by name. Mods are not mounted.
+    /// The archives to mount: the base archives in the game's log order, then
+    /// every `dlc_*.scs` sorted by name. [`GameInstall::mount`] puts them in
+    /// lookup order. Mods are not mounted.
     pub fn archive_paths(&self) -> Result<Vec<PathBuf>> {
         let mut paths: Vec<PathBuf> = BASE_MOUNT_ORDER
             .iter()
@@ -112,16 +152,36 @@ impl GameInstall {
         Ok(paths)
     }
 
-    /// Opens and mounts every archive. Archives that fail to open are
-    /// reported in the returned list instead of aborting the whole mount.
+    /// Opens and mounts every archive in the game's lookup order: the scs
+    /// pool below the core pool, each by priority, a DLC by the
+    /// `relative_priority` in its own `/<name>.manifest.sii` (F2). Archives
+    /// that fail to open are reported in the returned list instead of
+    /// aborting the whole mount.
     pub fn mount(&self) -> Result<(Vfs, Vec<(PathBuf, specsheet_archive::ArchiveError)>)> {
-        let mut vfs = Vfs::new();
+        let mut opened = Vec::new();
         let mut failures = Vec::new();
         for path in self.archive_paths()? {
             match Archive::open(&path) {
-                Ok(archive) => vfs.mount(archive),
+                Ok(archive) => {
+                    let name = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_default();
+                    let priority = name
+                        .strip_suffix(".scs")
+                        .filter(|stem| stem.starts_with("dlc_"))
+                        .and_then(|stem| archive.read(&format!("/{stem}.manifest.sii")).ok())
+                        .and_then(|bytes| relative_priority(&bytes));
+                    opened.push((mount_rank(&name, priority), archive));
+                }
                 Err(error) => failures.push((path, error)),
             }
+        }
+        // A stable sort: archives of equal rank keep the order above.
+        opened.sort_by_key(|(rank, _)| *rank);
+        let mut vfs = Vfs::new();
+        for (_, archive) in opened {
+            vfs.mount(archive);
         }
         if vfs.archives().is_empty() {
             return Err(GameDataError::NotAnInstall {
@@ -226,6 +286,66 @@ mod tests {
                 PathBuf::from(r"C:\Program Files (x86)\Steam")
             ]
         );
+    }
+
+    /// research/evidence/mod-pool-priority-static.txt: the core pool is
+    /// asked before the scs pool, and inside a pool the higher priority
+    /// wins. DLCs rank by their manifest's `relative_priority` + 100, not by
+    /// name, and stay below the core pool.
+    #[test]
+    fn archives_rank_by_pool_then_priority() {
+        let names = [
+            "base.scs",
+            "def.scs",
+            "core.scs",
+            "effect.scs",
+            "dlc_a.scs",
+            "dlc_b.scs",
+        ];
+        let priority = |name: &str| match name {
+            "dlc_a.scs" => Some(60),
+            "dlc_b.scs" => Some(5),
+            _ => None,
+        };
+        let mut ranked: Vec<_> = names
+            .iter()
+            .map(|n| (mount_rank(n, priority(n)), *n))
+            .collect();
+        ranked.sort_by_key(|(rank, _)| *rank);
+        let order: Vec<_> = ranked.iter().map(|(_, n)| *n).collect();
+        assert_eq!(
+            order,
+            [
+                "base.scs",
+                "def.scs",
+                "dlc_b.scs",
+                "dlc_a.scs",
+                "effect.scs",
+                "core.scs"
+            ]
+        );
+        assert_eq!(
+            mount_rank("dlc_b.scs", Some(5)),
+            MountRank {
+                pool: Pool::Scs,
+                priority: 105
+            }
+        );
+        assert_eq!(
+            mount_rank("locale.scs", None),
+            MountRank {
+                pool: Pool::Core,
+                priority: 100_000
+            }
+        );
+    }
+
+    #[test]
+    fn reads_a_dlcs_relative_priority_from_its_manifest() {
+        let manifest = b"SiiNunit\n{\ndlc_package : _nameless.dlc_east {\n\tid: eut2_east\n\trelative_priority: 1\n}\n}\n";
+        assert_eq!(relative_priority(manifest), Some(1));
+        assert_eq!(relative_priority(b"SiiNunit\n{\n}\n"), None);
+        assert_eq!(relative_priority(b"not sii"), None);
     }
 
     #[test]
