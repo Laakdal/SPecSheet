@@ -1,0 +1,65 @@
+Streamed extraction and 8.3 short-name aliases (D19, docs/formats/mods.md)
+=========================================================================
+
+Subject: three packages in the test install's mod folder (ETS2 1.60.1.7),
+read only, extracted to a scratch folder outside the game, its home and the
+repository, then deleted. Package file names are public mod names; no
+profile data, no file contents quoted.
+
+Builds compared:
+  old  mod_extract at ad6d5ff (each entry read whole into memory)
+  new  mod_extract with EntryReader streaming (64 KiB chunks), before and
+       after the alias fix (section 3)
+Commands (Windows 11, NTFS volume with 8.3 names on):
+  ETS2_DIR=<install> mod_extract [--skip-existing] "<home>/mod/<package>" <scratch>/<old|new>/<tag>
+  (cd <scratch>/<build>/<tag> && find . -type f -print0 | sort -z | xargs -0 sha256sum)
+Names come from the mounted game only (no --others). Peak memory is the
+process's PeakWorkingSet64, sampled every 200 ms while it ran.
+
+
+1. Streamed output equals in-memory output
+------------------------------------------
+                                  files   sha256 differences   old       new
+  NG Sound.scs (HashFS v1)            91      0                19.4 s    18.1 s
+  Add-On MAN TG3 2020 by Gloover.scs 7,528    0                87.5 s    50.6 s
+    (v1; both with --skip-existing, see section 2)
+  promods-eu-map-v283.scs (ZIP)   42,108      0               110.1 s   110.6 s
+
+File counts include _renamed.txt where written. Both builds printed the
+same summary lines:
+  NG Sound:  "91 entries, 72 named, 19 unnamed"
+             "wrote 91 files (182.1 MB), 19 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable"
+  MAN TG3:   "7558 entries, 4519 named, 3039 unnamed"
+             "wrote 7527 files (5374.7 MB), 3039 under _unnamed/, 1409 renamed, 24 skipped, 0 unreadable"
+  ProMods:   "wrote 42108 files (3109.1 MB), 0 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable"
+
+Peak working set: ProMods map (ZIP, no game mount) 33 MB old, 20 MB new.
+The v1 runs peak at 240 MB in both builds; the game mount for name recovery
+sets that peak, not the extraction. Timings are single runs, old first.
+
+
+2. 8.3 short-name aliases stop an extraction (Confirmed)
+-------------------------------------------------------
+Without --skip-existing both builds stopped on MAN TG3 with
+  Io { path: ".../_30_3__/_____/_____#_/______/__#_____/___##/______~1.dds",
+       source: Os { code: 80, kind: AlreadyExists } }
+`dir /x` of that folder (short name, then long name):
+  ______~1.DDS _________.dds
+  ______~3.DDS _________~1.dds
+The earlier file `_________.dds` holds the alias `______~1.DDS`. The
+collision suffix `~N` gave a later file the name `______~1.dds`, which
+Windows resolved to that alias, so create_new failed. With --skip-existing
+the same 24 files were skipped instead of written.
+
+
+3. After the fix
+----------------
+New build with the alias check, no --skip-existing, MAN TG3:
+  "7558 entries, 4519 named, 3039 unnamed"
+  "wrote 7551 files (5397.8 MB), 3039 under _unnamed/, 1409 renamed, 0 skipped, 0 unreadable"
+  exit 0, 54 s. 7,551 files = 7,558 entries minus 7 directory listings.
+Content check (sha256 values as a multiset, _renamed.txt left out):
+  old run (section 1) 7,527 files, fix run 7,551 files
+  only in old: 0   only in fix: 24
+So the fix adds exactly the 24 files that were skipped and changes no
+content; 24 paths differ because the stepped-around names shift their `~N`.
