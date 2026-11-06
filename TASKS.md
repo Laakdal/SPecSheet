@@ -106,7 +106,8 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
   - [x] Stream large entries to disk instead of holding each in memory (`EntryReader`; no 2 GiB cap on the stream path, total still capped). Streamed output equals the old in-memory output byte for byte on NG Sound (91 files), MAN TG3 (7,528) and promods-eu-map (42,108, 3.1 GB; peak memory 20 MB, was 33 MB). Unnamed entries are still read whole (≤2 GiB), since sniffing needs all their bytes (`research/evidence/extract-streaming.txt`).
   - [x] 8.3 alias collisions in extraction: a name that reaches another file through its short alias takes the next `~N`; MAN TG3 now writes all 7,551 files (was: stopped, or 24 skipped) (`research/evidence/extract-streaming.txt`).
   - [ ] (optional) A streaming `sniff`, so unnamed entries can stream too (`specsheet-formats`).
-  - [ ] Extraction of game (v2) archives: non-texture files first; packed textures need a `.dds` and a standalone `.tobj` written (fields Unknown).
+  - [x] Extraction of game (v2) archives, non-texture files: def.scs (64,636 files), dlc_daf_xd.scs (1,643; 537 packed textures listed, not written) and core.scs (20; 14 named by game paths, 6 unnamed) equal the game byte for byte (`extract_check`, `extract-v2.txt`).
+  - [ ] Packed textures from game archives: write a `.dds` and a standalone `.tobj` (fields Unknown).
   - [x] Tree and filter options for the example: `--list` (tree with sizes, renames and unnamed entries; reads no content) and repeatable `--only <pattern>` on archive paths; size limit after filtering. Unnamed entries are found by `HashFsV1Archive::entry_by_hash`, which replaces a linear scan.
 
 ## Next

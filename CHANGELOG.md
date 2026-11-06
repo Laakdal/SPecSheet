@@ -62,6 +62,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Name:** the app is now called **SpecSheet** (tagline "SpecSheet: ETS2 Save Edit"). The window title, top-bar brand, installer product name and app identifier (`dev.specsheet.app`) are updated. Settings saved under the old identifier are not migrated, so the game directory is detected again on first launch.
 
 ### Added
+- **`mod_extract` reads game archives too:** it extracts and lists HashFS v2 archives, read only, named from the archive's listings and then the game's paths (`extract::v2_names`). Packed textures are left out and listed in `_packed_textures.txt`, and do not count against the size limit. `extract_check` compares an extracted folder with the game, file by file.
 - **`mod_extract --list` and `--only`:** list a package as a tree, named as extraction would name the files, and extract or list only archive paths matching a pattern (`specsheet_data::extract::{list, PathFilter}`); the size limit counts only the files taken.
 - **A log file:** every run writes its log to `%APPDATA%\dev.specsheet.app\specsheet.log` (the run before is kept as `specsheet.prev.log`), so problems in the release app, which has no console, can be looked at afterwards. `SPECSHEET_PERF=1` adds frame time, FPS and load times to it.
 - **Garage shading:** the tuning garage now shows the game's baked shadows and depth instead of a flat white hall.
