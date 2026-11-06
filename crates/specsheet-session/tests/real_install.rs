@@ -38,6 +38,37 @@ fn collect(fs: &GameFs, dir: &str, exts: &[&str], out: &mut Vec<String>) {
 }
 
 #[test]
+fn archives_mount_in_the_games_lookup_order() {
+    // research/evidence/mod-pool-priority-static.txt: lookups ask the core
+    // pool (effect, core, locale, base_cfg) before the scs pool; DLCs rank
+    // by relative_priority, above def and the base archives.
+    let Ok(install) = GameInstall::discover() else {
+        return;
+    };
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let (vfs, failures) = install.mount().expect("mount");
+    assert!(failures.is_empty(), "{failures:?}");
+    let names: Vec<String> = vfs
+        .archives()
+        .iter()
+        .map(|a| a.path().file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    let at = |name: &str| names.iter().position(|n| n == name).expect(name);
+    let core = ["effect.scs", "core.scs", "locale.scs", "base_cfg.scs"];
+    let first_core = core.iter().map(|n| at(n)).min().unwrap();
+    assert_eq!(first_core, names.len() - core.len(), "{names:?}");
+    let dlcs: Vec<usize> = (0..names.len())
+        .filter(|&i| names[i].starts_with("dlc_"))
+        .collect();
+    assert!(dlcs.iter().all(|&i| i > at("def.scs")), "{names:?}");
+    // The oldest DLC (Going East, relative_priority 1) ranks lowest of all
+    // DLCs, though it is not first by name.
+    assert_eq!(names[dlcs[0]], "dlc_east.scs", "{names:?}");
+}
+
+#[test]
 fn every_vehicle_definition_parses() {
     let Some(fs) = game_fs() else { return };
     let mut files = Vec::new();
