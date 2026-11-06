@@ -40,8 +40,8 @@ All 32 types declared in the saves, and their element sizes, are confirmed by wh
 Arrays are a u32 count, then the elements.
 
 **Meaning.** Compared with the text saves, value kinds agree for 470 of the 482 shared fields (Confirmed). The exceptions:
-- **Placements.** Floats 4–7 are the rotation quaternion in all 316 values (Confirmed), and floats 0–2 the position. Float 3 is always a whole number just above 2²³, probably packed position data (Unknown). Text writes 7 values, `(x, y, z) (w; x, y, z)`, without it. The parser keeps all 8 floats.
-- **`nil`.** Text writes some u64 fields as `nil`. The binary value there is u64::MAX (Hypothesis, from `player_job.online_job_id`). The parser keeps the number.
+- **Placements.** Floats 4–7 are the rotation quaternion in all 316 values (Confirmed). Floats 0–2 are the position relative to a 512 m cell, and float 3 is that cell: a whole number n below 2²⁴ whose high 12 bits are the z cell and low 12 bits the x cell, each biased by 2048. World x = float 0 + 512 × ((n & 0xfff) − 2048), world z = float 2 + 512 × (((n >> 12) & 0xfff) − 2048), world y = float 1. That is a Hypothesis (strong, `research/evidence/bsii-placement-nil.txt` §1): it is the only layout and cell size under which binary positions land on text ones, 5 job-offer trailer spots within 17 cm. Locals reach ±510 m, so a position is not always stored in its own cell. Text writes 7 values, `(x, y, z) (w; x, y, z)`, with the world position. The parser keeps all 8 floats.
+- **`nil`.** Text writes `nil` where binary holds the largest value of the field's unsigned width: u16::MAX, u32::MAX or u64::MAX (Confirmed on 8 attributes, `bsii-placement-nil.txt` §2). The parser keeps the number.
 
 ## Output
 
