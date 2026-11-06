@@ -22,7 +22,8 @@ use hookup::load_hookups;
 use paint::{attach_paint_parts, raw_part, RawPart, PAINT_PARTS_DIR};
 pub use preset::{load_preset, load_vehicle_config};
 
-const TRUCK_DEFS: &str = "/def/vehicle/truck";
+/// Where the truck definitions live.
+pub(crate) const TRUCK_DEFS: &str = "/def/vehicle/truck";
 /// Directory holding addon slots: `accessory/<slot>/<item>.sii`.
 const ADDON_DIR: &str = "accessory";
 /// Shared wheel part groups under `/def/vehicle/<group>/`, used by every

@@ -8,8 +8,10 @@
 //!   (`/def/camera/ui/*.sii`, `cinematic_camera` / `orbit_camera` /
 //!   `camera_animation_info`).
 
+use specsheet_core::TruckId;
 use specsheet_formats::sii::{SiiDocument, Unit, Value};
 
+use crate::catalog::TRUCK_DEFS;
 use crate::error::{GameDataError, Result};
 use crate::fs::GameFs;
 
@@ -152,13 +154,25 @@ fn tuning_scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> TuningScene {
     }
     let strings =
         |key: &str| -> Vec<String> { unit.array_str(key).into_iter().map(str::to_owned).collect() };
-    let looks = strings("pin_look");
+    TuningScene {
+        scene,
+        orbit,
+        pins: pin_specs(unit),
+        interior_only: strings("interior_only"),
+        hookups_exterior_only: strings("hookups_exterior_only"),
+    }
+}
+
+/// The parallel `pin_*` arrays of a unit: the tuning scene's
+/// (`ui_truck_scene_config`) or a truck's own (`accessory_truck_data`).
+/// An entry missing a field gets a neutral one.
+fn pin_specs(unit: &Unit) -> Vec<PinSpec> {
+    let looks = unit.array_str("pin_look");
     let offsets = unit.array("pin_offset");
     let dirs = unit.array("pin_dir");
     let dirs_uk = unit.array("pin_dir_uk");
     let double_sided = unit.array("double_sided");
-    // The arrays are parallel; an entry missing a field gets a neutral one.
-    let pins = strings("pin_group")
+    unit.array_str("pin_group")
         .into_iter()
         .enumerate()
         .map(|(i, group)| {
@@ -167,8 +181,8 @@ fn tuning_scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> TuningScene {
                 .and_then(|v| floats3(v))
                 .unwrap_or([0.0, 0.0, 1.0]);
             PinSpec {
-                group,
-                look: looks.get(i).cloned().unwrap_or_default(),
+                group: group.to_owned(),
+                look: looks.get(i).map(|s| (*s).to_owned()).unwrap_or_default(),
                 offset: offsets.get(i).and_then(|v| floats3(v)).unwrap_or([0.0; 3]),
                 dir,
                 dir_uk: dirs_uk.get(i).and_then(|v| floats3(v)).unwrap_or(dir),
@@ -178,14 +192,21 @@ fn tuning_scene_from_unit(fs: &GameFs, path: &str, unit: &Unit) -> TuningScene {
                     .unwrap_or(false),
             }
         })
-        .collect();
-    TuningScene {
-        scene,
-        orbit,
-        pins,
-        interior_only: strings("interior_only"),
-        hookups_exterior_only: strings("hookups_exterior_only"),
-    }
+        .collect()
+}
+
+/// A truck's own pin entries, from its `data.sii` (`accessory_truck_data`;
+/// in 1.60 only the Renault T and E-Tech T set one, for `f_light_top`).
+/// Applied over the scene's table by `specsheet-assembly::pins`
+/// (`research/evidence/pin-attributes.txt` §8).
+pub fn truck_pin_table(fs: &GameFs, truck: &TruckId) -> Result<Vec<PinSpec>> {
+    let doc = fs.read_sii(&format!("{TRUCK_DEFS}/{truck}/data.sii"))?;
+    let pins = doc
+        .units_of_class("accessory_truck_data")
+        .next()
+        .map(pin_specs)
+        .unwrap_or_default();
+    Ok(pins)
 }
 
 const SCENE_DIR: &str = "/def/desktop";
@@ -662,6 +683,41 @@ aims[1]: ( -2.1, 1.5, -4.0 )
                 position: [-7.5, 1.8, -9.5],
                 aim: [-2.0, 1.5, -4.0],
                 fov: 55.0,
+            }]
+        );
+    }
+
+    #[test]
+    fn reads_a_trucks_own_pin_entries() {
+        // Shaped like the Renault T's data.sii.
+        let src = br#"SiiNunit
+{
+accessory_truck_data : vehicle.t
+{
+	fallback[]: "chassis|4x2.sii"
+	pin_group[]: f_light_top
+	pin_look[]: custom_acc
+	pin_offset[]: (-1.1, 0, 0)
+	pin_dir[]: (-1, 0, 0)
+	pin_dir_uk[]: (-1, 0, 0)
+	double_sided[]: true
+}
+}
+"#;
+        let doc = sii::parse("data.sii", src).expect("parse");
+        let unit = doc
+            .units_of_class("accessory_truck_data")
+            .next()
+            .expect("unit");
+        assert_eq!(
+            pin_specs(unit),
+            vec![PinSpec {
+                group: "f_light_top".to_owned(),
+                look: "custom_acc".to_owned(),
+                offset: [-1.1, 0.0, 0.0],
+                dir: [-1.0, 0.0, 0.0],
+                dir_uk: [-1.0, 0.0, 0.0],
+                double_sided: true,
             }]
         );
     }

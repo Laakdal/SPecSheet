@@ -13,6 +13,7 @@ use std::collections::BTreeMap;
 use specsheet_core::TruckId;
 use specsheet_formats::sii::Unit;
 
+use crate::catalog::TRUCK_DEFS;
 use crate::error::Result;
 use crate::fs::GameFs;
 
@@ -22,8 +23,6 @@ pub const CAMERA_DIR: &str = "/def/camera";
 const STORAGE_PREFIX: &str = "camera_storage";
 /// The unit class of a truck's interior camera.
 pub const INTERIOR_CAMERA_CLASS: &str = "vehicle_interior_camera";
-/// Where the truck definitions live.
-const TRUCK_DEFS: &str = "/def/vehicle/truck";
 
 /// One interior camera unit.
 #[derive(Clone, Debug, PartialEq)]
