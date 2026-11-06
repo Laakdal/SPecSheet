@@ -1,0 +1,86 @@
+Binary SII: placement float 3 and `nil` (docs/formats/bsii.md)
+===============================================================
+
+Follows bsii-derivation.txt sections 4 and 5, which left both open. Saves are
+the user's career data, so this file quotes counts, field names and format
+constants only: no positions, no profile names, no paths.
+
+Command (read-only, 2026-11-07):
+  cargo run --release -q -p specsheet-research --example save_check -- "<home>/profiles"
+
+Subject: 86 save/*/game.sii of 4 profiles, ETS2 1.60.1.7: 32 binary (BSII),
+54 text. 316 binary placements (8 floats), 576 text placements (7 values).
+
+
+1. Float 3 is the position's cell
+---------------------------------
+Observations:
+- In binary, floats 0 and 2 (x, z) lie within about ±510 m in all 316
+  placements. Text positions span tens of kilometres. So binary x and z are
+  local to something that float 3 holds.
+- Float 3 is a whole number below 2^24 in all 316. Read as an integer n, it
+  splits into two 12-bit fields, each biased by 2048:
+    high = (n >> 12) & 0xfff - 2048,   low = n & 0xfff - 2048.
+  The commonest value, 8,390,656 = 0x800800, is (0, 0): 114 placements,
+  which also have position 0. A negative high field makes n < 2^23, which is
+  why 81 of the 316 values lie below 2^23. bsii-derivation.txt said "always
+  just above 2^23"; that was wrong.
+- Neighbouring trailer spots of one company in one save: where the high
+  field steps up by 1, local z drops by about 490 m (e.g. from about +500 to
+  about +12), and x stays within a few metres. So the high field is the z
+  cell, with a cell of about 512 m.
+
+Test: each binary placement outside cell (0, 0) is moved to world
+coordinates, x = x_local + cx * size and z = z_local + cz * size. A match is
+a text placement within 0.1 m horizontally and 0.1 m in y. Job-offer trailer
+spots are fixed places at companies, so the same spot can occur in a binary
+and a text save of the same profile.
+
+Output:
+  placement positions: 316 binary, 576 text; binary outside cell (0, 0) that land within 0.1 m of a text one:
+    high = z, low = x: 256 m: 0, 512 m: 5, 1024 m: 0
+    high = x, low = z: 256 m: 0, 512 m: 0, 1024 m: 0
+
+Our reading:
+- Only "high = z, low = x, 512 m cells" lands anywhere, and its matches are
+  close: in a looser scratch run the distances were 0.4 cm to 17 cm, with
+  y within 7 cm. These are all job_offer_data.trailer_place; trailers spawn
+  at a spot with a little jitter. Unrelated spots at one company lie 5 to
+  45 m apart.
+- Hypothesis (strong): world x = float 0 + 512 * low, world z = float 2 +
+  512 * high, world y = float 1. Only 5 independent matches, since binary
+  and text saves rarely share a spot. The locals reach ±510 m, beyond half a
+  cell, so a position is stored relative to a cell near it, not
+  necessarily the one it lies in.
+- Not checked: y. Float 1 carries no cell, and matched spots agree in y
+  without one.
+
+
+2. `nil` is the all-ones value of the field's width
+---------------------------------------------------
+Text writes 8 scalar attributes as `nil` some of the time (nil / all):
+  company.reserved_trailer_slot 118626/118681, economy.game_time_initial
+  21/54, job_info.urgency 13138/19107, job_offer_data.expiration_time and
+  .urgency 188968/347675 each, player_job.online_job_id 26/26,
+  player_job.selected_target 1/26, profit_log.history_age 305/34308.
+
+The commonest binary values of the same attributes (count):
+  company.reserved_trailer_slot (81578): 4294967295 x81556, 1 x12, 2 x8
+  economy.game_time_initial (32): 600 x32
+  economy.user_colors (32): 4 x9, 8 x9, 0 x8
+  job_info.urgency (11336): 65535 x11328, 0 x6, 1 x1
+  job_offer_data.expiration_time (235847): 4294967295 x42639, 4148 x758, 3014 x232
+  job_offer_data.urgency (235847): 0 x134305, 1 x48345, 4294967295 x42639
+  player_job.online_job_id (14): 18446744073709551615 x14
+  player_job.selected_target (14): 4294967295 x11, 1 x2, 2 x1
+  profit_log.history_age (22306): 7 x11360, 14 x10864, 4294967295 x82
+
+Our reading:
+- Confirmed: `nil` is the largest value of the field's unsigned width:
+  u16::MAX (65535) for job_info.urgency, u32::MAX for the u32 fields, and
+  u64::MAX for player_job.online_job_id. Where nil is common in text, that
+  value leads in binary. A job offer's expiration_time and urgency are nil
+  together: 42,639 each in binary.
+- economy.game_time_initial is nil in 21 of 54 text saves, but is 600 in
+  all 32 binary saves, so no binary sample of its nil exists here.
+  economy.user_colors is an array; its nil is not a scalar sentinel.
