@@ -20,7 +20,7 @@ use specsheet_data::camera::{interior_camera_name, interior_cameras, InteriorCam
 use specsheet_data::flare::{vehicle_lights, VehicleLight};
 use specsheet_data::localization::Localization;
 use specsheet_data::model::ModelCache;
-use specsheet_data::scene::{list_scenes, tuning_scene, PinSpec, Scene};
+use specsheet_data::scene::{list_scenes, truck_pin_table, tuning_scene, PinSpec, Scene};
 use specsheet_data::GameFs;
 use specsheet_data::GameInstall;
 use specsheet_data::Result;
@@ -151,12 +151,14 @@ impl GameSession {
             .ok()
             .flatten()
             .and_then(|name| self.interior_cameras.get(&name).cloned());
+        let truck_pins = truck_pin_table(&self.fs, truck).unwrap_or_default();
         let mut session = TruckSession {
             catalog,
             config,
             drive: Drive::Left,
             assembly: Assembly::default(),
             interior_camera,
+            pins: specsheet_assembly::pins::with_truck_entries(&self.pins, &truck_pins),
             load_warnings: warnings,
         };
         session.reassemble(self);
@@ -206,6 +208,8 @@ pub struct TruckSession {
     /// The truck's interior camera unit (`interior_camera` in its
     /// `data.sii`), if it names one that loads.
     interior_camera: Option<InteriorCamera>,
+    /// The scene's pin table with the truck's own entries applied (F5).
+    pins: Vec<PinSpec>,
     load_warnings: Vec<LoadWarning>,
 }
 
@@ -223,6 +227,12 @@ impl TruckSession {
     /// The drive side.
     pub fn drive(&self) -> Drive {
         self.drive
+    }
+
+    /// The pin table this truck's pins use: the tuning scene's, with the
+    /// truck's own entries applied (F5).
+    pub fn pin_table(&self) -> &[PinSpec] {
+        &self.pins
     }
 
     /// The truck's interior camera: the driver's view settings

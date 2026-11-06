@@ -444,7 +444,7 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
         };
     // The game's two passes (F5): exterior pins from the base models, which
     // skip the scene's interior-only slots; interior pins from the cockpit.
-    let exterior = pins::pins(game.pin_table(), &assembly.pin_bases, session.drive());
+    let exterior = pins::pins(session.pin_table(), &assembly.pin_bases, session.drive());
     let mut kept: Vec<Option<usize>> = Vec::with_capacity(exterior.len());
     let mut hotspots: Vec<Hotspot> = Vec::new();
     for pin in &exterior {
@@ -472,7 +472,7 @@ pub fn overview(game: &GameSession, session: &TruckSession) -> TruckOverview {
         };
         kept.push(index);
     }
-    for pin in pins::interior_pins(game.pin_table(), &assembly.pin_bases, session.drive()) {
+    for pin in pins::interior_pins(session.pin_table(), &assembly.pin_bases, session.drive()) {
         if let Some((kind, option_count, tab)) = pinned(&pin.slot, true) {
             hotspots.push(hotspot(
                 &pin.slot,

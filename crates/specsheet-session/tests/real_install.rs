@@ -1163,6 +1163,86 @@ fn an_optional_accessory_can_be_removed_and_a_required_part_cannot() {
 }
 
 #[test]
+fn the_renault_t_roof_light_pins_follow_the_trucks_own_pin_table() {
+    // research/evidence/pin-attributes.txt §8: a truck's own pin entries
+    // replace the scene entry of the same group. The Renault T's data.sii
+    // sets f_light_top to offset (-1.1, 0, 0), facing (-1, 0, 0), double
+    // sided; the scene's entry is (-0.9, 0, 0), facing forward.
+    use specsheet_core::TruckId;
+    use specsheet_session::view::{self, Tab};
+    use specsheet_session::GameSession;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let session = game
+        .start_truck(&TruckId::from("renault.t"))
+        .expect("truck");
+    let base = session
+        .assembly()
+        .pin_bases
+        .slots
+        .get(&specsheet_core::SlotId::from("f_light_top"))
+        .expect("a roof-light locator")
+        .position;
+    let overview = view::overview(&game, &session);
+    let pins: Vec<_> = overview
+        .hotspots
+        .iter()
+        .filter(|h| h.slot.as_str() == "f_light_top" && h.tab == Tab::ExteriorAccessories)
+        .collect();
+    assert_eq!(pins.len(), 2, "a mirrored pair");
+    for pin in pins {
+        let side = (pin.position[0] - base[0]).signum();
+        assert!(
+            ((pin.position[0] - base[0]).abs() - 1.1).abs() < 1e-4,
+            "{:?}",
+            pin.position
+        );
+        let facing = pin.facing.expect("a facing");
+        assert!(
+            (facing[0] - side).abs() < 1e-4 && facing[1].abs() < 1e-4 && facing[2].abs() < 1e-4,
+            "{facing:?} on side {side}"
+        );
+    }
+}
+
+#[test]
+fn every_wheel_pin_that_faces_sideways_faces_out_on_its_own_side() {
+    // research/evidence/wheel-order-survey.txt: the pin builder treats even
+    // wheels as left. Ordering wheels by position swapped the sides of 37
+    // of 224 wheel groups (an axle's locators differ by up to 5 mm in z),
+    // which turned their pins into the truck.
+    use specsheet_session::view;
+    use specsheet_session::GameSession;
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let game = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let mut checked = 0;
+    let mut wrong = Vec::new();
+    for truck in view::trucks(&game) {
+        let session = game.start_truck(&truck.id).expect("truck");
+        for hotspot in view::overview(&game, &session).hotspots {
+            let slot = hotspot.slot.as_str();
+            let is_wheel = ["f_", "r_"].iter().any(|g| slot.starts_with(g))
+                && ["tire", "disc", "hub", "cover", "nuts"]
+                    .iter()
+                    .any(|k| slot.ends_with(k));
+            let Some(facing) = hotspot.facing.filter(|f| is_wheel && f[0].abs() > 0.5) else {
+                continue;
+            };
+            checked += 1;
+            if facing[0].signum() != hotspot.position[0].signum() {
+                wrong.push(format!("{} {slot} at {:?}", truck.id, hotspot.position));
+            }
+        }
+    }
+    assert!(checked > 0, "no sideways wheel pins found");
+    assert!(wrong.is_empty(), "{} of {checked}: {wrong:#?}", wrong.len());
+}
+
+#[test]
 fn every_steering_wheel_tilts_about_x_alike_in_both_drives() {
     // research/evidence/rea-steering-wheel.txt: the game poses the wheel
     // from the animated model's `steering_w` bone, which comes out as a
