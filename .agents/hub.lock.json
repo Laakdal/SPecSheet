@@ -383,6 +383,10 @@
       "sha256": "f13ab1a2a11fe0d3f450a47e858cfc0cb604edcb6149ef5cbf82d4b96c86d2ed",
       "source": ".agents/rules/rust.md"
     },
+    ".claude/skills/add-feature/SKILL.md": {
+      "sha256": "55d9bc132829118f71354ade52159ddcf269c2389646603ab152c9de26e6b740",
+      "source": ".agents/skills/add-feature/SKILL.md"
+    },
     ".claude/skills/analyze-project/SKILL.md": {
       "sha256": "594e439cc374105e7448e756dc95952fab38b508273cb83c4e993f5705ddbcef",
       "source": ".agents/skills/analyze-project/SKILL.md"
