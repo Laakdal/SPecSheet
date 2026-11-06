@@ -1,0 +1,208 @@
+Pool ranking and base/DLC mount priorities (finding F14 open question), ETS2 1.60.1.7
+=====================================================================================
+Subject: eurotrucks2.exe, sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Follows research/evidence/mod-priority-static.txt (mod priorities from 1001, device record
++0x28 = priority, list sorted highest first by 0x140156c30).
+Method (read-only, no Ghidra or REA run): string xrefs by RIP-relative LEA, .pdata extents and
+capstone 5.0.7 disassembly. Listings stayed in the scratchpad and are not committed (D13).
+Facts only, in our own words. <home> = the user's ETS2 home folder (its game.log.txt, read-only).
+
+Commands
+--------
+EXE="<install>/bin/win_x64/eurotrucks2.exe"
+T=tools/research
+python -I $T/xref.py "$EXE" "[fs] device %s mounted to %s pool." \
+    "[ufs] %s pool: %Iu packs, %Iu files, %Iu dirs" \
+    "[ufs] disabling pool lookup - %s device type not supported: %s" \
+    "[ufs] disabling pool lookup - incompatible hashes: %s" \
+    "[ufs] disabling pool lookup - non root mount: %s" core user mod scs base.scs effect.scs \
+    relative_priority dlc_
+python -I $T/disasm.py "$EXE" <addr>   for each of: 0x14014eb90 0x14014f2a0 0x140153a70 0x140155610
+    0x140153f40 0x140154210 0x140154470 0x140153cf0 0x140155480 0x140156270 0x1401546e0
+    0x140154ac0 0x140156120 0x140107460 0x1400ed670 0x1400ecd00 0x140109b00 0x1403f06a0
+    0x1403f9c50 0x1403fa380 0x14146d240 0x14146d3c0 0x141469fd0 0x1414823f0 0x14146adf0
+    0x1412fbfa0 0x1412fc3b0 0x1403fbc90 0x1403fc330
+Scratch helpers (scratchpad only, our own, each a few lines of struct/capstone):
+  callers.py  - direct E8/E9 call sites to a target, with the containing .pdata function
+  argof.py    - for each call site, the last write to a given argument register before it
+  peek.py     - dump u64 words at a VA, annotating pointers to strings
+  ptrs.py     - find absolute 8-byte pointers to a VA (vtables, tables)
+  leato.py    - RIP-relative LEA/MOV references to a VA
+  desc.py     - decode 0x28-byte mount descriptors (type u32, pool u32, name ptr, ..., priority
+                u32 at +0x1c)
+  dlcman.py   - per HashFS v2 archive (header, zlib entry/metadata tables as in
+                docs/formats/hashfs.md), inflate every plain file <= 16 KiB and report the
+                dlc_package unit and its relative_priority value. Output: numbers only.
+python -I callers.py "$EXE" 0x14014f2a0 > getter_calls.txt; python -I argof.py "$EXE" getter_calls.txt ecx
+python -I desc.py "$EXE" 0x141d1d010 8 ; python -I desc.py "$EXE" 0x141cfa260 1
+python -I peek.py "$EXE" 0x1420ad718 6 ; python -I peek.py "$EXE" 0x142ca23a0 80
+(cd "<install>"; python -I dlcman.py dlc_*.scs)
+grep -n "mounted to\|\[ufs\]" "<home>/game.log.txt"
+
+1. Pools are separate device lists under one root pool (answers b)
+-------------------------------------------------------------------
+Confirmed (static):
+- UFS init 0x14014eb90 allocates five pool objects (0x188 bytes each, constructor 0x140153a70,
+  vtable 0x1420bcc08) with ids 0..4 and stores them in the global pool array (data pointer
+  0x1425dfbf8, count 0x1425dfc00; getter 0x14014f2a0 = pool[id]).
+- Pool names come from the table 0x1420ad718, indexed by the pool id at pool+0x70:
+  0 core, 1 user, 2 mod, 3 scs, 4 "unknown" (the root).
+- Each pool has its own sorted device list (sentinel pool+0x88, count +0x80, lock +0xe8).
+  A pool is itself a device: 0x14014eb90 registers pools 0-3 as devices of pool 4 through the
+  same register_device (0x140155610) with priorities core 3, user 2, mod 1, scs 0, all at one
+  shared mount-path object (0x1425df118).
+- So pool 4 is the root, and its device list, kept highest priority first, is
+  core > user > mod > scs.
+- General file access goes through the root: of 590 direct calls to the pool getter, 443 pass
+  the constant 4 ("mov ecx, 4"); 89 more pass "lea ecx,[reg+4]" (the register's value was
+  not checked); 6 pass 3, 1 passes 2, 1 passes 1, 1 passes 0 (argof.py on getter_calls.txt).
+- Caveat: the six "mov ecx, 3" getter calls bypass the root and ask the scs pool directly. Two
+  are inside mount code (0x140df5ea1, 0x141448b57); the other four (0x1406e8925, 0x140757e99,
+  0x1407fa8a3, 0x141155da8) were not identified. A lookup there would not see mods.
+Hypothesis: the shared mount path at 0x1425df118 is the empty root path. It is the same object
+for all four pools, so the ranking does not depend on it.
+
+2. A lookup stops at the first device that has the path (answers c)
+--------------------------------------------------------------------
+Confirmed (static), pool vtable 0x1420bcc08:
+- Slots +0x18 (0x140153f40), +0x30 (0x140154210), +0x48 (0x140154470), +0x78 (0x140153cf0):
+  walk the device list from the head (highest priority). For each device whose mount path is
+  a prefix of the request (0x14014da40), strip the prefix and call the same slot on that
+  device. Return true at the first device that returns true; otherwise go on.
+- Slot +0x08 (open, 0x140155480): with read mode and a pool lookup index present, hash the path
+  (0x14010d470: drops a leading slash, then hashes with 0x140157f80; the hash function itself
+  was not read), find the first index
+  entry with that hash (lower bound, 0x140154ac0) and try the entries with that hash in order,
+  through device slot +0xb0 with the entry index. The first non-null file wins. Without an
+  index, or in write mode, fall back to 0x140156270: walk the list highest first, skip
+  read-only devices in write mode, open on the first prefix-matching device that returns a
+  file.
+- The index (0x1401546e0) holds 24-byte entries {hash u64, device ptr, entry index u32,
+  priority u16 at +0x14}, files (+0x138) and directories (+0x160) in separate arrays. It is
+  sorted (0x140156120, comparator 0x140156cd0) by hash ascending, then priority descending.
+  So within one hash the highest-priority device comes first: the same winner as the walk.
+- The index is built only when every device in the pool is zipfs or hashfs (type 3/4), answers the
+  entry-count query (slot +0xa0 not -1; else "incompatible hashes"), and is mounted at the
+  root. Otherwise the builder logs
+  "[ufs] disabling pool lookup - ..." and the pool uses the list walk. It is built per pool by
+  0x1400ed670 (pools 0-3 touched by the mandatory mounts), 0x1403fbc90 (pool 3, after DLCs)
+  and 0x1403fc330 (pool 2, after the active mods).
+- Directory listings (slot +0x80, 0x140154c20) visit every index entry with the directory's
+  hash, i.e. they merge across devices. How the merged list is built was not read in detail
+  (Hypothesis: union of the devices' listings).
+- Root pool 4 never gets an index: no builder call names it, and a pool device reports type 5
+  (ufs; the pool constructor stores 5 at +0x60) while the builder accepts only types 3 and 4.
+  So a root lookup is the list walk over core, user, mod, scs, and each pool answers with its
+  own index or walk.
+- The index stores the priority as u16 (+0x14, from the device record's priority). core.scs,
+  locale.scs and base_cfg.scs (100000) sort as 34464 in the core-pool index; that is still
+  above effect.scs (452), so the order does not change in 1.60.1.7.
+Confirmed (log, <home>/game.log.txt): "[ufs] core pool: 4 packs, 24870 files, 156 dirs",
+"[ufs] scs pool: 5 packs ..." then "scs pool: 110 packs, 587780 files, 43783 dirs" (indexed);
+no such line for the mod pool, and "[ufs] disabling pool lookup - sysfs device type not
+supported: <workshop folder>" once a Workshop folder device joined the mod pool.
+
+3. Base, core and DLC priorities (answers a)
+---------------------------------------------
+Confirmed (static): the mandatory mounts are a static table of 0x28-byte descriptors
+{type, pool, name, ..., priority at +0x1c}, mounted in table order by 0x1400ed670 via
+0x1400ecd00 -> 0x140109b00 -> register_device (priority = descriptor +0x1c). effect.scs is
+mounted first from its own descriptor (0x141cfa260 / 0x141cfa238), then the 8-entry table
+0x141d1d010 (called from 0x1403f071a):
+
+  archive           type    pool  priority
+  effect.scs        hashfs  core  452
+  base.scs          hashfs  scs   50
+  base_map.scs      hashfs  scs   50
+  base_vehicle.scs  hashfs  scs   50
+  base_share.scs    hashfs  scs   50
+  def.scs           hashfs  scs   51
+  core.scs          hashfs  core  100000
+  locale.scs        hashfs  core  100000
+  base_cfg.scs      hashfs  core  100000
+
+The table order equals the log's mount order exactly (9 of 9 lines, <home>/game.log.txt).
+
+DLCs, Confirmed (static):
+- 0x1403fa380 builds the DLC package manager (constructor 0x141469fd0, vtable 0x1422e2b38)
+  for pool 3 (scs) with the prefix "dlc_". (The mod manager 0x1414823f0 uses the same
+  constructor with pool 2.)
+- 0x1403f9c50 accepts a DLC package only when its package+0x124 + 100 is at most 500
+  (unsigned compare) and stores that sum as the mount priority at package+0x194.
+  0x1403fbc90 and 0x14146d3c0 mount every package with r9d = package+0x194 through the manager
+  mount 0x14146d240, which clamps to [-100000, 99999] and calls the UFS mount 0x14150ed40
+  into the manager's pool (+0x58 = 3).
+- package+0x124 is the manifest attribute relative_priority: the package/dlc_package attribute
+  table at 0x142ca23a0 is a list of {offset, type, flags, name, class} records, and the record
+  with offset 0x124 (type 0x25) names "relative_priority". The neighbouring records fit the same
+  pairing (compatible_versions = 0xb0 array, testing_retail 0x120 and available_in_demo 0x121
+  bools, steam_app_id 0x128, secret_key 0x170 string).
+Confirmed (game files, dlcman.py over all 105 dlc_*.scs): every DLC archive has exactly one
+dlc_package unit with one relative_priority (105 of 105). Values 1..104 (102 distinct values;
+three pairs share one: 99 farm_machinery/iveco_sway, 100 krone_agriculture/volvo_fh_2024,
+101 forest_harvesting/polar). So DLC mount priorities are 101..204: all above base (50) and
+def (51), all below 500, all in the scs pool. relative_priority grows with release, e.g.
+east 1, halloween 2, winter 3, ..., greece 96, volvo_fh_2021 98, dutch_style 104.
+Confirmed (log): DLC devices log in alphabetical order (dlc_actros_tuning ... dlc_winter);
+the device list is re-sorted after each mount, so the log order is not the lookup order.
+
+Mods mount at the root path (Confirmed static): the active-mods loop passes the address
+0x1420a70f0 (an empty string) as the mount path to the mod manager's mount (0x1403fc62f ->
+r8 at 0x1403fc730 -> slot +0x20 0x141483310 -> 0x14150ed40). The DLC mount passes the same
+address (0x14146d456). So a mod's /def/x.sii and a DLC's /def/x.sii are the same lookup path.
+Consistency (Confirmed, log): 5 base archives + 105 DLCs = "scs pool: 110 packs"; all 105 DLCs
+pass the <= 500 filter (max 204), which fits the +0x124 = relative_priority mapping.
+
+Other mounts (Confirmed static): the home and temporary folders go to the user pool with
+priority 651 (0x28b) at fixed prefixes (0x1403f0910 / 0x1403f0a56 -> 0x1400ecb20); mods to
+the mod pool from 1001 (mod-priority-static.txt).
+
+4. Ties (Unknown)
+-----------------
+The list sort 0x140107460 is a quicksort with an explicit stack (median pick, swap
+partition) plus insertion sort for runs of up to 4: not stable. The device comparator
+(0x140156c30) and the index comparator (0x140156cd0) return 0 on equal priority. So the order
+among base/base_map/base_vehicle/base_share (all 50), among core/locale/base_cfg (all 100000),
+and in the three equal-priority DLC pairs is not fixed by anything we read.
+
+5. Does it change what a path resolves to? (Confirmed, game files)
+--------------------------------------------------------------------
+Commands (scratch scripts, read-only, print counts only):
+  python -I overlap.py "<install>" dlc_rp.txt   (dlc_rp.txt = output of dlcman.py)
+  python -I tiecmp.py "<install>" base.scs base_map.scs base_vehicle.scs base_share.scs
+  python -I tiecmp.py "<install>" core.scs locale.scs base_cfg.scs
+  plus an inline variant that keeps the differing paths and checks them against def and DLCs.
+overlap.py takes the file entries (directory flag clear) of all 114 archives and compares the
+engine ranking above with the current specsheet-data order (base list, DLCs by name, later
+mount wins).
+- 607,200 file paths; 3,606 are stored in 2 or more archives.
+- 2 paths are in both a core-pool and an scs-pool archive. The current order already picks the
+  core-pool copy for both.
+- 348 shared paths get a different winner, all of them DLC against DLC: name order and
+  relative_priority pick different DLCs. 4 of these 348 differ in stored bytes; the other 344
+  are byte-identical copies.
+- 372 shared paths have their top rank in a tie, all in the base tier (priority 50):
+  base+base_share 326, base+base_vehicle 38, all three 6, base_share+base_vehicle 2.
+  Across all 538 paths the four base archives share, 520 are byte-identical and 18 differ.
+  All 18 are base.scs against base_share.scs, and none of them is overridden by def or a DLC.
+  So in 1.60.1.7 the unknown tie order decides 18 paths.
+- The core tie group (core, locale, base_cfg) shares 0 paths. The three equal-priority DLC pairs
+  share 0 paths.
+
+Reading
+-------
+- Confirmed (static): the lookup order across pools is core > user > mod > scs, and inside a
+  pool highest priority first, stopping at the first device that has the path. Therefore a
+  file in an active mod overrides the same path in every scs-pool archive (base, base_map,
+  base_vehicle, base_share, def and every DLC), whatever their priorities.
+- Confirmed (static): mods do NOT override paths that exist in the core pool (effect.scs,
+  core.scs, locale.scs, base_cfg.scs): the core pool is asked first.
+- Confirmed (static + game files): inside the scs pool, DLCs (101..204) win over def (51),
+  and def wins over the four base archives (50); DLCs rank among themselves by
+  relative_priority, not by name.
+- Unknown: which of base.scs / base_share.scs wins their 18 shared paths with different bytes
+  (equal priority 50, unstable sort). Next step: a runtime check, e.g. read one of those files
+  through the game (console or a log line that prints its content), or REA on 0x140107460 with
+  the exact mount sequence to simulate the sort.
+- Not covered: only the static code path was read. No runtime test (a mod overriding a base
+  file and the game loading it) was run.
