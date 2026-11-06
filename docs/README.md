@@ -8,6 +8,8 @@ Docs are organised by topic. Each fact has one home: `formats/` describes what g
 - [ROADMAP.md](ROADMAP.md): phases and milestones
 - [PARITY.md](PARITY.md): which features match the game, which are our design, and which are unknown
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing, research tools
+- [CODE_MAP.md](CODE_MAP.md): which code and tests own each feature
+- [superpowers/plans/](superpowers/plans/): implementation plans awaiting or under execution
 
 ## The game (reverse engineering)
 - [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md): findings log (F*n*) with evidence

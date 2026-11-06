@@ -1,5 +1,26 @@
 # AGENTS.md
 
+<!-- hub:core:begin v0.2.0; managed by hub, edit outside this block -->
+## Working agreement (hub)
+
+These rules apply to every task here. The project sections below this block, nested `AGENTS.md` files and `.agents/rules/` refine or override them. An explicit request from the user overrides all of them. When you follow a more specific rule over a general one, say so.
+
+- **Understand first.** Read the relevant code and docs before changing anything, and match the patterns already in use.
+- **Unclear requirements:** if a choice changes the outcome and the code or docs can't settle it, ask. Otherwise take the conventional option and state the assumption in your reply.
+- **Stay in scope.** Do what was asked. Mention other problems you notice instead of fixing them unasked.
+- **Prove it works.** Run the project's test, lint and build commands (check: `cargo xtask check`; check with the game: `ETS2_DIR=<game dir> cargo xtask check --real`; format: `cargo fmt --all --check`; lint: `cargo clippy --workspace --all-targets -- -D warnings`) and report the real result. If you could not verify something, say so.
+- **Ask before anything irreversible or outward-facing:** deleting data, rewriting git history, force-pushing, publishing, deploying, or changing secrets or production config.
+- **Never** commit secrets, or weaken a test or security check just to get a green result.
+- **Report honestly:** what changed, what you skipped, and what is still uncertain.
+- **Resuming, or after context compaction:** read `.agents/state/handoff.md` and `.agents/state/tasks.md` if they exist.
+
+Load these when a task needs them, not up front:
+- `.agents/standards/`: engineering, testing, review, security, documentation, git, collaboration (multi-agent), context
+- `.agents/skills/`: workflows such as develop-feature, fix-bug, refactor and review-code (the full list is in `.agents/README.md`)
+- `.agents/templates/`: ADR, plan, handoff, task board, architecture, API and runbook docs
+- `docs/ARCHITECTURE.md` (the architecture doc) and `docs/DECISIONS.md` (the decision record): this project's design and its recorded decisions
+<!-- hub:core:end -->
+
 A standalone ETS2 truck-tuning app, all in Rust: a workspace of library crates plus a Bevy + egui app (`crates/specsheet`) that assembles trucks from the user's own game files.
 
 **Absolute rule.** Load every model, texture and definition from the user's ETS2 install at runtime. Open game files read-only; the install directory and its `.scs` archives are never written. Never recreate, substitute or bundle game assets.
@@ -77,6 +98,15 @@ A change is done when all of these hold:
 - Messages are a short plain-English subject (no `feat:`-style prefixes). Commits are authored as Laakdal and signed by the local git config; never pass `--no-gpg-sign`. Add no co-author or tool-attribution trailers.
 - The pre-commit guard must pass; never bypass it with `--no-verify`.
 
+## Where the hub rules differ
+
+The hub block at the top sets general rules. Where they differ, the rules in this file win:
+- **Branches:** commit straight to `main` (see Commits); hub's "work on a branch" rule does not apply.
+- **Tasks:** `TASKS.md` is the backlog. `.agents/state/tasks.md` is only for a short-lived multi-agent board.
+- **Decisions:** a new D*n* entry in `docs/DECISIONS.md`, never a separate ADR file.
+- **Checks:** "Done means" decides which crates to test; the hub block lists the full commands.
+- **Shaders:** port game materials with the `clean-room-shader` skill (D13).
+
 ## Crates own
 
 | Crate | Owns | Never |
@@ -96,52 +126,9 @@ A change is done when all of these hold:
 
 Crate-level docs live in each `lib.rs` (`//!`). Crates have no README.
 
-## Where things live
-
-Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-session/tests/real_install.rs`; it needs `ETS2_DIR`.
-
-| Feature | Code | Tests |
-|---|---|---|
-| `.scs` archives, path hashing, layered VFS | `specsheet-archive/src/{hashfs,city,vfs}.rs` | unit tests in those files; every `real_install::*` mount |
-| Mod packages: ZIP, HashFS v1; writing new ZIP packages | `specsheet-archive/src/{zip,hashfs_v1,zip_write}.rs`; manifests in `specsheet-formats/src/mod_manifest.rs` | unit; examples `mod_probe` over a mod folder, `mod_write` (test package) |
-| Packed textures, GDeflate | `specsheet-archive/src/{texture,gdeflate}.rs` | unit tests in those files |
-| SII definitions | `specsheet-formats/src/sii.rs` | unit; `real_install::every_vehicle_definition_parses` |
-| Mod file names in HashFS v1 packages without listings | `specsheet-data/src/mod_names.rs`, cached folder scan in `specsheet-data/src/mod_scan.rs`; scanner in `specsheet-formats/src/paths.rs`; content types in `specsheet-formats/src/sniff.rs` | unit; example `mod_names` over v1 packages |
-| Extracting a package to a folder (D19) | `specsheet-data/src/extract.rs` | unit (temp folders); example `mod_extract` |
-| Profiles and saves: ScsC, binary SII | `specsheet-formats/src/{scsc,bsii}.rs` | unit; examples `profile_mods`, `save_check` |
-| Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
-| UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
-| Rules, configuration, hookups | `specsheet-truck/src/{config,catalog,hookup}.rs`, `config/{paint,hookups}.rs` | `specsheet-truck/src/tests.rs` |
-| Paint jobs: masks, colours, flake/flip, per-part paint | `specsheet-truck/src/paint.rs`; loading in `specsheet-data/src/{catalog,paint}.rs` | `specsheet-truck/src/tests.rs`; unit; `real_install::{every_paint_job_parses, paint_job_parts_resolve_by_unit_token, every_paint_mask_exists_or_is_a_constant}` |
-| Install discovery, mount order, game version | `specsheet-data/src/install.rs` | unit; `specsheet-data/tests/game_version.rs` |
-| Catalogs, presets, game configs, hookup catalogue | `specsheet-data/src/catalog.rs` (loading), `catalog/{accessory,paint,hookup,preset}.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings` |
-| Slot to locator matching | `specsheet-assembly/src/slots.rs` | unit |
-| Assembly: base, wheels, hookups, interior | `specsheet-assembly/src/*.rs` | tests in `lib.rs`; `real_install::{every_preset_*, configured_hookups_*, every_interior_*}` |
-| Meshes, materials, textures for rendering | `specsheet-data/src/render.rs` | unit |
-| Tuning scenes: the truck configuration scene (orbit, pin data) and the hub scenes | `specsheet-data/src/scene.rs` | unit; `real_install::{the_truck_configuration_screen_has_a_scene_orbit_and_pins, every_tuning_scene_has_a_model_and_a_camera}` |
-| UI screens, templates, colours, UI materials; markup layout | `specsheet-gameui/src/{lib,flow}.rs` | unit; `real_install::{the_truck_configuration_screen_layouts_and_templates_load, every_accessory_icon_material_names_an_existing_texture}` |
-| Vehicle lights (flares): the `flare.*` units light locators name | `specsheet-data/src/flare.rs` | unit; `real_install::every_vehicle_light_unit_loads_and_its_glow_model_exists`; example `flare_survey` |
-| Interior cameras: each truck's `interior_camera` unit (head offset, field of view, start look) | `specsheet-data/src/camera.rs`; used in `specsheet/src/viewer.rs` | unit; `real_install::every_truck_names_an_interior_camera_that_exists` |
-| Display strings | `specsheet-data/src/localization.rs` | unit |
-| Session (options, select, hookups, drive) | `specsheet-session/src/lib.rs` | through `real_install` |
-| Pins the game's way: base locator, offset, facing, mirrored, wheel and interior (cockpit) pins | `specsheet-assembly/src/pins.rs` | unit; `real_install::every_preset_validates_and_assembles_without_warnings`; example `pin_survey` |
-| Display data: labels, tabs, which slots get pins, incompatibility reasons | `specsheet-session/src/view.rs` | unit; `real_install::every_slot_with_a_choice_is_reachable_on_the_tuning_screen` |
-| App start-up, plugin list, per-frame order (`FrameSet`), background jobs, settings | `specsheet/src/{main,studio,settings}.rs` | unit in `studio.rs` |
-| Meshes, materials, textures to GPU (with upload checks) | `specsheet-render/src/assets.rs` | unit |
-| Clean-room game materials (truck paint, `dif.spec`), their texture loader, the game's lighting, its tonemap pass and the shadow-only casters | `specsheet-render/src/{lib,truckpaint,difspec,textures,lighting,tonemap,shadow}.rs`, `truckpaint.wgsl`, `difspec.wgsl`, `game_lighting.wgsl`, `tonemap.wgsl`, `shadow.wgsl` | unit; `SPECSHEET_SCRIPT` screenshot |
-| Truck and scene entities, lights, fog, orbit camera | `specsheet/src/viewer.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
-| Vehicle light flares at light locators (placement, facing, which lights are on) | `specsheet/src/flares.rs` | unit; `SPECSHEET_SCRIPT` screenshot of a lit hub scene |
-| The game's truck configuration screen (layout drawing, tabs, lists), UI textures, SpecSheet window | `specsheet/src/ui/{mod,screen,textures}.rs` | unit; `SPECSHEET_SCRIPT` screenshot |
-| Pins over the 3D view (projection, fade by facing, disc-linked wheel pins) | `specsheet/src/hotspots.rs`, drawn in `ui/mod.rs` | unit in `hotspots.rs`; `SPECSHEET_SCRIPT` screenshot |
-| Dev script mode | `specsheet/src/script.rs` | unit |
-| Visual parity runner (`--parity`, cases in `parity/cases.json`) | `specsheet/src/parity.rs` | unit |
-| Ids, `Aabb`, `Transform`, sRGB | `specsheet-core/src/{ids,math,colour}.rs` | unit |
-| Design tokens (colours, type, spacing; WCAG contrast test) | `specsheet-theme/src/lib.rs`, mapped in `specsheet/src/ui/theme.rs` | unit |
-| Research tools (surveys, dumps, probes) | `specsheet-research/examples/*.rs` | run against the install |
-| Repository tasks: `check`, `layers`, `guard`, `real`, `parity`, `version-port` | `../xtask/src/main.rs` (`cargo xtask …`) | unit |
-
 ## Read only when needed
 
+- When looking for the code or tests behind a feature, read `docs/CODE_MAP.md`.
 - When touching archive reading, parsers or texture/model conversion, read `docs/ASSET_FORMATS.md` and the `docs/formats/*` page it links for that format.
 - When judging whether a feature matches the game, read `docs/PARITY.md`.
 - When relying on how the game behaves (mount order, locators, presets, UI), read `docs/REVERSE_ENGINEERING.md`.
