@@ -1,0 +1,84 @@
+Wheel pin order: which wheel of a group is "even" (F5)
+======================================================
+
+Subject: ETS2 1.60.1.7 install, every chassis model of every truck
+(112 chassis model/variant pairs, 224 wheel groups). Data survey; nothing
+of the game is executed.
+
+Question. The pin builder (pin-attributes.txt §8, "Wheels") walks each
+wheel group (f, r) by wheel number i, gives even wheels the pin at
+base + pin_offset and odd wheels the mirrored one, and names both wheels of
+an axle <group><i & ~1>. Which order of the wheel locators is that i?
+
+1. Survey of three candidate orders
+-----------------------------------
+Command (2026-11-05):
+  ETS2_DIR=<game dir> cargo run --release -p specsheet-research --example wheel_order_survey
+
+Each group's visible wheel_f* / wheel_r* locators are put in three orders
+and checked: every even index must be a left wheel (x < 0) and the wheels
+2k and 2k+1 must share an axle (z within 5 cm).
+  sort  = by z, then x (what specsheet-assembly::pins::bases did)
+  model = the order the locators appear in the model
+  name  = by the wheel index in the name: wheel_<group>_<index>[_<n>]
+
+Output (summary lines):
+  chassis models (path, variant): 112
+  wheel locator name stems: {"wheel_f_", "wheel_f_0_", "wheel_f_1_", "wheel_f_2_", "wheel_f_3_", "wheel_r_", "wheel_r_0_", "wheel_r_1_", "wheel_r_2_", "wheel_r_3_"}
+  groups whose model order equals name order: 110; groups with an unnumbered name: 0
+  largest z difference within an axle: 0.00507 m
+  sort : 224 groups, side errors 37, axle errors 0; with 2+ axles: front to back 94, back to front 0
+  model: 224 groups, side errors 99, axle errors 9; with 2+ axles: front to back 50, back to front 41
+  name : 224 groups, side errors 0, axle errors 0; with 2+ axles: front to back 45, back to front 49
+
+  sort examples (the right wheel sorts first because its locator is
+  0.2-0.3 mm further forward):
+      daf.2021 /vehicle/truck/daf_2021/chassis/chs_4x2.pmd wheel_r: wheel_r_3_2(+0.928,+2.2440) wheel_r_2_2(-0.928,+2.2442)
+      daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_4x2.pmd wheel_r: wheel_r_3_2(+0.928,+2.2440) wheel_r_2_2(-0.928,+2.2442)
+
+Our reading:
+  - Only the name order gives every group a left wheel at each even index
+    and both wheels of each axle side by side: 0 errors of 224. Index 0 and 2
+    are always left, 1 and 3 right. (Confirmed for the 1.60 data.)
+  - Positions cannot reproduce it: the two locators of an axle differ by up
+    to 5.07 mm in z, so a position sort put the right wheel first in 37
+    groups. In the app those pins took the left wheel's offset and facing
+    and pointed into the truck: 40 of 520 sideways wheel pins on the
+    default build of every truck
+    (real_install::every_wheel_pin_that_faces_sideways_faces_out_on_its_own_side
+    fails with the old sort, passes with the name order).
+  - The name order is not front to back: 45 groups with two or more axles
+    run front to back, 49 back to front (rear groups are often numbered from
+    the back). So the pin ids <group>0 / <group>2 follow the names, not the
+    axle position.
+  - Whether the game reads the index from the name, or from a list built in
+    that order, is section 2.
+
+2. REA function on FUN_140653180: the wheel the pin builder asks for
+--------------------------------------------------------------------
+Subject: eurotrucks2.exe, ETS2 1.60.1.7,
+         sha256 b7dffe6b27402c7db6dfd52cf982cd5bf292584138b35e3eb8efb311814ab3f8
+Command (2026-11-05 16:03-16:31):
+  rea function <exe> --procedure=0x140653180 --provider ghidra
+Evidence ID: ev_b0708ed035d68958a2024d2f9eb55332fe260538ef21159a62a042952caef925
+The pseudocode stays outside the repository. Our observations, in our own
+words:
+
+  - The pin builder (FUN_140fcf210, pin-attributes.txt §8) calls it once per
+    wheel pin with (vehicle data, group letter, i) and uses the result as an
+    index into the vehicle data's list of wheel positions (+0x600, count
+    +0x608). (Confirmed)
+  - FUN_140653180 walks a byte array on the same object (+0x628, count
+    +0x630), one group letter per wheel, and returns the position of the
+    i-th entry whose letter equals the group; 0 when there is none.
+    (Confirmed)
+  - So wheel i of a group is the i-th wheel of that group in the vehicle's
+    own wheel list. Nothing is sorted by position or matched by name when
+    the pins are built. (Confirmed)
+  - The order in which that list is filled when the chassis loads is not
+    read (Unknown from REA; next step: the code that writes +0x600/+0x628).
+    Section 1 shows that only the name-index order gives every 1.60 chassis
+    a left wheel at each even i, which the builder's mirroring needs; the
+    model order and the position order do not. We therefore take the name
+    index as the list order. (Hypothesis, strong: consistent with all 224
+    groups.)

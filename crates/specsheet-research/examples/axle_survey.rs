@@ -9,7 +9,8 @@ use specsheet_data::{list_trucks, load_catalog, GameFs, GameInstall};
 use specsheet_truck::AccessoryKind;
 
 /// Wheel locators closer than this along z belong to one axle. Left and
-/// right locators of an axle differ by up to 0.5 mm in the game's models.
+/// right locators of an axle differ by up to 5 mm in the game's models
+/// (`wheel-order-survey.txt`).
 const AXLE_TOLERANCE: f32 = 0.05;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
