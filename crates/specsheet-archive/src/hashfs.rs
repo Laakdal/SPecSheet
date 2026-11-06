@@ -191,7 +191,11 @@ impl Archive {
     /// The entry for a game path such as `def/vehicle/truck`, with or without
     /// a leading `/` (looked up by `hash_path`). The root directory is `""`.
     pub fn entry(&self, path: &str) -> Option<&Entry> {
-        let hash = hash_path(path);
+        self.entry_by_hash(hash_path(path))
+    }
+
+    /// The entry with key `hash`, for entries no listing names.
+    pub fn entry_by_hash(&self, hash: u64) -> Option<&Entry> {
         self.entries
             .binary_search_by_key(&hash, |e| e.hash)
             .ok()
@@ -203,10 +207,20 @@ impl Archive {
     /// `Corrupt` if the data is out of range or doesn't decompress to its
     /// recorded size.
     pub fn read(&self, path: &str) -> Result<Vec<u8>> {
-        let entry = self.find(path)?;
+        self.read_plain(self.find(path)?, || path.to_owned())
+    }
+
+    /// Reads the plain file `entry` (from [`Self::entries`] or
+    /// [`Self::entry_by_hash`]); errors as [`Self::read`]. The 28-bit size
+    /// field bounds it to 256 MiB.
+    pub fn read_entry(&self, entry: &Entry) -> Result<Vec<u8>> {
+        self.read_plain(entry, || format!("{:016x}", entry.hash))
+    }
+
+    fn read_plain(&self, entry: &Entry, name: impl FnOnce() -> String) -> Result<Vec<u8>> {
         match (&entry.content, entry.kind) {
             (Content::Stored(blob), EntryKind::File) => self.read_zlib_blob(blob),
-            _ => Err(wrong_kind(path, "plain file")),
+            _ => Err(wrong_kind(&name(), "plain file")),
         }
     }
 
@@ -896,6 +910,21 @@ mod tests {
 
     fn is_corrupt<T: std::fmt::Debug>(result: Result<T>) -> bool {
         matches!(result, Err(ArchiveError::Corrupt { .. }))
+    }
+
+    #[test]
+    fn entries_and_plain_files_are_found_by_hash() {
+        let archive = open_bytes("by-hash", &tiny().build()).unwrap();
+        let entry = archive.entry_by_hash(hash_path("def/a.sii")).unwrap();
+        assert_eq!(archive.read_entry(entry).unwrap(), b"x".repeat(5000));
+        let raw = archive.entry_by_hash(hash_path("def/raw.txt")).unwrap();
+        assert_eq!(archive.read_entry(raw).unwrap(), b"stored raw");
+        assert!(archive.entry_by_hash(hash_path("def/missing")).is_none());
+        let dir = archive.entry_by_hash(hash_path("def")).unwrap();
+        assert!(matches!(
+            archive.read_entry(dir),
+            Err(ArchiveError::WrongEntryKind { .. })
+        ));
     }
 
     #[test]
