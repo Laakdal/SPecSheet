@@ -1,0 +1,55 @@
+Extraction of game (HashFS v2) archives, plain files (D19, docs/formats/mods.md)
+==============================================================================
+
+Subject: three archives of the test install (ETS2 1.60.1.7), read only,
+extracted to a scratch folder outside the game, its home and the
+repository, checked, then deleted. No file contents quoted.
+
+Commands (Windows 11):
+  ETS2_DIR=<install> mod_extract --list "<install>/<archive>.scs"
+  ETS2_DIR=<install> mod_extract "<install>/<archive>.scs" <scratch>/<archive>
+  ETS2_DIR=<install> extract_check "<install>/<archive>.scs" <scratch>/<archive>
+Names come from the archive's own listings (walked from the root), then
+from every path of the mounted game (`game_paths`) for entries no listing
+names. extract_check compares every file the listing gives:
+  - with Vfs::read, where the mounted game reads the path from this
+    archive (Vfs::locate);
+  - with this archive's own Archive::read, where a higher archive
+    overrides the path (Vfs::read rightly differs there, or may);
+  - unnamed files with Archive::read_entry of the hash in their name.
+
+
+1. Names, files, packed textures
+--------------------------------
+                       entries  by listings  by game paths  unnamed  not indexed
+  def.scs               66,928       64,636              0        0            0
+  dlc_daf_xd.scs         2,548        2,180              0        0            0
+  core.scs                  22            0             14        6            0
+def.scs: 66,928 entries = 64,636 files + 2,292 directories.
+dlc_daf_xd.scs: the 2,180 named files are 1,643 plain files and 537 packed
+textures; the textures are left out and listed in _packed_textures.txt
+(all `.tobj`: 148 under material/, 389 under vehicle/; e.g.
+material/ui/accessory/daf_xd.tobj).
+core.scs: its root lists nothing (docs/formats/hashfs.md), so all 20 files
+come from game paths or stay unnamed, as _unnamed/<hash>.<ext>.
+
+mod_extract summaries:
+  def.scs         "wrote 64636 files (106.9 MB), 0 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 0 packed textures left out"  (111 s)
+  dlc_daf_xd.scs  "wrote 1643 files (202.2 MB), 0 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 537 packed textures left out"  (6 s)
+  core.scs        "wrote 20 files (0.1 MB), 6 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 0 packed textures left out"  (1 s)
+
+
+2. Byte-for-byte check
+----------------------
+                  on disk  vs Vfs::read      overridden, vs own read   unnamed      missing
+  def.scs          64,636  64,628 equal, 0   8 equal, 0 differ         -            0
+  dlc_daf_xd.scs    1,644  1,607 equal, 0    36 equal, 0 differ        -            0
+  core.scs             20  14 equal, 0       -                         6 equal, 0   0
+(dlc_daf_xd on disk includes _packed_textures.txt.) Of the overridden
+paths, 2 of def.scs's 8 and all 36 of dlc_daf_xd's also equal the game's
+bytes; the other 6 differ from the game because a higher archive holds
+other content.
+
+The check fails when it should: after appending one byte to one named and
+one unnamed file of the core.scs output, it reported "13 equal, 1 differ"
+and "5 equal, 1 differ"; after restoring them, 0 differ.
