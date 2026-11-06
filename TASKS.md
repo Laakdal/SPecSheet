@@ -69,14 +69,13 @@ Living tracker: update it at the end of every work session. Phases are in [docs/
 
 ## In progress
 
-- [ ] Build speed: targeted checks are documented (AGENTS.md, DEVELOPMENT.md). The `rust-lld` measurement is pending: the cold Bevy baseline build was stopped by Claude Code when the machine ran low on memory, with several sessions each building Bevy in their own target dir. Re-run it when the machine is quiet. sccache awaits the user's direct confirmation (it installs a tool).
-
+- [ ] Build speed: targeted checks are documented (AGENTS.md, DEVELOPMENT.md). The `rust-lld` measurement is pending: the cold Bevy baseline build was stopped by Claude Code when the machine ran low on memory, with several sessions each building Bevy in their own target dir. Re-run it when the machine is quiet (blocked again 2026-11-07: three sessions active, about 7 GB free).
 
 - [x] REA trace: the pin-button string is used by `FUN_140fe0fc0` (F8).
 - [x] REA decompilation of `FUN_140fe0fc0` (F5): it selects a pin (button `10000 + n`; hookups `11000 + m`) after switching to one of the game's 8 tabs. It does not create or place pins.
 - [x] License-safe re-derivation: the PMD/PMG layouts and the texture image/sample records are now cited from our own bytes (`pmg-layout-derivation.txt`, `texture-unpack-derivation.txt`). Corrections: piece +60 is the vertex stride (now checked), and an empty hookup string means no hookup.
 - [x] DXGI 67 (R9G9B9E5_SHAREDEXP): unpacked and uploaded as `Rgb9e5Ufloat`; all 197 textures (skyboxes, HDR UI images) unpack and decode to plausible HDR (`hdr-textures.txt`).
-- [ ] sccache: install a prebuilt binary, measure cold and warm builds, keep it only if it helps (approved by the user).
+- [ ] sccache: installed (0.18.0, WinGet), not yet wired into `.cargo/config.toml`. Measure cold and warm builds when the machine is quiet; the number that matters is a fresh `CARGO_TARGET_DIR` build with a warm cache, since every session builds in its own target dir. Keep it only if it helps (approved by the user).
 - [x] Clean-room rewrite, phase 1 (D13): `pmd.rs`, `pmg.rs` and `texture.rs` rewritten from interface stubs and our own evidence by an agent that never saw TruckLib or the old code. Output identical to the old code for all 278,633 models and textures in the install (`research/evidence/cleanroom-phase1.txt`), plus three resource-exhaustion guards.
 - [x] Clean-room rewrite, phase 2 (D13): `hashfs.rs` rewritten by a second fresh agent from a byte-level derivation of the HashFS v2 layout (`hashfs-layout-derivation.txt`). Identical to the old reader on all 116 archives (`cleanroom-phase2.txt`). It corrected the old doc: the header ends at 0x34, record 0x06 is on .pmg only, and 547 entries appear in no listing.
 - [x] Mod loader research (F14, `docs/formats/mods.md`): container by content, HashFS v1 layout and salted keys (`mod_probe`), ZIP quirks, manifest gating, multi-folder `dlc_*` packages, mod pool at profile load.
@@ -167,7 +166,7 @@ The goal is a 1:1 replica of in-game tuning (see ROADMAP Phases 4–5). Order:
    - `%2`/`%8`/`%9` of the accessory tile.
    Check all of it against reference screenshots in `research/parity/`.
 6. **REA (next batch):** `FUN_140fbf860` turned out to be the input handler (F5). Next: one combined string search (`~/rea-ets2/next-search-regex.txt`, plus the `pin_offset`/`pin_dir`/`pin_group` keys) for pin placement, camera conventions, exposure/tonemap, lift axles, paint-effect selection and `ui_vehicle_reflection`; then decompile what it points to, and the caller of `0x1421c2f90` (locator lookup). Each Ghidra run takes about 30–45 min and 2 GB; coordinate with peers first.
-7. **Pins:** exterior, wheel and interior pins follow the game (F5, docs/app/hotspots.md); `use_non_wheel_pin_data_from_model` defaults to false (Confirmed). Still to do: the game's pin graphics (`btn.custom_accn`/`s`, `acc_hub`/`acc_cover`/`acc_nuts`); the per-truck pin table (Renault T `f_light_top`); confirm the interior pass's added transform; re-check the badge and Renault T `s_panel` pins in game.
+7. **Pins:** exterior, wheel and interior pins follow the game (F5, docs/app/hotspots.md); `use_non_wheel_pin_data_from_model` defaults to false (Confirmed). The per-truck pin table and the interior pass's eye point are done (Confirmed). Wheel pins follow the wheel index in the locator names, which fixed swapped sides on 37 of 224 wheel groups (`wheel-order-survey.txt`; Hypothesis, strong, until the code that fills the wheel list, +0x600/+0x628, is read). Still to do: the game's pin graphics (`btn.custom_accn`/`s`, `acc_hub`/`acc_cover`/`acc_nuts`); re-check the badge and Renault T `s_panel` pins in game.
 8. **Packaging:** a Windows installer and exe icon for the Bevy app (the Tauri NSIS bundle is gone). The icon is kept at `crates/specsheet/icon.png`.
 9. **Bevy 0.20:** it needs Rust 1.97.1; the machine has 1.95.
 10. **App shell (D16):** the `specsheet-theme` token crate with contrast tests, then the home, trucks, configurations, mods, parity, settings and about screens per [docs/app/design-system.md](docs/app/design-system.md). After the 1:1 tuning screen.
