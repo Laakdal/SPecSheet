@@ -12,10 +12,11 @@ use std::io::Write;
 use std::path::Path;
 
 use specsheet_archive::{city_hash_64, HashFsV1Archive, ZipArchive};
-use specsheet_formats::paths::referenced_paths;
+use specsheet_formats::paths::{referenced_paths, unit_paths};
 
-/// First line of a cache file; a file without it is scanned again.
-const CACHE_HEADER: &str = "specsheet mod-scan 1";
+/// First line of a cache file; a file without it is scanned again. Version
+/// 2 added the conventional files of accessory units ([`unit_paths`]).
+const CACHE_HEADER: &str = "specsheet mod-scan 2";
 /// Entries larger than this are not scanned (as in `mod_names`).
 const MAX_SCAN: u64 = 1 << 20;
 /// ZIP files whose contents are worth scanning for paths.
@@ -32,8 +33,10 @@ pub struct FolderScan {
     pub cached: usize,
 }
 
-/// The paths a package holds (ZIP) or mentions (ZIP and HashFS v1), or
-/// `None` when the file is not such a package.
+/// The paths a package holds (ZIP) or mentions (ZIP and HashFS v1), plus
+/// the files its accessory units imply by convention ([`unit_paths`]: icon
+/// materials, addon unit files), or `None` when the file is not such a
+/// package.
 pub fn package_candidates(path: &Path) -> Option<Vec<String>> {
     let mut out = Vec::new();
     if let Ok(zip) = ZipArchive::open(path) {
@@ -43,6 +46,7 @@ pub fn package_candidates(path: &Path) -> Option<Vec<String>> {
             if small && SCANNED.iter().any(|ext| file.ends_with(ext)) {
                 if let Ok(bytes) = zip.read(file) {
                     out.extend(referenced_paths(file, &bytes));
+                    out.extend(unit_paths(&bytes));
                 }
             }
         }
@@ -51,6 +55,7 @@ pub fn package_candidates(path: &Path) -> Option<Vec<String>> {
             if !entry.is_directory() && u64::from(entry.size) <= MAX_SCAN {
                 if let Ok(bytes) = v1.read_entry(entry) {
                     out.extend(referenced_paths("", &bytes));
+                    out.extend(unit_paths(&bytes));
                 }
             }
         }
@@ -196,6 +201,28 @@ mod tests {
         // Without a cache every call reads.
         let plain = folder_candidates(&mods, None).unwrap();
         assert_eq!((plain.scanned, plain.cached), (1, 0));
+    }
+
+    /// An accessory's `icon` lives in its definitions package, while the
+    /// icon's material often sits in another package: the MAN TG3 add-on
+    /// keeps 858 icon files that only its definitions ZIP can name
+    /// (`research/evidence/mod-name-recovery.txt` §13).
+    #[test]
+    fn a_packages_accessory_units_add_their_conventional_files() {
+        let dir = TempDir::new("units");
+        let package = dir.0.join("defs.scs");
+        let unit =
+            b"SiiNunit\n{\naccessory_addon_data : ac.man.tg3.ac\n{\n icon: \"tg3_290\"\n}\n}\n";
+        fs::write(&package, zip(&[("def/vehicle/truck/man.tg3/x.sii", unit)])).unwrap();
+        let paths = package_candidates(&package).unwrap();
+        assert!(
+            paths.contains(&"material/ui/accessory/tg3_290.mat".to_owned()),
+            "{paths:?}"
+        );
+        assert!(
+            paths.contains(&"def/vehicle/truck/man.tg3/accessory/ac/ac.sii".to_owned()),
+            "{paths:?}"
+        );
     }
 
     #[test]
