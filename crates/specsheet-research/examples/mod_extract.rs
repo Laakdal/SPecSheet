@@ -1,5 +1,8 @@
-//! Extracts a mod package (HashFS v1 or ZIP) to a folder, or lists it as a
-//! tree (D19, `specsheet_data::extract`). File names of a v1 package are
+//! Extracts a mod package (HashFS v1 or ZIP) or a game archive (HashFS v2)
+//! to a folder, or lists it as a tree (D19, `specsheet_data::extract`); the
+//! container is told by its header. A game archive's names come from its
+//! listings, then from every path of the mounted game (`v2_names`); its
+//! packed textures are left out and listed. File names of a v1 package are
 //! recovered first (`mod_names`), with every path of the mounted game as
 //! candidates and, with `--others <dir>`, the paths that the other packages
 //! in `<dir>` mention, cached per package in
@@ -23,8 +26,10 @@
 
 use std::path::{Path, PathBuf};
 
-use specsheet_archive::{HashFsV1Archive, ZipArchive};
-use specsheet_data::extract::{extract, list, Archive, ExtractOptions, Listed, PathFilter};
+use specsheet_archive::{Archive as GameArchive, HashFsV1Archive, ZipArchive};
+use specsheet_data::extract::{
+    extract, list, v2_names, Archive, ExtractOptions, Listing, PathFilter, V2Names,
+};
 use specsheet_data::mod_names::{game_paths, learn_word_swaps, recover_v1_names, RecoveredNames};
 use specsheet_data::mod_scan::folder_candidates;
 use specsheet_data::GameInstall;
@@ -41,6 +46,16 @@ fn usage() -> ! {
 fn cache_dir() -> Option<PathBuf> {
     let local = std::env::var_os("LOCALAPPDATA")?;
     Some(Path::new(&local).join("dev.specsheet.app").join("mod-scan"))
+}
+
+/// Which reader a file needs, from its first bytes: `SCS#` and the HashFS
+/// version, else ZIP (which the game finds by content, not extension).
+fn hashfs_version(path: &Path) -> std::io::Result<Option<u16>> {
+    use std::io::Read;
+    let mut head = [0u8; 6];
+    let mut file = std::fs::File::open(path)?;
+    let n = file.read(&mut head)?;
+    Ok((n == head.len() && &head[..4] == b"SCS#").then(|| u16::from_le_bytes([head[4], head[5]])))
 }
 
 /// What `main` does once the package is open.
@@ -111,41 +126,64 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let zip;
     let v1;
+    let v2;
     let names: RecoveredNames;
-    let archive = if let Ok(opened) = ZipArchive::open(&package) {
-        zip = opened;
-        Archive::Zip(&zip)
-    } else {
-        v1 = HashFsV1Archive::open(&package)?;
-        let (vfs, _) = install.mount()?;
-        let mut candidates = game_paths(&vfs);
-        let swaps = learn_word_swaps(&candidates);
-        if let Some(dir) = &others {
-            let cache = if no_cache { None } else { cache_dir() };
-            let scan = folder_candidates(Path::new(dir), cache.as_deref())?;
-            println!(
-                "other packages: {} read, {} from cache",
-                scan.scanned, scan.cached
-            );
-            candidates.extend(scan.paths);
+    let game_names: V2Names;
+    let archive = match hashfs_version(&package)? {
+        None => {
+            zip = ZipArchive::open(&package)?;
+            Archive::Zip(&zip)
         }
-        names = recover_v1_names(&v1, candidates, &swaps);
-        println!(
-            "{}: {} entries, {} named, {} unnamed",
-            package.display(),
-            v1.len(),
-            names.names.len(),
-            names.unnamed.len()
-        );
-        Archive::V1 {
-            archive: &v1,
-            names: &names,
+        Some(2) => {
+            v2 = GameArchive::open(&package)?;
+            let (vfs, _) = install.mount()?;
+            game_names = v2_names(&v2, &game_paths(&vfs));
+            println!(
+                "{}: {} entries, {} named by listings, {} by game paths, {} unnamed, {} not indexed",
+                package.display(),
+                v2.len(),
+                game_names.from_listings,
+                game_names.from_candidates,
+                game_names.unnamed.len(),
+                v2.skipped_entries().len()
+            );
+            Archive::V2 {
+                archive: &v2,
+                names: &game_names,
+            }
+        }
+        Some(_) => {
+            v1 = HashFsV1Archive::open(&package)?;
+            let (vfs, _) = install.mount()?;
+            let mut candidates = game_paths(&vfs);
+            let swaps = learn_word_swaps(&candidates);
+            if let Some(dir) = &others {
+                let cache = if no_cache { None } else { cache_dir() };
+                let scan = folder_candidates(Path::new(dir), cache.as_deref())?;
+                println!(
+                    "other packages: {} read, {} from cache",
+                    scan.scanned, scan.cached
+                );
+                candidates.extend(scan.paths);
+            }
+            names = recover_v1_names(&v1, candidates, &swaps);
+            println!(
+                "{}: {} entries, {} named, {} unnamed",
+                package.display(),
+                v1.len(),
+                names.names.len(),
+                names.unnamed.len()
+            );
+            Archive::V1 {
+                archive: &v1,
+                names: &names,
+            }
         }
     };
 
     let (dest, options) = match task {
         Task::List => {
-            print_tree(&list(&archive, &filter));
+            print_listing(&list(&archive, &filter));
             return Ok(());
         }
         Task::Extract { dest, options } => (dest, options),
@@ -157,13 +195,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "wrote"
     };
     println!(
-        "{verb} {} files ({:.1} MB), {} under _unnamed/, {} renamed, {} skipped, {} unreadable",
+        "{verb} {} files ({:.1} MB), {} under _unnamed/, {} renamed, {} skipped, {} unreadable, {} packed textures left out",
         done.written,
         done.bytes as f64 / 1e6,
         done.unnamed,
         done.renamed.len(),
         done.skipped,
-        done.unreadable.len()
+        done.unreadable.len(),
+        done.packed_textures.len()
     );
     for (from, to) in done.renamed.iter().take(10) {
         println!("    renamed {from} -> {to}");
@@ -171,10 +210,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Prints `listed` as an indented folder tree with sizes, noting renamed
-/// and unnamed entries, then a total.
-fn print_tree(listed: &[Listed]) {
-    let mut files: Vec<&Listed> = listed.iter().collect();
+/// Prints the files of `listing` as an indented folder tree with sizes,
+/// noting renamed and unnamed entries, then a total and the entries left
+/// out.
+fn print_listing(listing: &Listing) {
+    let mut files: Vec<_> = listing.files.iter().collect();
     files.sort_by(|a, b| a.path.split('/').cmp(b.path.split('/')));
     let mut open: Vec<&str> = Vec::new();
     for file in &files {
@@ -208,6 +248,13 @@ fn print_tree(listed: &[Listed]) {
         files.len(),
         human(bytes)
     );
+    if !listing.packed_textures.is_empty() || !listing.unreadable.is_empty() {
+        println!(
+            "left out: {} packed textures, {} entries not indexed",
+            listing.packed_textures.len(),
+            listing.unreadable.len()
+        );
+    }
 }
 
 /// `bytes` with a unit, for reading.

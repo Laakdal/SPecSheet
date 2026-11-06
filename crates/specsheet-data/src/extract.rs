@@ -10,18 +10,26 @@
 //! extension guessed from their content ([`specsheet_formats::sniff`]).
 //! Entries that cannot be read are listed in `_unreadable.txt`.
 //!
+//! Game (HashFS v2) archives give their names through their listings
+//! ([`v2_names`]). Their packed textures (a `.tobj` whose image lives in
+//! the archive's texture records) are not written: they are listed in
+//! `_packed_textures.txt`, and their size does not count against the limit.
+//!
 //! Named entries are streamed to disk in 64 KiB pieces, so an entry of any
 //! size passes without being held in memory; one that fails halfway leaves
 //! no file, folder or reserved name behind. Unnamed entries are read whole
 //! (at most 2 GiB), since their extension is guessed from all their bytes.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fs::{self, OpenOptions};
 use std::io::{Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
-use specsheet_archive::{city_hash_64, HashFsV1Archive, ZipArchive};
+use specsheet_archive::{
+    city_hash_64, hash_path, Archive as V2Archive, Content, DirListing, EntryKind, HashFsV1Archive,
+    ZipArchive,
+};
 use specsheet_formats::sniff;
 
 use crate::mod_names::RecoveredNames;
@@ -29,6 +37,7 @@ use crate::mod_names::RecoveredNames;
 /// Lists written at the destination root.
 const RENAMED: &str = "_renamed.txt";
 const UNREADABLE: &str = "_unreadable.txt";
+const PACKED: &str = "_packed_textures.txt";
 /// Folder for entries without a recovered name.
 const UNNAMED: &str = "_unnamed";
 /// Longest name part Windows file systems hold.
@@ -88,6 +97,13 @@ pub enum Archive<'a> {
     },
     /// A ZIP package; its file names are stored.
     Zip(&'a ZipArchive),
+    /// A game archive with the names found for it ([`v2_names`]).
+    V2 {
+        /// The archive.
+        archive: &'a V2Archive,
+        /// Its file names.
+        names: &'a V2Names,
+    },
 }
 
 /// How to extract.
@@ -127,6 +143,8 @@ pub struct Extracted {
     pub renamed: Vec<(String, String)>,
     /// Entries that could not be read.
     pub unreadable: Vec<String>,
+    /// Packed textures left out (paths, or hashes when unnamed).
+    pub packed_textures: Vec<String>,
 }
 
 /// Which entries to take, by archive path. In a pattern, `*` matches any
@@ -188,6 +206,18 @@ fn glob(pattern: &str, text: &str) -> bool {
     rest.ends_with(tail)
 }
 
+/// What [`list`] finds: the files an extraction would write, and the
+/// entries it would leave out.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Listing {
+    /// Files, in extraction order.
+    pub files: Vec<Listed>,
+    /// Packed textures (paths, or hashes when unnamed).
+    pub packed_textures: Vec<String>,
+    /// Entries the archive could not index (hashes).
+    pub unreadable: Vec<String>,
+}
+
 /// One file as an extraction into an empty folder would write it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Listed {
@@ -222,31 +252,138 @@ pub fn extract(
             protected,
             options,
         ),
+        Archive::V2 { archive, names } => {
+            let source = V2Source { archive, names };
+            run(&Filtered::new(&source, filter), dest, protected, options)
+        }
     }
 }
 
 /// The files of `archive` that `filter` takes, in extraction order, named
-/// as [`extract`] would name them in an empty folder. Reads no content.
-pub fn list(archive: &Archive<'_>, filter: &PathFilter) -> Vec<Listed> {
+/// as [`extract`] would name them in an empty folder, and the entries it
+/// would leave out. Reads no content.
+pub fn list(archive: &Archive<'_>, filter: &PathFilter) -> Listing {
     match archive {
         Archive::V1 { archive, names } => {
             let source = V1Source { archive, names };
             plan(&Filtered::new(&source, filter))
         }
         Archive::Zip(zip) => plan(&Filtered::new(&ZipSource(zip), filter)),
+        Archive::V2 { archive, names } => {
+            let source = V2Source { archive, names };
+            plan(&Filtered::new(&source, filter))
+        }
     }
+}
+
+/// File names for a game archive's entries.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct V2Names {
+    /// Entry hash → path, without a leading slash.
+    pub names: BTreeMap<u64, String>,
+    /// Names found by walking the archive's listings.
+    pub from_listings: usize,
+    /// Names found among the candidates (entries no listing names).
+    pub from_candidates: usize,
+    /// Hashes of file entries left without a name, sorted.
+    pub unnamed: Vec<u64>,
+}
+
+/// Names the file entries of `archive`: first by walking its listings from
+/// the root, then by hashing `candidates` (e.g. every path of the mounted
+/// game) for the entries no listing names. Listings are not exhaustive,
+/// and some archives have no root at all (`docs/formats/hashfs.md`).
+pub fn v2_names(archive: &V2Archive, candidates: &[String]) -> V2Names {
+    let kinds = archive.entries().map(|e| (e.hash, e.kind)).collect();
+    walk_v2_names(&|dir| archive.list_dir(dir).ok(), &kinds, candidates)
+}
+
+/// [`v2_names`] over a listing lookup and the kind of every entry. A
+/// listed name counts only when an entry of that kind exists; each folder
+/// is walked once.
+fn walk_v2_names(
+    list_dir: &dyn Fn(&str) -> Option<DirListing>,
+    kinds: &HashMap<u64, EntryKind>,
+    candidates: &[String],
+) -> V2Names {
+    let mut out = V2Names::default();
+    let mut visited = HashSet::new();
+    let mut stack = vec![String::new()];
+    while let Some(dir) = stack.pop() {
+        if !visited.insert(hash_path(&dir)) {
+            continue;
+        }
+        let Some(listing) = list_dir(&dir) else {
+            continue;
+        };
+        let join = |name: &str| {
+            if dir.is_empty() {
+                name.to_owned()
+            } else {
+                format!("{dir}/{name}")
+            }
+        };
+        for file in &listing.files {
+            let path = join(file);
+            let hash = hash_path(&path);
+            if kinds.get(&hash) == Some(&EntryKind::File) && !out.names.contains_key(&hash) {
+                out.names.insert(hash, path);
+                out.from_listings += 1;
+            }
+        }
+        for sub in &listing.directories {
+            let path = join(sub);
+            if kinds.get(&hash_path(&path)) == Some(&EntryKind::Directory) {
+                stack.push(path);
+            }
+        }
+    }
+    for candidate in candidates {
+        let path = candidate.trim_start_matches('/');
+        let hash = hash_path(path);
+        if kinds.get(&hash) == Some(&EntryKind::File) && !out.names.contains_key(&hash) {
+            out.names.insert(hash, path.to_owned());
+            out.from_candidates += 1;
+        }
+    }
+    out.unnamed = kinds
+        .iter()
+        .filter(|(hash, kind)| **kind == EntryKind::File && !out.names.contains_key(hash))
+        .map(|(hash, _)| *hash)
+        .collect();
+    out.unnamed.sort_unstable();
+    out
+}
+
+/// What an archive entry is, for extraction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ItemKind {
+    /// A file to write.
+    File,
+    /// A packed texture, left out.
+    PackedTexture,
+    /// An entry the archive could not index, listed as unreadable.
+    Unindexed,
 }
 
 /// One file of an archive.
 struct Item {
     /// Archive path, if known.
     path: Option<String>,
-    /// Entry hash (v1) or position (ZIP); names unnamed output.
+    /// Entry hash (v1, v2) or position (ZIP); names unnamed output.
     key: u64,
     size: u64,
+    kind: ItemKind,
 }
 
 impl Item {
+    /// Names the entry in the lists: its path, or its hash.
+    fn label(&self) -> String {
+        self.path
+            .clone()
+            .unwrap_or_else(|| format!("{:016x}", self.key))
+    }
+
     /// Where the entry goes when its content is not read: its path, or
     /// `_unnamed/<hash>.bin`.
     fn unread_name(&self) -> String {
@@ -279,6 +416,7 @@ impl Source for V1Source<'_> {
                 path: self.names.names.get(&e.hash).cloned(),
                 key: e.hash,
                 size: u64::from(e.size),
+                kind: ItemKind::File,
             })
             .collect()
     }
@@ -310,6 +448,7 @@ impl Source for ZipSource<'_> {
                 path: Some(path.to_owned()),
                 key: i as u64,
                 size: self.0.size(path).unwrap_or(0),
+                kind: ItemKind::File,
             })
             .collect()
     }
@@ -321,6 +460,49 @@ impl Source for ZipSource<'_> {
     fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>> {
         let reader = self.0.open_file(item.path.as_deref()?).ok()?;
         Some(Box::new(reader))
+    }
+}
+
+struct V2Source<'a> {
+    archive: &'a V2Archive,
+    names: &'a V2Names,
+}
+
+impl Source for V2Source<'_> {
+    fn items(&self) -> Vec<Item> {
+        let files = self
+            .archive
+            .entries()
+            .filter(|e| e.kind == EntryKind::File)
+            .map(|e| {
+                let (size, kind) = match &e.content {
+                    Content::Stored(blob) => (blob.size, ItemKind::File),
+                    Content::Texture { blob, .. } => (blob.size, ItemKind::PackedTexture),
+                };
+                Item {
+                    path: self.names.names.get(&e.hash).cloned(),
+                    key: e.hash,
+                    size: u64::from(size),
+                    kind,
+                }
+            });
+        let unindexed = self.archive.skipped_entries().iter().map(|s| Item {
+            path: None,
+            key: s.hash,
+            size: 0,
+            kind: ItemKind::Unindexed,
+        });
+        files.chain(unindexed).collect()
+    }
+
+    fn read(&self, item: &Item) -> Option<Vec<u8>> {
+        let entry = self.archive.entry_by_hash(item.key)?;
+        self.archive.read_entry(entry).ok()
+    }
+
+    /// Whole, not streamed: a v2 entry holds at most 256 MiB.
+    fn open(&self, item: &Item) -> Option<Box<dyn Read + '_>> {
+        Some(Box::new(Cursor::new(self.read(item)?)))
     }
 }
 
@@ -362,16 +544,36 @@ fn sorted_items(source: &impl Source) -> Vec<Item> {
     items
 }
 
-fn plan(source: &impl Source) -> Vec<Listed> {
+/// The items of `source` in extraction order, split into files to write
+/// and the labels of packed textures and unindexed entries.
+fn partition(source: &impl Source) -> (Vec<Item>, Vec<String>, Vec<String>) {
+    let (mut files, mut packed, mut unindexed) = (Vec::new(), Vec::new(), Vec::new());
+    for item in sorted_items(source) {
+        match item.kind {
+            ItemKind::File => files.push(item),
+            ItemKind::PackedTexture => packed.push(item.label()),
+            ItemKind::Unindexed => unindexed.push(item.label()),
+        }
+    }
+    (files, packed, unindexed)
+}
+
+fn plan(source: &impl Source) -> Listing {
+    let (items, packed_textures, unreadable) = partition(source);
     let mut layout = Layout::for_destination();
-    sorted_items(source)
+    let files = items
         .into_iter()
         .map(|item| Listed {
             path: layout.place(&item.unread_name(), &mut |_| false).rel,
             source: item.path,
             size: item.size,
         })
-        .collect()
+        .collect();
+    Listing {
+        files,
+        packed_textures,
+        unreadable,
+    }
 }
 
 fn run(
@@ -388,7 +590,7 @@ fn run(
     if !options.skip_existing && fs::read_dir(&root).is_ok_and(|mut d| d.next().is_some()) {
         return Err(ExtractError::NotEmpty(root));
     }
-    let items = sorted_items(source);
+    let (items, packed_textures, unindexed) = partition(source);
     let declared = items
         .iter()
         .fold(0u64, |sum, item| sum.saturating_add(item.size));
@@ -399,7 +601,11 @@ fn run(
         });
     }
     let mut layout = Layout::for_destination();
-    let mut done = Extracted::default();
+    let mut done = Extracted {
+        unreadable: unindexed,
+        packed_textures,
+        ..Extracted::default()
+    };
     let mut buf = vec![0u8; CHUNK];
     for item in &items {
         let label = item
@@ -501,6 +707,7 @@ fn run(
                     .collect::<Vec<_>>(),
             ),
             (UNREADABLE, done.unreadable.clone()),
+            (PACKED, done.packed_textures.clone()),
         ];
         for (name, lines) in lists {
             if lines.is_empty() {
@@ -601,7 +808,7 @@ impl Layout {
     /// reserved.
     fn for_destination() -> Self {
         let mut layout = Self::default();
-        for reserved in [RENAMED, UNREADABLE] {
+        for reserved in [RENAMED, UNREADABLE, PACKED] {
             layout.taken.insert(reserved.to_lowercase());
         }
         layout
@@ -857,6 +1064,8 @@ mod tests {
         fails_midway: bool,
         /// Declared size, if not the length of `bytes`.
         declared: Option<u64>,
+        /// What the entry is.
+        kind: ItemKind,
     }
 
     struct Fake(Vec<FakeFile>);
@@ -871,6 +1080,7 @@ mod tests {
                     bytes,
                     fails_midway: false,
                     declared: None,
+                    kind: ItemKind::File,
                 })
                 .collect(),
         )
@@ -902,6 +1112,7 @@ mod tests {
                     size: f
                         .declared
                         .unwrap_or_else(|| f.bytes.map_or(0, |b| b.len() as u64)),
+                    kind: f.kind,
                 })
                 .collect()
         }
@@ -952,6 +1163,7 @@ mod tests {
             bytes: Some(b"0123456789"),
             fails_midway: true,
             declared: None,
+            kind: ItemKind::File,
         };
         let source = Fake(vec![
             broken("def/A.sii"),
@@ -960,6 +1172,7 @@ mod tests {
                 bytes: Some(b"ok"),
                 fails_midway: false,
                 declared: None,
+                kind: ItemKind::File,
             },
             broken("only/deep/x.bin"),
         ]);
@@ -982,6 +1195,7 @@ mod tests {
             bytes: Some(b"01234567890123456789"),
             fails_midway: false,
             declared: Some(5),
+            kind: ItemKind::File,
         }]);
         let options = ExtractOptions {
             max_bytes: 10,
@@ -1308,6 +1522,7 @@ mod tests {
             filter: &filter,
         });
         let listed: Vec<(&str, Option<&str>, u64)> = listed
+            .files
             .iter()
             .map(|l| (l.path.as_str(), l.source.as_deref(), l.size))
             .collect();
@@ -1319,5 +1534,101 @@ mod tests {
                 ("def/a.sii", Some("def/a.sii"), 3),
             ]
         );
+    }
+
+    /// A [`DirListing`] of `files` and `directories`.
+    fn dir_listing(files: &[&str], directories: &[&str]) -> DirListing {
+        DirListing {
+            files: files.iter().map(|s| (*s).to_owned()).collect(),
+            directories: directories.iter().map(|s| (*s).to_owned()).collect(),
+        }
+    }
+
+    #[test]
+    fn v2_names_come_from_the_listings_then_from_candidates() {
+        use specsheet_archive::hash_path;
+        let kinds: HashMap<u64, EntryKind> = [
+            ("", EntryKind::Directory),
+            ("a.sii", EntryKind::File),
+            ("def", EntryKind::Directory),
+            ("def/b.sii", EntryKind::File),
+            ("x.sii", EntryKind::File),
+            ("y.sii", EntryKind::File),
+            ("notdir", EntryKind::File),
+            ("notdir/evil.sii", EntryKind::File),
+        ]
+        .into_iter()
+        .map(|(path, kind)| (hash_path(path), kind))
+        .collect();
+        let listings: HashMap<&str, DirListing> = [
+            // A missing file, a folder listed as a file, a file listed as
+            // a folder and a folder without an entry are passed over.
+            (
+                "",
+                dir_listing(&["a.sii", "missing.sii", "def"], &["def", "notdir", "gone"]),
+            ),
+            ("def", dir_listing(&["b.sii"], &[])),
+            ("notdir", dir_listing(&["evil.sii"], &[])),
+        ]
+        .into_iter()
+        .collect();
+        let candidates = ["/x.sii", "a.sii", "def", "zzz.sii"].map(str::to_owned);
+        let names = walk_v2_names(&|dir| listings.get(dir).cloned(), &kinds, &candidates);
+        let by_path: Vec<&str> = names.names.values().map(String::as_str).collect();
+        let mut by_path = by_path;
+        by_path.sort();
+        assert_eq!(by_path, ["a.sii", "def/b.sii", "x.sii"]);
+        assert_eq!((names.from_listings, names.from_candidates), (2, 1));
+        let mut unnamed = vec![
+            hash_path("y.sii"),
+            hash_path("notdir"),
+            hash_path("notdir/evil.sii"),
+        ];
+        unnamed.sort();
+        assert_eq!(names.unnamed, unnamed);
+
+        // No root (locale.scs, base_cfg.scs): candidates only.
+        let names = walk_v2_names(&|_| None, &kinds, &candidates);
+        assert_eq!((names.from_listings, names.from_candidates), (0, 2));
+    }
+
+    #[test]
+    fn packed_textures_and_unindexed_entries_are_listed_not_written() {
+        let dir = TempDir::new("kinds");
+        let dest = dir.0.join("out");
+        let entry = |path, kind| FakeFile {
+            path,
+            bytes: Some(b"0123456789"),
+            fails_midway: false,
+            declared: None,
+            kind,
+        };
+        let source = Fake(vec![
+            entry(Some("def/a.sii"), ItemKind::File),
+            entry(Some("model/t.tobj"), ItemKind::PackedTexture),
+            entry(None, ItemKind::PackedTexture),
+            entry(None, ItemKind::Unindexed),
+        ]);
+        // Only the 10 bytes of `def/a.sii` count against the limit.
+        let options = ExtractOptions {
+            max_bytes: 15,
+            ..Default::default()
+        };
+        let done = run(&source, &dest, &[], options).unwrap();
+        assert_eq!(done.written, 1);
+        assert_eq!(done.packed_textures, ["0000000000001002", "model/t.tobj"]);
+        assert_eq!(done.unreadable, ["0000000000001003"]);
+        assert_eq!(
+            files_under(&dest),
+            ["_packed_textures.txt", "_unreadable.txt", "def/a.sii"]
+        );
+        assert_eq!(
+            fs::read_to_string(dest.join("_packed_textures.txt")).unwrap(),
+            "0000000000001002\nmodel/t.tobj\n"
+        );
+        let listing = plan(&source);
+        assert_eq!(listing.files.len(), 1);
+        assert_eq!(listing.packed_textures, done.packed_textures);
+        assert_eq!(listing.unreadable, done.unreadable);
     }
 }
