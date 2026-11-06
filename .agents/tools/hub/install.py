@@ -77,6 +77,9 @@ class Installer:
         self.staged = False  # True when installing from a temporary template staging copy
 
     def write(self, rel, content):
+        if not fsutil.safe_rel(self.target, rel):
+            self.conflicts.append((rel, "resolves outside the project (symlink); not written"))
+            return
         if not self.dry:
             fsutil.write_text(self.target / rel, content)
 
@@ -96,6 +99,9 @@ class Installer:
                     self.conflicts.append((rel, "project already has a skill with this name; hub's version skipped"))
                 continue
             dst = self.target / rel
+            if not fsutil.safe_rel(self.target, rel):
+                self.conflicts.append((rel, "resolves outside the project (symlink); not written"))
+                continue
             new_hash = fsutil.digest_file(src)
             if dst.exists():
                 have = fsutil.digest_file(dst)
@@ -217,12 +223,16 @@ def template_cleanup(target, yes, dry_run, out=print):
     paths = json.loads(fsutil.read_text(manifest))["paths"]
     remove, keep = [], []
     for rel, sha in sorted(paths.items()):
+        if not fsutil.safe_rel(target, rel):
+            out(f"  refuse  {rel} (outside the project; never removed)")
+            continue
         p = target / rel
-        if not p.exists():
+        if not p.is_file():
             continue
         (remove if fsutil.digest_file(p) == sha else keep).append(rel)
-    out(f"hub: template cleanup will remove {len(remove)} template-only files "
-        f"(payload/, packs/, tests/, framework docs, maintainer AGENTS.md ...)")
+    out(f"hub: template cleanup will remove {len(remove)} template-only files:")
+    for rel in remove:
+        out(f"  remove  {rel}")
     for rel in keep:
         out(f"  keep    {rel} (changed since the template was created)")
     if dry_run:

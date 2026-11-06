@@ -58,9 +58,9 @@ def generate(project):
 
 
 PERM_MARK = " .agents/tools/hub "
-# Only commands that check or regenerate hub's own files. install, update and
-# sync --force can overwrite many files, so they keep asking.
-SAFE_COMMANDS = ("validate *", "detect *", "context *", "tasks check *", "version *", "sync", "sync --check")
+# Only commands that read or check. install, update and sync write files,
+# including .claude/settings.json (hooks, permissions), so they keep asking.
+SAFE_COMMANDS = ("validate *", "detect *", "context *", "tasks check *", "version *", "sync --check")
 # Windows sessions run commands through the PowerShell tool, which Bash rules don't cover.
 PERMISSION_RULES = [f"{tool}({py} .agents/tools/hub {cmd})"
                     for tool in ("Bash", "PowerShell") for py in ("python", "python3") for cmd in SAFE_COMMANDS]

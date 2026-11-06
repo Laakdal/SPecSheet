@@ -1,6 +1,6 @@
 # AGENTS.md
 
-<!-- hub:core:begin v0.2.0; managed by hub, edit outside this block -->
+<!-- hub:core:begin v0.2.1; managed by hub, edit outside this block -->
 ## Working agreement (hub)
 
 These rules apply to every task here. The project sections below this block, nested `AGENTS.md` files and `.agents/rules/` refine or override them. An explicit request from the user overrides all of them. When you follow a more specific rule over a general one, say so.

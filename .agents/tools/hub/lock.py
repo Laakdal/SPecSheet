@@ -26,6 +26,7 @@ class Lock:
     @classmethod
     def load(cls, root):
         p = Path(root) / LOCK_PATH
+        _refuse_outside(root)
         if p.exists():
             return cls(root, json.loads(fsutil.read_text(p)))
         return cls(root)
@@ -43,4 +44,13 @@ class Lock:
         }
 
     def save(self):
+        _refuse_outside(self.root)
         fsutil.write_text(self.root / LOCK_PATH, json.dumps(self.to_dict(), indent=2) + "\n")
+
+
+def _refuse_outside(root):
+    """The lock is read and written on every run; a symlink must not point it
+    at a file outside the project."""
+    p = Path(root) / LOCK_PATH
+    if (p.exists() or p.is_symlink()) and not fsutil.safe_rel(root, LOCK_PATH):
+        raise SystemExit(f"hub: {LOCK_PATH} resolves outside the project; refusing to use it")

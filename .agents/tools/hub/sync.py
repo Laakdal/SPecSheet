@@ -127,7 +127,9 @@ def plan(root, force=False) -> Plan:
             pl.notes.append((path, "no longer generated but edited by hand; kept and released to the project"))
             pl.forget.append(path)
 
-    if "claude-code" in project.platforms or (root / SETTINGS).exists():
+    if not fsutil.safe_rel(root, SETTINGS):
+        pl.skipped.append((SETTINGS, "resolves outside the project (symlink); not read or written"))
+    elif "claude-code" in project.platforms or (root / SETTINGS).exists():
         claude = "claude-code" in project.platforms
         enabled = claude and bool(project.option("claude_hooks"))
         perms = claude and bool(project.option("claude_permissions", True))
@@ -145,7 +147,7 @@ def _core_refresh(root: Path, config, lk):
     or commands it names. Only a file with exactly one intact block is touched."""
     p = root / "AGENTS.md"
     block = agentsmd.project_block(root, lk.version, config)
-    if block is None or not p.is_file() or p.is_symlink():
+    if block is None or not p.is_file() or p.is_symlink() or not fsutil.safe_rel(root, "AGENTS.md"):
         return None
     text = fsutil.read_text(p)
     if text.count(agentsmd.BEGIN) != 1 or text.count(agentsmd.END) != 1 or not agentsmd.find(text):
@@ -180,9 +182,9 @@ def apply(root, pl: Plan):
         lk.generated.pop(path, None)
     for path in pl.forget:
         lk.generated.pop(path, None)
-    if pl.settings is not None:
+    if pl.settings is not None and fsutil.safe_rel(root, SETTINGS):
         fsutil.write_text(root / SETTINGS, pl.settings)
-    if pl.agents_md is not None:
+    if pl.agents_md is not None and fsutil.safe_rel(root, "AGENTS.md"):
         text, block = pl.agents_md
         fsutil.write_text(root / "AGENTS.md", text)
         entry = lk.files.get("AGENTS.md#core", {"owner": "framework"})
