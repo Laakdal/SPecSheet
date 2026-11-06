@@ -16,6 +16,7 @@
 //! (at most 2 GiB), since their extension is guessed from all their bytes.
 
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsStr;
 use std::fs::{self, OpenOptions};
 use std::io::{Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
@@ -290,7 +291,7 @@ fn run(
                 }
             },
         };
-        let placed = layout.place(&wanted);
+        let placed = layout.place(&wanted, &mut |rel| alias_clash(&root, rel));
         let rename = item
             .path
             .as_ref()
@@ -457,8 +458,10 @@ struct Placed {
 }
 
 impl Layout {
-    /// Places archive `path` (see [`Placed`]).
-    fn place(&mut self, path: &str) -> Placed {
+    /// Places archive `path` (see [`Placed`]). A new folder or file name
+    /// for which `clash` holds (see [`alias_clash`]) is passed over like a
+    /// taken one.
+    fn place(&mut self, path: &str, clash: &mut dyn FnMut(&str) -> bool) -> Placed {
         let parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
         let parts = if parts.is_empty() { vec!["_"] } else { parts };
         let (mut taken, mut dirs) = (Vec::new(), Vec::new());
@@ -489,8 +492,10 @@ impl Layout {
                 } else {
                     format!("{placed}/{name}")
                 };
-                if self.taken.insert(full.to_lowercase()) {
-                    taken.push(full.to_lowercase());
+                let lower = full.to_lowercase();
+                if !self.taken.contains(&lower) && !clash(&full) {
+                    self.taken.insert(lower.clone());
+                    taken.push(lower);
                     break full;
                 }
                 n += 1;
@@ -517,6 +522,35 @@ impl Layout {
             self.dirs.remove(key);
         }
     }
+}
+
+/// Whether `rel` (`/`-separated, under `root`) reaches an existing entry of
+/// another name: Windows matches a name against 8.3 short aliases too, so
+/// `______~1.dds` can open `_________.dds`. Writing there would fail (a
+/// file) or merge into the wrong folder (a folder); an entry of the same
+/// long name is not a clash, so `skip_existing` still skips it.
+fn alias_clash(root: &Path, rel: &str) -> bool {
+    let path = rel
+        .split('/')
+        .fold(root.to_path_buf(), |p, part| p.join(part));
+    let Some(requested) = path.file_name() else {
+        return false;
+    };
+    if fs::symlink_metadata(&path).is_err() {
+        return false;
+    }
+    // The resolved path carries the entry's long name. One that exists but
+    // cannot be resolved is left alone too.
+    fs::canonicalize(&path).map_or(true, |real| {
+        real.file_name()
+            .is_none_or(|found| is_alias_collision(requested, found))
+    })
+}
+
+/// Whether asking for `requested` found an entry named `found` (its long
+/// name) that is another entry, not the same name in another case.
+fn is_alias_collision(requested: &OsStr, found: &OsStr) -> bool {
+    requested.to_string_lossy().to_lowercase() != found.to_string_lossy().to_lowercase()
 }
 
 /// Why streaming one entry to disk stopped.
@@ -847,7 +881,7 @@ mod tests {
             "/?30*3<*:/x.dds",
         ]
         .iter()
-        .map(|p| layout.place(p).rel)
+        .map(|p| layout.place(p, &mut |_| false).rel)
         .collect();
         assert_eq!(
             placed,
@@ -868,6 +902,69 @@ mod tests {
         let long = "n".repeat(300) + ".dds";
         let safe = safe_part(&long);
         assert!(safe.len() <= MAX_PART && safe.contains('~'), "{safe}");
+    }
+
+    #[test]
+    fn a_short_name_alias_is_a_collision_but_a_case_change_is_not() {
+        let alias =
+            |requested: &str, found: &str| is_alias_collision(requested.as_ref(), found.as_ref());
+        // `_________.dds` holds the 8.3 alias `______~1.DDS`.
+        assert!(alias("______~1.dds", "_________.dds"));
+        assert!(!alias("______~1.dds", "______~1.dds"));
+        assert!(!alias("Model/A.dds", "model/a.DDS"));
+    }
+
+    #[test]
+    fn names_taken_on_disk_by_an_alias_get_the_next_suffix() {
+        let mut layout = Layout::default();
+        let on_disk = ["d", "______~1.dds", "______~2.dds"];
+        let mut clash = |rel: &str| on_disk.contains(&rel);
+        let placed: Vec<String> = ["______.dds", "/______.dds", "d/x.dds", "d/y.dds"]
+            .iter()
+            .map(|p| layout.place(p, &mut clash).rel)
+            .collect();
+        assert_eq!(
+            placed,
+            ["______.dds", "______~3.dds", "d~1/x.dds", "d~1/y.dds"]
+        );
+    }
+
+    /// `_________.dds` and, when the temp volume makes 8.3 aliases, whether
+    /// `______~1.dds` reaches it.
+    fn file_with_alias(dir: &Path) -> bool {
+        fs::write(dir.join("_________.dds"), b"long").unwrap();
+        fs::metadata(dir.join("______~1.dds")).is_ok()
+    }
+
+    #[test]
+    fn extraction_steps_around_8_3_aliases() {
+        let probe = TempDir::new("alias-probe");
+        if !file_with_alias(&probe.0) {
+            eprintln!("skipped: the temp volume makes no 8.3 aliases");
+            return;
+        }
+        // The MAN TG3 case: a suffixed name equal to an earlier file's alias.
+        let dir = TempDir::new("alias");
+        let dest = dir.0.join("out");
+        let source = fake(vec![
+            (Some("_________.dds"), Some(b"first")),
+            (Some("______~1.dds"), Some(b"second")),
+        ]);
+        let done = run(&source, &dest, &[], ExtractOptions::default()).unwrap();
+        assert_eq!((done.written, done.skipped), (2, 0));
+        assert_eq!(fs::read(dest.join("_________.dds")).unwrap(), b"first");
+        assert_eq!(fs::read(dest.join("______~1~1.dds")).unwrap(), b"second");
+
+        // With `skip_existing`, an alias match is not an existing file.
+        let options = ExtractOptions {
+            skip_existing: true,
+            ..Default::default()
+        };
+        let source = fake(vec![(Some("______~1.dds"), Some(b"new"))]);
+        let done = run(&source, &probe.0, &[], options).unwrap();
+        assert_eq!((done.written, done.skipped), (1, 0));
+        assert_eq!(fs::read(probe.0.join("_________.dds")).unwrap(), b"long");
+        assert_eq!(fs::read(probe.0.join("______~1~1.dds")).unwrap(), b"new");
     }
 
     #[test]
