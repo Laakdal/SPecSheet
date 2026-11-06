@@ -32,10 +32,15 @@ REA limitations met so far:
 - Parser observation: full directory walks of `def.scs`, `base_vehicle.scs` and `dlc_actros_tuning.scs` resolve every listed name and reach 100% of entries. CityHash v1.1 does not match (see ASSET_FORMATS).
 - Evidence: `research/evidence/survey-hashfs.txt`.
 
-### F2: Mount order (Confirmed for base archives, Hypothesis for DLC order)
+### F2: Mount order and lookup rank (Confirmed)
 - Runtime log `game.log.txt` shows the base mounts in this order: `effect`, `base`, `base_map`, `base_vehicle`, `base_share`, `def`, `core`, `locale`, `base_cfg`. These form the core and scs pools.
-- DLC archives then join the scs pool ("scs pool: 110 packs"). The log does not show their mount priority.
-- Implementation: base archives in log order, then `dlc_*.scs` alphabetically. Later mounts win and directory listings are merged.
+- DLC archives then join the scs pool ("scs pool: 110 packs"). The log lists them alphabetically, but that is mount order, not lookup order: the device list is re-sorted after each mount.
+- **Lookup rank (Confirmed, static and 105 manifests, `research/evidence/mod-pool-priority-static.txt`).** A lookup asks the core pool before the scs pool. Inside a pool the highest priority answers first.
+  - Core pool: `core`, `locale`, `base_cfg` 100000, `effect` 452.
+  - Scs pool: each DLC its manifest's `relative_priority` + 100 (101 to 204, from `dlc_package` in the DLC's own `/<name>.manifest.sii`), `def` 51, the four base archives 50.
+  - DLCs therefore rank by release (`dlc_east` 1 is lowest), not by name. Against name order this changes the winner of 348 paths, all DLC against DLC; 4 of them differ in bytes.
+- **Unknown:** equal priorities. The sort is unstable, so the order among the four base archives (50), among `core`/`locale`/`base_cfg`, and in three equal DLC pairs is not fixed by the code. Only the base tie matters in 1.60.1.7: 18 paths of `base.scs` and `base_share.scs` differ in bytes. We keep the log order there, so `base_share` wins.
+- Implementation: `GameInstall::mount` mounts in that rank, with name order for ties; later mounts win and directory listings are merged. Test `real_install::archives_mount_in_the_games_lookup_order`.
 
 ### F3: Truck definitions are a tree of SII units (Confirmed)
 For each truck `/def/vehicle/truck/<brand.model>/`:
@@ -263,7 +268,7 @@ Evidence: `research/evidence/axle-survey.txt` (example `axle_survey`), the chass
 - **Unknown.**
   - Whether the tuning screen shows liftable axles raised or lowered. The app shows them lowered. To settle: a reference screenshot (docs/PARITY.md) or REA on `liftable_axle`.
 
-### F14: How the game finds, gates and mounts mods (Confirmed sequence and priority mechanism; the winning lookup is a Hypothesis)
+### F14: How the game finds, gates and mounts mods (Confirmed)
 Evidence: `research/evidence/mod-loader-survey.txt` (game log, `eurotrucks2.exe` strings, the example `mod_probe` over 55 local packages, 77 Workshop items). Formats are in [formats/mods.md](formats/mods.md).
 
 - **Discovery (Confirmed).**
@@ -278,12 +283,11 @@ Evidence: `research/evidence/mod-loader-survey.txt` (game log, `eurotrucks2.exe`
 - **Mounting (Confirmed).**
   - Nothing is mounted until a profile is selected.
   - Then the game logs "Active N mods (local, workshop)" and mounts each active mod, in that order, into a separate mod pool. Base and DLC stay in the scs and core pools.
-- **Unknown.**
-  - How the mod pool ranks against the scs pool.
+- **Pool ranking (Confirmed, static, `research/evidence/mod-pool-priority-static.txt`).** All file access goes through a root pool whose devices are the four pools, in the order core > user > mod > scs. A lookup takes the first device that has the path; the hash index gives the same winner. So a mod overrides base, def and DLC files, but not paths in `effect`, `core`, `locale` or `base_cfg`. Mods mount at the root path, like DLCs, so a mod's `/def/x.sii` replaces the DLC's or the base's. The home and temporary folders mount into the user pool at priority 651. Not checked at runtime.
 - **Priority (Confirmed mechanism, `research/evidence/mod-priority-static.txt`, static disassembly).**
   - Mods mount in active-list order with rising priorities, starting at 1001.
   - The file system keeps its mounted devices sorted by priority, highest first.
-  - **Hypothesis (strong):** a lookup takes the first device that has the path, so for a path two mods share, the mod **later** in `active_mods[]` wins. The lookup walk itself was not read.
+  - **Confirmed (static, `research/evidence/mod-pool-priority-static.txt`):** a lookup takes the first device that has the path, so for a path two mods share, the mod **later** in `active_mods[]` wins.
 - **Profile list (Confirmed, since resolved).** The active list is `active_mods[]` in the `ScsC`-encrypted `profile.sii`, read with `scsc::sii_text`. Index 0 is mounted first ([formats/profiles.md](formats/profiles.md)).
 
 ### F15: Paint jobs: one unit, a token-named per-part file, masks cut per cabin (Confirmed data, Hypothesis on unlisted parts)
@@ -403,10 +407,11 @@ Evidence: `research/evidence/exposure-tonemap-data.txt` §9 (no Ghidra run: stri
 
 | Question | Next step |
 |---|---|
-| Mod pool vs scs pool; the lookup walk that confirms the later mod wins | Static: the readers of the sorted device list (`0x140155610` registers it, F14) |
 | Exact slot-to-locator matching rule (suffixes `_s`, `_sl`, digits) | REA: decompile the caller of `0x1421c2f90` (F8) |
 | How pins are positioned, and which slot tokens use fixed tabs instead | REA: string search for `pin_offset`/`pin_dir`/`pin_group`, decompile the reader; and the writer of the token table `0x14350cc00` |
-| DLC mount priority | Runtime log does not show it; low impact (DLCs rarely override base files) |
+| Which of `base.scs` and `base_share.scs` wins their 18 shared paths with different bytes (equal priority, unstable sort, F2) | Runtime: read one of those files through the game; or simulate the sort `0x140107460` with the exact mount sequence |
+| Four direct scs-pool lookups that skip the root pool, so mods would not reach them (`0x1406e8925`, `0x140757e99`, `0x1407fa8a3`, `0x141155da8`, F14) | Static: triage their containing functions |
+| How directory listings merge across devices (`0x140154c20`; a union is assumed) | Static: read that function |
 | Metadata record types `0x05` and `0x06` | No impact on reading content |
 | Meaning of `hide_in` bitmask on addons | Probably camera-dependent hiding; not needed for exterior preview |
 | `tire_shift` semantics in the engine (the F9 rule is measured, not traced) | REA: trace references to the `tire_shift` string and decompile the wheel setup |

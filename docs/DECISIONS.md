@@ -127,7 +127,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - `specsheet-formats` reads binary SII saves (`bsii.rs`) into the same `SiiDocument` as text. The layout is cross-checked against sii-decode-rs (MIT) and confirmed on our own bytes (`research/evidence/bsii-derivation.txt`).
   - Profiles, saves and the mod folder are only read. Nothing in the project writes to them. D18 adds writing new mod packages; profiles and saves stay read-only.
   - `specsheet-archive` also reads HashFS v1 (`hashfs_v1.rs`), a module separate from the v2 reader. It was written from our byte observations only (`research/evidence/hashfs-v1-derivation.txt`), with no community code and no part of the v2 reader (D13).
-  - Mounting mods into the `Vfs` and their priority come later, after the priority question in F14 is answered.
+  - Mounting mods into the `Vfs` comes later. The priority question in F14 is answered (2026-11-07): mods rank above every scs-pool archive and below the core pool, the later active mod winning.
   - Names in v1 packages without listings are recovered by hashing candidate paths (`specsheet-data::mod_names`, with the byte scanner `specsheet-formats::paths`). The scanner only reads bytes; the search that joins archive and formats lives in `specsheet-data`. A candidate counts only when its hash is in the package.
 - **Alternatives:**
   - The `zip` crate. Not chosen: tolerance for scrambled headers would have to be patched in, and the reader is about 300 lines.
