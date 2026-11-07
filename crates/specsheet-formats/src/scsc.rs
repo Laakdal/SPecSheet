@@ -108,13 +108,17 @@ pub fn decrypt(bytes: &[u8]) -> Result<Vec<u8>, ScscError> {
     Ok(out)
 }
 
+/// The UTF-8 byte-order mark.
+const UTF8_BOM: &[u8] = &[0xef, 0xbb, 0xbf];
+
 /// SII text from a profile or save file: decrypted when it is an ScsC
 /// container, returned unchanged when it is already text (players edit
-/// these files with community decryptors).
+/// these files with community decryptors). A leading UTF-8 byte-order mark
+/// is dropped, as some Workshop items' `versions.sii` have one.
 pub fn sii_text(bytes: &[u8]) -> Result<Vec<u8>, ScscError> {
     let payload = match magic(bytes) {
         m if m == *MAGIC => decrypt(bytes)?,
-        _ => bytes.to_vec(),
+        _ => bytes.strip_prefix(UTF8_BOM).unwrap_or(bytes).to_vec(),
     };
     match magic(&payload) {
         m if m == *TEXT_MAGIC => Ok(payload),
@@ -195,6 +199,15 @@ mod tests {
     fn decrypts_a_container() {
         assert_eq!(decrypt(&container(TEXT, None)).unwrap(), TEXT);
         assert_eq!(sii_text(&container(TEXT, None)).unwrap(), TEXT);
+    }
+
+    /// A Workshop item's `versions.sii` may start with a UTF-8 byte-order
+    /// mark, and the game reads it (`research/evidence/mod-workshop.txt`).
+    #[test]
+    fn drops_a_utf8_byte_order_mark() {
+        let marked = [[0xef, 0xbb, 0xbf].as_slice(), TEXT].concat();
+        assert_eq!(sii_text(&marked).unwrap(), TEXT);
+        assert!(sii_text(&[0xef, 0xbb, 0xbf]).is_err());
     }
 
     #[test]

@@ -5,8 +5,10 @@
 
 #![warn(missing_docs)]
 
+pub mod bc;
 mod binary;
 pub mod bsii;
+pub mod dds;
 pub mod mat;
 pub mod mod_manifest;
 pub mod paths;
@@ -15,6 +17,7 @@ pub mod pmg;
 pub mod scsc;
 pub mod sii;
 pub mod sniff;
+pub mod tobj;
 pub mod token;
 pub mod ui_markup;
 

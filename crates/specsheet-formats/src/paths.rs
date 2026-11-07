@@ -13,16 +13,11 @@ use crate::sii::{self, resolve_relative};
 /// Longest path we keep; game paths are far shorter.
 const MAX_PATH: usize = 512;
 
-/// First bytes of a standalone `.tobj` file.
-const TOBJ_MAGIC: [u8; 4] = [0x01, 0x0a, 0xb1, 0x70];
-/// Where a `.tobj` file's texture path records start.
-const TOBJ_PATHS: usize = 0x28;
-
 /// Paths (without a leading slash, any `#event` suffix removed) that the
 /// bytes of `file` mention. May contain paths that do not exist.
 pub fn referenced_paths(file: &str, bytes: &[u8]) -> Vec<String> {
     let mut out = Vec::new();
-    if let Some(textures) = tobj_textures(bytes) {
+    if let Some(textures) = crate::tobj::texture_paths(bytes) {
         for path in textures {
             push(&mut out, path);
         }
@@ -124,31 +119,6 @@ pub fn unit_paths(bytes: &[u8]) -> Vec<String> {
         );
     }
     out
-}
-
-/// The texture paths of a standalone `.tobj` file: from 0x28, records of a
-/// little-endian u64 length and that many path bytes, filling the file
-/// exactly (one record; six for a cube map). Read whole, since a path may
-/// hold characters such as `?*<>:#` (`research/evidence/
-/// mod-name-recovery.txt`, section 8). `None` when the bytes are not a
-/// `.tobj` or the records do not fill them.
-fn tobj_textures(bytes: &[u8]) -> Option<Vec<&str>> {
-    if !bytes.starts_with(&TOBJ_MAGIC) {
-        return None;
-    }
-    let mut rest = bytes.get(TOBJ_PATHS..)?;
-    let mut out = Vec::new();
-    while !rest.is_empty() {
-        let (len, tail) = rest.split_first_chunk::<8>()?;
-        let len = usize::try_from(u64::from_le_bytes(*len)).ok()?;
-        if len > MAX_PATH || len > tail.len() {
-            return None;
-        }
-        let (path, tail) = tail.split_at(len);
-        out.push(std::str::from_utf8(path).ok()?);
-        rest = tail;
-    }
-    (!out.is_empty()).then_some(out)
 }
 
 /// The path characters at the start of `text`, cut at `#` (an event or
