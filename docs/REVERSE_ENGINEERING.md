@@ -69,6 +69,8 @@ For each truck `/def/vehicle/truck/<brand.model>/`:
     - A stricter variant (`exact | slot_<x> | slot<digits>`) missed four (`doorstep` vs `doorsteps`; `research/evidence/locator-check-v1.txt`).
     - Three slots have two visible locators each: `flag_r` (Iveco Hi-Way), `toybig` (Magnum), `carpet` (Renault T). The model is placed at each.
   - The engine's actual rule is still **Unknown** (REA pending). The rule above reproduces every preset.
+- **The interior's exterior model hosts slots too (Hypothesis, strong; `research/evidence/rea-pin-model-order.txt` section 4).** The attach walk `FUN_1406299d0` searches the chassis, the interior's exterior model (`ext_model`, at the cabin's `ext_interior` locator), then the cabin, and composes a hit on the exterior model with that model's placement. No 1.60 preset needs it, but a mod does: the Sanax Volvo FH2022 keeps its `acc`, `bat_but`, `curtain_s`, `high_sleeper`, `seat` and `stow_box` locators only in its `ext_interior/glob_ext.pmd` (and the cockpit), none on the cabin or chassis (`mod_mount`, 2026-11-07).
+  - **Implementation:** `specsheet-assembly` places an addon whose slot no base model offers at the exterior model's locators, composed with its placement, and counts those slots as available. Where a base model and the exterior model both offer a slot, the base model's locators are used; the game's order (chassis, then the exterior model, then the cabin) is not applied, which matters only for the Renault T `*_24` exterior models (up to 5 cm).
 - Variant-dependent parts carry mirrored locators:
   - `eu_part` has `s_mirror` at x = +1.25; `uk_part` has it at x = −1.25.
   - PMD variants `default`/`uk` toggle these parts (`visible` attribute).
@@ -283,6 +285,7 @@ Evidence: `research/evidence/mod-loader-survey.txt` (game log, `eurotrucks2.exe`
 - **Mounting (Confirmed).**
   - Nothing is mounted until a profile is selected.
   - Then the game logs "Active N mods (local, workshop)" and mounts each active mod, in that order, into a separate mod pool. Base and DLC stay in the scs and core pools.
+  - Implementation (D20): `GameInstall::mount_with_mods` ranks the mod pool between the scs and core pools, the later active mod higher; multi-folder packages mount `base/` then each installed `dlc_<name>/` as its own device (the folder test and order are a Hypothesis).
 - **Pool ranking (Confirmed, static, `research/evidence/mod-pool-priority-static.txt`).** All file access goes through a root pool whose devices are the four pools, in the order core > user > mod > scs. A lookup takes the first device that has the path; the hash index gives the same winner. So a mod overrides base, def and DLC files, but not paths in `effect`, `core`, `locale` or `base_cfg`. Mods mount at the root path, like DLCs, so a mod's `/def/x.sii` replaces the DLC's or the base's. The home and temporary folders mount into the user pool at priority 651. Not checked at runtime.
 - **Priority (Confirmed mechanism, `research/evidence/mod-priority-static.txt`, static disassembly).**
   - Mods mount in active-list order with rising priorities, starting at 1001.

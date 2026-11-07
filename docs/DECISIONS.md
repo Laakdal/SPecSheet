@@ -55,9 +55,9 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - **Interior pins** follow the game's interior pass too (cockpit locator + `pin_offset`; the added transform is a Hypothesis), and the bounding-box anchors are gone.
   - **Still ours:** the marker look (dots, the hollow ring for empty slots).
 
-### D8: Only base game and DLC archives are mounted (partly superseded by D15)
+### D8: Only base game and DLC archives are mounted (superseded by D15 and D20)
 - Mods (`Documents/Euro Truck Simulator 2/mod`) use HashFS v1 and ZIP, and change data arbitrarily.
-- Mods are out of scope for the prototype. Since D15, mod containers and profiles are read, but still nothing is mounted.
+- Mods were out of scope for the prototype. Since D15, mod containers and profiles are read; since D20, a chosen profile's local mods are mounted.
 
 ### D9: Rule repair is our design
 - **Context:** the definitions say what is compatible, not how the game repairs a configuration after a base-part change.
@@ -119,7 +119,7 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - Bevy's own image types. Rejected: they don't expose PNG decoding outside the asset system.
   - A separate tool crate. Rejected: the runner re-runs the app binary itself, and keeping it in the binary avoids a second build target.
 
-### D15: Read mod containers and profiles; mount nothing yet
+### D15: Read mod containers and profiles; mount nothing yet (mounting superseded by D20)
 - **Context:** the user asked for mod packages and their profile's mod list to be readable (F14, `docs/formats/mods.md`, `docs/formats/profiles.md`).
 - **Decision:**
   - `specsheet-archive` gets its own tolerant ZIP reader (`zip.rs`). Like D2, we own the reader: a stock reader (Python's `zipfile`) refuses a package the game loads (encryption bit set, wrong CRCs), and we need the game's tolerance, measured on 33 packages. The `zip` crate was not tried.
@@ -195,3 +195,18 @@ Each entry records the context, the decision and the alternatives considered. Ne
   - Listing only. Not chosen: the user wants files on disk to inspect and edit.
   - Rewriting references to renamed files, as Extractor does. Deferred: it edits file contents and needs its own decision.
   - Refusing game archives as input. Not chosen by the user; reading them is what the app already does, and the install itself stays read-only.
+
+### D20: Mount a chosen profile's local mods, the game's way; off by default
+- **Context:** the user wants modded trucks and parts in the tuning screen (2026-11-07). F14 now says how the game ranks mods: above every scs-pool archive (base, def, DLC), below the core pool (`effect`, `core`, `locale`, `base_cfg`), the later entry of `active_mods[]` winning.
+- **Decision:**
+  - Mods are off unless the user picks a profile. The app then mounts that profile's active mods, read only; the game, its home folder, the mod folder and the profile are never written.
+  - Only local packages (`<home>/mod/<package>.scs|.zip`) are mounted. Steam Workshop entries are listed as skipped, so the user sees where the app differs from the game.
+  - The `Vfs` holds HashFS v2, HashFS v1 and ZIP devices. Lookups rank them as the game does: scs pool, then mods in `active_mods[]` order, then the core pool. A multi-folder package (`base/`, `dlc_<name>/`) mounts each folder as its own device with the folder stripped from paths, `base/` first, and a `dlc_<name>/` folder only when that DLC is installed (Hypothesis for the strip and the order, F14).
+  - Gating follows the game: a package whose `compatible_versions[]` matches no glob of the game version is skipped, as is a package whose file is missing. Each skip has a reason the app shows.
+  - Mod content is hostile input. A definition or model that fails to read becomes a load warning; it never stops the catalog or the app.
+  - Mod textures are loose `.tobj` + `.dds` files, not packed. `specsheet-formats` reads DDS and standalone `.tobj`; `specsheet-data` falls back to them when a texture is not packed. The `.dds` that a `.tobj` names is read through the `Vfs`, so ranking applies to it too.
+  - `real_install` stays a base-game test. Mod tests run only when the user names a home folder and a profile.
+- **Alternatives:**
+  - Mount every package in the mod folder. Rejected: the game mounts only a profile's active list, in its order, and two packages may override the same file differently.
+  - Workshop items now. Deferred by the user: local mods first.
+- **Amended (2026-11-07):** with the local mods done, the user asked for every open task, so Steam Workshop items are mounted too, read only, from the Workshop folder of the install's Steam library (`GameInstall::workshop_dir`). Each takes the entry its `versions.sii` picks (the first unit whose `compatible_versions[]` match, else the first without any; 77 of 77 items agree with the game log, `research/evidence/mod-workshop.txt`): a folder, mounted as a `FolderPackage` device, or a package file. A Workshop item missing from that folder is listed with its reason, as before.

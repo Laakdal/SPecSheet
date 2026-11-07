@@ -78,6 +78,8 @@ ETS2_DIR="<game dir>" cargo run --release -p specsheet
 | `clear <slot id>` | empty an optional slot, as the remove button does |
 | `exposure <E>` | set the tonemap's fixed exposure scale (default 5.555, so k = 1) |
 | `paint <base\|mask1\|mask2\|mask3\|flake\|flip> <r> <g> <b>` | set one of the paint job's colours (linear RGB), as the colour picker does |
+| `mods <profile folder> <home folder>` / `mods off` | reopen the game with a profile's local mods (D20), or without; the home folder comes last and may hold spaces. Not saved to the settings |
+| `specsheet open` | expand the collapsed SpecSheet window (truck, scene and mod pickers), to show it in a screenshot |
 | `sleep <frames>` / `echo <text>` | pause; log `script: <text>` so an external driver can sync |
 | `screenshot <png path>` | save the window (then waits 30 frames) |
 | `exit` | quit |
@@ -171,17 +173,23 @@ cargo run --release -p specsheet-research --example mod_probe -- "<home>/mod"
 # Profile: decrypt (ScsC) or read plain text, list active_mods in order
 cargo run --release -p specsheet-research --example profile_mods -- "<home>/profiles/<hex name>/profile.sii"
 
+# Mods (D20): mount a profile's local mods; report each mod's outcome, the trucks they add, and whether each added truck's models and textures read
+cargo run --release -p specsheet-research --example mod_mount -- "<home>" <profile folder> [truck id ...]
+
+# Loose .tobj headers in mod packages against the game's packed textures (research/evidence/tobj-loose.txt)
+cargo run --release -p specsheet-research --example tobj_survey -- "<home>/mod"
+
 # Saves: decode every save (ScsC, text, binary) and compare binary against text field kinds
 cargo run --release -p specsheet-research --example save_check -- "<home>/profiles"
 
 # Mod names: recover file names in HashFS v1 packages from the game's paths and the packages' own contents; --others adds what the other packages of a folder hold or mention (cached per package in %LOCALAPPDATA%\dev.specsheet.app\mod-scan; --no-cache reads them all again); --paths adds one candidate per line of a file; --list adds folders, replaced game files, unnamed contents
 cargo run --release -p specsheet-research --example mod_names -- [--list] [--others "<home>/mod"] [--no-cache] [--paths <file>] "<home>/mod/<package>.scs" ...
 
-# Mod extraction (D19): list a v1 or ZIP package or a game archive (v2; packed textures are listed, not written) as a tree, or write its files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites. --only takes archive paths matching a pattern (`*` any run, `/` included; unnamed entries as `_unnamed/<hash>`), repeatable
+# Mod extraction (D19): list a v1 or ZIP package or a game archive (v2; packed textures are listed, or with --textures written as a standalone .tobj and a DX10 .dds) as a tree, or write its files to an empty folder outside the game, the ETS2 home, the mod folder and the repo; never overwrites. --only takes archive paths matching a pattern (`*` any run, `/` included; unnamed entries as `_unnamed/<hash>`), repeatable
 cargo run --release -p specsheet-research --example mod_extract -- --list [--only <pattern>]... [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs"
-cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--only <pattern>]... [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs" <absolute destination>
-# Compare an extracted game archive with the game, file by file (counts only)
-cargo run --release -p specsheet-research --example extract_check -- "<install>/<archive>.scs" <extracted folder>
+cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--textures] [--only <pattern>]... [--others "<home>/mod"] [--no-cache] "<home>/mod/<package>.scs" <absolute destination>
+# Compare an extracted game archive with the game, file by file (counts only); --textures also reads back the converted textures against the packed records
+cargo run --release -p specsheet-research --example extract_check -- [--textures] "<install>/<archive>.scs" <extracted folder>
 
 # Mod writer: a test package (manifest + description, no game files) as <dir>/specsheet_test.scs; refuses if it exists
 cargo run --release -p specsheet-research --example mod_write -- <dir>

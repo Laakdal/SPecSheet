@@ -50,6 +50,24 @@ After decompression, each mip level starts on the image alignment, and each row 
 
 **Verification:** the `texture_layout` example matches the decompressed size exactly for every sampled texture whose format `pixel_layout` knows. `PackedTexture::unpack` follows the same model.
 
+## Loose textures in mods
+
+Mod packages (ZIP, HashFS v1) hold a standalone `.tobj` and the `.dds` it names as two files (D20). `specsheet-formats::tobj` reads the `.tobj` and `specsheet-formats::dds` the DDS; `specsheet-data::render` builds the same texture a packed entry gives, reading the `.dds` through the file system so mod ranking applies. Evidence: `research/evidence/tobj-loose.txt` (24,125 files; 2,775 paired with the game's packed texture at the same path).
+
+| Offset | Meaning | Status |
+|---|---|---|
+| 0x00 | magic `01 0a b1 70` | Confirmed |
+| 0x18 | type: 2 = 2D, 5 = cube | Hypothesis (strong) |
+| 0x1c | 2 = no mipmaps; 1 and 3 have them | Hypothesis (strong) |
+| 0x1e, 0x1f, 0x20 | address u, v, w, in the sample record's codes (0 repeat, 2 clamp to edge) | Hypothesis (strong) |
+| 0x26 (also 0x16) | 1 = linear colour data; used only when the `.dds` names no colour space | Hypothesis (strong) |
+| 0x14, 0x1a/0x1b, 0x21, 0x25 | vary, meaning unknown; not used | Unknown |
+| 0x28 | path records: u64 length + path, one, or six for a cube | Confirmed |
+
+- A DX10 `.dds` names its DXGI format, sRGB or not. A legacy FourCC (`DXT1/3/5`, `ATI1/2`) or uncompressed file does not: it is sRGB unless the `.tobj` marks it linear (the game's packed copy agrees in 2,473 of 2,483 pairs).
+- 24-bit files are widened to BGRX. BC7 (DXGI 97 to 99) occurs only in mods. 32-bit float files (FourCC `0x74`, D3D A32B32G32R32F; 17 files) are DXGI 2, linear, and upload as half floats (`Rgba16Float`), since wgpu filters 32-bit floats only with an optional feature.
+- With "no mipmaps", only mip 0 of the `.dds` is used.
+
 ## Observed DXGI formats
 
 | DXGI | Format          |

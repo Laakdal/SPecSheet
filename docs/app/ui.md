@@ -67,6 +67,8 @@ Hovering a tile uses the selected state. Clicking a compatible tile selects the 
 
 The truck picker, drive toggle, scene picker, game directory and messages have no place on the game's screen. They live in a small collapsible "SpecSheet" window at the bottom centre. When no game is open and discovery has failed, a centred box asks for the game directory.
 
+**Mods (D20).** Below the game directory, a Mods row takes the ETS2 home folder (found at `Documents\Euro Truck Simulator 2`, or typed when the game runs with `-homedir`). "Find profiles" lists its profiles. Picking one reopens the game with that profile's mods (local and Steam Workshop), ranked as the game ranks them; "No mods" reopens it without. The row then says how many mods loaded and lists the others with the reason, such as a Workshop item that is not downloaded, a missing file or another game version (`view::mods`).
+
 ## Busy state and settings
 
-Work that parses files (opening the game, loading a truck, selecting, switching drive) runs one job at a time, and later clicks queue as actions. `%APPDATA%\dev.specsheet.app\settings.json` keeps the last game directory and the last truck.
+Work that parses files (opening the game, loading a truck, selecting, switching drive) runs one job at a time, and later clicks queue as actions. `%APPDATA%\dev.specsheet.app\settings.json` keeps the last game directory, the last truck and the chosen mod profile (`modsHome`, `modsProfile`).

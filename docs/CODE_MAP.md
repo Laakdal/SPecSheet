@@ -12,6 +12,8 @@ Paths are relative to `crates/`. `real_install::x` is a test in `specsheet-sessi
 | SII definitions | `specsheet-formats/src/sii.rs` | unit; `real_install::every_vehicle_definition_parses` |
 | Mod file names in HashFS v1 packages without listings | `specsheet-data/src/mod_names.rs`, cached folder scan in `specsheet-data/src/mod_scan.rs`; scanner in `specsheet-formats/src/paths.rs`; content types in `specsheet-formats/src/sniff.rs` | unit; example `mod_names` over v1 packages |
 | Extracting a package to a folder (D19) | `specsheet-data/src/extract.rs` | unit (temp folders); example `mod_extract` |
+| Mounting a profile's mods (D20): home folder, profiles, gating, multi-folder packages, Steam Workshop items (`versions.sii`), the mod pool | `specsheet-data/src/{mods,install}.rs`; mixed devices in `specsheet-archive/src/vfs.rs`, folders in `specsheet-archive/src/folder.rs`; `GameSession::open_with_profile`, `view::{profiles, mods}`; picker in `specsheet/src/ui/mod.rs` | unit; opt-in `real_install::a_profiles_mods_mount_and_the_trucks_they_add_load_with_their_textures` (`ETS2_HOME`, `ETS2_PROFILE`); example `mod_mount` |
+| Loose mod textures: standalone `.tobj`, DDS | `specsheet-formats/src/{tobj,dds}.rs`; fallback in `specsheet-data/src/render.rs` | unit; example `tobj_survey` |
 | Profiles and saves: ScsC, binary SII | `specsheet-formats/src/{scsc,bsii}.rs` | unit; examples `profile_mods`, `save_check` |
 | Models (PMD, PMG, tokens), materials | `specsheet-formats/src/{pmd,pmg,token,mat}.rs` | unit; `real_install::every_truck_model_parses` |
 | UI markup tags | `specsheet-formats/src/ui_markup.rs` | unit; `real_install::every_ui_template_parses_and_the_tuning_screen_lays_out` |
