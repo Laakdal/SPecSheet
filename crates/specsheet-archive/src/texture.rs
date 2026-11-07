@@ -69,9 +69,10 @@ pub enum AddressMode {
 }
 
 impl AddressMode {
-    /// Maps a 3-bit address field (textures.md, "Sample record"). The value
-    /// 7 has no mode and falls back to `Repeat`.
-    fn from_bits(value: u32) -> Self {
+    /// Maps a 3-bit address field (textures.md, "Sample record"); loose
+    /// `.tobj` files use the same codes. The value 7 has no mode and falls
+    /// back to `Repeat`.
+    pub fn from_bits(value: u32) -> Self {
         match value {
             0 => Self::Repeat,
             1 => Self::Clamp,
@@ -161,6 +162,11 @@ pub enum PixelLayout {
 /// UNORM, sRGB, integer variants), whose members share one memory layout.
 pub fn pixel_layout(dxgi_format: u32) -> Option<PixelLayout> {
     let layout = match dxgi_format {
+        // R32G32B32A32 family: four 32-bit channels, only in mods' loose
+        // textures (`research/evidence/tobj-loose.txt`).
+        1..=4 => PixelLayout::Linear {
+            bytes_per_pixel: 16,
+        },
         // R8G8B8A8, R16G16 and B8G8R8A8/X8 families: 4 bytes per pixel.
         27..=38 | 87 | 88 | 90..=93 => PixelLayout::Linear { bytes_per_pixel: 4 },
         // R9G9B9E5_SHAREDEXP: three 9-bit mantissas and a shared exponent.
@@ -171,6 +177,8 @@ pub fn pixel_layout(dxgi_format: u32) -> Option<PixelLayout> {
         70..=72 | 79..=81 => PixelLayout::Block { bytes: 8 },
         // BC2, BC3 and BC5: 16 bytes per 4x4 block.
         73..=78 | 82..=84 => PixelLayout::Block { bytes: 16 },
+        // BC7, only in mod textures (`research/evidence/tobj-loose.txt`).
+        97..=99 => PixelLayout::Block { bytes: 16 },
         _ => return None,
     };
     Some(layout)
@@ -384,10 +392,17 @@ mod tests {
         for dxgi in [71, 72, 80] {
             assert_eq!(pixel_layout(dxgi), Some(PixelLayout::Block { bytes: 8 }));
         }
-        for dxgi in [75, 77, 78, 83] {
+        // BC7 and R32G32B32A32_FLOAT come from mods' loose textures (D20).
+        for dxgi in [75, 77, 78, 83, 98, 99] {
             assert_eq!(pixel_layout(dxgi), Some(PixelLayout::Block { bytes: 16 }));
         }
-        for dxgi in [0, 2, 66, 89, 98, u32::MAX] {
+        assert_eq!(
+            pixel_layout(2),
+            Some(PixelLayout::Linear {
+                bytes_per_pixel: 16
+            })
+        );
+        for dxgi in [0, 5, 66, 89, 100, u32::MAX] {
             assert_eq!(pixel_layout(dxgi), None);
         }
     }

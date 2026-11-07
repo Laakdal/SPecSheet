@@ -66,6 +66,10 @@ pub enum ArchiveError {
     /// No entry has this path.
     #[error("`{0}` not found")]
     NotFound(String),
+    /// The winning `.tobj` is a plain file (a mod package's), not a packed
+    /// texture; its `.dds` holds the pixels.
+    #[error("`{0}` is not a packed texture")]
+    NotPackedTexture(String),
     /// The entry exists but is the wrong kind (a file where a directory was
     /// asked for, or the reverse).
     #[error("`{path}` is not a {expected}")]

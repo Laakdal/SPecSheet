@@ -9,6 +9,7 @@
 
 mod city;
 mod error;
+mod folder;
 mod gdeflate;
 mod hashfs;
 mod hashfs_v1;
@@ -20,12 +21,13 @@ mod zip_write;
 
 pub use city::city_hash_64;
 pub use error::{ArchiveError, Result};
+pub use folder::FolderPackage;
 pub use hashfs::{hash_path, Archive, Blob, Content, DirListing, Entry, EntryKind, SkippedEntry};
 pub use hashfs_v1::{EntryV1, HashFsV1Archive};
 pub use read_at::EntryReader;
 pub use texture::{
     pixel_layout, AddressMode, ImageMeta, PackedTexture, PixelLayout, SampleMeta, Surface,
 };
-pub use vfs::Vfs;
+pub use vfs::{Device, Vfs};
 pub use zip::ZipArchive;
 pub use zip_write::{write_new_package, ZipWriter};
