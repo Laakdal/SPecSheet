@@ -1,0 +1,33 @@
+# Baseline of research/evidence/extract-v2.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## mod_extract "<game>/core.scs" "<scratch>/core"
+<game>/core.scs: 22 entries, 0 named by listings, 14 by game paths, 6 unnamed, 0 not indexed
+wrote 20 files (0.1 MB), 6 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 0 packed textures left out
+## extract_check "<game>/core.scs" "<scratch>/core"
+<game>/core.scs
+  listed files 20, files on disk 20 (0 of them lists), packed textures left out 0, not indexed 0
+  top archive for the path, vs Vfs::read: 14 equal, 0 differ
+  overridden by a higher archive, vs this archive's read: 0 equal, 0 differ (0 also equal the game's bytes)
+  unnamed, vs the entry of their hash: 6 equal, 0 differ
+  missing or unreadable: 0
+## mod_extract "<game>/dlc_daf_xd.scs" "<scratch>/dlc_daf_xd"
+<game>/dlc_daf_xd.scs: 2548 entries, 2180 named by listings, 0 by game paths, 0 unnamed, 0 not indexed
+wrote 1643 files (202.2 MB), 0 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 537 packed textures left out
+## extract_check "<game>/dlc_daf_xd.scs" "<scratch>/dlc_daf_xd"
+<game>/dlc_daf_xd.scs
+  listed files 1643, files on disk 1644 (1 of them lists), packed textures left out 537, not indexed 0
+  top archive for the path, vs Vfs::read: 1607 equal, 0 differ
+  overridden by a higher archive, vs this archive's read: 36 equal, 0 differ (36 also equal the game's bytes)
+  unnamed, vs the entry of their hash: 0 equal, 0 differ
+  missing or unreadable: 0
+## mod_extract "<game>/def.scs" "<scratch>/def"
+<game>/def.scs: 66928 entries, 64636 named by listings, 0 by game paths, 0 unnamed, 0 not indexed
+wrote 64636 files (106.9 MB), 0 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 0 packed textures left out
+## extract_check "<game>/def.scs" "<scratch>/def"
+<game>/def.scs
+  listed files 64636, files on disk 64636 (0 of them lists), packed textures left out 0, not indexed 0
+  top archive for the path, vs Vfs::read: 64628 equal, 0 differ
+  overridden by a higher archive, vs this archive's read: 8 equal, 0 differ (2 also equal the game's bytes)
+  unnamed, vs the entry of their hash: 0 equal, 0 differ
+  missing or unreadable: 0

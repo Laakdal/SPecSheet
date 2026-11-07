@@ -1,0 +1,1860 @@
+# Baseline of research/evidence/wheel-radius.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## def_stats /def/vehicle/f_tire
+accessory_wheel_data: 16
+    icon: 16
+    look: 16
+    model: 16
+    name: 16
+    noise_volume: 16
+    paintable: 14
+    part_type: 16
+    price: 16
+    roll_resistance: 16
+    unlock: 16
+    wet_grip: 16
+    wheel_shift: 3
+## def_stats /def/vehicle/r_tire
+accessory_wheel_data: 15
+    icon: 15
+    look: 15
+    model: 15
+    name: 15
+    noise_volume: 15
+    paintable: 13
+    part_type: 15
+    price: 15
+    roll_resistance: 15
+    unlock: 15
+    wet_grip: 15
+## def_stats /def/vehicle/truck
+accessory_addon_data: 8939
+    coll: 1078
+    conflict_with: 795
+    defaults: 228
+    electric_type: 308
+    exterior_model: 8525
+    exterior_model_uk: 1375
+    hide_in: 186
+    icon: 8620
+    interior_model: 3578
+    interior_model_uk: 1353
+    look: 1286
+    name: 8620
+    overrides: 207
+    part_type: 8187
+    price: 8619
+    steam_inventory_id: 533
+    suitable_for: 3728
+    unlock: 8619
+    variant: 1527
+accessory_addon_int_data: 7466
+    academy_reward: 127
+    coll: 544
+    conflict_with: 2
+    data: 2637
+    exterior_model: 1116
+    exterior_model_uk: 937
+    icon: 7466
+    interior_model: 7466
+    interior_model_uk: 2163
+    look: 294
+    name: 7466
+    part_type: 7302
+    price: 7466
+    steam_inventory_id: 2267
+    suitable_for: 8
+    unlock: 7466
+    variant: 96
+accessory_addon_int_ui_data: 66
+    conflict_with: 4
+    defaults: 5
+    electric_type: 14
+    exterior_model: 64
+    exterior_model_uk: 17
+    icon: 65
+    interior_model: 66
+    interior_model_uk: 17
+    name: 65
+    part_type: 65
+    price: 65
+    suitable_for: 12
+    ui_drawable_size: 66
+    ui_drawable_texture_path: 66
+    ui_path: 66
+    unlock: 65
+accessory_addon_painted_data: 1322
+    coll: 524
+    conflict_with: 600
+    default_color: 1322
+    electric_type: 18
+    exterior_model: 1322
+    icon: 1322
+    look: 1320
+    name: 1322
+    part_type: 1322
+    price: 1322
+    suitable_for: 894
+    unlock: 1322
+    variant: 780
+accessory_addon_patch_data: 12098
+    coll: 11546
+    data: 12098
+    exterior_model: 12098
+    icon: 12098
+    interior_model: 12098
+    name: 12098
+    part_type: 12098
+    price: 12098
+    unlock: 736
+accessory_addon_tank_data: 61
+    adblue_tank_size: 6
+    exterior_model: 61
+    fuel_tank_size: 61
+    icon: 61
+    name: 61
+    part_type: 61
+    price: 61
+    suitable_for: 61
+    unlock: 61
+accessory_addon_trailer_cables_data: 61
+    cables: 61
+    exterior_model: 61
+    overrides: 3
+    suitable_for: 49
+accessory_cabin_data: 78
+    collision: 78
+    defaults: 78
+    detail_model: 50
+    drl_with_headlights: 55
+    icon: 78
+    left_window_anim: 78
+    look: 71
+    model: 35
+    name: 78
+    part_type: 76
+    price: 78
+    require: 7
+    right_window_anim: 78
+    sounds: 78
+    suitable_for: 38
+    unlock: 78
+    variant: 78
+    variant_uk: 78
+    windows_model: 78
+    wiper_anim: 78
+    wiper_anim_uk: 78
+    wiper_model: 78
+    wiper_model_uk: 78
+accessory_chassis_data: 164
+    adblue_tank_size: 70
+    air_tank_pressure: 20
+    collision: 164
+    defaults: 164
+    detail_model: 82
+    extended_shadow_fadeout_length: 164
+    extended_shadow_fadeout_start: 164
+    extended_shadow_intensity: 164
+    extended_shadow_shared_model_variant: 59
+    extended_shadow_texture: 164
+    icon: 164
+    info: 164
+    kerb_weight: 164
+    lamp_setup: 63
+    liftable_axle: 71
+    look: 164
+    model: 101
+    name: 164
+    overrides: 37
+    part_type: 107
+    powered_axle: 164
+    price: 164
+    residual_travel: 164
+    sounds: 164
+    steerable_axle: 61
+    suitable_for: 34
+    tank_size: 147
+    ui_shadow: 164
+    unlock: 164
+    variant: 164
+    variant_uk: 6
+accessory_engine_data: 203
+    adblue_consumption: 30
+    defaults: 9
+    engine_brake: 21
+    engine_brake_downshift: 21
+    engine_brake_positions: 21
+    icon: 203
+    info: 203
+    name: 203
+    no_adblue_power_limit: 198
+    overrides: 166
+    part_type: 150
+    price: 203
+    rpm_idle: 27
+    rpm_limit: 114
+    rpm_limit_neutral: 22
+    rpm_range_engine_brake: 22
+    rpm_range_high_gear: 46
+    rpm_range_low_gear: 46
+    rpm_range_power: 62
+    secondary_torque: 13
+    secondary_torque_curve: 9
+    sounds: 203
+    torque: 203
+    torque_curve: 115
+    type: 5
+    unlock: 203
+    volume: 199
+accessory_head_lights_data: 47
+    front_beam_angle: 47
+    front_beam_aspect: 47
+    front_beam_bias: 47
+    front_beam_color: 47
+    front_beam_color_ambient: 47
+    front_beam_color_specular: 47
+    front_beam_left_rot: 47
+    front_beam_mask: 47
+    front_beam_range: 47
+    front_beam_refracted_angle: 47
+    front_beam_refracted_aspect: 47
+    front_beam_refracted_bias: 47
+    front_beam_refracted_color_fraction: 47
+    front_beam_refracted_mask: 47
+    front_beam_refracted_offset_yz: 47
+    front_beam_refracted_pitch: 47
+    front_beam_refracted_range: 47
+    front_beam_right_rot: 47
+    front_roof_beam_angle: 47
+    front_roof_beam_aspect: 47
+    front_roof_beam_bias: 47
+    front_roof_beam_color: 47
+    front_roof_beam_color_ambient: 47
+    front_roof_beam_color_specular: 47
+    front_roof_beam_left_rot: 47
+    front_roof_beam_mask: 47
+    front_roof_beam_range: 47
+    front_roof_beam_refracted_angle: 47
+    front_roof_beam_refracted_aspect: 47
+    front_roof_beam_refracted_bias: 47
+    front_roof_beam_refracted_color_fraction: 47
+    front_roof_beam_refracted_mask: 47
+    front_roof_beam_refracted_offset_yz: 47
+    front_roof_beam_refracted_pitch: 47
+    front_roof_beam_refracted_range: 47
+    front_roof_beam_right_rot: 47
+    hi_beam_angle: 47
+    hi_beam_aspect: 47
+    hi_beam_bias: 47
+    hi_beam_color: 47
+    hi_beam_color_ambient: 47
+    hi_beam_color_specular: 47
+    hi_beam_left_rot: 47
+    hi_beam_mask: 47
+    hi_beam_range: 47
+    hi_beam_refracted_angle: 47
+    hi_beam_refracted_aspect: 47
+    hi_beam_refracted_bias: 47
+    hi_beam_refracted_color_fraction: 47
+    hi_beam_refracted_mask: 47
+    hi_beam_refracted_offset_yz: 47
+    hi_beam_refracted_pitch: 47
+    hi_beam_refracted_range: 47
+    hi_beam_right_rot: 47
+    icon: 46
+    left_rot: 47
+    low_beam_angle: 47
+    low_beam_aspect: 47
+    low_beam_bias: 47
+    low_beam_color: 47
+    low_beam_color_ambient: 47
+    low_beam_color_specular: 47
+    low_beam_left_rot: 47
+    low_beam_mask: 47
+    low_beam_range: 47
+    low_beam_refracted_angle: 47
+    low_beam_refracted_aspect: 47
+    low_beam_refracted_bias: 47
+    low_beam_refracted_color_fraction: 47
+    low_beam_refracted_mask: 47
+    low_beam_refracted_offset_yz: 47
+    low_beam_refracted_pitch: 47
+    low_beam_refracted_range: 47
+    low_beam_right_rot: 47
+    name: 46
+    no_parking_light: 45
+    part_type: 39
+    price: 46
+    reflectors_distance: 47
+    reflectors_offset: 47
+    right_rot: 47
+    roof_beam_angle: 47
+    roof_beam_aspect: 47
+    roof_beam_bias: 47
+    roof_beam_color: 47
+    roof_beam_color_ambient: 47
+    roof_beam_color_specular: 47
+    roof_beam_left_rot: 47
+    roof_beam_mask: 47
+    roof_beam_range: 47
+    roof_beam_refracted_angle: 47
+    roof_beam_refracted_aspect: 47
+    roof_beam_refracted_bias: 47
+    roof_beam_refracted_color_fraction: 47
+    roof_beam_refracted_mask: 47
+    roof_beam_refracted_offset_yz: 47
+    roof_beam_refracted_pitch: 47
+    roof_beam_refracted_range: 47
+    roof_beam_right_rot: 47
+    unlock: 46
+accessory_horn_addon_data: 286
+    conflict_with: 223
+    exterior_model: 286
+    icon: 286
+    name: 286
+    part_type: 134
+    price: 286
+    sound_path: 286
+    steam_inventory_id: 44
+    suitable_for: 92
+    unlock: 286
+    variant: 102
+accessory_interior_data: 438
+    active_mirrors_part: 254
+    ad_blue_anim: 80
+    air_pressure_anim: 112
+    air_pressure_anim_max: 112
+    air_pressure_anim_min: 40
+    animated_model: 438
+    auto_transmission_stick_anim: 356
+    beacon_anim: 66
+    blinker_anim: 438
+    blinker_delay: 438
+    button_4way: 352
+    button_battery_warning: 32
+    button_high_beam_lights: 316
+    button_jakebrake: 32
+    button_left_blinker: 330
+    button_lights: 318
+    button_low_fuel: 186
+    button_parking_brake: 438
+    button_right_blinker: 330
+    button_water_temp: 2
+    collision: 437
+    consumption_anim: 28
+    consumption_anim_max: 28
+    consumption_anim_min: 28
+    consumption_electric_anim: 2
+    dashboard_color: 426
+    dashboard_drawable_size: 200
+    dashboard_path: 438
+    defaults: 254
+    differential_lock_stick_anim: 428
+    effect_add_window_eq_closed: 438
+    effect_add_window_eq_opened: 438
+    effect_equalizer_cabin_inside: 438
+    effect_equalizer_cabin_outside: 438
+    effect_reverb_window_closed: 438
+    effect_reverb_window_opened: 438
+    engine_brake_stick_anim: 4
+    engine_start_anim: 326
+    ext_look: 426
+    ext_model: 438
+    ext_variant: 401
+    flasher_4way_anim: 336
+    fuel_anim: 226
+    fuel_anim_max: 112
+    generic_anim: 166
+    generic_anim_max: 8
+    glass_panes: 438
+    gps_drawable_size: 200
+    gps_path: 377
+    high_beam_anim: 438
+    icon: 438
+    indicator_aux_lights_front: 12
+    indicator_aux_lights_roof: 44
+    indicator_axle_lift: 214
+    indicator_blind_spot_left: 78
+    indicator_blind_spot_right: 78
+    indicator_differential_lock: 240
+    indicator_generic: 248
+    indicator_low_adblue: 64
+    indicator_low_air_pressure: 268
+    indicator_low_oil_pressure: 32
+    indicator_position_lights: 168
+    indicator_retarder: 136
+    indicator_stop: 276
+    indicator_trailer_axle_lift: 86
+    indicator_warning: 266
+    left_hand_traffic: 219
+    left_window_anim: 438
+    left_window_stick_anim: 438
+    lift_axle_stick_anim: 346
+    lift_axle_trailer_stick_anim: 186
+    light_horn_stick_anim: 340
+    lights_anim: 372
+    look: 430
+    mirror_camera_presets: 434
+    model: 438
+    name: 438
+    oil_pressure_anim: 36
+    oil_pressure_anim_max: 36
+    oil_pressure_anim_min: 28
+    overrides: 6
+    parking_stick_anim: 340
+    parking_stick_electric_anim: 74
+    part_type: 369
+    passive_mirrors_part: 254
+    price: 438
+    reflection_offset: 90
+    retarder_stick_anim: 434
+    right_window_anim: 438
+    right_window_stick_anim: 438
+    seat_back_limit: 262
+    seat_down_limit: 262
+    seat_front_limit: 262
+    seat_left_limit: 262
+    seat_right_limit: 262
+    seat_up_limit: 262
+    shadow_proxy_csv: 436
+    show_chassis_rear: 8
+    sounds: 438
+    speedometer_anim: 196
+    speedometer_anim_max: 196
+    speedometer_anim_min: 162
+    suitable_for: 432
+    tachometer_anim: 238
+    tachometer_anim_max: 238
+    tachometer_anim_min: 192
+    turbo_anim: 8
+    unlock: 438
+    variant: 438
+    water_temp_anim: 202
+    water_temp_anim_max: 202
+    water_temp_anim_min: 202
+    wheel_frontback_anim: 438
+    wheel_frontback_anim_default: 438
+    wheel_updown_anim: 438
+    wheel_updown_anim_default: 438
+    wiper_anim: 438
+    wiper_duration_and_delay: 438
+    wiper_stick_anim: 438
+accessory_paint_job_data: 19998
+    academy_reward: 75
+    airbrush: 14942
+    alternate_uvset: 5487
+    base_color: 19550
+    base_color_locked: 9736
+    color_variant: 2451
+    flake_clearcoat_rolloff: 12574
+    flake_color: 15901
+    flake_color_locked: 7370
+    flake_density: 6935
+    flake_noise: 2488
+    flake_shininess: 8721
+    flake_uvscale: 4707
+    flip_color: 15901
+    flip_color_locked: 7371
+    flip_strength: 12938
+    flipflake: 9526
+    icon: 19474
+    mask_b_color: 11920
+    mask_b_locked: 9035
+    mask_g_color: 11844
+    mask_g_locked: 8472
+    mask_r_color: 11675
+    mask_r_locked: 8611
+    name: 19998
+    paint_job_mask: 18137
+    part_type: 19974
+    price: 19998
+    steam_inventory_id: 1244
+    stock: 720
+    suitable_for: 18133
+    unlock: 19998
+accessory_transmission_data: 195
+    auxiliary_brakes: 34
+    crawls: 30
+    differential_ratio: 195
+    icon: 195
+    manual_mode_name: 1
+    name: 195
+    part_type: 113
+    price: 195
+    ratios_forward: 195
+    ratios_reverse: 195
+    retarder: 97
+    shift_time: 37
+    sounds: 194
+    stall_torque_ratio: 41
+    transmission_names: 12
+    unlock: 195
+accessory_truck_data: 26
+    behind_camera: 26
+    bumper_camera: 26
+    cabin_camera: 26
+    debug_camera: 26
+    defaults: 13
+    double_sided: 2
+    fallback: 26
+    info: 26
+    interior_camera: 26
+    interior_camera_oculus: 26
+    pin_dir: 2
+    pin_dir_uk: 2
+    pin_group: 2
+    pin_look: 2
+    pin_offset: 2
+    require: 16
+    top_camera: 26
+    tv_camera: 26
+    wander_camera: 26
+    wheel_camera: 26
+    window_camera: 26
+glass_pane_data: 1720
+    edge_angle: 438
+    locator: 1720
+    mask_texture: 876
+    openable_window_bone: 876
+    size: 1720
+    wipers: 438
+physics_patch_data: 12098
+    aero_model_type: 12098
+    area_density: 12098
+    drag_coefficient: 12098
+    lift_coefficient: 12098
+    linear_stiffness: 12098
+    material: 12098
+    x_res: 12098
+    x_size: 12098
+    y_res: 12098
+    y_size: 12098
+physics_toy_data: 3154
+    angular_amplitude: 1237
+    angular_damping: 573
+    angular_stiffness: 573
+    instance_offset: 549
+    linear_damping: 2581
+    linear_stiffness: 1917
+    locator_hook_offset: 3154
+    node_damping: 1917
+    phys_model: 3154
+    phys_model_coll: 3154
+    phys_model_look: 606
+    phys_model_variant: 69
+    position_iterations: 1917
+    rest_position_offset: 328
+    rest_rotation_offset: 177
+    rope_hook_offset: 1917
+    rope_length: 1917
+    rope_linear_density: 1917
+    rope_material: 1917
+    rope_resolution: 1917
+    rope_toy_offset: 1917
+    rope_width: 1917
+    toy_mass: 3154
+    toy_type: 3154
+simple_paint_job_data: 127793
+    acc_list: 127662
+    flake_uvscale: 70967
+    flake_vratio: 43842
+    paint_job_mask: 119381
+sound_reverb_data: 876
+    decay_time: 876
+    density: 876
+    diffusion: 876
+    dry_level: 876
+    early_delay: 876
+    early_late_mix: 876
+    hf_decay_ratio: 876
+    hf_reference: 876
+    high_cut: 876
+    late_delay: 876
+    low_shelf_frequency: 876
+    low_shelf_gain: 876
+    wet_level: 876
+sound_three_eq_data: 1752
+    crossover_slope: 1752
+    high_crossover: 1752
+    high_gain: 1752
+    low_crossover: 1752
+    low_gain: 1752
+    mid_gain: 1752
+trailer_cable_data: 244
+    color: 244
+    locator_prefix: 244
+    rest_locator_prefix: 244
+    trailer_plug_model: 244
+    trailer_plug_model_offset: 244
+    vehicle_plug_model: 244
+    vehicle_plug_model_offset: 244
+transmission_names: 12
+    forward: 12
+unlock_levels: 27
+    level: 15
+vehicle: 1
+    accessories: 1
+    fuel_relative: 1
+vehicle_accessory: 7
+    data_path: 7
+vehicle_addon_accessory: 15
+    data_path: 15
+vehicle_lamp_setup: 11
+    color_brake: 11
+    color_daytime_running: 11
+    color_front_positional: 11
+    color_front_turn_signal: 11
+    color_high_beam: 11
+    color_low_beam: 11
+    color_rear_positional: 11
+    color_rear_turn_signal: 11
+    color_reverse: 11
+    color_side_positional: 11
+    wire_composites: 11
+vehicle_lamp_wire_composite: 56
+    channel_a_wire: 56
+    channel_b_wire: 56
+    channel_g_anim_fps: 5
+    channel_g_anim_frame_count: 5
+    channel_g_wire: 56
+    channel_r_anim_fps: 21
+    channel_r_anim_frame_count: 21
+    channel_r_wire: 56
+vehicle_paint_job_accessory: 1
+    base_color: 1
+    data_path: 1
+    flake_color: 1
+    flip_color: 1
+    mask_b_color: 1
+    mask_g_color: 1
+    mask_r_color: 1
+vehicle_wheel_accessory: 8
+    data_path: 8
+    offset: 8
+    paint_color: 8
+wiper_data: 904
+    center_bone: 904
+    length: 904
+## def_stats /def/vehicle
+accessory_addon_data: 13943
+    coll: 1269
+    conflict_with: 908
+    defaults: 228
+    electric_type: 308
+    exterior_model: 13528
+    exterior_model_uk: 1375
+    hide_in: 186
+    icon: 13624
+    interior_model: 3578
+    interior_model_uk: 1353
+    look: 1352
+    name: 13624
+    overrides: 207
+    part_type: 12120
+    price: 13623
+    steam_inventory_id: 533
+    suitable_for: 7398
+    unlock: 13623
+    variant: 1527
+accessory_addon_int_data: 7466
+    academy_reward: 127
+    coll: 544
+    conflict_with: 2
+    data: 2637
+    exterior_model: 1116
+    exterior_model_uk: 937
+    icon: 7466
+    interior_model: 7466
+    interior_model_uk: 2163
+    look: 294
+    name: 7466
+    part_type: 7302
+    price: 7466
+    steam_inventory_id: 2267
+    suitable_for: 8
+    unlock: 7466
+    variant: 96
+accessory_addon_int_ui_data: 66
+    conflict_with: 4
+    defaults: 5
+    electric_type: 14
+    exterior_model: 64
+    exterior_model_uk: 17
+    icon: 65
+    interior_model: 66
+    interior_model_uk: 17
+    name: 65
+    part_type: 65
+    price: 65
+    suitable_for: 12
+    ui_drawable_size: 66
+    ui_drawable_texture_path: 66
+    ui_path: 66
+    unlock: 65
+accessory_addon_painted_data: 1322
+    coll: 524
+    conflict_with: 600
+    default_color: 1322
+    electric_type: 18
+    exterior_model: 1322
+    icon: 1322
+    look: 1320
+    name: 1322
+    part_type: 1322
+    price: 1322
+    suitable_for: 894
+    unlock: 1322
+    variant: 780
+accessory_addon_patch_data: 12098
+    coll: 11546
+    data: 12098
+    exterior_model: 12098
+    icon: 12098
+    interior_model: 12098
+    name: 12098
+    part_type: 12098
+    price: 12098
+    unlock: 736
+accessory_addon_tank_data: 61
+    adblue_tank_size: 6
+    exterior_model: 61
+    fuel_tank_size: 61
+    icon: 61
+    name: 61
+    part_type: 61
+    price: 61
+    suitable_for: 61
+    unlock: 61
+accessory_addon_trailer_cables_data: 117
+    cables: 117
+    exterior_model: 117
+    overrides: 3
+    suitable_for: 73
+accessory_cabin_data: 78
+    collision: 78
+    defaults: 78
+    detail_model: 50
+    drl_with_headlights: 55
+    icon: 78
+    left_window_anim: 78
+    look: 71
+    model: 35
+    name: 78
+    part_type: 76
+    price: 78
+    require: 7
+    right_window_anim: 78
+    sounds: 78
+    suitable_for: 38
+    unlock: 78
+    variant: 78
+    variant_uk: 78
+    windows_model: 78
+    wiper_anim: 78
+    wiper_anim_uk: 78
+    wiper_model: 78
+    wiper_model_uk: 78
+accessory_cargo_data: 473
+    aux_models: 92
+    aux_models_locators: 92
+    collision: 436
+    detail_model: 11
+    dynamic_cargo_data: 6
+    lods: 391
+    look: 449
+    model: 472
+    variant: 449
+accessory_chassis_data: 1591
+    adblue_tank_size: 70
+    air_tank_pressure: 20
+    axle_model: 8
+    axle_model_extended_shadow_texture: 8
+    axle_model_steer_angle: 8
+    cog_cargo_mass_max: 37
+    cog_cargo_mass_min: 37
+    cog_cargo_offset_max: 14
+    cog_cargo_offset_min: 14
+    collision: 1591
+    defaults: 382
+    detail_model: 200
+    extended_shadow_fadeout_length: 700
+    extended_shadow_fadeout_start: 700
+    extended_shadow_intensity: 700
+    extended_shadow_shared_model_variant: 59
+    extended_shadow_texture: 700
+    icon: 385
+    info: 164
+    kerb_weight: 164
+    lamp_setup: 63
+    liftable_axle: 314
+    lods: 1195
+    look: 1573
+    model: 1527
+    name: 444
+    overrides: 37
+    part_type: 134
+    powered_axle: 166
+    powered_trailer: 2
+    price: 385
+    residual_travel: 518
+    shadow_intensity: 890
+    shadow_texture: 890
+    sounds: 164
+    steerable_axle: 144
+    suitable_for: 34
+    tank_size: 149
+    trailer_brace_anim: 290
+    trailer_brace_down_sound: 22
+    trailer_brace_model: 290
+    trailer_brace_up_sound: 22
+    trailer_mass: 391
+    ui_shadow: 513
+    unlock: 385
+    variant: 1591
+    variant_uk: 606
+    weight_distribution: 32
+accessory_data: 1
+    icon: 1
+    name: 1
+accessory_engine_data: 205
+    adblue_consumption: 30
+    defaults: 9
+    engine_brake: 21
+    engine_brake_downshift: 21
+    engine_brake_positions: 21
+    icon: 205
+    info: 205
+    name: 205
+    no_adblue_power_limit: 198
+    overrides: 166
+    part_type: 152
+    price: 205
+    rpm_idle: 29
+    rpm_limit: 116
+    rpm_limit_neutral: 22
+    rpm_range_engine_brake: 22
+    rpm_range_high_gear: 48
+    rpm_range_low_gear: 48
+    rpm_range_power: 64
+    secondary_torque: 13
+    secondary_torque_curve: 9
+    sounds: 205
+    torque: 205
+    torque_curve: 117
+    type: 7
+    unlock: 205
+    volume: 201
+accessory_head_lights_data: 47
+    front_beam_angle: 47
+    front_beam_aspect: 47
+    front_beam_bias: 47
+    front_beam_color: 47
+    front_beam_color_ambient: 47
+    front_beam_color_specular: 47
+    front_beam_left_rot: 47
+    front_beam_mask: 47
+    front_beam_range: 47
+    front_beam_refracted_angle: 47
+    front_beam_refracted_aspect: 47
+    front_beam_refracted_bias: 47
+    front_beam_refracted_color_fraction: 47
+    front_beam_refracted_mask: 47
+    front_beam_refracted_offset_yz: 47
+    front_beam_refracted_pitch: 47
+    front_beam_refracted_range: 47
+    front_beam_right_rot: 47
+    front_roof_beam_angle: 47
+    front_roof_beam_aspect: 47
+    front_roof_beam_bias: 47
+    front_roof_beam_color: 47
+    front_roof_beam_color_ambient: 47
+    front_roof_beam_color_specular: 47
+    front_roof_beam_left_rot: 47
+    front_roof_beam_mask: 47
+    front_roof_beam_range: 47
+    front_roof_beam_refracted_angle: 47
+    front_roof_beam_refracted_aspect: 47
+    front_roof_beam_refracted_bias: 47
+    front_roof_beam_refracted_color_fraction: 47
+    front_roof_beam_refracted_mask: 47
+    front_roof_beam_refracted_offset_yz: 47
+    front_roof_beam_refracted_pitch: 47
+    front_roof_beam_refracted_range: 47
+    front_roof_beam_right_rot: 47
+    hi_beam_angle: 47
+    hi_beam_aspect: 47
+    hi_beam_bias: 47
+    hi_beam_color: 47
+    hi_beam_color_ambient: 47
+    hi_beam_color_specular: 47
+    hi_beam_left_rot: 47
+    hi_beam_mask: 47
+    hi_beam_range: 47
+    hi_beam_refracted_angle: 47
+    hi_beam_refracted_aspect: 47
+    hi_beam_refracted_bias: 47
+    hi_beam_refracted_color_fraction: 47
+    hi_beam_refracted_mask: 47
+    hi_beam_refracted_offset_yz: 47
+    hi_beam_refracted_pitch: 47
+    hi_beam_refracted_range: 47
+    hi_beam_right_rot: 47
+    icon: 46
+    left_rot: 47
+    low_beam_angle: 47
+    low_beam_aspect: 47
+    low_beam_bias: 47
+    low_beam_color: 47
+    low_beam_color_ambient: 47
+    low_beam_color_specular: 47
+    low_beam_left_rot: 47
+    low_beam_mask: 47
+    low_beam_range: 47
+    low_beam_refracted_angle: 47
+    low_beam_refracted_aspect: 47
+    low_beam_refracted_bias: 47
+    low_beam_refracted_color_fraction: 47
+    low_beam_refracted_mask: 47
+    low_beam_refracted_offset_yz: 47
+    low_beam_refracted_pitch: 47
+    low_beam_refracted_range: 47
+    low_beam_right_rot: 47
+    name: 46
+    no_parking_light: 45
+    part_type: 39
+    price: 46
+    reflectors_distance: 47
+    reflectors_offset: 47
+    right_rot: 47
+    roof_beam_angle: 47
+    roof_beam_aspect: 47
+    roof_beam_bias: 47
+    roof_beam_color: 47
+    roof_beam_color_ambient: 47
+    roof_beam_color_specular: 47
+    roof_beam_left_rot: 47
+    roof_beam_mask: 47
+    roof_beam_range: 47
+    roof_beam_refracted_angle: 47
+    roof_beam_refracted_aspect: 47
+    roof_beam_refracted_bias: 47
+    roof_beam_refracted_color_fraction: 47
+    roof_beam_refracted_mask: 47
+    roof_beam_refracted_offset_yz: 47
+    roof_beam_refracted_pitch: 47
+    roof_beam_refracted_range: 47
+    roof_beam_right_rot: 47
+    unlock: 46
+accessory_hookup_data: 42
+    electric_type: 35
+    icon: 42
+    model: 42
+    name: 42
+    part_type: 36
+    price: 42
+    suitable_for: 42
+    unlock: 42
+accessory_hookup_int_data: 204
+    coll: 112
+    data: 112
+    icon: 204
+    look: 7
+    model: 204
+    name: 204
+    part_type: 199
+    price: 204
+    steam_inventory_id: 81
+    suitable_for: 204
+    unlock: 204
+    variant: 4
+accessory_horn_addon_data: 286
+    conflict_with: 223
+    exterior_model: 286
+    icon: 286
+    name: 286
+    part_type: 134
+    price: 286
+    sound_path: 286
+    steam_inventory_id: 44
+    suitable_for: 92
+    unlock: 286
+    variant: 102
+accessory_horn_hookup_data: 6
+    icon: 6
+    model: 6
+    name: 6
+    part_type: 3
+    price: 6
+    sound_path: 6
+    suitable_for: 6
+    unlock: 6
+accessory_interior_data: 438
+    active_mirrors_part: 254
+    ad_blue_anim: 80
+    air_pressure_anim: 112
+    air_pressure_anim_max: 112
+    air_pressure_anim_min: 40
+    animated_model: 438
+    auto_transmission_stick_anim: 356
+    beacon_anim: 66
+    blinker_anim: 438
+    blinker_delay: 438
+    button_4way: 352
+    button_battery_warning: 32
+    button_high_beam_lights: 316
+    button_jakebrake: 32
+    button_left_blinker: 330
+    button_lights: 318
+    button_low_fuel: 186
+    button_parking_brake: 438
+    button_right_blinker: 330
+    button_water_temp: 2
+    collision: 437
+    consumption_anim: 28
+    consumption_anim_max: 28
+    consumption_anim_min: 28
+    consumption_electric_anim: 2
+    dashboard_color: 426
+    dashboard_drawable_size: 200
+    dashboard_path: 438
+    defaults: 254
+    differential_lock_stick_anim: 428
+    effect_add_window_eq_closed: 438
+    effect_add_window_eq_opened: 438
+    effect_equalizer_cabin_inside: 438
+    effect_equalizer_cabin_outside: 438
+    effect_reverb_window_closed: 438
+    effect_reverb_window_opened: 438
+    engine_brake_stick_anim: 4
+    engine_start_anim: 326
+    ext_look: 426
+    ext_model: 438
+    ext_variant: 401
+    flasher_4way_anim: 336
+    fuel_anim: 226
+    fuel_anim_max: 112
+    generic_anim: 166
+    generic_anim_max: 8
+    glass_panes: 438
+    gps_drawable_size: 200
+    gps_path: 377
+    high_beam_anim: 438
+    icon: 438
+    indicator_aux_lights_front: 12
+    indicator_aux_lights_roof: 44
+    indicator_axle_lift: 214
+    indicator_blind_spot_left: 78
+    indicator_blind_spot_right: 78
+    indicator_differential_lock: 240
+    indicator_generic: 248
+    indicator_low_adblue: 64
+    indicator_low_air_pressure: 268
+    indicator_low_oil_pressure: 32
+    indicator_position_lights: 168
+    indicator_retarder: 136
+    indicator_stop: 276
+    indicator_trailer_axle_lift: 86
+    indicator_warning: 266
+    left_hand_traffic: 219
+    left_window_anim: 438
+    left_window_stick_anim: 438
+    lift_axle_stick_anim: 346
+    lift_axle_trailer_stick_anim: 186
+    light_horn_stick_anim: 340
+    lights_anim: 372
+    look: 430
+    mirror_camera_presets: 434
+    model: 438
+    name: 438
+    oil_pressure_anim: 36
+    oil_pressure_anim_max: 36
+    oil_pressure_anim_min: 28
+    overrides: 6
+    parking_stick_anim: 340
+    parking_stick_electric_anim: 74
+    part_type: 369
+    passive_mirrors_part: 254
+    price: 438
+    reflection_offset: 90
+    retarder_stick_anim: 434
+    right_window_anim: 438
+    right_window_stick_anim: 438
+    seat_back_limit: 262
+    seat_down_limit: 262
+    seat_front_limit: 262
+    seat_left_limit: 262
+    seat_right_limit: 262
+    seat_up_limit: 262
+    shadow_proxy_csv: 436
+    show_chassis_rear: 8
+    sounds: 438
+    speedometer_anim: 196
+    speedometer_anim_max: 196
+    speedometer_anim_min: 162
+    suitable_for: 432
+    tachometer_anim: 238
+    tachometer_anim_max: 238
+    tachometer_anim_min: 192
+    turbo_anim: 8
+    unlock: 438
+    variant: 438
+    water_temp_anim: 202
+    water_temp_anim_max: 202
+    water_temp_anim_min: 202
+    wheel_frontback_anim: 438
+    wheel_frontback_anim_default: 438
+    wheel_updown_anim: 438
+    wheel_updown_anim_default: 438
+    wiper_anim: 438
+    wiper_duration_and_delay: 438
+    wiper_stick_anim: 438
+accessory_paint_job_data: 28825
+    academy_reward: 94
+    airbrush: 22217
+    alternate_uvset: 5556
+    base_color: 21798
+    base_color_locked: 11394
+    color_variant: 3011
+    flake_clearcoat_rolloff: 13915
+    flake_color: 17471
+    flake_color_locked: 8098
+    flake_density: 7689
+    flake_noise: 2534
+    flake_shininess: 9508
+    flake_uvscale: 4976
+    flip_color: 17444
+    flip_color_locked: 8128
+    flip_strength: 14421
+    flipflake: 10200
+    icon: 21583
+    mask_b_color: 13538
+    mask_b_locked: 10351
+    mask_g_color: 13489
+    mask_g_locked: 9871
+    mask_r_color: 13293
+    mask_r_locked: 9728
+    name: 22330
+    paint_job_mask: 26599
+    part_type: 22302
+    price: 22326
+    steam_inventory_id: 1403
+    stock: 1050
+    suitable_for: 18307
+    unlock: 22326
+accessory_rim_data: 260
+    conflict_with: 29
+    defaults: 25
+    icon: 260
+    look: 6
+    model: 260
+    name: 260
+    paintable: 92
+    part_type: 247
+    price: 260
+    suitable_for: 80
+    tire_shift: 86
+    unlock: 260
+accessory_trailer_body_data: 301
+    body_type: 253
+    cargo_areas: 106
+    cargo_areas_cylinder_data: 7
+    cargo_custom_loads_path: 34
+    cargo_lashing_chain: 62
+    cargo_lashing_mounts: 59
+    cargo_lashing_strap: 62
+    cargo_loading_methods: 239
+    cargo_regular_width: 99
+    cargo_warning_signs: 35
+    collision: 184
+    defaults: 78
+    detail_model: 5
+    icon: 209
+    lods: 18
+    look: 2
+    mass: 209
+    model: 210
+    name: 209
+    part_type: 33
+    price: 209
+    require: 11
+    size: 209
+    total_size: 209
+    unlock: 209
+    variant: 25
+    volume: 253
+accessory_trailer_data: 58
+    defaults: 6
+    fallback: 46
+    info: 58
+    require: 17
+accessory_transmission_data: 197
+    auxiliary_brakes: 34
+    crawls: 30
+    differential_ratio: 197
+    icon: 197
+    manual_mode_name: 1
+    name: 197
+    part_type: 115
+    price: 197
+    ratios_forward: 197
+    ratios_reverse: 197
+    retarder: 99
+    shift_time: 37
+    sounds: 194
+    stall_torque_ratio: 43
+    transmission_names: 12
+    unlock: 197
+accessory_truck_data: 26
+    behind_camera: 26
+    bumper_camera: 26
+    cabin_camera: 26
+    debug_camera: 26
+    defaults: 13
+    double_sided: 2
+    fallback: 26
+    info: 26
+    interior_camera: 26
+    interior_camera_oculus: 26
+    pin_dir: 2
+    pin_dir_uk: 2
+    pin_group: 2
+    pin_look: 2
+    pin_offset: 2
+    require: 16
+    top_camera: 26
+    tv_camera: 26
+    wander_camera: 26
+    wheel_camera: 26
+    window_camera: 26
+accessory_wheel_data: 196
+    icon: 69
+    look: 51
+    model: 196
+    name: 69
+    noise_volume: 42
+    paintable: 33
+    part_type: 69
+    price: 59
+    roll_resistance: 42
+    unlock: 59
+    wet_grip: 42
+    wheel_shift: 14
+cargo_custom_load_data: 238
+    cargo_token: 238
+    offset: 238
+    rotation: 238
+cargo_lashing_gear: 124
+    binder: 124
+    binder_length: 124
+    end_hook: 124
+    end_hook_length: 124
+    material: 124
+    size: 124
+    start_hook: 124
+    start_hook_length: 124
+    texcoord_uratio: 62
+cargo_lashing_mount: 454
+    closed_model: 232
+    hook_angle_constraints: 348
+    open_model: 268
+    spacing: 454
+cargo_model_match: 301
+    data_path: 301
+    dimensions: 280
+    lashing_gear_type: 301
+    lashing_hook_angle_constraints: 77
+    lashing_method: 301
+    loading_method: 301
+    unit_volume_factor: 111
+core_interior_glass_config: 2
+    blur_strength: 2
+    deformation_duration: 2
+    drop_count_per_meter: 2
+    drop_material: 2
+    drops_moving_offset: 2
+    drops_wiping_factor: 2
+    max_adhesion_factor: 2
+    max_angle_cosine: 2
+    max_angle_factor: 2
+    max_distortion_strength: 2
+    max_drop_size: 1
+    max_initial_splash_scale: 2
+    max_speed_effect_mps: 2
+    max_splash_duration: 2
+    maximal_deformation: 2
+    maximal_fadeout: 2
+    maximal_lifetime: 2
+    min_adhesion_factor: 2
+    min_angle_cosine: 2
+    min_angle_factor: 2
+    min_distortion_strength: 2
+    min_drop_size: 1
+    min_initial_splash_scale: 2
+    min_speed_effect_mps: 2
+    min_splash_duration: 2
+    minimal_fadeout: 2
+    minimal_lifetime: 2
+    movement_acceleration_factor: 2
+    moving_size_threshold: 2
+    vertical_acceleration_factor: 2
+dynamic_cargo_data: 6
+    grab_types: 6
+    loading_sound: 6
+    type: 6
+glass_pane_data: 1720
+    edge_angle: 438
+    locator: 1720
+    mask_texture: 876
+    openable_window_bone: 876
+    size: 1720
+    wipers: 438
+physics_data: 1
+    air_resistance: 1
+    brake_balance: 1
+    brake_characteristic_rpm: 1
+    brake_cooling_rate: 1
+    brake_friction_warming_rate: 1
+    brake_torque_factor: 1
+    braking_curve_peak_rel: 1
+    bristle_damping_lateral_factor: 1
+    bristle_damping_longitudinal_factor: 1
+    bristle_stiffness_lateral_factor: 1
+    bristle_stiffness_longitudinal_factor: 1
+    cabin_cog_height_offset: 1
+    cabin_mass: 1
+    cabin_max_pitch_angle_front: 1
+    cabin_max_pitch_angle_rear: 1
+    cabin_max_roll_angle: 1
+    cabin_suspension_damping_factor: 1
+    cabin_suspension_travel: 1
+    cabin_sway_bar_factor: 1
+    clutch_connected_viscosity_factor: 1
+    clutch_viscosity_factor: 1
+    damping_scaling_front_factor: 1
+    damping_scaling_rear_factor: 1
+    damping_scaling_trailer_factor: 1
+    fifth_wheel_pitch: 1
+    fifth_wheel_roll: 1
+    inertia_scaling_const: 1
+    manual_clutch_connected_viscosity_factor: 1
+    manual_clutch_viscosity_factor: 1
+    max_brake_temperature: 1
+    slip_lateral_factor: 1
+    slip_longitudinal_factor: 1
+    spreader_joint_pitch: 1
+    spreader_joint_roll: 1
+    steering_angle_coef: 1
+    steering_ratio_coef: 1
+    steering_sensitivity_multiplier_0kmh: 1
+    steering_sensitivity_multiplier_100kmh: 1
+    steering_sensitivity_multiplier_maximum: 1
+    steering_sensitivity_multiplier_minimum: 1
+    steering_speed_coef: 1
+    sway_bar_stiffness_factor: 1
+    thrust_characteristic_viscosity_factor: 1
+    torque_converter_locked_viscosity_factor: 1
+    torque_converter_viscosity_factor: 1
+    trailer_joint_pitch: 1
+    trailer_joint_roll: 1
+    transmission_rel_flywheel_inertia: 1
+    transmission_viscosity_factor: 1
+    transmission_viscosity_retarder_factor: 1
+    version: 1
+    wheel_viscosity_factor: 1
+physics_interior_camera_data: 1
+    centrifugal_acceleration_compensation_factor: 1
+    characteristic_length_factor: 1
+    driver_height_damping_factor: 1
+    driver_height_stiffness_factor: 1
+    driver_pitch_damping_factor: 1
+    driver_pitch_stiffness_factor: 1
+    driver_seat_restitution: 1
+    height_limit: 1
+    pitch_limit_backward: 1
+    pitch_limit_forward: 1
+physics_patch_data: 12098
+    aero_model_type: 12098
+    area_density: 12098
+    drag_coefficient: 12098
+    lift_coefficient: 12098
+    linear_stiffness: 12098
+    material: 12098
+    x_res: 12098
+    x_size: 12098
+    y_res: 12098
+    y_size: 12098
+physics_toy_data: 3266
+    angular_amplitude: 1281
+    angular_damping: 613
+    angular_stiffness: 613
+    instance_offset: 549
+    linear_damping: 2653
+    linear_stiffness: 1985
+    locator_hook_offset: 3266
+    node_damping: 1985
+    phys_model: 3266
+    phys_model_coll: 3266
+    phys_model_look: 669
+    phys_model_variant: 69
+    position_iterations: 1985
+    rest_position_offset: 328
+    rest_rotation_offset: 177
+    rope_hook_offset: 1985
+    rope_length: 1985
+    rope_linear_density: 1985
+    rope_material: 1989
+    rope_resolution: 1985
+    rope_toy_offset: 1985
+    rope_width: 1985
+    toy_cog_offset: 4
+    toy_mass: 3266
+    toy_type: 3266
+rim_data: 1
+    default_trailer_disc: 1
+    default_trailer_hub: 1
+    default_trailer_nuts: 1
+    default_trailer_tires: 1
+    default_truck_disc: 1
+    default_truck_hub: 1
+    default_truck_nuts: 1
+    default_truck_tires: 1
+    front_rims_conversion: 1
+    rear_rims_conversion: 1
+    trailer_wheel_types: 1
+    truck_wheel_types: 1
+simple_paint_job_data: 139433
+    acc_list: 139302
+    flake_uvscale: 75621
+    flake_vratio: 47639
+    paint_job_mask: 131021
+sound_reverb_data: 876
+    decay_time: 876
+    density: 876
+    diffusion: 876
+    dry_level: 876
+    early_delay: 876
+    early_late_mix: 876
+    hf_decay_ratio: 876
+    hf_reference: 876
+    high_cut: 876
+    late_delay: 876
+    low_shelf_frequency: 876
+    low_shelf_gain: 876
+    wet_level: 876
+sound_three_eq_data: 1752
+    crossover_slope: 1752
+    high_crossover: 1752
+    high_gain: 1752
+    low_crossover: 1752
+    low_gain: 1752
+    mid_gain: 1752
+traffic_spawn_condition: 284
+    num_param: 1
+    str_param: 283
+    type: 284
+traffic_trailer: 475
+    accessories: 475
+    base: 66
+    cargo_mass: 344
+    cargoes: 45
+    company_paint_job: 68
+    displacement_limit: 283
+    prefer_variant: 6
+    slave_trailer: 17
+    sound_move: 337
+    spawn_condition: 48
+    spawn_ratio: 70
+    tags: 174
+    trailer_definition: 45
+    variant: 17
+    vehicle_mass: 175
+traffic_trailer_type: 9
+    safe_distance: 2
+    storage_path: 2
+    tags: 8
+    validation_groups: 9
+traffic_vehicle: 784
+    accessories: 784
+    allow_parked: 64
+    base: 39
+    color: 386
+    displacement_limit: 149
+    driver_model: 591
+    engine_power: 357
+    license_plate_type: 25
+    lod_dist: 14
+    max_speed: 784
+    prefer_variant: 12
+    safe_distance: 1
+    sound_gears: 148
+    sound_horn: 319
+    sound_move: 727
+    spawn_condition: 176
+    spawn_ratio: 503
+    tags: 415
+    trailer_chains: 239
+    variant: 45
+    vehicle_mass: 784
+traffic_vehicle_type: 20
+    cache_size: 2
+    deceleration_limit: 6
+    license_plate_type: 15
+    safe_distance: 3
+    speed_class: 19
+    suspension_coef: 4
+    tags: 16
+    validation_groups: 20
+trailer: 284
+    accessories: 284
+    cargo_damage: 71
+    cargo_mass: 71
+    chassis_wear: 71
+    chassis_wear_unfixable: 50
+    integrity_odometer: 50
+    integrity_odometer_float_part: 50
+    is_private: 71
+    license_plate: 71
+    odometer: 71
+    odometer_float_part: 71
+    oversize: 71
+    slave_trailer: 85
+    sliding_axle_offset: 13
+    trailer_body_wear: 71
+    trailer_body_wear_unfixable: 50
+    trailer_definition: 256
+    trip_distance: 71
+    trip_distance_km: 71
+    trip_fuel: 71
+    trip_fuel_l: 71
+    trip_recuperation: 32
+    trip_recuperation_kwh: 32
+    trip_time: 71
+    trip_time_min: 71
+    virtual_rear_wheels_offset: 71
+    wheels_wear: 71
+    wheels_wear_unfixable: 50
+trailer_body_set: 512
+    body: 512
+    icon: 512
+    name: 512
+    trailer_definition: 512
+trailer_cable_data: 461
+    back_faces: 92
+    color: 461
+    linear_stiffness: 4
+    locator_prefix: 461
+    material: 92
+    resolution: 97
+    rest_locator_prefix: 461
+    ring_count: 101
+    ring_resolution: 97
+    straight_cable_length: 97
+    trailer_plug_model: 364
+    trailer_plug_model_offset: 365
+    vehicle_plug_model: 368
+    vehicle_plug_model_offset: 368
+    width: 97
+trailer_chain_type: 4
+    icon: 4
+    name: 4
+    price: 4
+trailer_configuration: 208
+    chain_type: 208
+    chassis: 208
+    equivalency: 35
+    icon: 208
+    name: 208
+trailer_def: 514
+    axles: 514
+    body_mass: 514
+    body_type: 514
+    chain_type: 514
+    chassis_mass: 514
+    country_validity: 185
+    gross_trailer_weight_limit: 514
+    length: 514
+    mass_ratio: 514
+    volume: 514
+transmission_names: 12
+    forward: 12
+unlock_levels: 35
+    level: 16
+vehicle: 549
+    accessories: 549
+    fuel_relative: 1
+    odometer: 96
+    odometer_float_part: 2
+vehicle_accessory: 5892
+    data_path: 5892
+    refund: 209
+vehicle_addon_accessory: 14235
+    data_path: 14235
+    paint_color: 84
+    refund: 459
+    slot_hookup: 3367
+    slot_name: 3367
+vehicle_lamp_setup: 11
+    color_brake: 11
+    color_daytime_running: 11
+    color_front_positional: 11
+    color_front_turn_signal: 11
+    color_high_beam: 11
+    color_low_beam: 11
+    color_rear_positional: 11
+    color_rear_turn_signal: 11
+    color_reverse: 11
+    color_side_positional: 11
+    wire_composites: 11
+vehicle_lamp_wire_composite: 56
+    channel_a_wire: 56
+    channel_b_wire: 56
+    channel_g_anim_fps: 5
+    channel_g_anim_frame_count: 5
+    channel_g_wire: 56
+    channel_r_anim_fps: 21
+    channel_r_anim_frame_count: 21
+    channel_r_wire: 56
+vehicle_paint_job_accessory: 958
+    base_color: 402
+    data_path: 958
+    flake_color: 167
+    flip_color: 167
+    mask_b_color: 358
+    mask_g_color: 358
+    mask_r_color: 358
+    refund: 71
+vehicle_wheel_accessory: 10018
+    data_path: 10018
+    offset: 9850
+    paint_color: 1084
+    refund: 804
+wiper_data: 904
+    center_bone: 904
+    length: 904
+## wheel_fit f_tire
+# part definitions: group file unit | tire_shift wheel_shift | model | left | right
+f_tire 1.sii 1.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/front_1.pmd | L x[-0.1679 +0.1679] cx +0.0000 r 0.5119 | R x[-0.1679 +0.1679] cx +0.0000 r 0.5119
+f_tire 2.sii 2.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/front_1.pmd | L x[-0.1679 +0.1679] cx +0.0000 r 0.5119 | R x[-0.1679 +0.1679] cx +0.0000 r 0.5119
+f_tire 3.sii 3.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/front_2.pmd | L x[-0.1655 +0.1704] cx +0.0024 r 0.5119 | R x[-0.1623 +0.1736] cx +0.0056 r 0.5119
+f_tire 315_70_michelin_xline_energy_z2.sii 31570mxlez2.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire 315_70_michelin_xmulti_energy_z.sii 31570mxmez.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin_arrow.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire 385_55_michelin_xline_energy_f2.sii 38555mxlef2.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire 385_55_michelin_xmulti_f.sii 38555mxmf.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin_arrow.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire f315-70_goodyear_fmax.sii 70_gy_fmax.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_goodyear.pmd | L x[-0.1677 +0.1682] cx +0.0002 r 0.5119 | R x[-0.1689 +0.1670] cx -0.0009 r 0.5119
+f_tire f315-70_goodyear_kmax.sii 70_gy_kmax.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_goodyear.pmd | L x[-0.1677 +0.1682] cx +0.0002 r 0.5119 | R x[-0.1689 +0.1670] cx -0.0009 r 0.5119
+f_tire f315-70_michelin_xlinez.dlc_michelin.sii 70_mich_xlz.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire f315-70_michelin_xze.dlc_michelin.sii 70_mich_xze.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-70_michelin.pmd | L x[-0.1583 +0.1776] cx +0.0096 r 0.5119 | R x[-0.1602 +0.1771] cx +0.0085 r 0.5119
+f_tire f315-80_goodyear_kmax.sii 80_gy_kmax.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-80_goodyear.pmd | L x[-0.1608 +0.1733] cx +0.0063 r 0.5449 | R x[-0.1733 +0.1608] cx -0.0063 r 0.5449
+f_tire f315-80_michelin_xze.dlc_michelin.sii 80_mich_xze.ftire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/f_315-80_michelin.pmd | L x[-0.1608 +0.1733] cx +0.0063 r 0.5449 | R x[-0.1733 +0.1608] cx -0.0063 r 0.5449
+f_tire f385-55_michelin_xfa2.dlc_michelin.sii 55_mich_xfa2.ftire | ts None ws Some(0.0325) | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire f385-55_michelin_xlinef.dlc_michelin.sii 55_mich_xlf.ftire | ts None ws Some(0.0325) | /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd | L x[-0.1727 +0.2386] cx +0.0330 r 0.5027 | R x[-0.2387 +0.1726] cx -0.0330 r 0.5027
+f_tire f385-65_michelin_xlinef.dlc_michelin.sii 65_mich_xlf.ftire | ts None ws Some(0.0325) | /vehicle/truck/upgrade/wheel/tire/f_385-65_michelin.pmd | L x[-0.1714 +0.2366] cx +0.0326 r 0.5416 | R x[-0.2258 +0.2369] cx +0.0056 r 0.5416
+# presets: truck | wheel selections
+daf.2021 | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xd | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_electric | f_disc/front_disc_01.sii f_hub/front_hub_02.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.hiway | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.stralis | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.sway | f_cover/front_cover_iveco_blk.sii f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_2020 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros2014 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.etech_t | f_cover/front_cover_etech.sii f_disc/front_disc_renault.sii f_hub/front_hub_05.sii f_nuts/front_nuts_renault.sii f_tire/1.sii r_disc/rear_disc_renault.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_renault.sii r_tire/1.sii
+renault.magnum | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.premium | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.t | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2024e | f_cover/front_hub_cover_03_scania.sii f_disc/front_disc_05_scania.sii f_hub/front_hub_01.sii f_nuts/front_nuts_02_chrome.sii f_tire/1.sii r_disc/rear_disc_01_scania.sii r_hub/rear_hub_02_scania.sii r_nuts/rear_nuts_02_chrome.sii r_tire/1.sii
+scania.streamline | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16_2012 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2021 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2024 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+## wheel_fit r_tire
+# part definitions: group file unit | tire_shift wheel_shift | model | left | right
+r_tire 1.sii 1.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/rear_1.pmd | L x[-0.3394 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3394 +0.3394] cx -0.0000 r 0.5116
+r_tire 2.sii 2.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/rear_1.pmd | L x[-0.3394 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3394 +0.3394] cx -0.0000 r 0.5116
+r_tire 3.sii 3.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/rear_2.pmd | L x[-0.3394 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3394 +0.3394] cx -0.0000 r 0.5116
+r_tire 315_70_michelin_xline_energy_z2.sii 31570mxlez2.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire 315_70_michelin_xmulti_d.sii 31570mxmd.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin_arrow.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire 315_70_michelin_xmulti_energy_z.sii 31570mxmez.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin_arrow.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire 315_70_michelin_xmulti_hd_d.sii 31570mxmhdd.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_goodyear_fmax.sii 70_gy_fmax.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_goodyear.pmd | L x[-0.3395 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3395 +0.3394] cx -0.0000 r 0.5116
+r_tire r315-70_goodyear_kmax.sii 70_gy_kmax.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_goodyear.pmd | L x[-0.3395 +0.3394] cx -0.0000 r 0.5116 | R x[-0.3395 +0.3394] cx -0.0000 r 0.5116
+r_tire r315-70_michelin_xde.dlc_michelin.sii 70_mich_xde.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_michelin_xlined.dlc_michelin.sii 70_mich_xld.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_michelin_xlinez.dlc_michelin.sii 70_mich_xlz.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-70_michelin_xze.dlc_michelin.sii 70_mich_xze.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-70_michelin.pmd | L x[-0.3494 +0.3294] cx -0.0100 r 0.5116 | R x[-0.3494 +0.3294] cx -0.0100 r 0.5116
+r_tire r315-80_michelin_xde.dlc_michelin.sii 80_mich_xde.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-80_michelin.pmd | L x[-0.3393 +0.3476] cx +0.0042 r 0.5453 | R x[-0.3393 +0.3476] cx +0.0042 r 0.5453
+r_tire r315-80_michelin_xze.dlc_michelin.sii 80_mich_xze.rtire | ts None ws None | /vehicle/truck/upgrade/wheel/tire/r_315-80_michelin.pmd | L x[-0.3393 +0.3476] cx +0.0042 r 0.5453 | R x[-0.3393 +0.3476] cx +0.0042 r 0.5453
+# presets: truck | wheel selections
+daf.2021 | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xd | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_electric | f_disc/front_disc_01.sii f_hub/front_hub_02.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.hiway | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.stralis | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.sway | f_cover/front_cover_iveco_blk.sii f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_2020 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros2014 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.etech_t | f_cover/front_cover_etech.sii f_disc/front_disc_renault.sii f_hub/front_hub_05.sii f_nuts/front_nuts_renault.sii f_tire/1.sii r_disc/rear_disc_renault.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_renault.sii r_tire/1.sii
+renault.magnum | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.premium | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.t | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2024e | f_cover/front_hub_cover_03_scania.sii f_disc/front_disc_05_scania.sii f_hub/front_hub_01.sii f_nuts/front_nuts_02_chrome.sii f_tire/1.sii r_disc/rear_disc_01_scania.sii r_hub/rear_hub_02_scania.sii r_nuts/rear_nuts_02_chrome.sii r_tire/1.sii
+scania.streamline | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16_2012 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2021 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2024 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+## wheel_fit f_wheel
+# part definitions: group file unit | tire_shift wheel_shift | model | left | right
+f_wheel 1.dlc_raven.sii 1_dlc_raven.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_1.dlc_raven.pmd | L x[-0.1823 +0.1871] cx +0.0024 r 0.5131 | R x[-0.1871 +0.1823] cx -0.0024 r 0.5131
+f_wheel 1.sii 1.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_1.pmd | L x[-0.1805 +0.1871] cx +0.0033 r 0.5131 | R x[-0.1871 +0.1808] cx -0.0031 r 0.5131
+f_wheel 2.sii 2.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_2.pmd | L x[-0.1805 +0.1871] cx +0.0033 r 0.5131 | R x[-0.1871 +0.1808] cx -0.0031 r 0.5131
+f_wheel 3.sii 3.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_3.pmd | L x[-0.1805 +0.1871] cx +0.0033 r 0.5131 | R x[-0.1871 +0.1808] cx -0.0031 r 0.5131
+f_wheel 4.sii 4.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_4.pmd | L x[-0.1993 +0.1871] cx -0.0061 r 0.5131 | R x[-0.1871 +0.1993] cx +0.0061 r 0.5131
+f_wheel 5.sii 5.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_5.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel 6.sii 6.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_6.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel 7.sii 7.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_7.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel 8.sii 8.fwheel | ts None ws None | /vehicle/truck/upgrade/wheel/front_8.pmd | L x[-0.1807 +0.1871] cx +0.0032 r 0.5131 | R x[-0.1871 +0.1831] cx -0.0020 r 0.5131
+f_wheel steel.sii steel.fwheel | ts None ws None | /vehicle/wheel/steel/front.pmd | L x[-0.1960 +0.1957] cx -0.0001 r 0.5131 | R x[-0.1956 +0.1983] cx +0.0014 r 0.5131
+f_wheel steel_black.sii steel_black.fwheel | ts None ws None | /vehicle/wheel/steel/front.pmd | L x[-0.1960 +0.1957] cx -0.0001 r 0.5131 | R x[-0.1956 +0.1983] cx +0.0014 r 0.5131
+# presets: truck | wheel selections
+daf.2021 | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xd | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_electric | f_disc/front_disc_01.sii f_hub/front_hub_02.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.hiway | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.stralis | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.sway | f_cover/front_cover_iveco_blk.sii f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_2020 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros2014 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.etech_t | f_cover/front_cover_etech.sii f_disc/front_disc_renault.sii f_hub/front_hub_05.sii f_nuts/front_nuts_renault.sii f_tire/1.sii r_disc/rear_disc_renault.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_renault.sii r_tire/1.sii
+renault.magnum | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.premium | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.t | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2024e | f_cover/front_hub_cover_03_scania.sii f_disc/front_disc_05_scania.sii f_hub/front_hub_01.sii f_nuts/front_nuts_02_chrome.sii f_tire/1.sii r_disc/rear_disc_01_scania.sii r_hub/rear_hub_02_scania.sii r_nuts/rear_nuts_02_chrome.sii r_tire/1.sii
+scania.streamline | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16_2012 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2021 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2024 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+## wheel_fit r_wheel
+# part definitions: group file unit | tire_shift wheel_shift | model | left | right
+r_wheel 1.dlc_raven.sii 1_dlc_raven.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_1.dlc_raven.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel 1.sii 1.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_1.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel 2.sii 2.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_2.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel 3.sii 3.rwheel | ts None ws None | /vehicle/truck/upgrade/wheel/rear_3.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel steel.sii steel.rwheel | ts None ws None | /vehicle/wheel/steel/rear.pmd | L x[-0.3238 +0.3391] cx +0.0076 r 0.5131 | R x[-0.3290 +0.3362] cx +0.0036 r 0.5131
+r_wheel steel_single.sii steel_single.rwheel | ts None ws None | /vehicle/wheel/steel/front.pmd | L x[-0.1960 +0.1957] cx -0.0001 r 0.5131 | R x[-0.1956 +0.1983] cx +0.0014 r 0.5131
+# presets: truck | wheel selections
+daf.2021 | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xd | f_disc/front_disc_01.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_electric | f_disc/front_disc_01.sii f_hub/front_hub_02.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+daf.xf_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.hiway | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.stralis | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+iveco.sway | f_cover/front_cover_iveco_blk.sii f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_2020 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+man.tgx_euro6 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+mercedes.actros2014 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.etech_t | f_cover/front_cover_etech.sii f_disc/front_disc_renault.sii f_hub/front_hub_05.sii f_nuts/front_nuts_renault.sii f_tire/1.sii r_disc/rear_disc_renault.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_renault.sii r_tire/1.sii
+renault.magnum | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.premium | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+renault.t | f_disc/front_disc_02.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.r_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2016 | f_disc/front_disc_05.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+scania.s_2024e | f_cover/front_hub_cover_03_scania.sii f_disc/front_disc_05_scania.sii f_hub/front_hub_01.sii f_nuts/front_nuts_02_chrome.sii f_tire/1.sii r_disc/rear_disc_01_scania.sii r_hub/rear_hub_02_scania.sii r_nuts/rear_nuts_02_chrome.sii r_tire/1.sii
+scania.streamline | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh16_2012 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2021 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+volvo.fh_2024 | f_disc/front_disc_02_matt_gray.sii f_hub/front_hub_01.sii f_nuts/front_nuts_01_steel.sii f_tire/1.sii r_disc/rear_disc_01_matt_gray.sii r_hub/rear_hub_01.sii r_nuts/rear_nuts_01_steel.sii r_tire/1.sii
+## model_info /vehicle/truck/daf_2021/chassis/chs_4x2.pmd
+== /vehicle/truck/daf_2021/chassis/chs_4x2.pmd
+looks: ["default"]
+variants: ["default"]
+aabb: Aabb { min: [-1.6562294, 0.11632101, -3.669415], max: [1.6562293, 1.570665, 3.7793775] }
+material 0: /automat/cd/cdf5f847400443ac.mat Some("eut2.fakeshadow.rfx")
+material 1: /automat/d3/d3b00d373095c530.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 2: /automat/c7/c7fbf94ba9c25795.mat Some("eut2.dif.spec.weight.tsnmapuv.rfx")
+material 3: /automat/e6/e6f05bbac038c8b6.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 4: /automat/92/922f904118f15911.mat Some("eut2.dif.spec.weight.add.env.tsnmap.over.rfx")
+material 5: /automat/b7/b7d0d06c915dfe35.mat Some("eut2.dif.spec.weight.rfx")
+material 6: /automat/99/990bb25c785516b6.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 7: /automat/e5/e57019938cbd92e2.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 8: /automat/9f/9f77dd60b5d4e9a9.mat Some("eut2.dif.spec.weight.add.env.tsnmap.over.rfx")
+material 9: /automat/01/011c1ae8d506336f.mat Some("eut2.shadowonly.rfx")
+material 10: /automat/f0/f0aa0c0bf2ab5993.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 11: /automat/9a/9a98b104f215d148.mat Some("eut2.dif.spec.weight.add.env.tsnmap.a.rfx")
+part defaultpart      pieces 0..12 visible-by-variant [true]
+    piece 0   material 0   vertices 20     bounds [-1.66, 0.12, -3.67]..[1.66, 0.19, 3.78]
+    piece 1   material 1   vertices 36932  bounds [-1.01, 0.22, -2.72]..[1.21, 1.57, 3.26]
+    piece 2   material 2   vertices 3542   bounds [-1.15, 0.52, -2.42]..[1.12, 1.55, 3.19]
+    piece 3   material 3   vertices 232    bounds [-1.16, 0.35, -0.60]..[0.73, 1.45, 3.26]
+    piece 4   material 4   vertices 3000   bounds [-1.15, 0.27, -2.31]..[1.09, 1.57, 3.23]
+    piece 5   material 5   vertices 1243   bounds [-0.64, 0.47, -2.07]..[0.64, 1.38, 2.86]
+    piece 6   material 6   vertices 4816   bounds [-0.36, 0.37, -2.46]..[0.55, 1.48, -0.18]
+    piece 7   material 7   vertices 3027   bounds [-1.18, 0.30, -1.80]..[1.20, 1.41, 0.92]
+    piece 8   material 8   vertices 108    bounds [0.47, 0.42, -0.45]..[1.02, 0.94, -0.40]
+    piece 9   material 9   vertices 5425   bounds [-1.17, 0.22, -2.72]..[1.21, 1.57, 3.26]
+    piece 10  material 10  vertices 2887   bounds [-0.54, 0.99, 1.25]..[0.63, 1.16, 2.00]
+    piece 11  material 11  vertices 93     bounds [-1.14, 0.98, -0.75]..[0.43, 0.98, 0.89]
+    locator shadow_x_ori   pos [-4.446336e-16, 1.0581292, 0.05498123] rot [4.3297803e-17, 4.3297803e-17, 0.70710677, 0.70710677] scale 1 hookup None
+    locator shadow_x_crn   pos [-1.6562294, -0.30387077, -3.669415] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_lp           pos [0.0, 0.47223046, -3.297184] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup Some("license.plate")
+    locator sideskirt      pos [0.0, 0.66113704, 0.09177205] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator wheel_f_0_0    pos [-1.0864791, 0.5, -1.7453387] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator wp_0           pos [-0.96269894, 0.29523757, -1.2377] rot [6.123234e-17, 0.0, 1.0, 0.0] scale 1 hookup Some("wheel.particles")
+    locator wheel_f_1_0    pos [1.085377, 0.5, -1.7453387] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator wp_1           pos [0.9566929, 0.29523757, -1.2377] rot [6.123234e-17, 0.0, 1.0, 0.0] scale 1 hookup Some("wheel.particles")
+    locator f_intake_chs   pos [0.0, 0.66723925, -3.2925098] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_fender_chs   pos [0.0, 1.2225363, -1.769921] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator doorstep       pos [0.0, 0.7843655, -2.5777223] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_light_chs    pos [-5.684342e-16, 0.8011375, -3.022087] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_bumper       pos [0.0, 0.51712584, -3.3648033] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator sideskrt_bar   pos [0.0, 0.24797623, 0.09177205] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator cabin          pos [0.0, 1.0238175, -2.5824928] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator b_grill        pos [0.0, 0.31278965, -3.3648033] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator b_detector     pos [0.0, 0.6337819, -0.8568513] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_grill        pos [0.0, 0.55720925, -3.3648033] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator hl_guard       pos [0.0, 0.76904327, -3.3648033] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator trlr_cables    pos [0.0, 1.22597, 0.0] rot [5.0532154e-16, 0.0, 1.0, 0.0] scale 1 hookup None
+    locator exhaust_m      pos [1.0529201e-14, 1.0892916, -0.50694346] rot [6.123234e-17, 0.0, 1.0, 0.0] scale 1 hookup None
+    locator hook_t_s       pos [0.0, 0.9997442, 1.6522263] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator wheel_r_2_2    pos [-0.9280732, 0.5, 2.2442477] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator wheel_r_3_2    pos [0.9276611, 0.5, 2.244009] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator wp_3_4x2       pos [0.8962943, 0.06681266, 2.5970855] rot [6.123234e-17, 0.0, 1.0, 0.0] scale 1 hookup Some("wheel.particles")
+    locator wp_2_4x2       pos [-0.9053367, 0.06681266, 2.5970855] rot [6.123234e-17, 0.0, 1.0, 0.0] scale 1 hookup Some("wheel.particles")
+    locator r_fendr_top    pos [0.0, 1.1388575, 2.2315557] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator r_fender       pos [0.0, 0.8301827, 2.9853718] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator r_lp           pos [-0.9428719, 0.5093053, 2.8651567] rot [5.0485954e-16, 2.1603921e-17, 0.99908566, -0.042752817] scale 1 hookup Some("license.plate_rear")
+    locator r_mudflap      pos [0.0, 0.17897004, 3.1426568] rot [5.0532154e-16, 0.0, 1.0, 0.0] scale 1 hookup None
+    locator tank           pos [0.0, 1.0892916, 0.09177205] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator r_light        pos [-1.0097419e-30, 0.79375887, 3.303716] rot [5.0532154e-16, 0.0, 1.0, 0.0] scale 1 hookup None

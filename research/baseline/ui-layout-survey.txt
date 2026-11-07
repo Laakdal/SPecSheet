@@ -1,0 +1,1659 @@
+# Baseline of research/evidence/ui-layout-survey.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## def_stats /ui
+academy_adjuster_tutorial_hdl: 1
+    window_link: 1
+academy_aligned_window_hdl: 1
+    window_link: 1
+academy_book_intro_hdl: 1
+    window_link: 1
+academy_book_menu_hdl: 1
+    window_link: 1
+academy_completed_hdl: 1
+    window_link: 1
+academy_current_chapter_preview_hdl: 1
+    window_link: 1
+academy_cutscene_any_key_hdl: 1
+    window_link: 1
+academy_desktop_top_bar_hdl: 1
+    window_link: 1
+academy_finish_hdl: 1
+    window_link: 1
+academy_hud_hdl: 1
+    window_link: 1
+academy_intro_cutscene_hdl: 1
+    window_link: 1
+academy_next_scenario_preview_hdl: 1
+    window_link: 1
+academy_paused_hdl: 1
+    window_link: 1
+academy_replay_any_key_hdl: 1
+    window_link: 1
+academy_replay_menu_hdl: 1
+    window_link: 1
+academy_scenario_menu_hdl: 1
+    window_link: 1
+academy_truck_dealer_hdl: 1
+    window_link: 1
+academy_ui_steering_wheel_hdl: 1
+    window_link: 1
+accessibility_hdl: 1
+    window_link: 1
+accessory_filters_hdl: 1
+    window_link: 1
+adviser_hud_configuration: 3
+    hud_script_path: 3
+    linear_layouts: 2
+    standard_layout_setup_command: 2
+    standard_positions: 3
+    ui_components: 3
+    uk_layout_setup_command: 2
+    uk_positions: 3
+    widget_ids: 3
+    widget_types: 3
+    window_class: 3
+    window_keep_aspect_standard: 3
+    window_keep_aspect_uk: 3
+adviser_hud_dispatch_hdl: 3
+    window_link: 3
+adviser_hud_legends_hdl: 1
+    window_link: 1
+adviser_hud_widget_hdl: 2
+    hud_configs: 2
+    manage_chat_placement: 2
+    window_link: 2
+adviser_options_hdl: 1
+    window_link: 1
+assistant_hdl: 1
+    window_link: 1
+audio_hdl: 1
+    window_link: 1
+bank_hdl: 1
+    window_link: 1
+bcg_theme_hdl: 1
+    window_link: 1
+brightness_hdl: 1
+    window_link: 1
+bug_report_hdl: 1
+    window_link: 1
+career_delivery_log_tab_hdl: 1
+    window_link: 1
+career_hdl: 1
+    window_link: 1
+career_stats_content_window_hdl: 1
+    window_link: 1
+career_stats_tab_hdl: 1
+    window_link: 1
+cargo_load_screen_hdl: 1
+    window_link: 1
+cargo_market_hdl: 1
+    window_link: 1
+company_browser_hdl: 1
+    window_link: 1
+company_job_hdl: 1
+    window_link: 1
+controls_joy_hdl: 1
+    window_link: 1
+controls_kbd_hdl: 1
+    window_link: 1
+copy_configuration_manager_hdl: 1
+    window_link: 1
+copy_configuration_preview_hdl: 2
+    window_link: 2
+copy_configuration_table_hdl: 2
+    window_link: 2
+credits_hdl: 1
+    window_link: 1
+cutscene_any_key_hdl: 1
+    window_link: 1
+cutscene_base_hdl: 1
+    window_link: 1
+cutscene_msg_hdl: 1
+    window_link: 1
+delivery_hdl: 1
+    window_link: 1
+demo_countdown_hdl: 1
+    window_link: 1
+desktop_bcg_hdl: 1
+    window_link: 1
+desktop_hdl: 2
+    window_link: 2
+desktop_links_hdl: 1
+    link_row_ids: 1
+    link_row_limits: 1
+    window_link: 1
+desktop_menu_bar_hdl: 1
+    window_link: 1
+desktop_sdesc_selector: 1
+    full_desc: 1
+    preview_desc: 1
+desktop_top_bar_hdl: 1
+    window_link: 1
+desktop_tour_hdl: 1
+    window_link: 1
+display_hdl: 1
+    window_link: 1
+dlc_browser_confirm_hdl: 1
+    window_link: 1
+dlc_browser_hdl: 1
+    window_link: 1
+dlc_browser_sdesc_selector: 1
+    dlc_browser: 1
+    dlc_browser_confirm: 1
+dlc_spotlight_widget_hdl: 1
+    window_link: 1
+dozing_warn_hdl: 1
+    window_link: 1
+driver_detail_hdl: 1
+    window_link: 1
+driver_log_hdl: 1
+    window_link: 1
+driver_manager_hdl: 1
+    window_link: 1
+driver_map_hdl: 1
+    icon_color_idle: 1
+    icon_color_on_duty: 1
+    icon_color_parked: 1
+    icon_color_player: 1
+    icon_color_private: 1
+    icon_color_returning: 1
+    window_link: 1
+driver_plate_text_hdl: 2
+    window_link: 2
+driver_skill_training_hdl: 1
+    window_link: 1
+driver_table_hdl: 1
+    window_link: 1
+editor_hud_hdl: 1
+    window_link: 1
+editor_hud_map_hdl: 1
+    window_link: 1
+event_hud_notice_hdl: 1
+    animation_data_path: 1
+    window_link: 1
+event_popup_hdl: 1
+    window_link: 1
+event_widget_hdl: 1
+    window_link: 1
+external_market_hdl: 1
+    window_link: 1
+eye_hdl: 1
+    window_link: 1
+fading_hdl: 1
+    window_link: 1
+ferry_hdl: 1
+    window_link: 1
+fs_busy_hdl: 1
+    window_link: 1
+gameplay_hdl: 1
+    window_link: 1
+garage_detail_hdl: 1
+    window_link: 1
+garage_manager_hdl: 1
+    window_link: 1
+garage_map_hdl: 1
+    icon_color_idle: 1
+    icon_color_on_duty: 1
+    icon_color_parked: 1
+    icon_color_player: 1
+    icon_color_private: 1
+    icon_color_returning: 1
+    window_link: 1
+garage_sel_hdl: 2
+    window_link: 2
+garage_stats_hdl: 1
+    window_link: 1
+garage_table_hdl: 1
+    window_link: 1
+gfx_test_hdl: 1
+    window_link: 1
+hdr_hdl: 1
+    window_link: 1
+hq_selection_hdl: 1
+    window_link: 1
+hud_hint_hdl: 2
+    window_link: 2
+input_wizard_hdl: 1
+    window_link: 1
+interface_hdl: 1
+    window_link: 1
+intro_screen_hdl: 1
+    window_link: 1
+job_customization_hdl: 1
+    window_link: 1
+job_delivery_hdl: 1
+    window_link: 1
+job_detail_hdl: 2
+    window_link: 2
+job_widget_hdl: 1
+    window_link: 1
+launchpad_hdl: 1
+    window_link: 1
+launchpad_top_bar_hdl: 1
+    window_link: 1
+load_game_hdl: 2
+    window_link: 2
+loading_hdl: 1
+    window_link: 1
+mail_hdl: 1
+    window_link: 1
+mandatory_break_hdl: 1
+    window_link: 1
+missing_dependencies_hdl: 1
+    window_link: 1
+missing_joy_hdl: 1
+    window_link: 1
+mod_details_hdl: 1
+    window_link: 1
+mod_manager_hdl: 1
+    window_link: 1
+mod_manager_help_hdl: 1
+    window_link: 1
+modded_trucks_dealer_online_hdl: 1
+    window_link: 1
+msgbox_hdl: 2
+    window_link: 2
+multiplayer_ban_hdl: 1
+    window_link: 1
+multiplayer_browser_sdesc_selector: 1
+    browser: 1
+    init_access: 1
+multiplayer_connection_warning_hdl: 1
+    window_link: 1
+multiplayer_convoy_concluded_hdl: 1
+    window_link: 1
+multiplayer_create_session_hdl: 1
+    window_link: 1
+multiplayer_current_session_hdl: 1
+    window_link: 1
+multiplayer_current_session_settings_hdl: 1
+    window_link: 1
+multiplayer_initial_session_browser_access_hdl: 1
+    window_link: 1
+multiplayer_job_detail_hdl: 2
+    window_link: 2
+multiplayer_message_box_hdl: 1
+    window_link: 1
+multiplayer_overlay_map_hdl: 1
+    window_link: 1
+multiplayer_password_dialog_hdl: 1
+    window_link: 1
+multiplayer_quick_replies_edit_hdl: 1
+    window_link: 1
+multiplayer_quick_replies_selection_hdl: 1
+    window_link: 1
+multiplayer_session_browser_hdl: 1
+    window_link: 1
+multiplayer_session_filters_hdl: 1
+    window_link: 1
+multiplayer_session_handle_job_hdl: 1
+    window_link: 1
+multiplayer_session_mod_sync_hdl: 1
+    window_link: 1
+multiplayer_session_password_hdl: 1
+    window_link: 1
+multiplayer_sidebar_chat_hdl: 1
+    window_link: 1
+multiplayer_sidebar_hdl: 1
+    window_link: 1
+multiplayer_voice_over_network_hdl: 1
+    window_link: 1
+multiplayer_widget_hdl: 1
+    window_link: 1
+navigation_bar_hdl: 2
+    button_row_id: 2
+    button_row_limit: 2
+    window_link: 2
+new_academy_rewards_hdl: 1
+    window_link: 1
+new_inventory_items_hdl: 1
+    window_link: 1
+new_upgrades_hdl: 1
+    window_link: 1
+notification_widget_hdl: 6
+    window_link: 6
+online_connect_content_hdl: 1
+    window_link: 1
+online_connected_content_browser_hdl: 1
+    window_link: 1
+online_exit_hdl: 1
+    window_link: 1
+online_job_detail_hdl: 1
+    window_link: 1
+online_job_hdl: 1
+    window_link: 1
+online_loading_screen_preview_hdl: 1
+    window_link: 1
+online_loading_screens_browser_hdl: 1
+    window_link: 1
+online_options_hdl: 1
+    window_link: 1
+online_wait_hdl: 1
+    window_link: 1
+options_sdesc_selector: 1
+    gfx_desc: 1
+    options_desc: 1
+oversize_tutorial_hdl: 1
+    window_link: 1
+password_entry_hdl: 1
+    window_link: 1
+patch_notes_hdl: 1
+    window_link: 1
+photo_album_hdl: 1
+    window_link: 1
+photo_album_image_context_actions_hdl: 1
+    window_link: 1
+photo_album_preview_hdl: 1
+    window_link: 1
+photo_album_states_hdl: 1
+    window_link: 1
+photo_album_wotr_hdl: 1
+    window_link: 1
+photo_mode_hdl: 1
+    window_link: 1
+photo_mode_menu_hdl: 1
+    window_link: 1
+profile_change_hdl: 1
+    window_link: 1
+profile_company_hdl: 1
+    window_link: 1
+profile_create_hdl: 1
+    window_link: 1
+profile_edit_avatar_hdl: 1
+    window_link: 1
+profile_edit_hdl: 1
+    window_link: 1
+profile_edit_login_hdl: 1
+    window_link: 1
+profile_select_hdl: 1
+    window_link: 1
+quick_job_hdl: 1
+    window_link: 1
+quick_travel_hdl: 2
+    window_link: 2
+radio_hdl: 1
+    window_link: 1
+radio_music_table_hdl: 1
+    window_link: 1
+radio_offline_station_table_hdl: 1
+    window_link: 1
+radio_stream_table_hdl: 1
+    window_link: 1
+radio_widget_common_hdl: 2
+    window_link: 2
+real_estate_hdl: 1
+    window_link: 1
+recruit_hdl: 1
+    window_link: 1
+recruit_map_hdl: 1
+    window_link: 1
+save_game_hdl: 1
+    window_link: 1
+screen_desc: 174
+    background: 3
+    desktop_override: 9
+    help: 76
+    help_hint: 7
+    help_trigger_type: 6
+    icon: 85
+    icon_label: 85
+    icon_overlay_query: 2
+    link: 10
+    links_ui: 9
+    locked_tooltip: 32
+    modal: 32
+    overlay: 39
+    render_order: 27
+    screen_desc: 2
+    screen_desc_offset: 2
+    title: 149
+    ui_script: 162
+screen_links_hdl: 6
+    link_row_ids: 6
+    link_row_limits: 5
+    window_link: 6
+screen_overview_hdl: 1
+    link_row_ids: 1
+    link_row_limits: 1
+    window_link: 1
+screen_quit_hdl: 1
+    window_link: 1
+screenshot_preview_hdl: 1
+    window_link: 1
+set_lights_hdl: 1
+    idle_color_str: 1
+    press_color_str: 1
+    window_link: 1
+set_mirrors_hdl: 1
+    idle_color_str: 1
+    press_color_str: 1
+    window_link: 1
+set_seat_hdl: 1
+    idle_color_str: 1
+    press_color_str: 1
+    window_link: 1
+skill_linear_view_hdl: 1
+    window_link: 1
+skill_nonlinear_view_hdl: 1
+    window_link: 1
+skills_hdl: 1
+    window_link: 1
+skills_overview_hdl: 1
+    window_link: 1
+special_job_detail_hdl: 1
+    window_link: 1
+startup_screen_base_right_hdl: 1
+    window_link: 1
+summary_hdl: 1
+    window_link: 1
+time_skip_fade_screen_hdl: 1
+    window_link: 1
+time_skip_hdl: 1
+    window_link: 1
+trailer_adjust_hdl: 1
+    window_link: 1
+trailer_browser_hdl: 1
+    window_link: 1
+trailer_dealer_online_hdl: 1
+    window_link: 1
+trailer_detail_hdl: 1
+    window_link: 1
+trailer_manager_hdl: 1
+    window_link: 1
+trailer_map_hdl: 1
+    icon_color_idle: 1
+    icon_color_on_duty: 1
+    icon_color_parked: 1
+    icon_color_player: 1
+    icon_color_private: 1
+    icon_color_returning: 1
+    window_link: 1
+trailer_preview_hdl: 1
+    window_link: 1
+trailer_selector_hdl: 1
+    window_link: 1
+trailer_table_hdl: 1
+    window_link: 1
+triggered_window_hdl: 1
+    window_link: 1
+truck_analysis_popup_hdl: 1
+    window_link: 1
+truck_browser_hdl: 1
+    window_link: 1
+truck_config_dispatch_hdl: 8
+    window_link: 8
+truck_config_hdl: 2
+    window_link: 2
+truck_dealer_hdl: 1
+    window_link: 1
+truck_dealer_map_hdl: 1
+    window_link: 1
+truck_dealer_online_hdl: 2
+    window_link: 2
+truck_detail_hdl: 1
+    window_link: 1
+truck_manager_hdl: 1
+    window_link: 1
+truck_map_hdl: 1
+    icon_color_idle: 1
+    icon_color_on_duty: 1
+    icon_color_parked: 1
+    icon_color_player: 1
+    icon_color_private: 1
+    icon_color_returning: 1
+    window_link: 1
+truck_preference_dispatch_hdl: 3
+    window_link: 3
+truck_preference_hdl: 1
+    window_link: 1
+truck_service_hdl: 1
+    window_link: 1
+truck_table_hdl: 1
+    window_link: 1
+tutorial_hint_hdl: 1
+    window_link: 1
+ui::button: 31
+    area_b: 31
+    area_l: 31
+    area_r: 31
+    area_t: 31
+    button_type: 31
+    coords_b: 31
+    coords_l: 31
+    coords_r: 31
+    coords_t: 31
+    d_pml: 31
+    id: 31
+    layer: 31
+    my_parent: 31
+    n_pml: 31
+    p_pml: 31
+    pointer: 31
+    s2_pml: 31
+    s_pml: 31
+    tab: 31
+ui::button_common: 1252
+    area_b: 1252
+    area_l: 1252
+    area_r: 1252
+    area_t: 1252
+    button_type: 1252
+    coords_b: 1252
+    coords_l: 1252
+    coords_r: 1252
+    coords_t: 1252
+    d_pml: 1252
+    id: 1252
+    layer: 1252
+    look_template: 1252
+    my_parent: 1252
+    n_pml: 1252
+    p_pml: 1252
+    pointer: 1252
+    s2_pml: 1252
+    s_pml: 1252
+    tab: 1252
+    value: 1252
+    value2: 1252
+ui::button_row: 80
+    area_b: 80
+    area_l: 80
+    area_r: 80
+    area_t: 80
+    button_size_type: 80
+    button_tab_base: 80
+    button_type: 80
+    coords_b: 80
+    coords_l: 80
+    coords_r: 80
+    coords_t: 80
+    fitting: 80
+    id: 80
+    id_list: 80
+    item_distance: 80
+    label_indent: 80
+    layer: 80
+    list_delimiter: 80
+    look_template: 80
+    look_template_list: 72
+    min_item_width: 80
+    my_children: 80
+    my_parent: 80
+    p_pml_as_reference: 80
+    pointer: 80
+    row_align: 80
+    tab: 80
+    use_blend_buttons: 80
+    value_list: 80
+    width_list: 80
+ui::button_template: 309
+    action_sound: 16
+    d_pml: 183
+    height: 222
+    n_pml: 308
+    name: 309
+    p_pml: 308
+    s2_pml: 106
+    s_pml: 308
+    width: 202
+ui::child_sized_view: 13
+    area_b: 13
+    area_l: 13
+    area_r: 13
+    area_t: 13
+    coords_b: 13
+    coords_l: 13
+    coords_r: 13
+    coords_t: 13
+    fitting: 13
+    id: 13
+    layer: 13
+    my_children: 13
+    my_parent: 13
+    pointer: 13
+    size_computation_depth: 13
+    tab: 13
+ui::controls_overlay_manager_hdl: 1
+    window_link: 1
+ui::droplist_common: 60
+    area_b: 60
+    area_l: 60
+    area_r: 60
+    area_t: 60
+    coords_b: 60
+    coords_l: 60
+    coords_r: 60
+    coords_t: 60
+    d_pml: 60
+    fitting: 60
+    id: 60
+    layer: 60
+    list_management: 60
+    look_template: 60
+    my_children: 60
+    my_parent: 60
+    n_pml: 60
+    p_pml: 60
+    pointer: 60
+    s_pml: 60
+    tab: 60
+    use_blend_buttons: 60
+ui::frame: 1
+    area_b: 1
+    area_l: 1
+    area_r: 1
+    area_t: 1
+    color: 1
+    coords_b: 1
+    coords_l: 1
+    coords_r: 1
+    coords_t: 1
+    corner: 1
+    hline: 1
+    id: 1
+    inside: 1
+    inside_inset: 1
+    inside_tile: 1
+    layer: 1
+    my_parent: 1
+    pointer: 1
+    tab: 1
+    text: 1
+    tile: 1
+    vline: 1
+ui::frame_template: 1
+    name: 1
+ui::gamepad_focus_hdl: 1
+    animation_hide_duration_ms: 1
+    animation_hide_end_opacity: 1
+    animation_hide_to_ratio: 1
+    animation_idle_duration_ms: 1
+    animation_idle_end_opacity: 1
+    animation_move_duration_ms: 1
+    animation_move_end_opacity: 1
+    animation_move_from_ratio: 1
+    animation_move_start_opacity: 1
+    animation_show_duration_ms: 1
+    animation_show_end_opacity: 1
+    animation_show_from_ratio: 1
+    animation_show_start_opacity: 1
+    check_focus_delay_ms: 1
+    hide_delay_ms: 1
+    window_link: 1
+ui::group: 1082
+    area_b: 1082
+    area_l: 1082
+    area_r: 1082
+    area_t: 1082
+    coords_b: 1082
+    coords_l: 1082
+    coords_r: 1082
+    coords_t: 1082
+    fitting: 1082
+    id: 1082
+    layer: 1082
+    my_children: 1082
+    my_parent: 1082
+    pointer: 1082
+    tab: 1082
+ui::ime_lang_config: 5
+    lang_code: 5
+    widget: 5
+ui::ime_manager: 1
+    configurations: 1
+ui::ime_widget: 3
+    active_indexing: 3
+    composition_mode: 3
+    incomplete_list: 1
+    instruction: 1
+    item_height: 3
+    layout: 3
+    margin: 3
+    offset: 3
+    spawn_mode: 3
+ui::inputline_common: 59
+    allowed_characters: 58
+    area_b: 58
+    area_l: 58
+    area_r: 58
+    area_t: 58
+    coords_b: 59
+    coords_l: 59
+    coords_r: 59
+    coords_t: 59
+    cursor: 59
+    d_pml: 58
+    default_text: 58
+    id: 59
+    ime_color: 58
+    lang_id: 58
+    layer: 59
+    limit: 59
+    look_template: 59
+    make_uppercase: 58
+    multiline: 58
+    my_parent: 59
+    n_pml: 58
+    p_pml: 58
+    password: 58
+    password_character: 58
+    pointer: 59
+    s2_pml: 58
+    s_pml: 58
+    selection_color: 58
+    show_language_indicator: 58
+    stretch_cursor: 58
+    tab: 59
+ui::inputline_template: 8
+    cursor: 8
+    d_pml: 7
+    ime_color: 7
+    lang_id: 8
+    n_pml: 8
+    name: 8
+    p_pml: 8
+    s2_pml: 8
+    s_pml: 8
+    selection_color: 8
+    stretch_cursor: 8
+ui::linear_layout: 108
+    alignment_x: 108
+    alignment_y: 108
+    area_b: 108
+    area_l: 108
+    area_r: 108
+    area_t: 108
+    background_id: 108
+    background_padding_bottom: 108
+    background_padding_left: 108
+    background_padding_right: 108
+    background_padding_top: 108
+    background_size_computation_depth: 108
+    background_size_computation_mode: 72
+    background_size_only_desired_depth: 94
+    coords_b: 108
+    coords_l: 108
+    coords_r: 108
+    coords_t: 108
+    dimension: 108
+    fitting: 108
+    id: 108
+    inner_padding: 108
+    layer: 108
+    my_children: 108
+    my_parent: 108
+    outer_padding_x: 108
+    outer_padding_y: 108
+    pointer: 108
+    reverse_order: 101
+    sizing_mode: 101
+    tab: 108
+ui::link_text: 11
+    area_b: 11
+    area_l: 11
+    area_r: 11
+    area_t: 11
+    coords_b: 11
+    coords_l: 11
+    coords_r: 11
+    coords_t: 11
+    id: 11
+    layer: 11
+    link_pointer: 11
+    look_template: 11
+    my_parent: 11
+    pointer: 11
+    tab: 11
+    text: 11
+    value: 11
+ui::list: 1
+    area_b: 1
+    area_l: 1
+    area_r: 1
+    area_t: 1
+    coords_b: 1
+    coords_l: 1
+    coords_r: 1
+    coords_t: 1
+    d_pml: 1
+    fitting: 1
+    id: 1
+    item_gap: 1
+    item_height: 1
+    item_width: 1
+    layer: 1
+    max_list_height: 1
+    multi_column: 1
+    my_children: 1
+    my_parent: 1
+    n_pml: 1
+    p_pml: 1
+    pointer: 1
+    s_pml: 1
+    slider_management: 1
+    tab: 1
+ui::list_common: 105
+    area_b: 105
+    area_l: 105
+    area_r: 105
+    area_t: 105
+    coords_b: 105
+    coords_l: 105
+    coords_r: 105
+    coords_t: 105
+    d_pml: 105
+    fitting: 105
+    id: 105
+    item_gap: 105
+    item_height: 105
+    item_width: 105
+    layer: 105
+    look_template: 105
+    max_list_height: 105
+    multi_column: 105
+    my_children: 105
+    my_parent: 105
+    n_pml: 105
+    p_pml: 105
+    pointer: 105
+    s_pml: 105
+    slider_management: 105
+    tab: 105
+    use_blend_buttons: 105
+ui::overlay_point: 41
+    area_b: 41
+    area_l: 41
+    area_r: 41
+    area_t: 41
+    coords_b: 41
+    coords_l: 41
+    coords_r: 41
+    coords_t: 41
+    id: 41
+    layer: 41
+    look_template: 41
+    my_parent: 41
+    overlay_anchor_type: 41
+    pointer: 41
+    tab: 41
+    text: 41
+    value: 41
+ui::padding: 28
+    area_b: 28
+    area_l: 28
+    area_r: 28
+    area_t: 28
+    coords_b: 28
+    coords_l: 28
+    coords_r: 28
+    coords_t: 28
+    id: 28
+    layer: 28
+    my_parent: 28
+    pointer: 28
+    tab: 28
+ui::parent_sized_view: 63
+    area_b: 63
+    area_l: 63
+    area_r: 63
+    area_t: 63
+    coords_b: 63
+    coords_l: 63
+    coords_r: 63
+    coords_t: 63
+    fitting: 63
+    id: 63
+    layer: 63
+    my_children: 63
+    my_parent: 63
+    pointer: 63
+    tab: 63
+    x_max_pixels: 63
+    x_min_pixels: 63
+    x_size_percent: 63
+    y_max_pixels: 63
+    y_min_pixels: 63
+    y_size_percent: 63
+ui::portal: 115
+    area_b: 115
+    area_l: 115
+    area_r: 115
+    area_t: 115
+    child_path: 115
+    coords_b: 115
+    coords_l: 115
+    coords_r: 115
+    coords_t: 115
+    fitting: 115
+    hslider_id: 115
+    id: 115
+    layer: 115
+    my_children: 114
+    my_parent: 115
+    pointer: 115
+    tab: 115
+    vslider_id: 115
+ui::property_set_tooltip_template: 3
+    category_spacing: 3
+    category_text_look: 1
+    data: 3
+    key_text_look: 1
+    name: 3
+    value_text_look: 2
+ui::property_slider_common: 4
+    action_on_drag: 4
+    area_b: 4
+    area_l: 4
+    area_r: 4
+    area_t: 4
+    coords_b: 4
+    coords_l: 4
+    coords_r: 4
+    coords_t: 4
+    d_background: 4
+    d_pml: 4
+    d_property: 4
+    dynamic_handle: 4
+    gamepad_d_pml: 4
+    gamepad_n_pml: 4
+    gamepad_p_pml: 4
+    gamepad_s_pml: 4
+    id: 4
+    layer: 4
+    look_template: 4
+    margin: 4
+    minimal_handle_size: 4
+    move_to_point: 4
+    my_parent: 4
+    n_background: 4
+    n_pml: 4
+    n_property: 4
+    p_pml: 4
+    pointer: 4
+    property_style: 4
+    s_background: 4
+    s_pml: 4
+    scale_factor: 4
+    tab: 4
+    tick: 4
+    unit_string: 4
+    value: 4
+ui::property_slider_template: 1
+    action_sound: 1
+    d_background_horiz: 1
+    d_background_vert: 1
+    d_pml_horiz: 1
+    d_pml_vert: 1
+    d_property_horiz: 1
+    d_property_vert: 1
+    gamepad_p_pml_horiz: 1
+    gamepad_p_pml_vert: 1
+    gamepad_s_pml_horiz: 1
+    gamepad_s_pml_vert: 1
+    margin_horiz: 1
+    margin_vert: 1
+    n_background_horiz: 1
+    n_background_vert: 1
+    n_pml_horiz: 1
+    n_pml_vert: 1
+    n_property_horiz: 1
+    n_property_vert: 1
+    name: 1
+    p_pml_horiz: 1
+    p_pml_vert: 1
+    s_background_horiz: 1
+    s_background_vert: 1
+    s_pml_horiz: 1
+    s_pml_vert: 1
+ui::slider_common: 108
+    action_on_drag: 108
+    area_b: 108
+    area_l: 108
+    area_r: 108
+    area_t: 108
+    coords_b: 108
+    coords_l: 108
+    coords_r: 108
+    coords_t: 108
+    d_background: 108
+    d_pml: 108
+    d_property: 107
+    dynamic_handle: 108
+    gamepad_d_pml: 100
+    gamepad_n_pml: 100
+    gamepad_p_pml: 100
+    gamepad_s_pml: 100
+    id: 108
+    layer: 108
+    look_template: 108
+    margin: 108
+    minimal_handle_size: 108
+    move_to_point: 108
+    my_parent: 108
+    n_background: 108
+    n_pml: 108
+    n_property: 107
+    p_pml: 108
+    pointer: 108
+    s_background: 108
+    s_pml: 108
+    tab: 108
+    tick: 108
+    value: 108
+ui::slider_template: 14
+    action_sound: 13
+    d_background_horiz: 14
+    d_background_vert: 14
+    d_pml_horiz: 14
+    d_pml_vert: 14
+    gamepad_n_pml_horiz: 9
+    gamepad_n_pml_vert: 9
+    gamepad_p_pml_horiz: 3
+    gamepad_p_pml_vert: 3
+    gamepad_s_pml_horiz: 3
+    gamepad_s_pml_vert: 11
+    margin_horiz: 14
+    margin_vert: 14
+    n_background_horiz: 14
+    n_background_vert: 14
+    n_pml_horiz: 14
+    n_pml_vert: 14
+    name: 14
+    p_pml_horiz: 14
+    p_pml_vert: 14
+    s_background_horiz: 14
+    s_background_vert: 14
+    s_pml_horiz: 14
+    s_pml_vert: 14
+ui::table_row_list_common: 26
+    aligns: 26
+    area_b: 26
+    area_l: 26
+    area_r: 26
+    area_t: 26
+    col_widths: 26
+    coords_b: 26
+    coords_l: 26
+    coords_r: 26
+    coords_t: 26
+    d_pml: 26
+    fitting: 26
+    h_cellspacing: 26
+    id: 26
+    item_gap: 26
+    item_height: 26
+    item_width: 26
+    layer: 26
+    look_template: 26
+    max_list_height: 26
+    multi_column: 26
+    my_children: 26
+    my_parent: 26
+    n_pml: 26
+    p_pml: 26
+    paddings: 26
+    pointer: 26
+    s_pml: 26
+    slider_management: 26
+    tab: 26
+    use_blend_buttons: 26
+ui::table_row_template: 7
+    action_sound: 2
+    d_pml_cell: 5
+    d_pml_prefix: 5
+    d_pml_suffix: 5
+    height: 1
+    n_pml_cell: 7
+    n_pml_prefix: 7
+    n_pml_suffix: 7
+    name: 7
+    p_pml_cell: 7
+    p_pml_prefix: 7
+    p_pml_suffix: 7
+    s2_pml_cell: 7
+    s2_pml_prefix: 7
+    s2_pml_suffix: 7
+    s_pml_cell: 7
+    s_pml_prefix: 7
+    s_pml_suffix: 7
+ui::text: 2133
+    area_b: 2130
+    area_l: 2130
+    area_r: 2130
+    area_t: 2130
+    coords_b: 2133
+    coords_l: 2133
+    coords_r: 2133
+    coords_t: 2133
+    id: 2133
+    layer: 2133
+    my_parent: 2133
+    pointer: 2133
+    tab: 2133
+    text: 2133
+ui::text_common: 2910
+    area_b: 2909
+    area_l: 2909
+    area_r: 2909
+    area_t: 2909
+    coords_b: 2910
+    coords_l: 2910
+    coords_r: 2910
+    coords_t: 2910
+    id: 2910
+    layer: 2910
+    look_template: 2910
+    my_parent: 2910
+    pointer: 2910
+    tab: 2910
+    text: 2910
+    value: 2910
+ui::text_table_common: 46
+    area_b: 46
+    area_l: 46
+    area_r: 46
+    area_t: 46
+    col_widths: 46
+    coords_b: 46
+    coords_l: 46
+    coords_r: 46
+    coords_t: 46
+    h_cellspacing: 46
+    id: 46
+    indexing_cycle: 6
+    indexing_shift: 6
+    layer: 46
+    look_template: 46
+    my_parent: 46
+    pointer: 46
+    row_height: 46
+    tab: 46
+    text: 46
+    v_cellspacing: 46
+    value: 46
+ui::text_table_template: 7
+    leftmost_cell_pml: 7
+    middle_cell_pml: 7
+    name: 7
+    rightmost_cell_pml: 7
+    row_height: 1
+ui::text_template: 669
+    height: 54
+    name: 669
+    text: 669
+    width: 34
+ui::tooltip_template: 12
+    data: 12
+    name: 12
+ui::tooltip_template_data: 45
+    anchor: 45
+    background_pml: 17
+    content_offset_bottom: 45
+    content_offset_left: 45
+    content_offset_right: 45
+    content_offset_top: 45
+    gravity: 45
+    pml: 45
+ui::window: 208
+    area_b: 208
+    area_l: 208
+    area_r: 208
+    area_t: 208
+    clip_children: 208
+    coords_b: 208
+    coords_l: 208
+    coords_r: 208
+    coords_t: 208
+    first_direction_focus_id: 175
+    fitting: 208
+    id: 208
+    keep_aspect: 208
+    layer: 208
+    my_children: 208
+    my_parent: 208
+    pointer: 208
+    tab: 208
+    user_string_data: 189
+    window_handler: 208
+ui_blend_only_window: 4
+    area_b: 4
+    area_l: 4
+    area_r: 4
+    area_t: 4
+    blend_x_shift: 4
+    blend_y_shift: 4
+    clip_children: 4
+    coords_b: 4
+    coords_l: 4
+    coords_r: 4
+    coords_t: 4
+    first_direction_focus_id: 3
+    fitting: 4
+    id: 4
+    keep_aspect: 4
+    layer: 4
+    my_children: 4
+    my_parent: 4
+    pointer: 4
+    tab: 4
+    user_string_data: 3
+    window_handler: 4
+ui_blend_window: 213
+    area_b: 213
+    area_l: 213
+    area_r: 213
+    area_t: 213
+    blend_x_shift: 213
+    blend_y_shift: 213
+    clip_children: 213
+    coords_b: 213
+    coords_l: 213
+    coords_r: 213
+    coords_t: 213
+    first_direction_focus_id: 202
+    fitting: 213
+    id: 213
+    keep_aspect: 213
+    layer: 213
+    my_children: 213
+    my_parent: 213
+    pointer: 213
+    tab: 213
+    user_string_data: 209
+    window_handler: 213
+ui_color_picker: 4
+    area_b: 4
+    area_l: 4
+    area_r: 4
+    area_t: 4
+    coords_b: 4
+    coords_l: 4
+    coords_r: 4
+    coords_t: 4
+    fitting: 4
+    hue_bar_pos: 4
+    hue_cursor: 4
+    hue_width: 4
+    id: 4
+    layer: 4
+    my_children: 4
+    my_parent: 4
+    padding: 4
+    pointer: 4
+    sat_cursor: 4
+    tab: 4
+ui_company_driver_widget: 2
+    area_b: 2
+    area_l: 2
+    area_r: 2
+    area_t: 2
+    company_widget_size: 1
+    coords_b: 2
+    coords_l: 2
+    coords_r: 2
+    coords_t: 2
+    fitting: 2
+    id: 2
+    layer: 2
+    my_children: 2
+    my_parent: 2
+    pointer: 2
+    tab: 2
+ui_company_garage_widget: 2
+    area_b: 2
+    area_l: 2
+    area_r: 2
+    area_t: 2
+    company_widget_size: 1
+    coords_b: 2
+    coords_l: 2
+    coords_r: 2
+    coords_t: 2
+    fitting: 2
+    id: 2
+    layer: 2
+    my_children: 2
+    my_parent: 2
+    pointer: 2
+    tab: 2
+ui_company_vehicle_widget: 2
+    area_b: 2
+    area_l: 2
+    area_r: 2
+    area_t: 2
+    company_widget_size: 2
+    coords_b: 2
+    coords_l: 2
+    coords_r: 2
+    coords_t: 2
+    fitting: 2
+    id: 2
+    layer: 2
+    my_children: 2
+    my_parent: 2
+    pointer: 2
+    tab: 2
+    type: 2
+ui_desktop_burger_menu: 1
+    area_b: 1
+    area_l: 1
+    area_r: 1
+    area_t: 1
+    categories_path: 1
+    category_button_look: 1
+    coords_b: 1
+    coords_l: 1
+    coords_r: 1
+    coords_t: 1
+    fitting: 1
+    id: 1
+    layer: 1
+    link_button_look_bottom: 1
+    link_button_look_middle: 1
+    link_button_look_single: 1
+    link_button_look_top: 1
+    link_tooltip_background_look: 1
+    link_tooltip_background_value: 1
+    link_tooltip_look: 1
+    link_tooltip_margin: 1
+    link_tooltip_width_limit: 1
+    link_tooltip_x_offset: 1
+    menu_bottom_margin: 1
+    menu_top_margin: 1
+    my_children: 1
+    my_parent: 1
+    pointer: 1
+    sub_menu_left_margin: 1
+    sub_menu_look: 1
+    tab: 1
+ui_desktop_menu_bar: 2
+    area_b: 2
+    area_l: 2
+    area_r: 2
+    area_t: 2
+    categories_path: 2
+    category_background_look: 2
+    category_background_value: 2
+    category_button_look: 2
+    category_button_look_left: 1
+    category_button_look_right: 1
+    category_button_look_single: 1
+    category_horizontal_margin: 2
+    category_item_spacing: 2
+    category_no_menu_button_look: 1
+    coords_b: 2
+    coords_l: 2
+    coords_r: 2
+    coords_t: 2
+    fitting: 2
+    id: 2
+    layer: 2
+    link_button_look: 2
+    link_tooltip_background_look: 2
+    link_tooltip_background_value: 2
+    link_tooltip_look: 2
+    link_tooltip_margin: 2
+    link_tooltip_width_limit: 2
+    link_tooltip_y_offset: 2
+    menu_bottom_margin: 2
+    menu_horizontal_margin: 2
+    menu_item_spacing: 2
+    menu_look: 2
+    menu_look_value: 2
+    menu_to_bounds_offset: 2
+    menu_top_margin: 2
+    menu_y_offset: 2
+    my_children: 2
+    my_parent: 2
+    pointer: 2
+    tab: 2
+ui_fullscreen: 8
+    area_b: 8
+    area_l: 8
+    area_r: 8
+    area_t: 8
+    color: 7
+    coords_b: 8
+    coords_l: 8
+    coords_r: 8
+    coords_t: 8
+    id: 8
+    layer: 8
+    my_parent: 8
+    pointer: 8
+    tab: 8
+    texture: 8
+ui_garage_detail_slot: 10
+    area_b: 10
+    area_l: 10
+    area_r: 10
+    area_t: 10
+    coords_b: 10
+    coords_l: 10
+    coords_r: 10
+    coords_t: 10
+    fitting: 10
+    id: 10
+    layer: 10
+    my_children: 10
+    my_parent: 10
+    pointer: 10
+    tab: 10
+ui_gauge: 54
+    area_b: 54
+    area_l: 54
+    area_r: 54
+    area_t: 54
+    coords_b: 54
+    coords_l: 54
+    coords_r: 54
+    coords_t: 54
+    id: 54
+    layer: 54
+    material: 54
+    max: 54
+    min: 54
+    my_parent: 54
+    off_x: 54
+    off_y: 54
+    pointer: 54
+    smooth_move: 54
+    tab: 54
+    value: 54
+    value_max: 54
+    value_min: 54
+    xref_pos: 54
+    yref_pos: 54
+ui_graph_line: 2
+    area_b: 2
+    area_l: 2
+    area_r: 2
+    area_t: 2
+    coords_b: 2
+    coords_l: 2
+    coords_r: 2
+    coords_t: 2
+    id: 2
+    layer: 2
+    line_material: 2
+    line_width: 2
+    my_parent: 2
+    pointer: 2
+    tab: 2
+ui_job_map: 15
+    area_b: 15
+    area_l: 15
+    area_r: 15
+    area_t: 15
+    coords_b: 15
+    coords_l: 15
+    coords_r: 15
+    coords_t: 15
+    fitting: 13
+    id: 15
+    layer: 15
+    map_config_path: 13
+    my_children: 13
+    my_parent: 15
+    pointer: 15
+    show_country_names: 15
+    tab: 15
+    zoom_allowed: 13
+ui_map: 4
+    area_b: 4
+    area_l: 4
+    area_r: 4
+    area_t: 4
+    coords_b: 4
+    coords_l: 4
+    coords_r: 4
+    coords_t: 4
+    fitting: 4
+    id: 4
+    layer: 4
+    my_children: 4
+    my_parent: 4
+    pointer: 4
+    tab: 4
+ui_overlay_map: 1
+    area_b: 1
+    area_l: 1
+    area_r: 1
+    area_t: 1
+    coords_b: 1
+    coords_l: 1
+    coords_r: 1
+    coords_t: 1
+    fitting: 1
+    id: 1
+    layer: 1
+    map_config_path: 1
+    my_children: 1
+    my_parent: 1
+    pointer: 1
+    show_country_names: 1
+    tab: 1
+    zoom_allowed: 1
+ui_pip: 1
+    area_b: 1
+    area_l: 1
+    area_r: 1
+    area_t: 1
+    coords_b: 1
+    coords_l: 1
+    coords_r: 1
+    coords_t: 1
+    id: 1
+    layer: 1
+    my_parent: 1
+    pointer: 1
+    tab: 1
+    type: 1
+ui_text_bar: 180
+    area_b: 180
+    area_l: 180
+    area_r: 180
+    area_t: 180
+    coords_b: 180
+    coords_l: 180
+    coords_r: 180
+    coords_t: 180
+    id: 180
+    layer: 180
+    max_size: 180
+    max_value: 180
+    min_size: 180
+    min_value: 180
+    my_parent: 180
+    pointer: 180
+    tab: 180
+    text: 180
+    vertical: 180
+ui_truck_scene: 3
+    area_b: 3
+    area_l: 3
+    area_r: 3
+    area_t: 3
+    config_path: 3
+    coords_b: 3
+    coords_l: 3
+    coords_r: 3
+    coords_t: 3
+    id: 3
+    layer: 3
+    my_parent: 3
+    pointer: 3
+    tab: 3
+ui_truck_scene_base: 4
+    area_b: 4
+    area_l: 4
+    area_r: 4
+    area_t: 4
+    config_path: 4
+    coords_b: 4
+    coords_l: 4
+    coords_r: 4
+    coords_t: 4
+    id: 4
+    layer: 4
+    my_parent: 4
+    pointer: 4
+    tab: 4
+ui_vehicle_preview: 26
+    area_b: 26
+    area_l: 26
+    area_r: 26
+    area_t: 26
+    background_color: 26
+    config_path: 26
+    coords_b: 26
+    coords_l: 26
+    coords_r: 26
+    coords_t: 26
+    id: 26
+    layer: 26
+    my_parent: 26
+    pointer: 26
+    tab: 26
+ui_world_map: 1
+    area_b: 1
+    area_l: 1
+    area_r: 1
+    area_t: 1
+    coords_b: 1
+    coords_l: 1
+    coords_r: 1
+    coords_t: 1
+    fitting: 1
+    id: 1
+    layer: 1
+    map_config_path: 1
+    my_children: 1
+    my_parent: 1
+    pointer: 1
+    show_country_names: 1
+    tab: 1
+    zoom_allowed: 1
+used_truck_dealer_online_explanation_hdl: 1
+    window_link: 1
+used_truck_dealer_online_hdl: 1
+    window_link: 1
+validation_hdl: 2
+    window_link: 2
+vehicle_adjustments_hdl: 1
+    window_link: 1
+viewpoint_cutscene_hdl: 1
+    window_link: 1
+weblinks_hdl: 1
+    window_link: 1
+weblinks_widget_hdl: 1
+    window_link: 1
+world_map_hdl: 1
+    window_link: 1
+world_map_states_hdl: 1
+    window_link: 1
+## ui_icon_survey /def/vehicle/truck 3
+fnv1a64 d205a0ed3d8b5b1f, 3547 bytes
+## ui_icon_survey /def/vehicle 0
+fnv1a64 598329e652262994, 6941 bytes

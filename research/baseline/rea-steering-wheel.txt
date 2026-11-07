@@ -1,0 +1,15 @@
+# Baseline of research/evidence/rea-steering-wheel.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## python tools/research/xref.py "<game>/bin/win_x64/eurotrucks2.exe" interior_model_uk
+interior_model_uk: strings at 0x1421b3fd0
+## python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" interior_model_uk
+== table at file 0x2c35fb0 (va 0x142c37db0), class ptr 0x141d27290, found via 'interior_model_uk'
+   +0x01b8  type   1  exterior_model
+   +0x01d8  type   1  interior_model
+   +0x01f8  type   1  exterior_model_uk
+   +0x0218  type   1  interior_model_uk
+   +0x0238  type   1  coll
+   +0x0258  type   3  look
+   +0x0260  type   3  variant
+   +0x0268  type  47  hide_in

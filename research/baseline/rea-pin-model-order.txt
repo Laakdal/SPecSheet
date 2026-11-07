@@ -1,0 +1,49 @@
+# Baseline of research/evidence/rea-pin-model-order.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" use_non_wheel_pin_data_from_model residual_travel
+== table at file 0x2c37ce0 (va 0x142c39ae0), class ptr 0x141d27eb0, found via 'use_non_wheel_pin_data_from_model'
+   +0x01b8  type   2  fallback
+   +0x01e0  type  57  use_non_wheel_pin_data_from_model
+   +0x01e8  type   4  pin_group
+   +0x0210  type   4  pin_look
+   +0x0238  type  10  pin_offset
+   +0x0260  type  10  pin_dir
+   +0x0288  type  10  pin_dir_uk
+   +0x02b0  type  58  double_sided
+== table at file 0x2c12cc0 (va 0x142c14ac0), class ptr 0x141d1fd70, found via 'residual_travel'
+   +0x01b8  type   1  detail_model
+   +0x01d8  type   1  model
+   +0x0248  type   2  pendle_axle_model
+   +0x0270  type   2  lods
+   +0x0298  type   1  collision
+   +0x02e0  type   1  trailer_brace_model
+   +0x0300  type   1  trailer_brace_anim
+   +0x0320  type   1  trailer_brace_up_sound
+   +0x0340  type   1  trailer_brace_down_sound
+   +0x0360  type   3  variant
+   +0x0368  type   3  variant_uk
+   +0x0370  type   3  look
+       -1  type   4  looks
+   +0x0378  type   1  shadow_texture
+   +0x0398  type   5  shadow_intensity
+   +0x03a0  type   1  extended_shadow_texture
+   +0x03c0  type   5  extended_shadow_intensity
+   +0x03c4  type   5  extended_shadow_fadeout_start
+   +0x03c8  type   5  extended_shadow_fadeout_length
+   +0x03d0  type   3  extended_shadow_shared_model_variant
+   +0x0400  type   1  ui_shadow
+   +0x0420  type   5  tank_size
+   +0x0424  type   5  adblue_tank_size
+   +0x0428  type   5  air_tank_pressure
+   +0x042c  type   5  nominal_voltage
+   +0x0438  type   6  residual_travel
+   +0x04e0  type   5  trailer_mass
+   +0x04e8  type  58  powered_axle
+   +0x0510  type   6  kerb_weight
+   +0x0560  type  58  liftable_axle
+   +0x0588  type   4  steerable_axle
+   +0x05b0  type  39  max_steering_angle
+   +0x05b4  type  57  steerable_lifted_axles
+   +0x05b5  type  57  powered_trailer
+   +0x05b8  type   5  steering_pivot_point_offset

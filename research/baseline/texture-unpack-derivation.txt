@@ -1,0 +1,93 @@
+# Baseline of research/evidence/texture-unpack-derivation.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## texture_layout "<game>/base.scs" "<game>/base_vehicle.scs" "<game>/base_map.scs" "<game>/base_cfg.scs" "<game>/core.scs" "<game>/base_share.scs" "<game>/def.scs"
+Exact size matches per hypothesis (["tight", "image alignment only", "pitch alignment only", "pitch + image alignment"]), out of n:
+  dxgi  35 faces 1: [0, 0, 7, 11] of n=11
+  dxgi  61 faces 1: [9, 9, 25, 25] of n=25
+  dxgi  67 faces 1: [0, 0, 3, 25] of n=25
+  dxgi  71 faces 1: [0, 0, 0, 25] of n=25
+  dxgi  72 faces 1: [0, 7, 1, 25] of n=25
+  dxgi  72 faces 6: [7, 9, 11, 25] of n=25
+  dxgi  75 faces 1: [0, 0, 0, 1] of n=1
+  dxgi  77 faces 1: [0, 1, 0, 25] of n=25
+  dxgi  78 faces 1: [0, 3, 0, 25] of n=25
+  dxgi  78 faces 6: [9, 10, 10, 13] of n=13
+  dxgi  80 faces 1: [0, 0, 0, 25] of n=25
+  dxgi  83 faces 1: [0, 2, 0, 25] of n=25
+  dxgi  87 faces 1: [9, 9, 23, 24] of n=24
+  dxgi  88 faces 1: [25, 25, 25, 25] of n=25
+  dxgi  88 faces 6: [2, 2, 3, 3] of n=3
+  dxgi  91 faces 1: [22, 22, 25, 25] of n=25
+  dxgi  93 faces 1: [8, 8, 25, 25] of n=25
+  dxgi  93 faces 6: [0, 1, 0, 1] of n=1
+Examples:
+  dlc/dead_end_dlc.tobj: 128x64 mips 8 dxgi 78 faces 1 pitch 256 image 512 -> 13328 bytes
+  dlc/direction_blocker_dlc.tobj: 256x64 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 24080 bytes
+  model/bank_conc_sand.tobj: 512x512 mips 10 dxgi 78 faces 1 pitch 256 image 512 -> 352784 bytes
+  model/bank_metal_stone.tobj: 512x512 mips 10 dxgi 78 faces 1 pitch 256 image 512 -> 352784 bytes
+  model/billboard.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/dam.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_bgreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_flower.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_rggreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/hedge_ygreen.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+  model/satellite.tobj: 256x256 mips 9 dxgi 78 faces 1 pitch 256 image 512 -> 90640 bytes
+Textures by (cube flag, face count): {(false, 1): 62191, (true, 6): 60}
+Unusual sampler states or formats (up to 4 paths each):
+  mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=61: ["material/deferred/custom/mlaa_weights.tobj"]
+  mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=87: ["system/special/stereo.tobj"]
+  mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge dxgi=88: ["material/deferred/render_textures/attributes_0.tobj", "material/deferred/render_textures/attributes_1.tobj", "material/deferred/render_textures/attributes_2.tobj", "material/deferred/render_textures/attributes_3.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=61: ["material/environment/star_noise.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=83: ["system/special/flat_nrm.tobj", "material/ground/water/water_waves_03_nrm.tobj", "material/obsolete/special/flat_nrm.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=87: ["material/deferred/custom/jitter_map.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=88: ["material/window_interior/admin/admin_01_lut.tobj", "material/window_interior/apartments/apartments_01_lut.tobj", "material/window_interior/industrial/industrial_01_lut.tobj", "material/window_interior/restaurants/restaurants_01_lut.tobj"]
+  mag_linear=false min_linear=false u=Repeat v=Repeat dxgi=91: ["system/notfound/notfound.tobj", "material/environment/water_palette.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=72: ["material/decal/proj_shadow.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=78: ["model2/landmark/ee/tartu_bus_station_01_bus.tobj", "vehicle/ai/bombardier_traxx/locomotive_shadow.tobj", "vehicle/ai/forklift/shadow.tobj", "vehicle/ai/share/shadow_occlusion.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=80: ["vehicle/truck/upgrade/toystand/share/bbhead_etrc_alacko/fakeshdw.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=88: ["material/custom/trucklight_mask.tobj", "material/vehicle/custom/trucklight_mask.tobj"]
+  mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder dxgi=93: ["material/custom/trucklight_mask_front.tobj", "material/custom/trucklight_mask_high.tobj", "material/custom/trucklight_mask_norm.tobj", "material/custom/trucklight_mask_refracted.tobj"]
+Sample record by top-level directory:
+  asset        mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 2
+  asset        mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 3599
+  asset        mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 9
+  asset        mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 290
+  asset        mag_linear=true min_linear=true u=Repeat v=Repeat: 1875
+  dlc          mag_linear=true min_linear=true u=Repeat v=Repeat: 2
+  font         mag_linear=true min_linear=true u=Repeat v=Repeat: 149
+  material     mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge: 7
+  material     mag_linear=false min_linear=false u=Repeat v=Repeat: 10
+  material     mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 15
+  material     mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 10365
+  material     mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 22
+  material     mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 4
+  material     mag_linear=true min_linear=true u=Repeat v=Repeat: 5911
+  model        mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 1581
+  model        mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 59
+  model        mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 119
+  model        mag_linear=true min_linear=true u=Repeat v=Repeat: 1371
+  model2       mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 1
+  model2       mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 15452
+  model2       mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 10
+  model2       mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 236
+  model2       mag_linear=true min_linear=true u=Repeat v=Repeat: 4075
+  prefab       mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 134
+  prefab       mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 5
+  prefab       mag_linear=true min_linear=true u=Repeat v=Repeat: 267
+  prefab2      mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 1596
+  prefab2      mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 7
+  prefab2      mag_linear=true min_linear=true u=Repeat v=Repeat: 406
+  road_template mag_linear=true min_linear=true u=Repeat v=Repeat: 78
+  system       mag_linear=false min_linear=false u=ClampToEdge v=ClampToEdge: 1
+  system       mag_linear=false min_linear=false u=Repeat v=Repeat: 2
+  system       mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 264
+  system       mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 1
+  system       mag_linear=true min_linear=true u=Repeat v=Repeat: 9
+  vehicle      mag_linear=true min_linear=true u=ClampToBorder v=ClampToBorder: 152
+  vehicle      mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 10753
+  vehicle      mag_linear=true min_linear=true u=ClampToEdge v=Repeat: 27
+  vehicle      mag_linear=true min_linear=true u=Repeat v=ClampToEdge: 23
+  vehicle      mag_linear=true min_linear=true u=Repeat v=Repeat: 3357
+  video        mag_linear=true min_linear=true u=ClampToEdge v=ClampToEdge: 5

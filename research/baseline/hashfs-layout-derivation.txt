@@ -1,0 +1,1026 @@
+# Baseline of research/evidence/hashfs-layout-derivation.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## survey "<game>/*.scs"
+<game>/base.scs: 179050 entries, 179049 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 175}
+  .bmp: {"stored/zlib": 325}
+  .cfg: {"stored/raw": 6}
+  .db: {"stored/zlib": 1}
+  .dmd: {"stored/zlib": 53}
+  .font: {"stored/zlib": 148}
+  .guids: {"stored/raw": 52, "stored/zlib": 121}
+  .mat: {"stored/raw": 22, "stored/zlib": 48937}
+  .ogg: {"stored/raw": 120}
+  .pma: {"stored/zlib": 1160}
+  .pmc: {"stored/zlib": 10775}
+  .pmd: {"stored/zlib": 36950}
+  .pmg: {"stored/zlib": 36951}
+  .ppd: {"stored/zlib": 5468}
+  .rpl: {"stored/raw": 41, "stored/zlib": 9}
+  .sii: {"stored/raw": 35, "stored/zlib": 388}
+  .soundref: {"stored/raw": 59, "stored/zlib": 107}
+  .sui: {"stored/zlib": 85}
+  .thumb: {"stored/raw": 251, "stored/zlib": 67}
+  .tobj: {"texture": 34439}
+  .txt: {"stored/raw": 4, "stored/zlib": 2}
+  .xrc: {"stored/zlib": 11}
+  dxgi formats (count, sampled): {61: (282, 3), 67: (3, 3), 71: (1640, 3), 72: (8564, 3), 75: (1, 1), 77: (4508, 3), 78: (7188, 3), 80: (2603, 3), 83: (3213, 3), 87: (17, 3), 88: (445, 3), 91: (5624, 3), 93: (351, 3)}
+<game>/base_cfg.scs: 1 entries, 1 reachable, 0 listed-but-missing, 0 skipped
+  dxgi formats (count, sampled): {}
+<game>/base_map.scs: 2178 entries, 2178 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 283}
+  .base: {"stored/zlib": 283}
+  .bmp: {"stored/zlib": 13}
+  .data: {"stored/zlib": 283}
+  .desc: {"stored/raw": 279, "stored/zlib": 4}
+  .mbd: {"stored/zlib": 2}
+  .sbd: {"stored/zlib": 730}
+  .snd: {"stored/zlib": 282}
+  dxgi formats (count, sampled): {}
+<game>/base_share.scs: 40322 entries, 40320 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 62}
+  .bmp: {"stored/zlib": 1357}
+  .dmd: {"stored/zlib": 53}
+  .guids: {"stored/raw": 1, "stored/zlib": 57}
+  .mask: {"stored/zlib": 75}
+  .mat: {"stored/raw": 11, "stored/zlib": 9743}
+  .pma: {"stored/zlib": 813}
+  .pmc: {"stored/zlib": 70}
+  .pmd: {"stored/zlib": 8102}
+  .pmg: {"stored/zlib": 8102}
+  .ppd: {"stored/zlib": 4}
+  .sii: {"stored/raw": 17, "stored/zlib": 418}
+  .soundref: {"stored/raw": 48, "stored/zlib": 272}
+  .sui: {"stored/raw": 1, "stored/zlib": 30}
+  .tobj: {"texture": 9950}
+  .txt: {"stored/raw": 1, "stored/zlib": 1}
+  dxgi formats (count, sampled): {61: (75, 3), 67: (194, 3), 71: (84, 3), 72: (1617, 3), 77: (232, 3), 78: (4133, 3), 80: (737, 3), 83: (2520, 3), 87: (5, 3), 88: (21, 3), 91: (313, 3), 93: (19, 3)}
+<game>/base_vehicle.scs: 53455 entries, 53455 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 6}
+  .mat: {"stored/raw": 5, "stored/zlib": 11441}
+  .pma: {"stored/zlib": 1632}
+  .pmc: {"stored/zlib": 1198}
+  .pmd: {"stored/zlib": 8863}
+  .pmg: {"stored/zlib": 8864}
+  .sii: {"stored/zlib": 128}
+  .soundref: {"stored/zlib": 1}
+  .sui: {"stored/zlib": 21}
+  .tobj: {"texture": 17862}
+  dxgi formats (count, sampled): {35: (11, 3), 61: (32, 3), 71: (125, 3), 72: (6357, 3), 77: (601, 3), 78: (6345, 3), 80: (856, 3), 83: (893, 3), 87: (2, 2), 88: (1, 1), 91: (2595, 3), 93: (44, 3)}
+<game>/core.scs: 22 entries, 1 reachable, 0 listed-but-missing, 0 skipped
+  dxgi formats (count, sampled): {}
+<game>/def.scs: 66928 entries, 66928 reachable, 0 listed-but-missing, 0 skipped
+  .btf: {"stored/raw": 41, "stored/zlib": 52}
+  .sii: {"stored/raw": 258, "stored/zlib": 61318}
+  .soundref: {"stored/raw": 145, "stored/zlib": 210}
+  .sui: {"stored/raw": 6, "stored/zlib": 2499}
+  .txt: {"stored/raw": 3, "stored/zlib": 104}
+  dxgi formats (count, sampled): {}
+<game>/dlc_actros_tuning.scs: 2321 entries, 2321 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 396}
+  .pmc: {"stored/zlib": 64}
+  .pmd: {"stored/zlib": 324}
+  .pmg: {"stored/zlib": 324}
+  .sii: {"stored/zlib": 407}
+  .sui: {"stored/zlib": 3}
+  .tobj: {"texture": 339}
+  dxgi formats (count, sampled): {72: (1, 1), 78: (116, 3), 80: (2, 2), 83: (18, 3), 91: (202, 3)}
+<game>/dlc_balkan_e.scs: 8400 entries, 8400 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 70}
+  .base: {"stored/zlib": 70}
+  .data: {"stored/zlib": 70}
+  .desc: {"stored/raw": 69, "stored/zlib": 1}
+  .mat: {"stored/raw": 1, "stored/zlib": 906}
+  .pma: {"stored/zlib": 6}
+  .pmc: {"stored/zlib": 91}
+  .pmd: {"stored/zlib": 1329}
+  .pmg: {"stored/zlib": 1329}
+  .ppd: {"stored/zlib": 802}
+  .sii: {"stored/raw": 111, "stored/zlib": 2645}
+  .snd: {"stored/zlib": 70}
+  .sui: {"stored/zlib": 65}
+  .tobj: {"texture": 278}
+  .txt: {"stored/zlib": 2}
+  dxgi formats (count, sampled): {71: (20, 3), 72: (42, 3), 77: (26, 3), 78: (145, 3), 80: (23, 3), 83: (11, 3), 91: (10, 3), 93: (1, 1)}
+<game>/dlc_balkan_w.scs: 8188 entries, 8188 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 42}
+  .base: {"stored/zlib": 42}
+  .data: {"stored/zlib": 42}
+  .desc: {"stored/raw": 39, "stored/zlib": 3}
+  .mat: {"stored/raw": 4, "stored/zlib": 1747}
+  .pmc: {"stored/zlib": 48}
+  .pmd: {"stored/zlib": 894}
+  .pmg: {"stored/zlib": 894}
+  .ppd: {"stored/zlib": 182}
+  .sii: {"stored/raw": 123, "stored/zlib": 1901}
+  .snd: {"stored/zlib": 42}
+  .sui: {"stored/zlib": 46}
+  .tobj: {"texture": 1624}
+  dxgi formats (count, sampled): {71: (288, 3), 72: (410, 3), 77: (304, 3), 78: (167, 3), 80: (203, 3), 83: (251, 3), 93: (1, 1)}
+<game>/dlc_balt.scs: 7604 entries, 7604 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 60}
+  .base: {"stored/zlib": 60}
+  .data: {"stored/zlib": 60}
+  .desc: {"stored/raw": 60}
+  .mat: {"stored/raw": 2, "stored/zlib": 498}
+  .pma: {"stored/zlib": 6}
+  .pmc: {"stored/zlib": 147}
+  .pmd: {"stored/zlib": 586}
+  .pmg: {"stored/zlib": 586}
+  .ppd: {"stored/zlib": 217}
+  .sii: {"stored/raw": 152, "stored/zlib": 4308}
+  .snd: {"stored/zlib": 60}
+  .sui: {"stored/zlib": 91}
+  .tobj: {"texture": 112}
+  .txt: {"stored/raw": 1}
+  dxgi formats (count, sampled): {71: (1, 1), 72: (13, 3), 77: (7, 3), 78: (84, 3), 80: (2, 2), 83: (4, 3), 93: (1, 1)}
+<game>/dlc_bobcat.scs: 3089 entries, 3089 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 59}
+  .pmc: {"stored/zlib": 7}
+  .pmd: {"stored/zlib": 41}
+  .pmg: {"stored/zlib": 41}
+  .sii: {"stored/zlib": 1968}
+  .sui: {"stored/zlib": 8}
+  .tobj: {"texture": 77}
+  dxgi formats (count, sampled): {72: (8, 3), 77: (12, 3), 78: (27, 3), 80: (6, 3), 83: (17, 3), 91: (6, 3), 93: (1, 1)}
+<game>/dlc_christmas.scs: 3529 entries, 3529 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 23}
+  .pmc: {"stored/zlib": 24}
+  .pmd: {"stored/zlib": 24}
+  .pmg: {"stored/zlib": 24}
+  .sii: {"stored/zlib": 906}
+  .sui: {"stored/zlib": 146}
+  .tobj: {"texture": 1965}
+  dxgi formats (count, sampled): {72: (1340, 3), 78: (609, 3), 80: (1, 1), 83: (1, 1), 88: (1, 1), 91: (13, 3)}
+<game>/dlc_daf_2021.scs: 3038 entries, 3038 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 5}
+  .guids: {"stored/zlib": 5}
+  .mat: {"stored/raw": 1, "stored/zlib": 333}
+  .pma: {"stored/zlib": 70}
+  .pmc: {"stored/zlib": 42}
+  .pmd: {"stored/zlib": 277}
+  .pmg: {"stored/zlib": 277}
+  .sii: {"stored/raw": 1, "stored/zlib": 760}
+  .soundref: {"stored/raw": 5, "stored/zlib": 12}
+  .sui: {"stored/zlib": 88}
+  .tobj: {"texture": 781}
+  dxgi formats (count, sampled): {61: (2, 2), 71: (4, 3), 72: (290, 3), 77: (4, 3), 78: (271, 3), 80: (8, 3), 83: (46, 3), 91: (156, 3)}
+<game>/dlc_daf_tuning_pack.scs: 2226 entries, 2226 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 364}
+  .pmc: {"stored/zlib": 40}
+  .pmd: {"stored/zlib": 230}
+  .pmg: {"stored/zlib": 230}
+  .sii: {"stored/raw": 1, "stored/zlib": 555}
+  .sui: {"stored/zlib": 15}
+  .tobj: {"texture": 394}
+  dxgi formats (count, sampled): {72: (61, 3), 78: (87, 3), 80: (4, 3), 83: (21, 3), 91: (221, 3)}
+<game>/dlc_daf_xd.scs: 2548 entries, 2548 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 5}
+  .guids: {"stored/zlib": 5}
+  .mat: {"stored/raw": 1, "stored/zlib": 292}
+  .pma: {"stored/zlib": 69}
+  .pmc: {"stored/zlib": 24}
+  .pmd: {"stored/zlib": 216}
+  .pmg: {"stored/zlib": 216}
+  .sii: {"stored/raw": 1, "stored/zlib": 713}
+  .soundref: {"stored/raw": 5, "stored/zlib": 12}
+  .sui: {"stored/zlib": 84}
+  .tobj: {"texture": 537}
+  dxgi formats (count, sampled): {61: (2, 2), 71: (4, 3), 72: (159, 3), 77: (1, 1), 78: (182, 3), 80: (2, 2), 83: (39, 3), 91: (148, 3)}
+<game>/dlc_daf_xf_electric.scs: 860 entries, 860 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 3}
+  .guids: {"stored/zlib": 3}
+  .mat: {"stored/zlib": 160}
+  .pma: {"stored/zlib": 68}
+  .pmc: {"stored/zlib": 10}
+  .pmd: {"stored/zlib": 58}
+  .pmg: {"stored/zlib": 58}
+  .sii: {"stored/raw": 1, "stored/zlib": 60}
+  .soundref: {"stored/raw": 10, "stored/zlib": 4}
+  .sui: {"stored/zlib": 23}
+  .tobj: {"texture": 159}
+  dxgi formats (count, sampled): {61: (2, 2), 71: (4, 3), 72: (4, 3), 77: (1, 1), 78: (80, 3), 80: (2, 2), 83: (31, 3), 91: (35, 3)}
+<game>/dlc_dragon.scs: 733 entries, 733 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 10}
+  .pmd: {"stored/zlib": 7}
+  .pmg: {"stored/zlib": 7}
+  .sii: {"stored/raw": 2, "stored/zlib": 202}
+  .sui: {"stored/zlib": 22}
+  .tobj: {"texture": 308}
+  dxgi formats (count, sampled): {72: (224, 3), 78: (76, 3), 83: (2, 2), 91: (6, 3)}
+<game>/dlc_dutch_style.scs: 5063 entries, 5063 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 1}
+  .bmp: {"stored/zlib": 2}
+  .guids: {"stored/zlib": 1}
+  .mat: {"stored/raw": 1, "stored/zlib": 908}
+  .pmc: {"stored/zlib": 15}
+  .pmd: {"stored/zlib": 209}
+  .pmg: {"stored/zlib": 209}
+  .sii: {"stored/raw": 2, "stored/zlib": 1600}
+  .soundref: {"stored/zlib": 6}
+  .sui: {"stored/zlib": 55}
+  .tobj: {"texture": 1258}
+  .txt: {"stored/zlib": 5}
+  dxgi formats (count, sampled): {71: (1, 1), 72: (421, 3), 78: (119, 3), 83: (42, 3), 91: (675, 3)}
+<game>/dlc_east.scs: 924 entries, 924 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 60}
+  .base: {"stored/zlib": 60}
+  .data: {"stored/zlib": 60}
+  .desc: {"stored/raw": 59, "stored/zlib": 1}
+  .mat: {"stored/raw": 1, "stored/zlib": 114}
+  .pmd: {"stored/zlib": 103}
+  .pmg: {"stored/zlib": 103}
+  .sii: {"stored/raw": 57, "stored/zlib": 10}
+  .snd: {"stored/zlib": 60}
+  .sui: {"stored/zlib": 18}
+  .tobj: {"texture": 53}
+  dxgi formats (count, sampled): {72: (2, 2), 78: (50, 3), 93: (1, 1)}
+<game>/dlc_fantasy.scs: 1749 entries, 1749 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 523}
+  .sui: {"stored/zlib": 66}
+  .tobj: {"texture": 1000}
+  dxgi formats (count, sampled): {72: (963, 3), 78: (30, 3), 91: (7, 3)}
+<game>/dlc_farm_machinery.scs: 2269 entries, 2269 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 135}
+  .pmc: {"stored/zlib": 22}
+  .pmd: {"stored/zlib": 85}
+  .pmg: {"stored/zlib": 85}
+  .sii: {"stored/zlib": 1384}
+  .sui: {"stored/zlib": 10}
+  .tobj: {"texture": 38}
+  dxgi formats (count, sampled): {72: (8, 3), 77: (1, 1), 78: (10, 3), 80: (1, 1), 83: (2, 2), 91: (15, 3), 93: (1, 1)}
+<game>/dlc_feldbinder.scs: 5854 entries, 5854 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 487}
+  .pma: {"stored/zlib": 6}
+  .pmc: {"stored/zlib": 168}
+  .pmd: {"stored/zlib": 538}
+  .pmg: {"stored/zlib": 538}
+  .sii: {"stored/raw": 5, "stored/zlib": 2158}
+  .sui: {"stored/zlib": 153}
+  .tobj: {"texture": 1051}
+  dxgi formats (count, sampled): {61: (1, 1), 72: (455, 3), 77: (4, 3), 78: (208, 3), 80: (2, 2), 83: (15, 3), 91: (365, 3), 93: (1, 1)}
+<game>/dlc_flags_at.scs: 1218 entries, 1218 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 361}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 677}
+  dxgi formats (count, sampled): {72: (168, 3), 78: (504, 3), 91: (5, 3)}
+<game>/dlc_flags_aus.scs: 1200 entries, 1200 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 386}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 634}
+  dxgi formats (count, sampled): {72: (337, 3), 78: (282, 3), 91: (15, 3)}
+<game>/dlc_flags_be.scs: 1329 entries, 1329 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 6}
+  .sii: {"stored/zlib": 480}
+  .sui: {"stored/zlib": 55}
+  .tobj: {"texture": 646}
+  dxgi formats (count, sampled): {72: (465, 3), 78: (175, 3), 91: (6, 3)}
+<game>/dlc_flags_bg.scs: 1157 entries, 1157 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 495}
+  .sui: {"stored/zlib": 92}
+  .tobj: {"texture": 374}
+  dxgi formats (count, sampled): {72: (211, 3), 78: (158, 3), 91: (5, 3)}
+<game>/dlc_flags_bz.scs: 1150 entries, 1150 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 367}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 603}
+  dxgi formats (count, sampled): {72: (464, 3), 78: (106, 3), 91: (5, 3), 93: (28, 3)}
+<game>/dlc_flags_ca.scs: 1198 entries, 1198 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 378}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 640}
+  dxgi formats (count, sampled): {72: (256, 3), 78: (352, 3), 91: (19, 3), 93: (13, 3)}
+<game>/dlc_flags_ch.scs: 1054 entries, 1054 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 359}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 515}
+  dxgi formats (count, sampled): {72: (107, 3), 78: (403, 3), 91: (5, 3)}
+<game>/dlc_flags_cn.scs: 1132 entries, 1132 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 361}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 591}
+  dxgi formats (count, sampled): {72: (167, 3), 78: (419, 3), 91: (5, 3)}
+<game>/dlc_flags_cz.scs: 1221 entries, 1221 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 386}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 655}
+  dxgi formats (count, sampled): {72: (6, 3), 78: (634, 3), 91: (15, 3)}
+<game>/dlc_flags_de.scs: 1144 entries, 1144 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 388}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 576}
+  dxgi formats (count, sampled): {72: (180, 3), 78: (355, 3), 91: (16, 3), 93: (25, 3)}
+<game>/dlc_flags_dk.scs: 1101 entries, 1101 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 378}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 543}
+  dxgi formats (count, sampled): {72: (151, 3), 78: (364, 3), 91: (28, 3)}
+<game>/dlc_flags_ee.scs: 1570 entries, 1570 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 6}
+  .sii: {"stored/zlib": 613}
+  .sui: {"stored/zlib": 115}
+  .tobj: {"texture": 622}
+  dxgi formats (count, sampled): {72: (272, 3), 78: (344, 3), 91: (6, 3)}
+<game>/dlc_flags_es.scs: 1705 entries, 1705 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 10}
+  .pmd: {"stored/zlib": 3}
+  .pmg: {"stored/zlib": 3}
+  .sii: {"stored/zlib": 584}
+  .sui: {"stored/zlib": 79}
+  .tobj: {"texture": 800}
+  dxgi formats (count, sampled): {72: (288, 3), 78: (503, 3), 83: (1, 1), 91: (8, 3)}
+<game>/dlc_flags_fi.scs: 1098 entries, 1098 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 364}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 554}
+  dxgi formats (count, sampled): {72: (177, 3), 78: (362, 3), 91: (15, 3)}
+<game>/dlc_flags_fr.scs: 1102 entries, 1102 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 6}
+  .sii: {"stored/zlib": 395}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 526}
+  dxgi formats (count, sampled): {72: (163, 3), 78: (349, 3), 91: (14, 3)}
+<game>/dlc_flags_hu.scs: 1489 entries, 1489 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 6}
+  .sii: {"stored/zlib": 442}
+  .sui: {"stored/zlib": 55}
+  .tobj: {"texture": 844}
+  dxgi formats (count, sampled): {72: (610, 3), 78: (228, 3), 91: (6, 3)}
+<game>/dlc_flags_ie.scs: 1209 entries, 1209 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 14}
+  .pmc: {"stored/zlib": 4}
+  .pmd: {"stored/zlib": 4}
+  .pmg: {"stored/zlib": 4}
+  .sii: {"stored/zlib": 407}
+  .sui: {"stored/zlib": 45}
+  .tobj: {"texture": 537}
+  dxgi formats (count, sampled): {72: (367, 3), 78: (123, 3), 80: (1, 1), 83: (2, 2), 91: (8, 3), 93: (36, 3)}
+<game>/dlc_flags_it.scs: 1179 entries, 1179 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 363}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 636}
+  dxgi formats (count, sampled): {72: (154, 3), 78: (477, 3), 91: (5, 3)}
+<game>/dlc_flags_jp.scs: 1163 entries, 1163 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 369}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 614}
+  dxgi formats (count, sampled): {72: (508, 3), 78: (91, 3), 91: (15, 3)}
+<game>/dlc_flags_kr.scs: 1210 entries, 1210 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 393}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 637}
+  dxgi formats (count, sampled): {72: (347, 3), 78: (285, 3), 91: (5, 3)}
+<game>/dlc_flags_lt.scs: 1216 entries, 1216 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 495}
+  .sui: {"stored/zlib": 92}
+  .tobj: {"texture": 433}
+  dxgi formats (count, sampled): {72: (216, 3), 78: (212, 3), 91: (5, 3)}
+<game>/dlc_flags_lv.scs: 1162 entries, 1162 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 495}
+  .sui: {"stored/zlib": 92}
+  .tobj: {"texture": 379}
+  dxgi formats (count, sampled): {72: (202, 3), 78: (172, 3), 91: (5, 3)}
+<game>/dlc_flags_n.scs: 1101 entries, 1101 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 377}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 544}
+  dxgi formats (count, sampled): {72: (147, 3), 78: (369, 3), 91: (28, 3)}
+<game>/dlc_flags_nl.scs: 1279 entries, 1279 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 495}
+  .sui: {"stored/zlib": 92}
+  .tobj: {"texture": 496}
+  dxgi formats (count, sampled): {72: (295, 3), 78: (196, 3), 91: (5, 3)}
+<game>/dlc_flags_pl.scs: 959 entries, 959 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 363}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 416}
+  dxgi formats (count, sampled): {72: (194, 3), 78: (183, 3), 91: (16, 3), 93: (23, 3)}
+<game>/dlc_flags_pt.scs: 1619 entries, 1619 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 13}
+  .pmc: {"stored/zlib": 2}
+  .pmd: {"stored/zlib": 2}
+  .pmg: {"stored/zlib": 2}
+  .sii: {"stored/zlib": 635}
+  .sui: {"stored/zlib": 116}
+  .tobj: {"texture": 585}
+  dxgi formats (count, sampled): {72: (380, 3), 78: (195, 3), 91: (10, 3)}
+<game>/dlc_flags_ro.scs: 1074 entries, 1074 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 367}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 527}
+  dxgi formats (count, sampled): {72: (275, 3), 78: (247, 3), 91: (5, 3)}
+<game>/dlc_flags_ru.scs: 1212 entries, 1212 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 365}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 667}
+  dxgi formats (count, sampled): {72: (148, 3), 78: (492, 3), 91: (15, 3), 93: (12, 3)}
+<game>/dlc_flags_s.scs: 1158 entries, 1158 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 381}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 597}
+  dxgi formats (count, sampled): {72: (170, 3), 78: (399, 3), 91: (28, 3)}
+<game>/dlc_flags_sc.scs: 1178 entries, 1178 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 388}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 610}
+  dxgi formats (count, sampled): {72: (375, 3), 78: (187, 3), 91: (11, 3), 93: (37, 3)}
+<game>/dlc_flags_sk.scs: 1054 entries, 1054 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 363}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 511}
+  dxgi formats (count, sampled): {72: (364, 3), 78: (132, 3), 91: (15, 3)}
+<game>/dlc_flags_tr.scs: 1146 entries, 1146 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 380}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 586}
+  dxgi formats (count, sampled): {72: (1, 1), 78: (580, 3), 91: (5, 3)}
+<game>/dlc_flags_uk.scs: 1151 entries, 1151 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 387}
+  .sui: {"stored/zlib": 46}
+  .tobj: {"texture": 578}
+  dxgi formats (count, sampled): {72: (294, 3), 78: (235, 3), 91: (25, 3), 93: (24, 3)}
+<game>/dlc_flags_ukr.scs: 1176 entries, 1176 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 495}
+  .sui: {"stored/zlib": 92}
+  .tobj: {"texture": 393}
+  dxgi formats (count, sampled): {72: (108, 3), 78: (280, 3), 91: (5, 3)}
+<game>/dlc_flags_us.scs: 1203 entries, 1203 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 5}
+  .sii: {"stored/zlib": 365}
+  .sui: {"stored/zlib": 44}
+  .tobj: {"texture": 658}
+  dxgi formats (count, sampled): {72: (510, 3), 78: (141, 3), 91: (7, 3)}
+<game>/dlc_forest_harvesting.scs: 3318 entries, 3318 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 584}
+  .pmc: {"stored/zlib": 9}
+  .pmd: {"stored/zlib": 226}
+  .pmg: {"stored/zlib": 226}
+  .sii: {"stored/raw": 1, "stored/zlib": 1151}
+  .sui: {"stored/zlib": 8}
+  .tobj: {"texture": 437}
+  dxgi formats (count, sampled): {72: (12, 3), 77: (3, 3), 78: (19, 3), 80: (3, 3), 83: (14, 3), 91: (385, 3), 93: (1, 1)}
+<game>/dlc_fr.scs: 3507 entries, 3507 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 76}
+  .base: {"stored/zlib": 76}
+  .data: {"stored/zlib": 76}
+  .desc: {"stored/raw": 74, "stored/zlib": 2}
+  .mat: {"stored/raw": 1, "stored/zlib": 293}
+  .pmc: {"stored/zlib": 30}
+  .pmd: {"stored/zlib": 170}
+  .pmg: {"stored/zlib": 170}
+  .ppd: {"stored/zlib": 26}
+  .sii: {"stored/raw": 96, "stored/zlib": 1647}
+  .snd: {"stored/zlib": 76}
+  .sui: {"stored/zlib": 63}
+  .tobj: {"texture": 188}
+  dxgi formats (count, sampled): {72: (3, 3), 75: (1, 1), 78: (177, 3), 83: (4, 3), 91: (2, 2), 93: (1, 1)}
+<game>/dlc_goodyear.scs: 2058 entries, 2058 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 59}
+  .pmc: {"stored/zlib": 12}
+  .pmd: {"stored/zlib": 28}
+  .pmg: {"stored/zlib": 28}
+  .sii: {"stored/zlib": 828}
+  .sui: {"stored/zlib": 94}
+  .tobj: {"texture": 491}
+  dxgi formats (count, sampled): {72: (436, 3), 78: (26, 3), 80: (2, 2), 83: (7, 3), 91: (20, 3)}
+<game>/dlc_greece.scs: 10461 entries, 10461 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 71}
+  .base: {"stored/zlib": 71}
+  .data: {"stored/zlib": 71}
+  .desc: {"stored/raw": 61, "stored/zlib": 10}
+  .mat: {"stored/raw": 3, "stored/zlib": 4638}
+  .pma: {"stored/zlib": 5}
+  .pmc: {"stored/zlib": 8}
+  .pmd: {"stored/zlib": 711}
+  .pmg: {"stored/zlib": 711}
+  .ppd: {"stored/zlib": 17}
+  .sii: {"stored/raw": 57, "stored/zlib": 947}
+  .snd: {"stored/zlib": 71}
+  .sui: {"stored/zlib": 40}
+  .tobj: {"texture": 2571}
+  .txt: {"stored/raw": 1}
+  dxgi formats (count, sampled): {71: (343, 3), 72: (1160, 3), 77: (379, 3), 78: (140, 3), 80: (262, 3), 83: (277, 3), 91: (9, 3), 93: (1, 1)}
+<game>/dlc_greek_paintjobs.scs: 1740 entries, 1740 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 6}
+  .sii: {"stored/zlib": 701}
+  .sui: {"stored/zlib": 115}
+  .tobj: {"texture": 698}
+  dxgi formats (count, sampled): {72: (481, 3), 78: (211, 3), 91: (5, 3), 93: (1, 1)}
+<game>/dlc_halloween.scs: 2347 entries, 2347 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 19}
+  .pmc: {"stored/zlib": 4}
+  .pmd: {"stored/zlib": 4}
+  .pmg: {"stored/zlib": 4}
+  .sii: {"stored/zlib": 757}
+  .sui: {"stored/zlib": 89}
+  .tobj: {"texture": 1234}
+  dxgi formats (count, sampled): {72: (1132, 3), 78: (87, 3), 80: (1, 1), 83: (2, 2), 88: (1, 1), 91: (11, 3)}
+<game>/dlc_heavy_cargo.scs: 1732 entries, 1732 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 58}
+  .pmc: {"stored/zlib": 11}
+  .pmd: {"stored/zlib": 27}
+  .pmg: {"stored/zlib": 27}
+  .sii: {"stored/zlib": 1165}
+  .sui: {"stored/zlib": 11}
+  .tobj: {"texture": 12}
+  dxgi formats (count, sampled): {72: (1, 1), 77: (1, 1), 80: (1, 1), 91: (8, 3), 93: (1, 1)}
+<game>/dlc_hs_schoch.scs: 6694 entries, 6694 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 1444}
+  .pmc: {"stored/zlib": 128}
+  .pmd: {"stored/zlib": 253}
+  .pmg: {"stored/zlib": 253}
+  .sii: {"stored/raw": 1, "stored/zlib": 2238}
+  .sui: {"stored/zlib": 49}
+  .tobj: {"texture": 1749}
+  dxgi formats (count, sampled): {72: (329, 3), 78: (11, 3), 80: (3, 3), 83: (2, 2), 91: (1403, 3), 93: (1, 1)}
+<game>/dlc_iberia.scs: 9262 entries, 9262 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 128}
+  .base: {"stored/zlib": 128}
+  .bmp: {"stored/zlib": 1}
+  .data: {"stored/zlib": 128}
+  .desc: {"stored/raw": 123, "stored/zlib": 5}
+  .mat: {"stored/raw": 4, "stored/zlib": 836}
+  .pma: {"stored/zlib": 5}
+  .pmc: {"stored/zlib": 137}
+  .pmd: {"stored/zlib": 1460}
+  .pmg: {"stored/zlib": 1460}
+  .ppd: {"stored/zlib": 859}
+  .sii: {"stored/raw": 160, "stored/zlib": 2815}
+  .snd: {"stored/zlib": 128}
+  .sui: {"stored/zlib": 75}
+  .tobj: {"texture": 306}
+  dxgi formats (count, sampled): {71: (2, 2), 72: (32, 3), 77: (22, 3), 78: (157, 3), 80: (9, 3), 83: (83, 3), 93: (1, 1)}
+<game>/dlc_it.scs: 3669 entries, 3669 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 57}
+  .base: {"stored/zlib": 57}
+  .data: {"stored/zlib": 57}
+  .desc: {"stored/raw": 53, "stored/zlib": 4}
+  .mat: {"stored/raw": 2, "stored/zlib": 381}
+  .pma: {"stored/zlib": 4}
+  .pmc: {"stored/zlib": 93}
+  .pmd: {"stored/zlib": 284}
+  .pmg: {"stored/zlib": 284}
+  .ppd: {"stored/zlib": 66}
+  .sii: {"stored/raw": 127, "stored/zlib": 1622}
+  .snd: {"stored/zlib": 57}
+  .sui: {"stored/zlib": 48}
+  .tobj: {"texture": 61}
+  dxgi formats (count, sampled): {71: (1, 1), 72: (9, 3), 77: (5, 3), 78: (36, 3), 80: (2, 2), 83: (7, 3), 93: (1, 1)}
+<game>/dlc_iveco_sway.scs: 1556 entries, 1556 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 4}
+  .guids: {"stored/zlib": 4}
+  .mat: {"stored/raw": 1, "stored/zlib": 201}
+  .pma: {"stored/zlib": 50}
+  .pmc: {"stored/zlib": 7}
+  .pmd: {"stored/zlib": 132}
+  .pmg: {"stored/zlib": 132}
+  .sii: {"stored/raw": 1, "stored/zlib": 356}
+  .soundref: {"stored/raw": 15, "stored/zlib": 2}
+  .sui: {"stored/zlib": 89}
+  .tobj: {"texture": 267}
+  dxgi formats (count, sampled): {61: (2, 2), 72: (57, 3), 78: (80, 3), 83: (30, 3), 91: (98, 3)}
+<game>/dlc_jcb.scs: 3286 entries, 3286 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 108}
+  .pmc: {"stored/zlib": 10}
+  .pmd: {"stored/zlib": 63}
+  .pmg: {"stored/zlib": 63}
+  .sii: {"stored/raw": 1, "stored/zlib": 2098}
+  .sui: {"stored/zlib": 13}
+  .tobj: {"texture": 113}
+  dxgi formats (count, sampled): {72: (13, 3), 77: (4, 3), 78: (45, 3), 80: (5, 3), 83: (27, 3), 91: (18, 3), 93: (1, 1)}
+<game>/dlc_kassbohrer.scs: 6820 entries, 6820 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 639}
+  .pma: {"stored/zlib": 9}
+  .pmc: {"stored/zlib": 59}
+  .pmd: {"stored/zlib": 895}
+  .pmg: {"stored/zlib": 895}
+  .sii: {"stored/zlib": 1943}
+  .sui: {"stored/raw": 2, "stored/zlib": 167}
+  .tobj: {"texture": 1415}
+  dxgi formats (count, sampled): {61: (1, 1), 72: (558, 3), 77: (8, 3), 78: (327, 3), 80: (7, 3), 83: (21, 3), 91: (493, 3)}
+<game>/dlc_kogel.scs: 4329 entries, 4329 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 415}
+  .pma: {"stored/zlib": 9}
+  .pmc: {"stored/zlib": 41}
+  .pmd: {"stored/zlib": 509}
+  .pmg: {"stored/zlib": 509}
+  .sii: {"stored/zlib": 1292}
+  .sui: {"stored/raw": 2, "stored/zlib": 107}
+  .tobj: {"texture": 821}
+  dxgi formats (count, sampled): {61: (1, 1), 71: (3, 3), 72: (288, 3), 77: (4, 3), 78: (199, 3), 80: (7, 3), 83: (26, 3), 91: (293, 3)}
+<game>/dlc_krone.scs: 6741 entries, 6741 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 2}
+  .guids: {"stored/zlib": 2}
+  .mat: {"stored/raw": 1, "stored/zlib": 535}
+  .pma: {"stored/zlib": 6}
+  .pmc: {"stored/zlib": 64}
+  .pmd: {"stored/zlib": 510}
+  .pmg: {"stored/zlib": 510}
+  .sii: {"stored/raw": 5, "stored/zlib": 2372}
+  .soundref: {"stored/raw": 2, "stored/zlib": 2}
+  .sui: {"stored/zlib": 174}
+  .tobj: {"texture": 1669}
+  dxgi formats (count, sampled): {61: (1, 1), 71: (5, 3), 72: (785, 3), 77: (5, 3), 78: (637, 3), 80: (12, 3), 83: (25, 3), 91: (198, 3), 93: (1, 1)}
+<game>/dlc_krone_agriculture.scs: 1875 entries, 1875 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 62}
+  .pmc: {"stored/zlib": 8}
+  .pmd: {"stored/zlib": 41}
+  .pmg: {"stored/zlib": 42}
+  .sii: {"stored/raw": 1, "stored/zlib": 1150}
+  .sui: {"stored/zlib": 8}
+  .tobj: {"texture": 82}
+  dxgi formats (count, sampled): {72: (7, 3), 77: (7, 3), 78: (33, 3), 80: (7, 3), 83: (21, 3), 91: (6, 3), 93: (1, 1)}
+<game>/dlc_lines.scs: 4662 entries, 4662 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 1309}
+  .sui: {"stored/zlib": 372}
+  .tobj: {"texture": 2351}
+  dxgi formats (count, sampled): {72: (1653, 3), 78: (691, 3), 91: (7, 3)}
+<game>/dlc_lunar_new_year.scs: 7472 entries, 7472 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 15}
+  .sii: {"stored/zlib": 1821}
+  .sui: {"stored/zlib": 346}
+  .tobj: {"texture": 4701}
+  dxgi formats (count, sampled): {78: (4686, 3), 91: (15, 3)}
+<game>/dlc_man_tgx_2020.scs: 3190 entries, 3190 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 5}
+  .guids: {"stored/zlib": 5}
+  .mat: {"stored/raw": 2, "stored/zlib": 412}
+  .pma: {"stored/zlib": 74}
+  .pmc: {"stored/zlib": 29}
+  .pmd: {"stored/zlib": 333}
+  .pmg: {"stored/zlib": 333}
+  .sii: {"stored/raw": 1, "stored/zlib": 780}
+  .soundref: {"stored/raw": 10, "stored/zlib": 9}
+  .sui: {"stored/raw": 3, "stored/zlib": 95}
+  .tobj: {"texture": 709}
+  dxgi formats (count, sampled): {61: (2, 2), 72: (220, 3), 77: (5, 3), 78: (191, 3), 80: (12, 3), 83: (42, 3), 91: (237, 3)}
+<game>/dlc_metallics.scs: 1227 entries, 1227 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 11}
+  .sii: {"stored/zlib": 1011}
+  .sui: {"stored/zlib": 110}
+  .tobj: {"texture": 19}
+  dxgi formats (count, sampled): {91: (19, 3)}
+<game>/dlc_metallics2.scs: 1362 entries, 1362 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 12}
+  .sii: {"stored/zlib": 1130}
+  .sui: {"stored/zlib": 121}
+  .tobj: {"texture": 23}
+  dxgi formats (count, sampled): {91: (23, 3)}
+<game>/dlc_michelin.scs: 3093 entries, 3093 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 117}
+  .pmc: {"stored/zlib": 21}
+  .pmd: {"stored/zlib": 53}
+  .pmg: {"stored/zlib": 53}
+  .sii: {"stored/zlib": 1037}
+  .sui: {"stored/zlib": 109}
+  .tobj: {"texture": 1157}
+  dxgi formats (count, sampled): {72: (530, 3), 78: (558, 3), 80: (4, 3), 83: (20, 3), 88: (1, 1), 91: (44, 3)}
+<game>/dlc_mighty_griffin.scs: 3473 entries, 3473 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 595}
+  .pmc: {"stored/zlib": 30}
+  .pmd: {"stored/zlib": 472}
+  .pmg: {"stored/zlib": 472}
+  .sii: {"stored/zlib": 680}
+  .sui: {"stored/zlib": 11}
+  .tobj: {"texture": 658}
+  dxgi formats (count, sampled): {72: (19, 3), 78: (248, 3), 80: (4, 3), 83: (22, 3), 91: (365, 3)}
+<game>/dlc_nature.scs: 2062 entries, 2062 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 609}
+  .sui: {"stored/zlib": 66}
+  .tobj: {"texture": 1227}
+  dxgi formats (count, sampled): {72: (998, 3), 78: (103, 3), 91: (12, 3), 93: (114, 3)}
+<game>/dlc_north.scs: 3008 entries, 3008 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 68}
+  .base: {"stored/zlib": 68}
+  .data: {"stored/zlib": 68}
+  .desc: {"stored/raw": 67, "stored/zlib": 1}
+  .mat: {"stored/raw": 1, "stored/zlib": 728}
+  .pma: {"stored/zlib": 2}
+  .pmc: {"stored/zlib": 6}
+  .pmd: {"stored/zlib": 337}
+  .pmg: {"stored/zlib": 337}
+  .ppd: {"stored/zlib": 37}
+  .sii: {"stored/raw": 89, "stored/zlib": 241}
+  .snd: {"stored/zlib": 68}
+  .sui: {"stored/zlib": 52}
+  .tobj: {"texture": 443}
+  dxgi formats (count, sampled): {71: (3, 3), 72: (97, 3), 77: (153, 3), 78: (67, 3), 80: (58, 3), 83: (64, 3), 93: (1, 1)}
+<game>/dlc_oversize.scs: 900 entries, 900 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 8}
+  .base: {"stored/zlib": 8}
+  .data: {"stored/zlib": 8}
+  .desc: {"stored/raw": 3, "stored/zlib": 5}
+  .expa: {"stored/zlib": 2}
+  .layer: {"stored/zlib": 8}
+  .mat: {"stored/raw": 1, "stored/zlib": 106}
+  .mbd: {"stored/zlib": 2}
+  .pmc: {"stored/zlib": 18}
+  .pmd: {"stored/zlib": 43}
+  .pmg: {"stored/zlib": 43}
+  .sbd: {"stored/zlib": 176}
+  .set: {"stored/raw": 2}
+  .sii: {"stored/zlib": 142}
+  .sui: {"stored/zlib": 30}
+  .tobj: {"texture": 27}
+  .txt: {"stored/zlib": 14}
+  dxgi formats (count, sampled): {72: (2, 2), 77: (1, 1), 78: (4, 3), 80: (1, 1), 91: (19, 3)}
+<game>/dlc_pcg.scs: 192 entries, 192 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 10}
+  .pmc: {"stored/zlib": 2}
+  .pmd: {"stored/zlib": 4}
+  .pmg: {"stored/zlib": 4}
+  .sii: {"stored/zlib": 47}
+  .sui: {"stored/zlib": 2}
+  .tobj: {"texture": 9}
+  dxgi formats (count, sampled): {72: (1, 1), 78: (3, 3), 80: (1, 1), 91: (4, 3)}
+<game>/dlc_phys_flags.scs: 13230 entries, 13230 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 536}
+  .sii: {"stored/zlib": 12053}
+  .tobj: {"texture": 536}
+  dxgi formats (count, sampled): {72: (254, 3), 78: (12, 3), 91: (270, 3)}
+<game>/dlc_pink_ribbon.scs: 2049 entries, 2049 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .pmc: {"stored/zlib": 1}
+  .pmd: {"stored/zlib": 1}
+  .pmg: {"stored/zlib": 1}
+  .sii: {"stored/zlib": 596}
+  .sui: {"stored/zlib": 178}
+  .tobj: {"texture": 783}
+  dxgi formats (count, sampled): {72: (252, 3), 78: (526, 3), 91: (5, 3)}
+<game>/dlc_pirates.scs: 2478 entries, 2478 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 28}
+  .pmc: {"stored/zlib": 6}
+  .pmd: {"stored/zlib": 7}
+  .pmg: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 818}
+  .sui: {"stored/zlib": 89}
+  .tobj: {"texture": 1213}
+  dxgi formats (count, sampled): {72: (810, 3), 78: (385, 3), 80: (1, 1), 83: (3, 3), 91: (14, 3)}
+<game>/dlc_polar.scs: 10215 entries, 10215 reachable, 0 listed-but-missing, 0 skipped
+  .aux: {"stored/zlib": 187}
+  .base: {"stored/zlib": 187}
+  .data: {"stored/zlib": 187}
+  .desc: {"stored/raw": 186, "stored/zlib": 1}
+  .mat: {"stored/raw": 2, "stored/zlib": 3012}
+  .pmc: {"stored/zlib": 6}
+  .pmd: {"stored/zlib": 874}
+  .pmg: {"stored/zlib": 874}
+  .ppd: {"stored/zlib": 4}
+  .sii: {"stored/raw": 158, "stored/zlib": 1753}
+  .snd: {"stored/zlib": 187}
+  .sui: {"stored/zlib": 67}
+  .tobj: {"texture": 2076}
+  dxgi formats (count, sampled): {71: (145, 3), 72: (522, 3), 77: (626, 3), 78: (179, 3), 80: (307, 3), 83: (296, 3), 93: (1, 1)}
+<game>/dlc_prehistoric.scs: 2084 entries, 2084 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 13}
+  .sii: {"stored/zlib": 617}
+  .sui: {"stored/zlib": 66}
+  .tobj: {"texture": 1235}
+  dxgi formats (count, sampled): {72: (1124, 3), 78: (98, 3), 91: (13, 3)}
+<game>/dlc_raven.scs: 1419 entries, 1419 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 51}
+  .pmc: {"stored/zlib": 4}
+  .pmd: {"stored/zlib": 23}
+  .pmg: {"stored/zlib": 23}
+  .sii: {"stored/raw": 1, "stored/zlib": 454}
+  .sui: {"stored/zlib": 34}
+  .tobj: {"texture": 530}
+  dxgi formats (count, sampled): {72: (152, 3), 78: (351, 3), 80: (1, 1), 83: (5, 3), 91: (21, 3)}
+<game>/dlc_renault_etech_t.scs: 371 entries, 371 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 3}
+  .guids: {"stored/zlib": 3}
+  .mat: {"stored/zlib": 48}
+  .pmd: {"stored/zlib": 5}
+  .pmg: {"stored/zlib": 5}
+  .sii: {"stored/raw": 1, "stored/zlib": 98}
+  .soundref: {"stored/raw": 11, "stored/zlib": 3}
+  .sui: {"stored/zlib": 19}
+  .tobj: {"texture": 48}
+  dxgi formats (count, sampled): {72: (2, 2), 78: (2, 2), 83: (1, 1), 91: (43, 3)}
+<game>/dlc_renault_t_tuning.scs: 2601 entries, 2601 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 411}
+  .pmc: {"stored/zlib": 26}
+  .pmd: {"stored/zlib": 344}
+  .pmg: {"stored/zlib": 344}
+  .sii: {"stored/zlib": 638}
+  .sui: {"stored/zlib": 5}
+  .tobj: {"texture": 409}
+  dxgi formats (count, sampled): {71: (6, 3), 72: (24, 3), 77: (1, 1), 78: (74, 3), 83: (18, 3), 91: (285, 3), 93: (1, 1)}
+<game>/dlc_rims.scs: 710 entries, 710 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 164}
+  .pmd: {"stored/zlib": 102}
+  .pmg: {"stored/zlib": 102}
+  .sii: {"stored/raw": 2, "stored/zlib": 103}
+  .tobj: {"texture": 119}
+  dxgi formats (count, sampled): {78: (34, 3), 83: (7, 3), 91: (78, 3)}
+<game>/dlc_rocket_league.scs: 164 entries, 164 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 11}
+  .pmc: {"stored/zlib": 4}
+  .pmd: {"stored/zlib": 4}
+  .pmg: {"stored/zlib": 4}
+  .sii: {"stored/zlib": 29}
+  .sui: {"stored/zlib": 1}
+  .tobj: {"texture": 10}
+  dxgi formats (count, sampled): {72: (1, 1), 78: (2, 2), 80: (1, 1), 83: (2, 2), 88: (1, 1), 91: (3, 3)}
+<game>/dlc_scania_s_2024e.scs: 648 entries, 648 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 3}
+  .guids: {"stored/zlib": 3}
+  .mat: {"stored/raw": 1, "stored/zlib": 124}
+  .pma: {"stored/zlib": 80}
+  .pmc: {"stored/zlib": 3}
+  .pmd: {"stored/zlib": 32}
+  .pmg: {"stored/zlib": 32}
+  .sii: {"stored/zlib": 97}
+  .soundref: {"stored/raw": 2, "stored/zlib": 10}
+  .sui: {"stored/zlib": 17}
+  .tobj: {"texture": 39}
+  dxgi formats (count, sampled): {72: (2, 2), 78: (13, 3), 83: (4, 3), 91: (20, 3)}
+<game>/dlc_schmitz.scs: 6505 entries, 6505 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 650}
+  .pma: {"stored/zlib": 8}
+  .pmc: {"stored/zlib": 55}
+  .pmd: {"stored/zlib": 790}
+  .pmg: {"stored/zlib": 790}
+  .sii: {"stored/zlib": 1896}
+  .sui: {"stored/zlib": 135}
+  .tobj: {"texture": 1491}
+  dxgi formats (count, sampled): {61: (1, 1), 72: (578, 3), 77: (6, 3), 78: (380, 3), 80: (7, 3), 83: (16, 3), 91: (503, 3)}
+<game>/dlc_schwarzmuller.scs: 3648 entries, 3648 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 352}
+  .pma: {"stored/zlib": 11}
+  .pmc: {"stored/zlib": 21}
+  .pmd: {"stored/zlib": 399}
+  .pmg: {"stored/zlib": 399}
+  .sii: {"stored/raw": 1, "stored/zlib": 1066}
+  .sui: {"stored/zlib": 115}
+  .tobj: {"texture": 766}
+  dxgi formats (count, sampled): {61: (2, 2), 71: (1, 1), 72: (298, 3), 77: (4, 3), 78: (269, 3), 80: (9, 3), 83: (17, 3), 91: (166, 3)}
+<game>/dlc_space.scs: 2347 entries, 2347 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 14}
+  .pmc: {"stored/zlib": 2}
+  .pmd: {"stored/zlib": 3}
+  .pmg: {"stored/zlib": 3}
+  .sii: {"stored/zlib": 735}
+  .sui: {"stored/zlib": 139}
+  .tobj: {"texture": 1153}
+  dxgi formats (count, sampled): {72: (590, 3), 78: (553, 3), 83: (1, 1), 91: (9, 3)}
+<game>/dlc_streetart.scs: 2703 entries, 2703 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 829}
+  .sui: {"stored/zlib": 195}
+  .tobj: {"texture": 1298}
+  dxgi formats (count, sampled): {72: (290, 3), 78: (1001, 3), 91: (7, 3)}
+<game>/dlc_super_stripes.scs: 4521 entries, 4521 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 997}
+  .sui: {"stored/zlib": 216}
+  .tobj: {"texture": 2834}
+  dxgi formats (count, sampled): {78: (2827, 3), 91: (7, 3)}
+<game>/dlc_tirsan.scs: 5734 entries, 5734 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 733}
+  .pma: {"stored/zlib": 7}
+  .pmc: {"stored/zlib": 32}
+  .pmd: {"stored/zlib": 885}
+  .pmg: {"stored/zlib": 885}
+  .sii: {"stored/zlib": 1560}
+  .sui: {"stored/zlib": 85}
+  .tobj: {"texture": 944}
+  dxgi formats (count, sampled): {61: (1, 1), 72: (177, 3), 77: (6, 3), 78: (124, 3), 80: (6, 3), 83: (10, 3), 91: (620, 3)}
+<game>/dlc_toys.scs: 2905 entries, 2905 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 220}
+  .pmc: {"stored/zlib": 73}
+  .pmd: {"stored/zlib": 162}
+  .pmg: {"stored/zlib": 162}
+  .sii: {"stored/zlib": 1667}
+  .sui: {"stored/zlib": 3}
+  .tobj: {"texture": 204}
+  dxgi formats (count, sampled): {72: (33, 3), 78: (64, 3), 80: (4, 3), 83: (11, 3), 91: (92, 3)}
+<game>/dlc_trailers.scs: 2623 entries, 2623 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 36}
+  .pmc: {"stored/zlib": 7}
+  .pmd: {"stored/zlib": 19}
+  .pmg: {"stored/zlib": 19}
+  .sii: {"stored/zlib": 1164}
+  .sui: {"stored/zlib": 89}
+  .tobj: {"texture": 783}
+  dxgi formats (count, sampled): {72: (595, 3), 78: (159, 3), 91: (15, 3), 93: (14, 3)}
+<game>/dlc_valentine.scs: 2154 entries, 2154 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 13}
+  .pmc: {"stored/zlib": 2}
+  .pmd: {"stored/zlib": 2}
+  .pmg: {"stored/zlib": 2}
+  .sii: {"stored/raw": 1, "stored/zlib": 681}
+  .sui: {"stored/zlib": 96}
+  .tobj: {"texture": 1052}
+  dxgi formats (count, sampled): {72: (875, 3), 78: (168, 3), 91: (9, 3)}
+<game>/dlc_vikings.scs: 1730 entries, 1730 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 7}
+  .sii: {"stored/zlib": 523}
+  .sui: {"stored/zlib": 66}
+  .tobj: {"texture": 981}
+  dxgi formats (count, sampled): {72: (936, 3), 78: (38, 3), 91: (7, 3)}
+<game>/dlc_volvo_construction.scs: 1976 entries, 1976 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 55}
+  .pmc: {"stored/zlib": 8}
+  .pmd: {"stored/zlib": 34}
+  .pmg: {"stored/zlib": 34}
+  .sii: {"stored/zlib": 1245}
+  .sui: {"stored/zlib": 9}
+  .tobj: {"texture": 50}
+  dxgi formats (count, sampled): {78: (28, 3), 83: (14, 3), 91: (7, 3), 93: (1, 1)}
+<game>/dlc_volvo_fh_2021.scs: 1617 entries, 1617 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 6}
+  .guids: {"stored/zlib": 6}
+  .mat: {"stored/zlib": 16}
+  .pmd: {"stored/zlib": 1}
+  .pmg: {"stored/zlib": 1}
+  .sii: {"stored/raw": 1, "stored/zlib": 769}
+  .soundref: {"stored/raw": 20, "stored/zlib": 2}
+  .sui: {"stored/zlib": 82}
+  .tobj: {"texture": 555}
+  dxgi formats (count, sampled): {72: (343, 3), 78: (205, 3), 91: (7, 3)}
+<game>/dlc_volvo_fh_2024.scs: 3554 entries, 3554 reachable, 0 listed-but-missing, 0 skipped
+  .bank: {"stored/raw": 6}
+  .guids: {"stored/zlib": 6}
+  .mat: {"stored/raw": 2, "stored/zlib": 249}
+  .pma: {"stored/zlib": 2}
+  .pmc: {"stored/zlib": 33}
+  .pmd: {"stored/zlib": 156}
+  .pmg: {"stored/zlib": 156}
+  .sii: {"stored/raw": 1, "stored/zlib": 1777}
+  .soundref: {"stored/raw": 20, "stored/zlib": 2}
+  .sui: {"stored/zlib": 98}
+  .tobj: {"texture": 704}
+  dxgi formats (count, sampled): {72: (370, 3), 77: (6, 3), 78: (234, 3), 80: (12, 3), 83: (1, 1), 91: (81, 3)}
+<game>/dlc_volvo_tuning_pack.scs: 3537 entries, 3537 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 2, "stored/zlib": 630}
+  .pmc: {"stored/zlib": 52}
+  .pmd: {"stored/zlib": 425}
+  .pmg: {"stored/zlib": 425}
+  .sii: {"stored/raw": 1, "stored/zlib": 745}
+  .sui: {"stored/zlib": 9}
+  .tobj: {"texture": 535}
+  dxgi formats (count, sampled): {72: (59, 3), 77: (1, 1), 78: (91, 3), 80: (4, 3), 83: (13, 3), 91: (367, 3)}
+<game>/dlc_wielton.scs: 5035 entries, 5035 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/raw": 1, "stored/zlib": 386}
+  .pma: {"stored/zlib": 14}
+  .pmc: {"stored/zlib": 42}
+  .pmd: {"stored/zlib": 414}
+  .pmg: {"stored/zlib": 414}
+  .sii: {"stored/zlib": 1570}
+  .sui: {"stored/zlib": 228}
+  .tobj: {"texture": 1122}
+  .txt: {"stored/raw": 1}
+  dxgi formats (count, sampled): {61: (1, 1), 72: (606, 3), 77: (3, 3), 78: (232, 3), 80: (3, 3), 83: (11, 3), 91: (266, 3)}
+<game>/dlc_winter.scs: 2324 entries, 2324 reachable, 0 listed-but-missing, 0 skipped
+  .mat: {"stored/zlib": 22}
+  .pmc: {"stored/zlib": 24}
+  .pmd: {"stored/zlib": 24}
+  .pmg: {"stored/zlib": 24}
+  .sii: {"stored/zlib": 658}
+  .sui: {"stored/zlib": 67}
+  .tobj: {"texture": 1244}
+  dxgi formats (count, sampled): {72: (1137, 3), 78: (92, 3), 80: (1, 1), 83: (3, 3), 88: (1, 1), 91: (10, 3)}
+<game>/effect.scs: 24481 entries, 24481 reachable, 0 listed-but-missing, 0 skipped
+  .fso: {"stored/zlib": 10433}
+  .rfx: {"stored/zlib": 8970}
+  .rs: {"stored/raw": 34, "stored/zlib": 77}
+  .sui: {"stored/zlib": 3}
+  .vso: {"stored/zlib": 4854}
+  dxgi formats (count, sampled): {}
+<game>/locale.scs: 522 entries, 1 reachable, 0 listed-but-missing, 0 skipped
+  dxgi formats (count, sampled): {}
+<game>/version.scs: 2 entries, 2 reachable, 0 listed-but-missing, 0 skipped
+  .sii: {"stored/zlib": 1}
+  dxgi formats (count, sampled): {}

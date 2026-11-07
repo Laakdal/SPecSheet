@@ -1,0 +1,5 @@
+# Baseline of research/evidence/pin-table.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## scs cat /def/truck_config_scene.sii
+fnv1a64 bf5c792bde7073a9, 11209 bytes

@@ -1,0 +1,381 @@
+# Baseline of research/evidence/truckpaint-spec-sources.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## scs ls /effect/eut2/truckpaint
+eut2.truckpaint.airbrush.altuv.asafew.a.rfx
+eut2.truckpaint.airbrush.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.airbrush.altuv.rfx
+eut2.truckpaint.airbrush.altuv.skinned.rfx
+eut2.truckpaint.airbrush.asafew.a.rfx
+eut2.truckpaint.airbrush.asafew.a.skinned.rfx
+eut2.truckpaint.airbrush.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.airbrush.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.airbrush.flipflake.altuv.rfx
+eut2.truckpaint.airbrush.flipflake.altuv.skinned.rfx
+eut2.truckpaint.airbrush.flipflake.asafew.a.rfx
+eut2.truckpaint.airbrush.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.airbrush.flipflake.rfx
+eut2.truckpaint.airbrush.flipflake.skinned.rfx
+eut2.truckpaint.airbrush.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.airbrush.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.airbrush.flipflakeuv.rfx
+eut2.truckpaint.airbrush.flipflakeuv.skinned.rfx
+eut2.truckpaint.airbrush.rfx
+eut2.truckpaint.airbrush.skinned.rfx
+eut2.truckpaint.altuv.rfx
+eut2.truckpaint.altuv.skinned.rfx
+eut2.truckpaint.asafew.a.rfx
+eut2.truckpaint.asafew.a.skinned.rfx
+eut2.truckpaint.colormask.altuv.asafew.a.rfx
+eut2.truckpaint.colormask.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.colormask.altuv.rfx
+eut2.truckpaint.colormask.altuv.skinned.rfx
+eut2.truckpaint.colormask.asafew.a.rfx
+eut2.truckpaint.colormask.asafew.a.skinned.rfx
+eut2.truckpaint.colormask.rfx
+eut2.truckpaint.colormask.skinned.rfx
+eut2.truckpaint.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.flipflake.altuv.rfx
+eut2.truckpaint.flipflake.altuv.skinned.rfx
+eut2.truckpaint.flipflake.asafew.a.rfx
+eut2.truckpaint.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.flipflake.rfx
+eut2.truckpaint.flipflake.skinned.rfx
+eut2.truckpaint.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.flipflakeuv.rfx
+eut2.truckpaint.flipflakeuv.skinned.rfx
+eut2.truckpaint.rfx
+eut2.truckpaint.shadow.airbrush.altuv.asafew.a.rfx
+eut2.truckpaint.shadow.airbrush.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.airbrush.altuv.rfx
+eut2.truckpaint.shadow.airbrush.altuv.skinned.rfx
+eut2.truckpaint.shadow.airbrush.asafew.a.rfx
+eut2.truckpaint.shadow.airbrush.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.altuv.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.altuv.skinned.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.asafew.a.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.rfx
+eut2.truckpaint.shadow.airbrush.flipflake.skinned.rfx
+eut2.truckpaint.shadow.airbrush.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.shadow.airbrush.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.airbrush.flipflakeuv.rfx
+eut2.truckpaint.shadow.airbrush.flipflakeuv.skinned.rfx
+eut2.truckpaint.shadow.airbrush.rfx
+eut2.truckpaint.shadow.airbrush.skinned.rfx
+eut2.truckpaint.shadow.asafew.a.rfx
+eut2.truckpaint.shadow.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.colormask.altuv.asafew.a.rfx
+eut2.truckpaint.shadow.colormask.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.colormask.altuv.rfx
+eut2.truckpaint.shadow.colormask.altuv.skinned.rfx
+eut2.truckpaint.shadow.colormask.asafew.a.rfx
+eut2.truckpaint.shadow.colormask.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.colormask.rfx
+eut2.truckpaint.shadow.colormask.skinned.rfx
+eut2.truckpaint.shadow.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.shadow.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.flipflake.altuv.rfx
+eut2.truckpaint.shadow.flipflake.altuv.skinned.rfx
+eut2.truckpaint.shadow.flipflake.asafew.a.rfx
+eut2.truckpaint.shadow.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.flipflake.rfx
+eut2.truckpaint.shadow.flipflake.skinned.rfx
+eut2.truckpaint.shadow.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.shadow.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.shadow.flipflakeuv.rfx
+eut2.truckpaint.shadow.flipflakeuv.skinned.rfx
+eut2.truckpaint.shadow.rfx
+eut2.truckpaint.shadow.skinned.rfx
+eut2.truckpaint.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.airbrush.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.altuv.rfx
+eut2.truckpaint.tsnmap.airbrush.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.asafew.a.rfx
+eut2.truckpaint.tsnmap.airbrush.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.altuv.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflake.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflakeuv.rfx
+eut2.truckpaint.tsnmap.airbrush.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmap.airbrush.rfx
+eut2.truckpaint.tsnmap.airbrush.skinned.rfx
+eut2.truckpaint.tsnmap.altuv.rfx
+eut2.truckpaint.tsnmap.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.asafew.a.rfx
+eut2.truckpaint.tsnmap.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.colormask.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.colormask.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.colormask.altuv.rfx
+eut2.truckpaint.tsnmap.colormask.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.colormask.asafew.a.rfx
+eut2.truckpaint.tsnmap.colormask.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.colormask.rfx
+eut2.truckpaint.tsnmap.colormask.skinned.rfx
+eut2.truckpaint.tsnmap.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.flipflake.altuv.rfx
+eut2.truckpaint.tsnmap.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmap.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.flipflake.rfx
+eut2.truckpaint.tsnmap.flipflake.skinned.rfx
+eut2.truckpaint.tsnmap.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.flipflakeuv.rfx
+eut2.truckpaint.tsnmap.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmap.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.altuv.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.altuv.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflake.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflakeuv.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.rfx
+eut2.truckpaint.tsnmap.shadow.airbrush.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.altuv.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.rfx
+eut2.truckpaint.tsnmap.shadow.colormask.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.altuv.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.rfx
+eut2.truckpaint.tsnmap.shadow.flipflake.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmap.shadow.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.flipflakeuv.rfx
+eut2.truckpaint.tsnmap.shadow.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmap.shadow.rfx
+eut2.truckpaint.tsnmap.shadow.skinned.rfx
+eut2.truckpaint.tsnmap.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.airbrush.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.altuv.rfx
+eut2.truckpaint.tsnmapuv.airbrush.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.airbrush.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.altuv.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflake.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflakeuv.rfx
+eut2.truckpaint.tsnmapuv.airbrush.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.airbrush.rfx
+eut2.truckpaint.tsnmapuv.airbrush.skinned.rfx
+eut2.truckpaint.tsnmapuv.altuv.rfx
+eut2.truckpaint.tsnmapuv.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.colormask.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.colormask.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.colormask.altuv.rfx
+eut2.truckpaint.tsnmapuv.colormask.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.colormask.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.colormask.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.colormask.rfx
+eut2.truckpaint.tsnmapuv.colormask.skinned.rfx
+eut2.truckpaint.tsnmapuv.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.flipflake.altuv.rfx
+eut2.truckpaint.tsnmapuv.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.flipflake.rfx
+eut2.truckpaint.tsnmapuv.flipflake.skinned.rfx
+eut2.truckpaint.tsnmapuv.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.flipflakeuv.rfx
+eut2.truckpaint.tsnmapuv.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.altuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.altuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflake.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflakeuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.rfx
+eut2.truckpaint.tsnmapuv.shadow.airbrush.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.altuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.rfx
+eut2.truckpaint.tsnmapuv.shadow.colormask.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.altuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.altuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.altuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.altuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflake.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflakeuv.asafew.a.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflakeuv.asafew.a.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflakeuv.rfx
+eut2.truckpaint.tsnmapuv.shadow.flipflakeuv.skinned.rfx
+eut2.truckpaint.tsnmapuv.shadow.rfx
+eut2.truckpaint.tsnmapuv.shadow.skinned.rfx
+eut2.truckpaint.tsnmapuv.skinned.rfx
+## model_info /vehicle/truck/volvo_fh_2024/cabin/globe_xl_aero_2024.pmd
+== /vehicle/truck/volvo_fh_2024/cabin/globe_xl_aero_2024.pmd
+looks: ["default", "gt", "gt_xl", "gt_xxl", "fh16", "fh16_xl", "fh16_xxl", "fh16_780", "fh16_780_xl", "fh16_780_xxl", "fh16_750", "fh16_750_xl", "fh16_750_xxl"]
+variants: ["default", "cabin_uk"]
+aabb: Aabb { min: [-1.2416171, 0.21699303, -3.335957], max: [1.2416171, 3.9460163, -0.8425444] }
+material 0: /automat/5f/5fb01bd853839720.mat Some("eut2.dif.spec.weight.tsnmapuv.rfx")
+material 1: /automat/a1/a13f598c610360b9.mat Some("eut2.truckpaint.tsnmapuv.rfx")
+material 2: /automat/17/179036a08f35af71.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 3: /automat/a4/a41f2702b65f84f0.mat Some("eut2.shadowonly.rfx")
+material 4: /automat/15/15fff77909a67141.mat Some("eut2.dif.spec.weight.rfx")
+material 5: /automat/2e/2ec6bfdc9d30d57d.mat Some("eut2.dif.spec.weight.tsnmapuv.rfx")
+material 6: /automat/90/9067485cbbfd005e.mat Some("eut2.glass.rfx")
+material 7: /automat/3b/3b16440e1fe455a8.mat Some("eut2.dif.spec.add.env.nofresnel.rfx")
+material 8: /automat/a4/a4954cadba772395.mat Some("eut2.dif.spec.weight.add.env.tsnmap.over.rfx")
+material 9: /automat/a7/a7de00b243a0a37d.mat Some("eut2.dif.spec.weight.add.env.tsnmapuv.rfx")
+material 10: /automat/4d/4d42c9d06c3b4369.mat Some("eut2.glass.rfx")
+part eu               pieces 0..1 visible-by-variant [true, false]
+    piece 0   material 0   vertices 174    bounds [-1.16, 2.09, -3.14]..[0.19, 2.95, -2.15]
+    locator swheel         pos [-0.71768, 1.9884348, -2.5673506] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_mirror       pos [0.7094972, 2.8013513, -3.098558] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator s_mirror       pos [1.250868, 2.8786511, -2.0794215] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator driver_0       pos [-0.71768, 1.4836099, -2.423556] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator interior       pos [-0.71751547, 2.6924696, -1.8940548] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator codrv_seat     pos [0.0, 2.3376937, -1.9139426] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator int_display    pos [0.0, 2.634901, -2.6198254] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator l_pillow       pos [0.83664525, 2.2692072, -1.2153903] rot [0.9659258, 0.0, 0.25881904, 0.0] scale 1 hookup None
+    locator toyseat        pos [0.70496386, 1.9759058, -2.1046588] rot [0.7070568, 0.008404256, 0.7070568, -0.008404256] scale 1 hookup None
+    locator toybig         pos [0.0, 1.6864488, -2.0472128] rot [0.70710677, 0.0, 0.70710677, 0.0] scale 1 hookup None
+    locator toyac          pos [-0.11555393, 2.2496474, -2.436592] rot [0.9437075, -0.14360312, -0.2941388, -0.04771404] scale 1 hookup None
+    locator set_lglass     pos [-1.0294913, 2.4559689, -2.9789088] rot [0.9706636, 0.0, 0.24044153, 0.0] scale 1 hookup None
+    locator drv_plate      pos [-0.79302, 2.3000484, -2.9990487] rot [0.9933445, 0.08905544, 0.072792575, 0.0060952688] scale 1 hookup None
+    locator codrv_plate    pos [0.7909196, 2.2884247, -3.00287] rot [0.99520415, 0.06029243, -0.076575495, -0.008352136] scale 1 hookup None
+    locator toystand       pos [0.5516011, 2.2970076, -2.6894696] rot [0.567035, -0.009570058, 0.8221639, -0.049257353] scale 1 hookup None
+    locator set_glass      pos [0.0, 2.658488, -3.0191543] rot [0.9998883, -0.0149448905, 0.0, 0.0] scale 1 hookup None
+    locator frntglss_mid   pos [0.2529385, 2.399985, -3.0552475] rot [0.9986708, 0.05017112, -0.011123313, -0.003969122] scale 1 hookup None
+    locator set_dashbrd    pos [0.04418048, 2.3257418, -2.5393941] rot [0.99952453, -0.021382948, -0.022056362, -0.0026483696] scale 1 hookup None
+    locator toybed         pos [0.0, 2.2668042, -1.4838346] rot [0.9999711, -0.0036014982, -0.0033808036, -0.0057852673] scale 1 hookup None
+    locator intlight_bck   pos [0.44121745, 2.970062, -1.36536] rot [0.9256524, -0.37837508, 0.0, 0.0] scale 1 hookup None
+part part1            pieces 1..12 visible-by-variant [true, true]
+    piece 1   material 1   vertices 18642  bounds [-1.24, 0.68, -3.34]..[1.24, 3.86, -0.91]
+    piece 2   material 0   vertices 12094  bounds [-1.22, 0.57, -3.12]..[1.22, 3.95, -0.84]
+    piece 3   material 2   vertices 26     bounds [-0.74, 1.18, -3.13]..[0.70, 1.57, -3.08]
+    piece 4   material 3   vertices 1201   bounds [-1.22, 0.22, -3.32]..[1.22, 3.85, -0.93]
+    piece 5   material 4   vertices 2402   bounds [-1.24, 1.22, -2.98]..[1.24, 3.04, -1.82]
+    piece 6   material 5   vertices 1262   bounds [-1.23, 0.57, -3.32]..[1.23, 1.95, -2.45]
+    piece 7   material 6   vertices 1071   bounds [-1.14, 2.19, -3.10]..[1.14, 3.83, -2.07]
+    piece 8   material 7   vertices 36     bounds [-1.06, 1.68, -0.96]..[-0.72, 1.70, -0.85]
+    piece 9   material 8   vertices 40     bounds [-1.13, 1.97, -0.95]..[-0.54, 3.47, -0.87]
+    piece 10  material 9   vertices 330    bounds [-1.14, 1.97, -0.99]..[-0.53, 3.19, -0.87]
+    piece 11  material 10  vertices 861    bounds [-1.14, 2.19, -3.10]..[1.14, 3.03, -2.80]
+    locator s_deflector    pos [0.0, 2.5702977, -0.4516882] rot [1.5380641e-18, 6.121302e-17, 0.99968445, 0.025118493] scale 1 hookup None
+    locator s_guard        pos [0.0, 2.3180006, -3.1438987] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator doortrim       pos [0.0, 1.7830064, -1.9589431] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator s_strip        pos [0.0, 2.1421516, -1.7689157] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_intake_cab   pos [0.0, 1.4351854, -3.1180542] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_fender_cab   pos [0.0, 1.2325957, -1.7622151] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator ext_interior   pos [0.0, 0.0, 0.0] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator set_glass      pos [-0.052688558, 2.6670806, -3.013333] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator toyhang_1      pos [-0.01027936, 2.9713147, -2.5970495] rot [1.4426195e-18, 6.121534e-17, 0.9997224, 0.023559764] scale 1 hookup None
+    locator sunshld        pos [0.00026, 3.0401707, -2.9870737] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator mirror         pos [0.0, 2.5258498, -2.6198254] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator doorhndl       pos [0.0, 1.5954909, -1.9488028] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator curtain_f      pos [-0.0032173041, 2.9537861, -2.701487] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator badge          pos [0.0, 0.0, 0.0] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator cor_def        pos [0.0, 1.9244096, -3.1794052] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_intake_bar   pos [0.0, 1.9120941, -3.1657255] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_wnd_frame    pos [0.0, 2.1559105, -3.1424491] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator s_panel        pos [0.0, 2.6849701, -1.4393511] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator windowtrim     pos [0.0, 2.6640646, -1.7773095] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator backwall       pos [-1.4280416e-33, 3.2423031, -0.44842303] rot [5.0532154e-16, 0.0, 1.0, 0.0] scale 1 hookup None
+    locator mir_guard      pos [0.0, 2.433493, -2.6198254] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator flag_r         pos [1.1654545, 2.9479055, -2.42477] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator flag_l         pos [-1.1588948, 2.9482749, -2.4249] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_turn_light   pos [0.0, 1.07584, -2.69787] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_badge        pos [-0.54343003, 1.2279813, -3.3170288] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator filter         pos [-1.1623732, 3.7878287, -1.3226435] rot [0.70710677, 0.0, 0.70710677, 0.0] scale 1 hookup None
+    locator beacon_a       pos [0.0, 3.869694, -1.7943919] rot [0.99968445, -0.025118493, 0.0, 0.0] scale 1 hookup None
+    locator r_grill_a      pos [0.0, 3.676006, -2.7365983] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator cam_cabin_a    pos [0.0, 4.263235, -1.1494274] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator r_deflector    pos [0.0, 3.929663, -1.1886176] rot [0.99968445, -0.025118493, 0.0, 0.0] scale 1 hookup None
+    locator l_horn         pos [-0.87558794, 3.7010992, -2.261678] rot [0.9690352, -0.23631239, -0.012369912, 0.07052799] scale 1 hookup None
+    locator r_horn         pos [0.8758883, 3.698782, -2.2696311] rot [0.9686559, -0.23780079, 0.0071920836, -0.0714482] scale 1 hookup None
+    locator decals         pos [0.0, 3.295892, -2.8636966] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+part uk               pieces 12..13 visible-by-variant [false, true]
+    piece 12  material 0   vertices 174    bounds [-0.19, 2.09, -3.14]..[1.16, 2.95, -2.15]
+    locator driver         pos [0.71806, 1.4836099, -2.423556] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator swheel_uk      pos [0.71806, 1.9884348, -2.5673509] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator interior_uk    pos [0.7227179, 2.6924696, -1.8940548] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator f_mirror       pos [-0.7095, 2.8013513, -3.098558] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator s_mirror       pos [-1.2456125, 2.8786511, -2.0791879] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator codrv_seat     pos [0.0, 2.3376937, -1.9139426] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator int_display    pos [0.0, 2.634901, -2.6198254] rot [1.0, 0.0, 0.0, 0.0] scale 1 hookup None
+    locator toybed         pos [0.0, 2.2668042, -1.4838346] rot [0.9999852, -0.003613338, -0.0033681465, -0.0022767168] scale 1 hookup None
+    locator l_pillow       pos [-0.7951952, 2.2692072, -1.1962792] rot [0.9745009, 0.0, -0.22438367, 0.0] scale 1 hookup None
+    locator toyseat        pos [-0.71193033, 1.9752313, -2.1355796] rot [0.7069543, 0.014685141, -0.7069543, 0.014685141] scale 1 hookup None
+    locator toybig         pos [0.0, 1.6864488, -2.0472128] rot [0.70710677, 0.0, -0.70710677, 0.0] scale 1 hookup None
+    locator toyac          pos [0.11460845, 2.2471223, -2.4414902] rot [0.9255644, -0.19082838, 0.32471412, 0.038416456] scale 1 hookup None
+    locator set_lglass     pos [0.9936697, 2.4559689, -2.9995432] rot [0.98429745, 0.0, -0.1765179, 0.0] scale 1 hookup None
+    locator codrv_plate    pos [-0.79302, 2.3000484, -2.9988725] rot [0.9933445, 0.08905544, 0.072792575, 0.0060952688] scale 1 hookup None
+    locator drv_plate      pos [0.7910111, 2.3007152, -3.001192] rot [0.99520415, 0.06029243, -0.076575495, -0.008352136] scale 1 hookup None
+    locator toystand       pos [-0.53887606, 2.2997577, -2.6679835] rot [0.57570535, -0.008956218, -0.81634176, 0.045489334] scale 1 hookup None
+    locator set_glass      pos [0.0, 2.658488, -3.0191543] rot [0.9998883, -0.0149448905, 0.0, 0.0] scale 1 hookup None
+    locator frntglss_mid   pos [-0.2543915, 2.4045882, -3.0573876] rot [0.9987299, 0.050215874, 0.0035958088, 0.0020035796] scale 1 hookup None
+    locator set_dashbrd    pos [-0.04411, 2.32574, -2.5434773] rot [0.99952453, -0.021382948, -0.022056362, -0.0026483696] scale 1 hookup None
+    locator intlight_bck   pos [-0.44177, 2.97299, -1.36536] rot [0.92591673, -0.37772766, 0.0, 0.0] scale 1 hookup None
+## scs cat /automat/14/14a950810c14dfc2.mat
+fnv1a64 6d3bc4028045b7f0, 499 bytes

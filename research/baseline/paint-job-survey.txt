@@ -1,0 +1,26 @@
+# Baseline of research/evidence/paint-job-survey.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## scs cat /def/vehicle/truck/scania.s_2016/paint_job/770s_met_a.sii
+fnv1a64 69d16648da94e6a5, 268 bytes
+## scs cat /def/vehicle/truck/scania.s_2016/paint_job/accessory/770s_met_a.sii
+fnv1a64 c2486d76df3fab6f, 3632 bytes
+## scs cat /def/vehicle/truck/volvo.fh_2024/paint_job/academy_a.sii
+fnv1a64 238c2bf048d5e065, 266 bytes
+## scs ls /vehicle/truck/upgrade/paintjob/volvo_fh_2024/academy
+pjm_at_0x0_size_2048x2048.tobj
+pjm_at_0x2048_size_2048x2048.tobj
+pjm_at_0x4096_size_2048x2048.tobj
+pjm_at_0x6144_size_2048x2048.tobj
+pjm_at_2048x2373_size_1024x1024.tobj
+pjm_at_2048x264_size_1024x1024.tobj
+pjm_at_3072x3584_size_512x512.tobj
+pjm_at_3072x4096_size_512x256.tobj
+pjm_at_3072x4352_size_512x256.tobj
+pjm_at_3072x4608_size_512x256.tobj
+pjm_at_3072x4864_size_256x256.tobj
+pjm_at_3328x4864_size_256x256.tobj
+pjm_at_3584x4608_size_512x512.tobj
+pjm_at_3584x5120_size_512x256.tobj
+shared_000000ff.tobj
+shared_ff0000ff.tobj

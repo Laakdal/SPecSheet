@@ -1,0 +1,5 @@
+# String search for the tuning system (research/evidence/rea-search-tuning-strings.txt), eurotrucks2.exe of ETS2 1.60.1.7.
+# `search` and `trace` lines are the seeds that find the code again in a new
+# build; `function` and `xrefs` lines are the 1.60.1.7 addresses they led to.
+# Made from the REA records in %USERPROFILE%/rea-ets2 (their `parameters`).
+search accpins|acc_pin|exterior_model|interior_model|suitable_for|conflict_with|accessory_addon|hookup|wheel_f|wheel_r|variant_uk|exterior_model_uk|truck_config|accessory_truck_data|vehicle_addon_accessory|locator

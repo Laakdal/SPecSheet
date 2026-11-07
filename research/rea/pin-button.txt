@@ -1,0 +1,5 @@
+# Trace of the pin button error string (research/evidence/rea-trace-pin-button.json), eurotrucks2.exe of ETS2 1.60.1.7.
+# `search` and `trace` lines are the seeds that find the code again in a new
+# build; `function` and `xrefs` lines are the 1.60.1.7 addresses they led to.
+# Made from the REA records in %USERPROFILE%/rea-ets2 (their `parameters`).
+trace Failed to find required button. Base id

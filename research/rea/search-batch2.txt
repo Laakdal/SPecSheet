@@ -1,0 +1,5 @@
+# String search, batch 2: pins, camera, exposure, lift axles, paint, reflections (research/evidence/rea-search-batch2.txt), eurotrucks2.exe of ETS2 1.60.1.7.
+# `search` and `trace` lines are the seeds that find the code again in a new
+# build; `function` and `xrefs` lines are the 1.60.1.7 addresses they led to.
+# Made from the REA records in %USERPROFILE%/rea-ets2 (their `parameters`).
+search (?i)(truck_config_scene|ui_truck_scene|camera_fov|camera_elevation_limit|camera_default_(azimuth|elevation|zoom)|camera_relative_bounds|camera_aim|tonemap_params|eye_adapt|bloom_params|color_correction|deferred_parameters|liftable_axle|lift_axle|colormask|altuv|flipflake|airbrush|paint_job/accessory|/paint_job/|ui_vehicle_reflection|vehicle_reflection|cube_reflection|floor_reflection|light_environment|env_factor|pin_offset|pin_dir|pin_group|pin_look|double_sided)

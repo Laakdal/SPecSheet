@@ -1,0 +1,192 @@
+# How each file in research/evidence/ is made again after a game update
+# (docs/version-ports.md). `cargo xtask recipes` checks this list without the
+# game; `cargo xtask recipes --compare` (ETS2_DIR set) runs it and compares the
+# output with research/baseline/; `--save` writes the baselines.
+#
+# One line per command: <evidence file> <kind> <command or text>
+#   game <command>     output depends on the install only; compared with the baseline
+#   digest <command>   output is game file content; the baseline keeps only its hash
+#   user <command>     reads the user's mod folder or profiles (<home>, ETS2_HOME);
+#                      run with --user, never compared
+#   rea <file | ->     an executable search batch in research/rea/: its search and
+#                      trace seeds find the code again in a new build, its function
+#                      and xrefs lines are the old addresses (`cargo xtask rea` prints
+#                      the batched commands); - = only results in the evidence file
+#   hand <text>        recheck by hand: what to look at
+#   historical <text>  cannot be made again: why
+# A command is a research example (crates/specsheet-research/examples) and its
+# arguments, or `python tools/research/<script>.py ...`. <game> is ETS2_DIR,
+# <home> the ETS2 home folder, <scratch> a temporary folder of the run.
+# "Double quotes" keep spaces in one argument; `*` in a file name expands to
+# the matching files, sorted. A game recipe's output must hold only our
+# observations (names, ids, counts, numbers); a tool that prints game file
+# text is a digest recipe.
+
+# --- archives and textures
+research/evidence/survey-hashfs.txt game survey "<game>/dlc_actros_tuning.scs" "<game>/base_vehicle.scs" "<game>/def.scs" "<game>/core.scs"
+research/evidence/hashfs-layout-derivation.txt game survey "<game>/*.scs"
+research/evidence/hashfs-layout-derivation.txt hand the HashFS v2 layout derived below (docs/formats/hashfs.md) still reads every archive: survey reports 0 skipped
+research/evidence/hashfs-v1-derivation.txt user mod_probe "<home>/mod"
+research/evidence/hashfs-v1-derivation.txt hand the HashFS v1 layout below still opens the v1 packages in the mod folder
+research/evidence/texture-unpack-derivation.txt game texture_layout "<game>/base.scs" "<game>/base_vehicle.scs" "<game>/base_map.scs" "<game>/base_cfg.scs" "<game>/core.scs" "<game>/base_share.scs" "<game>/def.scs"
+research/evidence/hdr-textures.txt game hdr_textures "<game>/*.scs"
+research/evidence/reflection-cubes.txt game scs tex /material/environment/vehicle_reflection.tobj
+research/evidence/reflection-cubes.txt game scs tex /material/environment/fuzzy_reflection/fuzzy_reflection.tobj
+research/evidence/reflection-cubes.txt game scs tex /material/environment/showroom_cube/reflection.tobj
+research/evidence/reflection-cubes.txt game scs tex /material/environment/ui_vehicle_reflection.tobj
+research/evidence/cleanroom-phase1.txt hand re-run the differential fingerprint of phase 1 over the whole install (method below) after any change to the archive readers
+research/evidence/cleanroom-phase2.txt hand re-run the differential check of phase 2 over every archive (method below) after any change to the archive readers
+research/evidence/extract-v2.txt game mod_extract "<game>/core.scs" "<scratch>/core"
+research/evidence/extract-v2.txt game extract_check "<game>/core.scs" "<scratch>/core"
+research/evidence/extract-v2.txt game mod_extract "<game>/dlc_daf_xd.scs" "<scratch>/dlc_daf_xd"
+research/evidence/extract-v2.txt game extract_check "<game>/dlc_daf_xd.scs" "<scratch>/dlc_daf_xd"
+research/evidence/extract-v2.txt game mod_extract "<game>/def.scs" "<scratch>/def"
+research/evidence/extract-v2.txt game extract_check "<game>/def.scs" "<scratch>/def"
+research/evidence/rea-inspect-core-scs.json rea -
+
+# --- definitions, saves and the UI
+research/evidence/truck-def-attribute-stats.txt game def_stats
+research/evidence/bsii-derivation.txt user save_check "<home>/profiles"
+research/evidence/bsii-placement-nil.txt user save_check "<home>/profiles"
+research/evidence/profile-scsc-survey.txt user profile_mods "<home>/profiles/*"
+research/evidence/profile-scsc-survey.txt hand the ScsC key and layout (docs/formats/profiles.md) still decrypt every profile: profile_mods reports no errors
+research/evidence/ui-layout-survey.txt game def_stats /ui
+research/evidence/ui-layout-survey.txt digest ui_icon_survey /def/vehicle/truck 3
+research/evidence/ui-layout-survey.txt digest ui_icon_survey /def/vehicle 0
+research/evidence/ui-layout-survey.txt hand bash tools/research/ui_evidence.sh (ETS2_DIR set) after extracting /ui/ as in step 1 below; compare its output with this file
+research/evidence/ui-hotspot-scene-diagnosis.txt hand a diagnosis of our app; recheck that the tuning screen's hotspots still sit on their parts (docs/RENDERING.md)
+
+# --- models, geometry, materials
+research/evidence/geometry-survey.txt game geometry_survey
+research/evidence/material-survey.txt game material_survey
+research/evidence/effect-usage-survey.txt game effect_usage
+research/evidence/paint-vertex-streams.txt game paint_uv_survey
+research/evidence/pmg-uv-routing.txt game uv_routing_survey
+research/evidence/pmg-uv-routing.txt game uv_routing_survey vehicle model model2 prefab prefab2
+research/evidence/pmg-uv-routing.txt game uv_routing_survey /vehicle/truck/mercedes_actros_2014/cabin_a.pmd /vehicle/truck/mercedes_actros_2014/cabin_8x4.pmd /vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd /vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd
+research/evidence/pmg-layout-derivation.txt hand the PMG layout below (docs/formats/models.md) still loads every model: the real-install model tests pass
+research/evidence/hookup-slot-survey.txt game hookup_survey
+research/evidence/locator-check-prefix.txt game locator_check
+research/evidence/locator-check-v1.txt historical made with an earlier, stricter locator rule that the tool no longer has; locator-check-prefix.txt is the current rule
+research/evidence/interior-survey.txt digest scs cat /def/vehicle/truck/scania.s_2016/interior/cab_s_high_black_dark.sii
+research/evidence/interior-survey.txt digest scs cat /def/vehicle/truck/scania.s_2016/interior/uk_cab_s_high_black_dark.sii
+research/evidence/interior-survey.txt digest scs cat /def/vehicle/truck/scania.s_2016/cabin/highline.sii
+research/evidence/interior-survey.txt digest scs cat /def/vehicle/truck_desktop/scania_s_2016.sii
+research/evidence/interior-survey.txt digest scs cat /def/vehicle/truck_desktop/volvo_fh_2024.sii
+research/evidence/interior-survey.txt game model_info /vehicle/truck/scania_2016/cabin/cab_s_high.pmd
+research/evidence/interior-survey.txt game model_info /vehicle/truck/scania_2016/interior/external/stock.pmd
+research/evidence/interior-survey.txt game model_info /vehicle/truck/scania_2016/interior/model.pmd
+research/evidence/interior-survey.txt game model_info /vehicle/truck/scania_2016/interior/uk/model_uk.pmd
+research/evidence/interior-locators.md hand the cockpit locators per cabin (table below) with model_info on each cabin under /vehicle/truck/*/cabin/
+research/evidence/flare-survey.txt game flare_survey
+
+# --- wheels and axles
+research/evidence/axle-survey.txt game axle_survey
+research/evidence/wheel-order-survey.txt game wheel_order_survey
+research/evidence/wheel-order-survey.txt rea wheel-index.txt
+research/evidence/wheel-radius.txt game def_stats /def/vehicle/f_tire
+research/evidence/wheel-radius.txt game def_stats /def/vehicle/r_tire
+research/evidence/wheel-radius.txt game def_stats /def/vehicle/truck
+research/evidence/wheel-radius.txt game def_stats /def/vehicle
+research/evidence/wheel-radius.txt game wheel_fit f_tire
+research/evidence/wheel-radius.txt game wheel_fit r_tire
+research/evidence/wheel-radius.txt game wheel_fit f_wheel
+research/evidence/wheel-radius.txt game wheel_fit r_wheel
+research/evidence/wheel-radius.txt game model_info /vehicle/truck/daf_2021/chassis/chs_4x2.pmd
+research/evidence/wheel-radius.txt hand the tyre mesh radii in section 2: model_info on each tyre and complete wheel model that wheel_fit lists
+research/evidence/wheel-radius.txt rea wheel-radius.txt
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_tire
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_disc
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_rim
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_hub
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_nuts
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_cover
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/f_wheel
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_tire
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_disc
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_rim
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_hub
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_nuts
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_cover
+research/evidence/wheel-tire-shift.txt game def_stats /def/vehicle/r_wheel
+research/evidence/wheel-tire-shift.txt game wheel_fit fit
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/disc/front_disc_01.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/disc/front_disc_05.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/disc/front_disc_06.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/nuts/front_nuts_01_steel.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/tire/front_1.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/tire/f_385-55_michelin.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit profile /vehicle/truck/upgrade/wheel/tire/rear_1.pmd left
+research/evidence/wheel-tire-shift.txt game wheel_fit locators
+research/evidence/wheel-tire-shift.txt game wheel_fit
+
+# --- pins
+research/evidence/pin-survey.txt game pin_survey
+research/evidence/pin-overlaps.txt game pin_dump
+research/evidence/pin-table.txt digest scs cat /def/truck_config_scene.sii
+research/evidence/pin-attributes.txt rea pin-attributes.txt
+research/evidence/rea-pin-handler.txt rea pin-handler.txt
+research/evidence/rea-pin-model-order.txt game python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" use_non_wheel_pin_data_from_model residual_travel
+research/evidence/rea-pin-model-order.txt rea -
+research/evidence/rea-pin-roots.txt rea -
+research/evidence/rea-pin-select.txt rea pin-select.txt
+research/evidence/rea-trace-pin-button.json rea pin-button.txt
+
+# --- paint
+research/evidence/paint-class-layout.txt game python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" flake_uvscale flip_strength alternate_flipflake_uvset acc_list paint_job_mask
+research/evidence/paint-job-survey.txt digest scs cat /def/vehicle/truck/scania.s_2016/paint_job/770s_met_a.sii
+research/evidence/paint-job-survey.txt digest scs cat /def/vehicle/truck/scania.s_2016/paint_job/accessory/770s_met_a.sii
+research/evidence/paint-job-survey.txt digest scs cat /def/vehicle/truck/volvo.fh_2024/paint_job/academy_a.sii
+research/evidence/paint-job-survey.txt game scs ls /vehicle/truck/upgrade/paintjob/volvo_fh_2024/academy
+research/evidence/paint-job-survey.txt hand its attribute statistics came from a scratch tool (paint_survey) that was never committed; recount with def_stats over /def/vehicle/truck
+research/evidence/rea-paint-apply.txt rea -
+research/evidence/rea-paint-variant.txt rea paint-variant.txt
+
+# --- shaders (D13: a changed effect file means a new clean-room pass)
+research/evidence/effect-shaders-survey.txt game survey "<game>/effect.scs"
+research/evidence/effect-shaders-survey.txt game scs ls /effect/eut2
+research/evidence/effect-shaders-survey.txt game scs ls /effect/eut2/truckpaint
+research/evidence/shader-spec-showroom-v2.txt digest scs cat /effect/eut2/showroom_v2/eut2.showroom_v2.rfx
+research/evidence/shader-spec-showroom-v2.txt digest scs cat /effect/deferred/rs/forward_none.rs
+research/evidence/shader-spec-showroom-v2.txt hand if a digest changed, the spec docs/app/shader-specs/showroom-v2.md needs a new clean-room pass
+research/evidence/shader-spec-baked.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/baked.md
+research/evidence/shader-spec-dif-spec.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/dif-spec.md
+research/evidence/shader-spec-dif-spec-mult.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/dif-spec-mult.md
+research/evidence/shader-spec-fake-shadow.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/fake-shadow.md
+research/evidence/shader-spec-flare.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/flare.md
+research/evidence/shader-spec-glass-lamp-lum.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of the glass, lamp and lum specs
+research/evidence/shader-spec-gtao.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/gtao.md
+research/evidence/shader-spec-tonemap.txt hand the effects named below are unchanged (scs cat, compare); else a new clean-room pass of docs/app/shader-specs/tonemap.md
+research/evidence/truckpaint-spec-sources.txt game scs ls /effect/eut2/truckpaint
+research/evidence/truckpaint-spec-sources.txt game model_info /vehicle/truck/volvo_fh_2024/cabin/globe_xl_aero_2024.pmd
+research/evidence/truckpaint-spec-sources.txt digest scs cat /automat/14/14a950810c14dfc2.mat
+research/evidence/truckpaint-spec-sources.txt hand the truckpaint effects named below are unchanged; else a new clean-room pass of the truckpaint spec
+research/evidence/exposure-tonemap-data.txt game python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" eye_adaptation_speed light_environment camera_fov
+research/evidence/exposure-tonemap-data.txt rea postprocess.txt
+research/evidence/exposure-tonemap-data.txt hand the climate files /def/climate/<name>/{nice,bad}.sii and the desktop configs named below still hold the values quoted
+
+# --- the cockpit camera and the executable
+research/evidence/rea-interior-camera.txt game python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" head_offset mouse_up_down_default camera_fov user_head_offset
+research/evidence/rea-interior-camera.txt game python tools/research/xref.py "<game>/bin/win_x64/eurotrucks2.exe" vehicle_interior_camera_u
+research/evidence/rea-interior-camera.txt rea -
+research/evidence/rea-steering-wheel.txt game python tools/research/xref.py "<game>/bin/win_x64/eurotrucks2.exe" interior_model_uk
+research/evidence/rea-steering-wheel.txt game python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" interior_model_uk
+research/evidence/rea-steering-wheel.txt rea -
+research/evidence/rea-ui-scene-update.txt rea ui-scene-update.txt
+research/evidence/rea-binary-overview.json rea -
+research/evidence/rea-search-batch2.json rea search-batch2.txt
+research/evidence/rea-search-batch2.txt rea search-batch2.txt
+research/evidence/rea-search-tuning-strings.json rea search-tuning-strings.txt
+research/evidence/rea-search-tuning-strings.txt rea search-tuning-strings.txt
+
+# --- mods
+research/evidence/mod-loader-survey.txt user mod_probe "<home>/mod"
+research/evidence/mod-loader-survey.txt hand the game's own log (<home>/game.log.txt) still shows the mount order described below
+research/evidence/mod-priority-static.txt rea -
+research/evidence/mod-pool-priority-static.txt rea -
+research/evidence/rea-search-mod-loader.txt rea search-mod-loader.txt
+research/evidence/mod-name-recovery.txt user mod_names --list --others "<home>/mod" "<home>/mod/*.scs"
+research/evidence/mod-writer-checks.txt user mod_probe "<home>/mod"
+research/evidence/mod-writer-checks.txt user mod_write "<scratch>/mod-write"
+research/evidence/extract-streaming.txt user mod_extract --list "<home>/mod/*.scs"
+research/evidence/extract-streaming.txt hand the streamed extraction still equals the whole-entry read (method below; extract_check covers game archives)

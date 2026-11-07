@@ -1,0 +1,38 @@
+# Baseline of research/evidence/paint-class-layout.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" flake_uvscale flip_strength alternate_flipflake_uvset acc_list paint_job_mask
+== table at file 0x2c35a10 (va 0x142c37810), class ptr 0x141d27240, found via 'flake_uvscale'
+   +0x0208  type   9  mask_r_color
+   +0x0214  type   9  mask_g_color
+   +0x0220  type   9  mask_b_color
+   +0x022c  type   9  base_color
+   +0x0238  type   9  flip_color
+   +0x0244  type   5  flip_strength
+   +0x0248  type   9  flake_color
+   +0x0254  type   5  flake_uvscale
+   +0x0258  type   5  flake_vratio
+   +0x025c  type   5  flake_density
+   +0x0260  type   5  flake_shininess
+   +0x0264  type   5  flake_clearcoat_rolloff
+   +0x0268  type   1  flake_noise
+   +0x0288  type  57  flipflake
+   +0x0289  type  57  airbrush
+   +0x01e8  type   1  paint_job_mask
+   +0x01b8  type  57  mask_r_locked
+   +0x01b9  type  57  mask_g_locked
+   +0x01ba  type  57  mask_b_locked
+   +0x01bb  type  57  base_color_locked
+   +0x01bc  type  57  flip_color_locked
+   +0x01bd  type  57  flake_color_locked
+   +0x01be  type  57  alternate_uvset
+   +0x01bf  type  57  alternate_flipflake_uvset
+   +0x01c0  type  57  stock
+   +0x0290  type  10  color_variant
+       -1  type   1  base_texture
+   +0x01c8  type   1  base_texture_override
+== table at file 0x2c35ea0 (va 0x142c37ca0), class ptr 0x141d271f0, found via 'flake_uvscale'
+   +0x007c  type   5  flake_uvscale
+   +0x0080  type   5  flake_vratio
+   +0x0010  type   1  paint_job_mask
+   +0x00b8  type   2  acc_list

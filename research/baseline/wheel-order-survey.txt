@@ -1,0 +1,35 @@
+# Baseline of research/evidence/wheel-order-survey.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## wheel_order_survey
+chassis models (path, variant): 112
+wheel locator name stems: {"wheel_f_", "wheel_f_0_", "wheel_f_1_", "wheel_f_2_", "wheel_f_3_", "wheel_r_", "wheel_r_0_", "wheel_r_1_", "wheel_r_2_", "wheel_r_3_"}
+groups whose model order equals name order: 110; groups with an unnumbered name: 0
+largest z difference within an axle: 0.00507 m
+sort : 224 groups, side errors 37, axle errors 0; with 2+ axles: front to back 94, back to front 0
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_4x2.pmd wheel_r: wheel_r_3_2(+0.928,+2.2440) wheel_r_2_2(-0.928,+2.2442)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_4x2.pmd wheel_r: wheel_r_3_2(+0.928,+2.2440) wheel_r_2_2(-0.928,+2.2442)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_4x2_short.pmd wheel_r: wheel_r_3_2(+0.928,+1.8369) wheel_r_2_2(-0.928,+1.8372)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_6x2s.pmd wheel_r: wheel_r_3_2(+0.928,+1.6367) wheel_r_2_2(-0.928,+1.6369) wheel_r_1_3(+0.928,+3.0344) wheel_r_0_3(-0.928,+3.0346)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_6x2s.pmd wheel_r: wheel_r_3_2(+0.928,+1.6367) wheel_r_2_2(-0.928,+1.6369) wheel_r_1_3(+0.928,+3.0344) wheel_r_0_3(-0.928,+3.0346)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_6x2g.pmd wheel_f: wheel_f_0_0(-1.086,-1.7453) wheel_f_1_0(+1.085,-1.7453) wheel_f_3_0(+1.038,+0.8645) wheel_f_2_0(-1.038,+0.8648)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_6x2g.pmd wheel_r: wheel_r_1_3(+0.928,+2.1857) wheel_r_0_3(-0.928,+2.1859)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_6x2g.pmd wheel_f: wheel_f_0_0(-1.086,-1.7453) wheel_f_1_0(+1.085,-1.7453) wheel_f_3_0(+1.038,+0.8645) wheel_f_2_0(-1.038,+0.8648)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_6x2g.pmd wheel_r: wheel_r_1_3(+0.928,+2.1857) wheel_r_0_3(-0.928,+2.1859)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_6x2n.pmd wheel_f: wheel_f_0_0(-1.086,-1.7453) wheel_f_1_0(+1.085,-1.7453) wheel_f_3_0(+1.038,+3.0344) wheel_f_2_0(-1.038,+3.0346)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_6x2n.pmd wheel_r: wheel_r_1_2(+0.928,+1.6367) wheel_r_0_2(-0.928,+1.6369)
+    daf.2021 /vehicle/truck/daf_2021/chassis/chs_xf_6x2n.pmd wheel_f: wheel_f_0_0(-1.086,-1.7453) wheel_f_1_0(+1.085,-1.7453) wheel_f_3_0(+1.038,+3.0344) wheel_f_2_0(-1.038,+3.0346)
+model: 224 groups, side errors 99, axle errors 9; with 2+ axles: front to back 50, back to front 41
+    daf.xf_euro6 /vehicle/truck/daf_xf_euro6/truck.pmd wheel_r: wheel_r_1(+0.950,+2.1407) wheel_r_0(-0.950,+2.1407)
+    daf.xf_euro6 /vehicle/truck/daf_xf_euro6/truck.pmd wheel_r: wheel_r_1_0(+0.950,+2.5113) wheel_r_0_0(-0.950,+2.5113) wheel_r_3_0(+0.950,+1.1475) wheel_r_2_0(-0.950,+1.1475)
+    daf.xf_euro6 /vehicle/truck/daf_xf_euro6/truck.pmd wheel_f: wheel_f_0_0(-1.090,-1.6393) wheel_f_1_0(+1.090,-1.6393) wheel_f_3_0(+1.080,+1.1501) wheel_f_2_0(-1.080,+1.1501)
+    daf.xf_euro6 /vehicle/truck/daf_xf_euro6/truck.pmd wheel_r: wheel_r_1_0(+0.950,+2.5113) wheel_r_0_0(-0.950,+2.5113)
+    iveco.hiway /vehicle/truck/iveco_hiway/truck.pmd wheel_r: wheel_r_3_0(+0.875,+1.2051) wheel_r_0_1(-0.880,+2.5500) wheel_r_2_0(-0.880,+1.2000) wheel_r_1_1(+0.875,+2.5551)
+    iveco.stralis /vehicle/truck/iveco_stralis/truck.pmd wheel_r: wheel_r_0_2(-0.958,+2.5185) wheel_r_1_2(+0.950,+2.5185) wheel_r_3_0(+0.950,+1.2947) wheel_r_2_0(-0.958,+1.2947)
+    iveco.stralis /vehicle/truck/iveco_stralis/truck.pmd wheel_f: wheel_f_3_0(+1.080,+1.2947) wheel_f_2_0(-1.080,+1.2947) wheel_f_0_0(-1.075,-1.5318) wheel_f_1_0(+1.063,-1.5318)
+    iveco.stralis /vehicle/truck/iveco_stralis/truck.pmd wheel_r: wheel_r_1_1(+0.950,+2.5185) wheel_r_0_1(-0.958,+2.5185)
+    man.tgx /vehicle/truck/man_tgx/chassis/chs_4x2.pmd wheel_r: wheel_r_1_0(+1.000,+2.2443) wheel_r_0_0(-1.000,+2.2443)
+    man.tgx /vehicle/truck/man_tgx/chassis/chs_6x4.pmd wheel_r: wheel_r_0_2(-1.000,+3.0599) wheel_r_2_0(-1.000,+1.6599) wheel_r_1_3(+1.000,+3.0599) wheel_r_3_0(+1.000,+1.6599)
+    man.tgx /vehicle/truck/man_tgx/chassis/chs_6x2_4.pmd wheel_r: wheel_r_1_2(+1.000,+2.4346) wheel_r_0_1(-1.000,+2.4346)
+    man.tgx_2020 /vehicle/truck/man_tgx_2020/chassis/chs_4x2.pmd wheel_f: wheel_f_1_0(+1.025,-1.5407) wheel_f_0_0(-1.025,-1.5407)
+name : 224 groups, side errors 0, axle errors 0; with 2+ axles: front to back 45, back to front 49

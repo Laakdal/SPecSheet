@@ -1,0 +1,8 @@
+# Where wheel radius and width come from (research/evidence/wheel-radius.txt), eurotrucks2.exe of ETS2 1.60.1.7.
+# `search` and `trace` lines are the seeds that find the code again in a new
+# build; `function` and `xrefs` lines are the 1.60.1.7 addresses they led to.
+# Made from the REA records in %USERPROFILE%/rea-ets2 (their `parameters`).
+trace Suspicious wheel radius
+function 0x14082b610
+xrefs 0x14082b610
+function 0x140647b20

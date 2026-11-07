@@ -1,0 +1,7 @@
+# Baseline of research/evidence/shader-spec-showroom-v2.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## scs cat /effect/eut2/showroom_v2/eut2.showroom_v2.rfx
+fnv1a64 fb634b5ad831c8bf, 2210 bytes
+## scs cat /effect/deferred/rs/forward_none.rs
+fnv1a64 4e1932508ccb4344, 63 bytes

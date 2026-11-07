@@ -1,0 +1,96 @@
+# Baseline of research/evidence/rea-interior-camera.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## python tools/research/attr_tables.py "<game>/bin/win_x64/eurotrucks2.exe" head_offset mouse_up_down_default camera_fov user_head_offset
+== table at file 0x2c2a6b0 (va 0x142c2c4b0), class ptr 0x141d24a70, found via 'head_offset'
+   +0x0498  type   9  head_offset
+   +0x0548  type  57  outside
+== table at file 0x2c2a728 (va 0x142c2c528), class ptr 0x141d24a70, found via 'mouse_up_down_default'
+   +0x05a4  type   5  mouse_left_limit
+   +0x05a8  type   5  mouse_right_limit
+   +0x05ac  type   5  mouse_left_right_default
+   +0x05b4  type   5  mouse_up_limit
+   +0x05b8  type   5  mouse_down_limit
+   +0x05bc  type   5  mouse_up_down_default
+   +0x0520  type   6  look_presets_defaults
+   +0x05c4  type   5  zoom_fov_factor
+   +0x05c8  type   5  zoom_speed
+   +0x05cc  type  57  relative_headtracking_azimuth
+== table at file 0x2c20a90 (va 0x142c22890), class ptr 0x141d222a0, found via 'camera_fov'
+   +0x001c  type   5  mouse_sensitivity
+   +0x0020  type   5  camera_fov
+   +0x0024  type   5  near_plane
+   +0x0028  type   5  far_plane
+       -1  type   5  stereo_convergence
+   +0x00ec  type   5  shake_anim_step
+   +0x00f0  type   5  shake_anim_scale_min
+   +0x00f4  type   5  shake_anim_scale_max
+   +0x00f8  type  10  shake_anim
+   +0x012c  type   9  hand_shake_limit
+   +0x0140  type   5  hand_shake_speed
+== table at file 0x2c711e0 (va 0x142c72fe0), class ptr 0x141d39420, found via 'camera_fov'
+   +0x0010  type   9  light_direction
+   +0x001c  type   9  light_ambient
+   +0x0028  type   9  light_diffuse
+   +0x0034  type   9  light_specular
+   +0x0040  type   5  light_environment
+   +0x0044  type   5  pre_exposure
+   +0x0048  type   9  fog_color
+   +0x0054  type   5  fog_density
+   +0x0058  type  57  camera_auto_fit
+   +0x005c  type   9  camera_position
+   +0x0068  type   9  camera_aim
+   +0x0074  type   5  camera_fov
+   +0x0078  type   9  camera_position_lv
+   +0x0084  type   9  camera_aim_lv
+   +0x0090  type   5  camera_fov_lv
+   +0x0094  type   5  lv_limit
+       -1  type   5  camera_stereo_convergence
+   +0x0098  type   9  truck_position
+   +0x00a8  type   2  truck_y_override
+       -1  type   5  truck_y_rot
+   +0x00d0  type   9  truck_rot
+   +0x00dc  type   5  truck_steering_rot
+   +0x00e0  type   1  icon_path
+   +0x0100  type   1  scene_model_path
+   +0x0120  type   1  scene_model_anim_path
+   +0x0140  type   1  scene_model_animation
+   +0x0160  type  57  scene_model_anim_looped
+   +0x0168  type   1  scene_cinematic_camera
+   +0x0188  type  57  scene_cinematic_camera_shuffle
+   +0x0190  type   3  scene_model_look
+   +0x0198  type   3  scene_model_variant
+   +0x01a0  type   9  scene_model_position
+   +0x01b0  type   1  scene_music
+   +0x01d0  type  57  looped_scene_music
+   +0x01d8  type   1  vehicle_reflection
+   +0x01f8  type   1  scene_name
+   +0x0218  type  39  steam_inventory_id
+   +0x021c  type  57  floor_reflection
+   +0x021d  type  57  cube_reflection
+   +0x021e  type  57  vehicle_lights_on
+   +0x0220  type   2  variant_overrides
+   +0x0248  type   4  part_order
+   +0x0270  type  51  start_timestamp
+   +0x0278  type  51  end_timestamp
+== table at file 0x2c285a0 (va 0x142c2a3a0), class ptr 0x141d23820, found via 'user_head_offset'
+   +0x0198  type   5  engine_wear
+   +0x019c  type   5  transmission_wear
+   +0x01a0  type   5  cabin_wear
+   +0x01a4  type   5  engine_wear_unfixable
+   +0x01a8  type   5  transmission_wear_unfixable
+   +0x01ac  type   5  cabin_wear_unfixable
+   +0x01b0  type   5  fuel_relative
+   +0x01bc  type   5  rheostat_factor
+   +0x01c0  type  24  user_mirror_rot
+   +0x01e8  type   9  user_head_offset
+   +0x01f4  type   5  user_fov
+   +0x01f8  type   5  user_wheel_up_down
+   +0x01fc  type   5  user_wheel_front_back
+   +0x0200  type   5  user_mouse_left_right_default
+   +0x0204  type   5  user_mouse_up_down_default
+       -1  type   6  interior_look_presets
+## python tools/research/xref.py "<game>/bin/win_x64/eurotrucks2.exe" vehicle_interior_camera_u
+vehicle_interior_camera_u: strings at 0x14219a888
+   ref at 0x140067cb2 (no pdata)
+   ref at 0x1408746bf in 0x140874500

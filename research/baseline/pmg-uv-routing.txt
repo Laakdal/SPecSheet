@@ -1,0 +1,1732 @@
+# Baseline of research/evidence/pmg-uv-routing.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## uv_routing_survey
+roots ["vehicle/truck"]: 7740 models (0 unreadable), 36893 pieces
+
+== stored value by UV set count
+pieces sets value       slot:set  e.g.
+  3874    0 0xffffffff  -         vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 2
+    61    1 0xf0fff000  0:0 1:0 2:0 6:0 vehicle/truck/volvo_fh16_2012/accessory/mirror/mirror_01.pmd piece 3
+     3    1 0xf0ffff00  0:0 1:0 6:0 vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 33
+  1051    1 0xf0fffff0  0:0 6:0   vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 1
+   211    1 0xfffff000  0:0 1:0 2:0 vehicle/truck/daf_2021/ai/xgp_4x2.pmd piece 1
+   361    1 0xffffff00  0:0 1:0   vehicle/truck/daf_xd/accessory/f_bumper/paint.pmd piece 6
+ 22525    1 0xfffffff0  0:0       vehicle/truck/daf_2021/accessory/b_detector/plastic_6x2_25.pmd piece 2
+     8    2 0xf0fff010  0:0 1:1 2:0 6:0 vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+    84    2 0xf0fff110  0:0 1:1 2:1 6:0 vehicle/truck/man_tgx_euro6/cab_xl.pmd piece 2
+    76    2 0xf0ffff10  0:0 1:1 6:0 vehicle/truck/man_tgx_euro6/accessory/steering_w/pearl.pmd piece 6
+    62    2 0xf1fff000  0:0 1:0 2:0 6:1 vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd piece 0
+     5    2 0xf1fff110  0:0 1:1 2:1 6:1 vehicle/truck/renault_etech_t/interior/model/etech.pmd piece 39
+    98    2 0xf1ffff00  0:0 1:0 6:1 vehicle/truck/daf_2021/accessory/f_bumper/paint.pmd piece 6
+   171    2 0xf1ffff10  0:0 1:1 6:1 vehicle/truck/man_tgx_euro6/interior/anim.pmd piece 12
+  5430    2 0xf1fffff0  0:0 6:1   vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 0
+   144    2 0xfffff010  0:0 1:1 2:0 vehicle/truck/daf_2021/accessory/mirror/cam_semi_int.pmd piece 2
+     3    2 0xfffff100  0:0 1:0 2:1 vehicle/truck/daf_xf_euro6/interior/model.pmd piece 60
+   185    2 0xfffff110  0:0 1:1 2:1 vehicle/truck/daf_xf/interior/model.pmd piece 15
+  1114    2 0xffffff10  0:0 1:1   vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 3
+    33    3 0xf0fff210  0:0 1:1 2:2 6:0 vehicle/truck/mercedes_actros_2014/8x4.pmd piece 4
+     2    3 0xf2fff100  0:0 1:0 2:1 6:2 vehicle/truck/renault_t/accessory/f_intake_chs/paint_gray_p.pmd piece 1
+   535    3 0xf2fff110  0:0 1:1 2:1 6:2 vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd piece 0
+     1    3 0xf2fff210  0:0 1:1 2:2 6:2 vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+   465    3 0xf2ffff10  0:0 1:1 6:2 vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 1
+   297    3 0xfffff210  0:0 1:1 2:2 vehicle/truck/daf_xf/truck.pmd piece 3
+    94    4 0xf3fff210  0:0 1:1 2:2 6:3 vehicle/truck/mercedes_actros_2009/cabin_a.pmd piece 1
+
+== nibble values per slot (slot 0 = least significant nibble)
+slot 0: 0:33019 f:3874
+slot 1: 0:801 1:3212 f:32880
+slot 2: 0:486 1:814 2:425 f:35168
+slot 3: f:36893
+slot 4: f:36893
+slot 5: f:36893
+slot 6: 0:1316 1:5766 2:1003 3:94 f:28714
+slot 7: f:36893
+
+pieces naming a set >= their UV set count: 0
+pieces whose looks' effects differ in flavour: 152
+
+== per-piece rules (effects of every look; rules on effects skip pieces with no readable material)
+every stored set is routed to some slot: holds 36893, fails 0
+sets == 1 + highest routed set (0 if none): holds 36893, fails 0
+slot 0 used <=> the piece stores UV sets: holds 36893, fails 0
+slot 1 used <=> a look has oclu, mult, lamp or truckpaint: holds 36893, fails 0
+slot 2 used <=> a look is truckpaint: holds 36893, fails 0
+slot 6 used <=> a look has tsnmapuv or tsnmapuv2: holds 36893, fails 0
+slots 3, 4, 5, 7 unused: holds 36893, fails 0
+
+== truckpaint pieces: specsheet_data::render::paint_uv_set vs slots 1 and 2
+value       sets slot:set              pieces mask=slot1 alt=slot2 (rule mask, rule alt)
+0xf0fff000    1 0:0 1:0 2:0 6:0            61        61        61 (Some(0), Some(0))
+0xf0fff010    2 0:0 1:1 2:0 6:0             8         8         0 (Some(1), Some(1))
+0xf0fff110    2 0:0 1:1 2:1 6:0            84        84        84 (Some(1), Some(1))
+0xf0fff210    3 0:0 1:1 2:2 6:0            33        33        33 (Some(1), Some(2))
+0xf1fff000    2 0:0 1:0 2:0 6:1            62         0         0 (Some(1), Some(1))
+0xf1fff110    2 0:0 1:1 2:1 6:1             5         5         5 (Some(1), Some(1))
+0xf2fff100    3 0:0 1:0 2:1 6:2             2         0         0 (Some(1), Some(2))
+0xf2fff110    3 0:0 1:1 2:1 6:2           535       535         0 (Some(1), Some(2))
+0xf2fff210    3 0:0 1:1 2:2 6:2             1         1         1 (Some(1), Some(2))
+0xf3fff210    4 0:0 1:1 2:2 6:3            94        94        94 (Some(1), Some(2))
+0xfffff000    1 0:0 1:0 2:0               211       211       211 (Some(0), Some(0))
+0xfffff010    2 0:0 1:1 2:0               144       144         0 (Some(1), Some(1))
+0xfffff100    2 0:0 1:0 2:1                 3         0         3 (Some(1), Some(1))
+0xfffff110    2 0:0 1:1 2:1               185       185       185 (Some(1), Some(1))
+0xfffff210    3 0:0 1:1 2:2               297       297       297 (Some(1), Some(2))
+total 1725: mask agrees 1658, alt agrees 974
+
+== routed sets other than 0: pieces whose set equals set 0 byte for byte
+slot 1 set 1: 0 of 3212 identical to set 0
+slot 2 set 1: 0 of 814 identical to set 0
+slot 2 set 2: 0 of 425 identical to set 0
+slot 6 set 1: 0 of 5766 identical to set 0
+slot 6 set 2: 0 of 1003 identical to set 0
+slot 6 set 3: 0 of 94 identical to set 0
+
+== routing by effect family and flavour tokens (all looks)
+pieces routing  family [flavours]  e.g.
+    22 0:0          baked []  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3.pmd piece 0
+   289 0:0          decalshadow []  vehicle/truck/mercedes_actros_2009/cabin_a.pmd piece 6
+ 12763 0:0          dif []  vehicle/truck/daf_2021/accessory/b_detector/plastic_6x2_25.pmd piece 2
+     8 0:0 1:1 2:0 6:0 dif []  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif []  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    24 0:0 6:0      dif []  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+  1768 0:0          dif [decal]  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 0
+    13 0:0 1:0      dif [mult]  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_ch.pmd piece 1
+    47 0:0 1:1      dif [mult]  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 18
+     2 0:0 1:0      dif [oclu]  vehicle/truck/renault_t/interior/model.pmd piece 72
+   188 0:0 1:1      dif [oclu]  vehicle/truck/man_tgx_euro6/interior/cab_xl.pmd piece 13
+    46 0:0          dif [tsnmap decal]  vehicle/truck/renault_t/interior/model.pmd piece 87
+     9 0:0 1:1      dif [tsnmap mult]  vehicle/truck/upgrade/sideskirts/mercedes_actros_2014/sideskirt_plate_6x24_exhaust_plastic.pmd piece 2
+   171 0:0 1:1      dif [tsnmap oclu]  vehicle/truck/man_tgx_euro6/interior/cab_xl.pmd piece 24
+  5221 0:0          dif [tsnmap]  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 0
+     8 0:0 1:1 2:0 6:0 dif [tsnmap]  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif [tsnmap]  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    52 0:0 6:0      dif [tsnmap]  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+    16 0:0 6:1      dif [tsnmap]  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 17
+    68 0:0 6:0      dif [tsnmapuv decal]  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 7
+    48 0:0 6:1      dif [tsnmapuv decal]  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 8
+    17 0:0 1:1 6:0  dif [tsnmapuv mult]  vehicle/truck/upgrade/badges/man_tgx_euro6/hp_520.pmd piece 1
+    49 0:0 1:1 6:2  dif [tsnmapuv mult]  vehicle/truck/daf_2021/cargo/daf_xg_4x2_cargo.pmd piece 8
+     3 0:0 1:0 6:0  dif [tsnmapuv oclu]  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 33
+     1 0:0 1:0 6:1  dif [tsnmapuv oclu]  vehicle/truck/volvo_fh16_2009/accessory/doorstep/hss_doorstep_01.pmd piece 0
+    52 0:0 1:1 6:0  dif [tsnmapuv oclu]  vehicle/truck/man_tgx_euro6/accessory/steering_w/pearl.pmd piece 6
+   170 0:0 1:1 6:1  dif [tsnmapuv oclu]  vehicle/truck/man_tgx_euro6/interior/anim.pmd piece 12
+   201 0:0 1:1 6:2  dif [tsnmapuv oclu]  vehicle/truck/man_tgx_euro6/accessory/steering_w/pearl.pmd piece 4
+     2 0:0 6:0      dif [tsnmapuv2]  vehicle/truck/scania_s_2024e/accessory/doorhndl/stock_blk.pmd piece 2
+    31 0:0 6:1      dif [tsnmapuv2]  vehicle/truck/man_tgx_2020/accessory/codrv_seat/com.pmd piece 7
+     8 0:0 1:1 2:0 6:0 dif [tsnmapuv]  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif [tsnmapuv]  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+   981 0:0 6:0      dif [tsnmapuv]  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 1
+  5351 0:0 6:1      dif [tsnmapuv]  vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 0
+   164 -            fakeshadow []  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2.pmd piece 10
+    33 0:0          fakeshadow []  vehicle/truck/daf_xf/truck.pmd piece 33
+  1261 0:0          glass []  vehicle/truck/daf_2021/accessory/cab_door/win_int.pmd piece 22
+     9 0:0          glass [tsnmap]  vehicle/truck/man_tgx_2020/ai/man_tgx_2020_gn_4x2.pmd piece 8
+   282 0:0 1:0      lamp []  vehicle/truck/daf_xd/accessory/f_bumper/paint.pmd piece 6
+   666 0:0 1:1      lamp []  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 3
+    64 0:0 1:0      lamp [tsnmap]  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 5
+    33 0:0 1:1      lamp [tsnmap]  vehicle/truck/iveco_hiway/truck.pmd piece 0
+    97 0:0 1:0 6:1  lamp [tsnmapuv]  vehicle/truck/daf_2021/accessory/f_bumper/paint.pmd piece 6
+     7 0:0 1:1 6:0  lamp [tsnmapuv]  vehicle/truck/scania_s_2024e/accessory/f_bumper/hgh_p.pmd piece 4
+     1 0:0 1:1 6:1  lamp [tsnmapuv]  vehicle/truck/volvo_fh_2024/accessory/f_light_chs/heavy_duty.pmd piece 1
+   215 0:0 1:1 6:2  lamp [tsnmapuv]  vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 1
+   106 0:0          light []  vehicle/truck/daf_2021/accessory/f_logo/lit.pmd piece 2
+     7 0:0          lightmap [lightmap]  vehicle/truck/upgrade/interior_decors/toyhang/ball_rl.pmd piece 2
+    24 -            mlaaweight []  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 4
+     8 0:0          mlaaweight []  vehicle/truck/daf_xf/interior/model.pmd piece 13
+    98 -            none []  vehicle/truck/daf_xd/ai/trlr_cables.pmd piece 0
+     6 0:0          none []  vehicle/truck/renault_t/accessory/set_dashbrd/dashbrd_set_1.pmd piece 0
+     5 0:0          reflective []  vehicle/truck/man_tgx_euro6/chs_6x22.pmd piece 8
+     2 0:0          retroreflective []  vehicle/truck/renault_t/accessory/s_reflector/s_refl_01.pmd piece 0
+    11 0:0          shadowmap []  vehicle/truck/upgrade/interior_decors/l_pillow/dutch_pillow.pmd piece 1
+  3588 -            shadowonly []  vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 2
+   738 0:0          shadowonly []  vehicle/truck/daf_xf/interior/model.pmd piece 4
+     1 0:0 1:0 2:0  truckpaint [truckpaint altuv]  vehicle/truck/volvo_fh16_2009/accessory/r_chs_cover/r_chs_cover_paint.pmd piece 0
+     2 0:0 1:0 2:1  truckpaint [truckpaint altuv]  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 60
+     4 0:0 1:1 2:0  truckpaint [truckpaint altuv]  vehicle/truck/scania_2016/accessory/r_bumper/rearbumper_mg_03.pmd piece 3
+     8 0:0 1:1 2:0 6:0 truckpaint [truckpaint altuv]  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+    62 0:0 1:1 2:1  truckpaint [truckpaint altuv]  vehicle/truck/daf_xf/interior/model.pmd piece 15
+   163 0:0 1:1 2:2  truckpaint [truckpaint altuv]  vehicle/truck/daf_xf/truck.pmd piece 3
+     1 0:0 1:1 2:2 6:2 truckpaint [truckpaint altuv]  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+   208 0:0 1:0 2:0  truckpaint [truckpaint]  vehicle/truck/daf_2021/ai/xgp_4x2.pmd piece 1
+     1 0:0 1:0 2:1  truckpaint [truckpaint]  vehicle/truck/volvo_fh16_2012/accessory/r_bumper/smoth.pmd piece 2
+   129 0:0 1:1 2:0  truckpaint [truckpaint]  vehicle/truck/daf_2021/accessory/mirror/cam_semi_int.pmd piece 2
+    97 0:0 1:1 2:1  truckpaint [truckpaint]  vehicle/truck/renault_t/interior/external/antracite_sl_24.pmd piece 2
+   101 0:0 1:1 2:2  truckpaint [truckpaint]  vehicle/truck/iveco_stralis/truck.pmd piece 1
+    20 0:0 1:1 2:2  truckpaint [tsnmap truckpaint altuv]  vehicle/truck/upgrade/bottomgrill/daf_xf_euro6/paintable.pmd piece 0
+     2 0:0 1:0 2:0  truckpaint [tsnmap truckpaint]  vehicle/truck/volvo_fh16_2012/accessory/s_mirror/painted_side_mirror_interior.pmd piece 1
+    11 0:0 1:1 2:0  truckpaint [tsnmap truckpaint]  vehicle/truck/renault_etech_t/accessory/f_bumper/paint.pmd piece 1
+    26 0:0 1:1 2:1  truckpaint [tsnmap truckpaint]  vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd piece 0
+    13 0:0 1:1 2:2  truckpaint [tsnmap truckpaint]  vehicle/truck/daf_xf_euro6/truck.pmd piece 2
+    45 0:0 1:1 2:1 6:0 truckpaint [tsnmapuv truckpaint altuv]  vehicle/truck/man_tgx_euro6/cab_xl.pmd piece 2
+     1 0:0 1:1 2:1 6:2 truckpaint [tsnmapuv truckpaint altuv]  vehicle/truck/upgrade/rearbumper/daf_xf/paint_diamond.pmd piece 4
+    30 0:0 1:1 2:2 6:0 truckpaint [tsnmapuv truckpaint altuv]  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 4
+    61 0:0 1:0 2:0 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/truck/volvo_fh16_2012/accessory/mirror/mirror_01.pmd piece 3
+    62 0:0 1:0 2:0 6:1 truckpaint [tsnmapuv truckpaint]  vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd piece 0
+     2 0:0 1:0 2:1 6:2 truckpaint [tsnmapuv truckpaint]  vehicle/truck/renault_t/accessory/f_intake_chs/paint_gray_p.pmd piece 1
+    39 0:0 1:1 2:1 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_4x2.pmd piece 3
+     5 0:0 1:1 2:1 6:1 truckpaint [tsnmapuv truckpaint]  vehicle/truck/renault_etech_t/interior/model/etech.pmd piece 39
+   534 0:0 1:1 2:1 6:2 truckpaint [tsnmapuv truckpaint]  vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd piece 0
+     3 0:0 1:1 2:2 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/truck/upgrade/f_wnd_frame/mercedes_actros_2014/paint.pmd piece 0
+    94 0:0 1:1 2:2 6:3 truckpaint [tsnmapuv truckpaint]  vehicle/truck/mercedes_actros_2009/cabin_a.pmd piece 1
+   152 0:0          unlit []  vehicle/truck/daf_xf/interior/anim.pmd piece 4
+   153 0:0          unlit [decal]  vehicle/truck/daf_2021/interior/anim/anim.pmd piece 35
+
+== routing by full effect name (all looks)
+     3 0:0          baked.spec.add.env  vehicle/truck/daf_2021/cargo/daf_xg_4x2_cargo_lod3.pmd piece 1
+    19 0:0          baked.spec.add.env.paint  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2_lod3.pmd piece 0
+   289 0:0          decalshadow  vehicle/truck/mercedes_actros_2009/cabin_a.pmd piece 6
+    16 0:0          dif  vehicle/truck/iveco_sway/accessory/steering_w/aluminium.pmd piece 2
+    31 0:0          dif.a  vehicle/truck/upgrade/bottomgrill/man_tgx/bottomgrill_05.pmd piece 1
+     1 0:0          dif.a.over  vehicle/truck/upgrade/interior_decors/toyhang/teddybear/teddy.pmd piece 1
+     1 0:0          dif.add  vehicle/truck/daf_xf_euro6/truck.pmd piece 35
+    47 0:0          dif.decal.over  vehicle/truck/man_tgx_euro6/interior/anim_2019.pmd piece 3
+  1105 0:0          dif.lum  vehicle/truck/daf_2021/accessory/f_mirror/cam_plastic_int.pmd piece 1
+     2 0:0          dif.lum.a  vehicle/truck/iveco_sway/interior/model/as.pmd piece 15
+     1 0:0          dif.lum.a.add  vehicle/truck/upgrade/interior_decors/toystand/x23_tree.pmd piece 4
+    29 0:0          dif.lum.a.over  vehicle/truck/daf_2021/accessory/r_grill/dutch_lightbox_retro.pmd piece 1
+     2 0:0          dif.lum.add  vehicle/truck/upgrade/interior_decors/toystand/halloween_2022/hang_tree.pmd piece 0
+     2 0:0          dif.lum.decal.add  vehicle/truck/upgrade/interior_decors/toystand/santa_top.dlc_christmas.pmd piece 0
+   206 0:0          dif.lum.decal.over  vehicle/truck/daf_xf/interior/anim.pmd piece 5
+   102 0:0          dif.lum.lvcol  vehicle/truck/man_tgx_euro6/interior/cab_xl.pmd piece 14
+     2 0:0          dif.lum.lvcol.a.decal.over  vehicle/truck/volvo_fh16_2009/interior/uk/anim.pmd piece 0
+   591 0:0          dif.lum.lvcol.decal.over  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 9
+     9 0:0          dif.lum.over  vehicle/truck/man_tgx_2020/accessory/l_horn/horn_hw_duo.pmd piece 1
+     2 0:0          dif.lum.spec  vehicle/truck/mercedes_actros_2009/interior/model.pmd piece 12
+    18 0:0          dif.lum.spec.lvcol  vehicle/truck/man_tgx_euro6/interior/anim.pmd piece 11
+     1 0:0 6:0      dif.lum.spec.tsnmapuv  vehicle/truck/upgrade/interior_decors/toystand/val25_heart.pmd piece 0
+    51 0:0          dif.over  vehicle/truck/daf_xf/ui_shadow_4x2.pmd piece 0
+     3 0:0          dif.paint.a  vehicle/truck/volvo_fh16_2009/accessory/f_grill/frontgrill_paint.pmd piece 2
+  3103 0:0          dif.spec  vehicle/truck/daf_2021/accessory/f_bumper/xf_robust.pmd piece 2
+   459 0:0          dif.spec.a  vehicle/truck/daf_2021/accessory/r_mudflap/dutch_power_4x2.pmd piece 1
+    25 0:0          dif.spec.a.decal  vehicle/truck/upgrade/beacon/xmas_lights_daf_2020.pmd piece 0
+   105 0:0          dif.spec.a.decal.over  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 3
+    65 0:0          dif.spec.a.over  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_wh.pmd piece 2
+  1832 0:0          dif.spec.add.env  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 4
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    24 0:0 6:0      dif.spec.add.env  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+     2 0:0          dif.spec.add.env.a  vehicle/truck/upgrade/chassis_cover/daf_xf/stock_chassis_cover.pmd piece 0
+   236 0:0          dif.spec.add.env.a.decal  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 0
+    11 0:0          dif.spec.add.env.a.decal.over  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 3
+     9 0:0          dif.spec.add.env.decal.over  vehicle/truck/upgrade/badges/iveco_hiway/badge_310.pmd piece 0
+    41 0:0          dif.spec.add.env.indenv  vehicle/truck/daf_xf/truck.pmd piece 32
+     2 0:0          dif.spec.add.env.indenv.decal.over  vehicle/truck/scania_rcab_2009/interior/model.pmd piece 72
+    24 0:0          dif.spec.add.env.indenv.tsnmap  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 0
+    10 0:0 6:0      dif.spec.add.env.indenv.tsnmapuv  vehicle/truck/daf_xf_euro6/interior/uk/model.pmd piece 2
+    19 0:0 6:1      dif.spec.add.env.indenv.tsnmapuv  vehicle/truck/volvo_fh16_2012/interior/hi_roof.pmd piece 13
+   996 0:0          dif.spec.add.env.nofresnel  vehicle/truck/daf_2021/accessory/badge/badge_370.pmd piece 0
+    38 0:0          dif.spec.add.env.nofresnel.a  vehicle/truck/renault_etech_t/interior/model/etech.pmd piece 21
+    10 0:0          dif.spec.add.env.nofresnel.decal.over  vehicle/truck/upgrade/badges/man_tgx/badges_18320.pmd piece 0
+     2 0:0          dif.spec.add.env.nofresnel.paint.a.over  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_ch.pmd piece 2
+   110 0:0          dif.spec.add.env.nofresnel.shadow  vehicle/truck/upgrade/bottomgrill/mercedes_actros_2014/bottomgrill_03.pmd piece 0
+    60 0:0          dif.spec.add.env.nofresnel.tsnmap  vehicle/truck/daf_xf_euro6/truck.pmd piece 0
+    15 0:0          dif.spec.add.env.nofresnel.tsnmap.a  vehicle/truck/upgrade/s_guard/daf_xf/duty_chrome.pmd piece 1
+     6 0:0          dif.spec.add.env.nofresnel.tsnmap.paint.a  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_4x2.pmd piece 0
+    20 0:0 6:0      dif.spec.add.env.nofresnel.tsnmapuv  vehicle/truck/upgrade/interior_decors/toybed/x24_chocobo1.pmd piece 1
+    79 0:0 6:1      dif.spec.add.env.nofresnel.tsnmapuv  vehicle/truck/renault_t/accessory/beacon/beacon_high.pmd piece 0
+    34 0:0 6:0      dif.spec.add.env.nofresnel.tsnmapuv.a  vehicle/truck/daf_2021/accessory/s_guard/duty_chrome.pmd piece 0
+     4 0:0 6:1      dif.spec.add.env.nofresnel.tsnmapuv.over  vehicle/truck/volvo_fh_2021/accessory/steering_w/pearl.pmd piece 4
+     1 0:0          dif.spec.add.env.oinv  vehicle/truck/upgrade/sunshield/mercedes_actros_2014/sunshield_01.pmd piece 2
+    16 0:0          dif.spec.add.env.oinv.a.decal.over  vehicle/truck/scania_2016/accessory/f_fender/hgh_blk_s.pmd piece 8
+     8 0:0          dif.spec.add.env.oinv.decal  vehicle/truck/scania_2016/accessory/tank/tank_1000.pmd piece 4
+    91 0:0          dif.spec.add.env.over  vehicle/truck/daf_2021/accessory/sunshield/mid_stock.pmd piece 3
+   234 0:0          dif.spec.add.env.paint  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 1
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env.shadow  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env.shadow  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+   460 0:0          dif.spec.add.env.tsnmap  vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd piece 1
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env.tsnmap  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env.tsnmap  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    24 0:0 6:0      dif.spec.add.env.tsnmap  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+    63 0:0          dif.spec.add.env.tsnmap.a  vehicle/truck/daf_2021/accessory/s_guard/duty_black.pmd piece 0
+    21 0:0          dif.spec.add.env.tsnmap.a.over  vehicle/truck/volvo_fh_2024/ai/volvo_fh_2024_gt_4x2.pmd piece 9
+    21 0:0          dif.spec.add.env.tsnmap.paint  vehicle/truck/volvo_fh_2024/ai/volvo_fh_2024_gt_4x2.pmd piece 2
+     2 0:0          dif.spec.add.env.tsnmap.shadow  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 16
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env.tsnmapuv  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env.tsnmapuv  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+   190 0:0 6:0      dif.spec.add.env.tsnmapuv  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+   383 0:0 6:1      dif.spec.add.env.tsnmapuv  vehicle/truck/daf_xd/interior/model/day.pmd piece 11
+    15 0:0 6:0      dif.spec.add.env.tsnmapuv.a  vehicle/truck/upgrade/interior_decors/toyhang/x24_bells.pmd piece 3
+     1 0:0 6:1      dif.spec.add.env.tsnmapuv.a  vehicle/truck/upgrade/stoneguard/daf_xf/s_guard_1.pmd piece 1
+     8 0:0 6:1      dif.spec.add.env.tsnmapuv.over  vehicle/truck/iveco_sway/accessory/sunshield/standard.pmd piece 1
+    62 0:0 6:1      dif.spec.add.env.tsnmapuv.paint  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2.pmd piece 5
+     2 0:0          dif.spec.asafew.a.over  vehicle/truck/upgrade/interior_decors/toyseat/sch_hat.pmd piece 0
+     4 0:0          dif.spec.decal  vehicle/truck/volvo_fh16_2012/interior/anim.pmd piece 16
+   475 0:0          dif.spec.decal.over  vehicle/truck/daf_2021/accessory/codrv_seat/cine_xf.pmd piece 38
+    13 0:0 1:0      dif.spec.mult.dif.spec  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_ch.pmd piece 1
+    44 0:0 1:1      dif.spec.mult.dif.spec  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 18
+     3 0:0 1:1      dif.spec.mult.dif.spec.add.env  vehicle/truck/upgrade/steering_w/mercedes_actros_2009/default.pmd piece 4
+     3 0:0 1:1      dif.spec.mult.dif.spec.add.env.tsnmap  vehicle/truck/volvo_fh_2024/cargo/volvo_fh_2024_gt_4x2_cargo.pmd piece 13
+     6 0:0 1:1 6:0  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/truck/upgrade/badges/man_tgx_euro6/hp_520.pmd piece 1
+    27 0:0 1:1 6:2  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/truck/daf_2021/cargo/daf_xg_4x2_cargo.pmd piece 8
+     6 0:0 1:1      dif.spec.mult.dif.spec.tsnmap  vehicle/truck/upgrade/sideskirts/mercedes_actros_2014/sideskirt_plate_6x24_exhaust_plastic.pmd piece 2
+    11 0:0 1:1 6:0  dif.spec.mult.dif.spec.tsnmapuv  vehicle/truck/upgrade/f_bumper/mercedes_actros_2014/duty_plastic.pmd piece 2
+    22 0:0 1:1 6:2  dif.spec.mult.dif.spec.tsnmapuv  vehicle/truck/upgrade/cor_def/mercedes_actros_2009/plastic.pmd piece 0
+    47 0:0 1:1      dif.spec.oclu  vehicle/truck/man_tgx_euro6/interior/cab_xl.pmd piece 13
+     2 0:0 1:1      dif.spec.oclu.a  vehicle/truck/renault_t/interior/model.pmd piece 24
+     2 0:0 1:0      dif.spec.oclu.add.env  vehicle/truck/renault_t/interior/model.pmd piece 72
+   119 0:0 1:1      dif.spec.oclu.add.env  vehicle/truck/renault_etech_t/accessory/f_mirror/plastic_int_uk.pmd piece 0
+     2 0:0 1:1      dif.spec.oclu.add.env.paint  vehicle/truck/renault_t/interior/model.pmd piece 9
+   103 0:0 1:1      dif.spec.oclu.add.env.tsnmap  vehicle/truck/renault_t/accessory/set_cuphold/cup_holder_closed.pmd piece 0
+     3 0:0 1:1 6:1  dif.spec.oclu.add.env.tsnmapuv  vehicle/truck/renault_t/interior/anim.pmd piece 14
+    26 0:0 1:1 6:2  dif.spec.oclu.add.env.tsnmapuv  vehicle/truck/man_tgx_euro6/interior/cab_xl.pmd piece 6
+     2 0:0 1:1      dif.spec.oclu.over  vehicle/truck/renault_t/interior/model.pmd piece 16
+    68 0:0 1:1      dif.spec.oclu.tsnmap  vehicle/truck/man_tgx_euro6/interior/cab_xl.pmd piece 24
+     2 0:0 1:0 6:0  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 33
+    52 0:0 1:1 6:0  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/accessory/steering_w/pearl.pmd piece 6
+    53 0:0 1:1 6:1  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/interior/anim.pmd piece 12
+   175 0:0 1:1 6:2  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/accessory/steering_w/pearl.pmd piece 4
+    16 0:0 1:1      dif.spec.oclu.weight.add.env  vehicle/truck/mercedes_actros_2014/interior/model.pmd piece 8
+     1 0:0 1:0 6:0  dif.spec.oclu.weight.add.env.tsnmapuv  vehicle/truck/volvo_fh16_2009/accessory/sideskirt/sideskirt_plate.pmd piece 2
+     1 0:0 1:0 6:1  dif.spec.oclu.weight.add.env.tsnmapuv  vehicle/truck/volvo_fh16_2009/accessory/doorstep/hss_doorstep_01.pmd piece 0
+   114 0:0 1:1 6:1  dif.spec.oclu.weight.add.env.tsnmapuv  vehicle/truck/scania_2016/accessory/doorstep/doorstep_01_r.pmd piece 0
+    73 0:0          dif.spec.over  vehicle/truck/daf_xd/interior/model/day.pmd piece 25
+    26 0:0          dif.spec.paint  vehicle/truck/scania_2016/accessory/f_mudflap/griffin.pmd piece 1
+     4 0:0          dif.spec.paint.a  vehicle/truck/renault_t/accessory/set_dashbrd/renault_e.pmd piece 0
+     2 0:0          dif.spec.paint.a.over  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_pa.pmd piece 2
+     4 0:0          dif.spec.paint.decal.over  vehicle/truck/upgrade/wheel/tire/front_2.pmd piece 2
+     1 0:0          dif.spec.shadow  vehicle/truck/upgrade/driver_plate/0_int.pmd piece 0
+  1375 0:0          dif.spec.tsnmap  vehicle/truck/daf_2021/accessory/r_mudflap/dutch_power_4x2.pmd piece 1
+   106 0:0          dif.spec.tsnmap.a  vehicle/truck/daf_xf_euro6/truck.pmd piece 7
+    23 0:0          dif.spec.tsnmap.asafew.a  vehicle/truck/renault_t/accessory/steering_w/default.pmd piece 3
+    46 0:0          dif.spec.tsnmap.decal.over  vehicle/truck/renault_t/interior/model.pmd piece 87
+     6 0:0          dif.spec.tsnmap.shadow  vehicle/truck/upgrade/doorhandle/iveco_hiway/doorhandle_01.pmd piece 0
+   201 0:0 6:0      dif.spec.tsnmapuv  vehicle/truck/iveco_hiway/wipers.pmd piece 0
+   703 0:0 6:1      dif.spec.tsnmapuv  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2.pmd piece 9
+    43 0:0 6:0      dif.spec.tsnmapuv.a  vehicle/truck/iveco_hiway/truck.pmd piece 3
+     9 0:0 6:1      dif.spec.tsnmapuv.a  vehicle/truck/daf_xd/ai/daf_xd_slp_4x2.pmd piece 3
+     4 0:0 6:0      dif.spec.tsnmapuv.a.add  vehicle/truck/renault_t/interior/model_24/antracite_sl_24.pmd piece 47
+     1 0:0 6:1      dif.spec.tsnmapuv.asafew.a  vehicle/truck/upgrade/interior_decors/toystand/fb_cistern.pmd piece 1
+     6 0:0 6:1      dif.spec.tsnmapuv.decal  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 8
+    68 0:0 6:0      dif.spec.tsnmapuv.decal.over  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 7
+    12 0:0 6:1      dif.spec.tsnmapuv.decal.over  vehicle/truck/volvo_fh16_2012/accessory/f_logo/lighting.pmd piece 1
+    25 0:0 6:1      dif.spec.tsnmapuv.over  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2.pmd piece 1
+     5 0:0 6:1      dif.spec.tsnmapuv.paint  vehicle/truck/daf_xd/cargo/daf_xd_4x2_cargo_lod2.pmd piece 2
+    30 0:0 6:1      dif.spec.tsnmapuv.paint.decal.over  vehicle/truck/upgrade/wheel/tire/f_315-70_goodyear.pmd piece 3
+   844 0:0          dif.spec.weight  vehicle/truck/daf_2021/accessory/b_detector/plastic_6x2_25.pmd piece 2
+    37 0:0          dif.spec.weight.a  vehicle/truck/daf_xd/interior/model/day.pmd piece 14
+  3475 0:0          dif.spec.weight.add.env  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 1
+   102 0:0          dif.spec.weight.add.env.a  vehicle/truck/iveco_sway/accessory/f_fender_chs/paint.pmd piece 5
+     2 0:0          dif.spec.weight.add.env.decal.over  vehicle/truck/renault_t/accessory/f_inlay_cab/chrome.pmd piece 2
+    83 0:0          dif.spec.weight.add.env.nofresnel  vehicle/truck/iveco_sway/accessory/badge/gunmetal_460.pmd piece 0
+     6 0:0          dif.spec.weight.add.env.nofresnel.a  vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_02__dlc_volvo_tuning.pmd piece 1
+    14 0:0          dif.spec.weight.add.env.over  vehicle/truck/renault_etech_t/accessory/s_badge/etech.pmd piece 1
+   258 0:0          dif.spec.weight.add.env.paint  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 1
+  2338 0:0          dif.spec.weight.add.env.tsnmap  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 0
+    28 0:0 6:0      dif.spec.weight.add.env.tsnmap  vehicle/truck/man_tgx_2020/accessory/codrv_seat/com.pmd piece 3
+    16 0:0 6:1      dif.spec.weight.add.env.tsnmap  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 17
+   344 0:0          dif.spec.weight.add.env.tsnmap.a  vehicle/truck/daf_2021/accessory/codrv_seat/cine_xf.pmd piece 8
+   336 0:0          dif.spec.weight.add.env.tsnmap.over  vehicle/truck/daf_2021/accessory/exhaust_m/std_down.pmd piece 2
+     4 0:0          dif.spec.weight.add.env.tsnmap.paint.a  vehicle/truck/renault_t/accessory/frontgrill/hawk_paint.pmd piece 1
+     2 0:0          dif.spec.weight.add.env.tsnmap.paint.over  vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_paint_cab_2021.pmd piece 1
+   334 0:0 6:0      dif.spec.weight.add.env.tsnmapuv  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 1
+  3112 0:0 6:1      dif.spec.weight.add.env.tsnmapuv  vehicle/truck/daf_2021/accessory/b_detector/plastic_6x2_25.pmd piece 1
+    52 0:0 6:0      dif.spec.weight.add.env.tsnmapuv.a  vehicle/truck/iveco_sway/accessory/tank/alu4x2_1000.pmd piece 6
+    49 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.a  vehicle/truck/renault_t/accessory/s_guard/renault_chrome.pmd piece 0
+    17 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.a.over  vehicle/truck/man_tgx_2020/ai/man_tgx_2020_gm_4x2.pmd piece 5
+    10 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.over  vehicle/truck/renault_etech_t/accessory/air_tank/basic4x2.pmd piece 2
+    36 0:0 6:0      dif.spec.weight.add.env.tsnmapuv.paint  vehicle/truck/upgrade/wheel/cover/front_hub_cover_sring_paintable.pmd piece 0
+    66 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.paint  vehicle/truck/renault_t/accessory/roofgrill/theboss_led3.pmd piece 3
+     2 0:0 6:0      dif.spec.weight.add.env.tsnmapuv.paint.a  vehicle/truck/renault_t/accessory/s_guard/renault_paint.pmd piece 0
+     2 0:0 6:0      dif.spec.weight.add.env.tsnmapuv2  vehicle/truck/scania_s_2024e/accessory/doorhndl/stock_blk.pmd piece 2
+    31 0:0 6:1      dif.spec.weight.add.env.tsnmapuv2  vehicle/truck/man_tgx_2020/accessory/codrv_seat/com.pmd piece 7
+    13 0:0          dif.spec.weight.decal.over  vehicle/truck/renault_t/accessory/badges/a24_380.pmd piece 3
+     3 0:0          dif.spec.weight.paint  vehicle/truck/daf_xd/accessory/s_guard/cover_paint.pmd piece 0
+     2 0:0          dif.spec.weight.shadow  vehicle/truck/renault_premium/wipers.pmd piece 0
+     1 0:0          dif.spec.weight.tsnmap  vehicle/truck/volvo_fh_2021/accessory/doorstep/doorstep_02.pmd piece 1
+    14 0:0          dif.spec.weight.tsnmap.a  vehicle/truck/daf_2021/accessory/doorstep/plastic.pmd piece 1
+    39 0:0 6:0      dif.spec.weight.tsnmapuv  vehicle/truck/iveco_sway/accessory/doorstep/standard.pmd piece 1
+   793 0:0 6:1      dif.spec.weight.tsnmapuv  vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 0
+     5 0:0 6:1      dif.spec.weight.tsnmapuv.over  vehicle/truck/volvo_fh16_2012/accessory/r_fender/painted_6x.pmd piece 5
+     1 0:0 6:1      dif.spec.weight.tsnmapuv.paint  vehicle/truck/iveco_sway/accessory/s_guard/cover_paint.pmd piece 0
+   164 -            fakeshadow  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2.pmd piece 10
+    33 0:0          fakeshadow  vehicle/truck/daf_xf/truck.pmd piece 33
+  1261 0:0          glass  vehicle/truck/daf_2021/accessory/cab_door/win_int.pmd piece 22
+     5 0:0          glass.tsnmap  vehicle/truck/man_tgx_2020/ai/man_tgx_2020_gn_4x2.pmd piece 8
+     4 0:0          glass.tsnmap.distort  vehicle/truck/upgrade/light/ds_omnilight_white.pmd piece 6
+    15 0:0 1:0      lamp  vehicle/truck/scania_2016/accessory/sunshld/sunshield_01.pmd piece 1
+    33 0:0 1:1      lamp  vehicle/truck/scania_2016/accessory/r_bumper/rearbumper_mg_01.pmd piece 3
+   267 0:0 1:0      lamp.add.env  vehicle/truck/daf_xd/accessory/f_bumper/paint.pmd piece 6
+   624 0:0 1:1      lamp.add.env  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 3
+     9 0:0 1:1      lamp.anim.add.env  vehicle/truck/daf_2021/accessory/r_light/led_pla.pmd piece 2
+     2 0:0 1:1 6:2  lamp.anim.tsnmapuv.add.env  vehicle/truck/scania_2016/accessory/r_light/led.pmd piece 0
+    64 0:0 1:0      lamp.tsnmap.add.env  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 5
+    33 0:0 1:1      lamp.tsnmap.add.env  vehicle/truck/iveco_hiway/truck.pmd piece 0
+     1 0:0 1:1 6:0  lamp.tsnmapuv  vehicle/truck/upgrade/bibendum/bibendum_01.pmd piece 0
+    97 0:0 1:0 6:1  lamp.tsnmapuv.add.env  vehicle/truck/daf_2021/accessory/f_bumper/paint.pmd piece 6
+     6 0:0 1:1 6:0  lamp.tsnmapuv.add.env  vehicle/truck/scania_s_2024e/accessory/f_bumper/hgh_p.pmd piece 4
+     1 0:0 1:1 6:1  lamp.tsnmapuv.add.env  vehicle/truck/volvo_fh_2024/accessory/f_light_chs/heavy_duty.pmd piece 1
+   213 0:0 1:1 6:2  lamp.tsnmapuv.add.env  vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 1
+   106 0:0          light.tex  vehicle/truck/daf_2021/accessory/f_logo/lit.pmd piece 2
+     7 0:0          lightmap.night  vehicle/truck/upgrade/interior_decors/toyhang/ball_rl.pmd piece 2
+    24 -            mlaaweight  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 4
+     8 0:0          mlaaweight  vehicle/truck/daf_xf/interior/model.pmd piece 13
+    98 -            none  vehicle/truck/daf_xd/ai/trlr_cables.pmd piece 0
+     6 0:0          none  vehicle/truck/renault_t/accessory/set_dashbrd/dashbrd_set_1.pmd piece 0
+     5 0:0          reflective  vehicle/truck/man_tgx_euro6/chs_6x22.pmd piece 8
+     2 0:0          retroreflective.piko.alldir  vehicle/truck/renault_t/accessory/s_reflector/s_refl_01.pmd piece 0
+    11 0:0          shadowmap  vehicle/truck/upgrade/interior_decors/l_pillow/dutch_pillow.pmd piece 1
+  3524 -            shadowonly  vehicle/truck/daf_2021/accessory/b_detector/plastic_4x2_25.pmd piece 2
+   737 0:0          shadowonly  vehicle/truck/daf_xf/interior/model.pmd piece 4
+    64 -            shadowonly.nocull  vehicle/truck/scania_2016/accessory/sideskirt/ss_4x2_bl.pmd piece 0
+     1 0:0          shadowonly.nocull  vehicle/truck/upgrade/sideskirts/scania_2016/8x4_sg.pmd piece 1
+   207 0:0 1:0 2:0  truckpaint  vehicle/truck/daf_2021/ai/xgp_4x2.pmd piece 1
+     1 0:0 1:0 2:1  truckpaint  vehicle/truck/volvo_fh16_2012/accessory/r_bumper/smoth.pmd piece 2
+   129 0:0 1:1 2:0  truckpaint  vehicle/truck/daf_2021/accessory/mirror/cam_semi_int.pmd piece 2
+    89 0:0 1:1 2:1  truckpaint  vehicle/truck/renault_t/interior/external/antracite_sl_24.pmd piece 2
+    93 0:0 1:1 2:2  truckpaint  vehicle/truck/iveco_stralis/truck.pmd piece 1
+     8 0:0 1:1 2:1  truckpaint.airbrush  vehicle/truck/upgrade/rearbumper/mercedes_actros_2009/4x2_chrome_v1.pmd piece 2
+     8 0:0 1:1 2:2  truckpaint.airbrush  vehicle/truck/upgrade/doorhandle/daf_xf_euro6/doorhandle_02.pmd piece 0
+    13 0:0 1:1 2:2  truckpaint.airbrush.altuv  vehicle/truck/renault_magnum_2009/truck.pmd piece 3
+     2 0:0 1:0 2:1  truckpaint.airbrush.flipflake.altuv  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 60
+     1 0:0 1:1 2:1  truckpaint.airbrush.flipflake.altuv  vehicle/truck/upgrade/sunshield/mercedes_actros_2009/sunshield_02.pmd piece 2
+     2 0:0 1:1 2:2  truckpaint.airbrush.flipflake.altuv  vehicle/truck/upgrade/mirror/scania_rcab_2009/mirror_01.pmd piece 1
+     1 0:0 1:0 2:0  truckpaint.altuv  vehicle/truck/volvo_fh16_2009/accessory/r_chs_cover/r_chs_cover_paint.pmd piece 0
+     3 0:0 1:1 2:0  truckpaint.altuv  vehicle/truck/scania_2016/accessory/r_bumper/rearbumper_mg_03.pmd piece 3
+     8 0:0 1:1 2:0 6:0 truckpaint.altuv  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+    61 0:0 1:1 2:1  truckpaint.altuv  vehicle/truck/daf_xf/interior/model.pmd piece 15
+    90 0:0 1:1 2:2  truckpaint.altuv  vehicle/truck/daf_xf/truck.pmd piece 3
+     1 0:0 1:1 2:2 6:2 truckpaint.altuv  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+     1 0:0 1:0 2:0  truckpaint.flipflake  vehicle/truck/upgrade/steering_knob/standard_carbon.pmd piece 0
+     1 0:0 1:1 2:0  truckpaint.flipflake.altuv  vehicle/truck/volvo_fh16_2009/accessory/mirror/mirror_03_interior.pmd piece 5
+    58 0:0 1:1 2:2  truckpaint.flipflake.altuv  vehicle/truck/upgrade/doorhandle/daf_xf/doorhandle_02.pmd piece 0
+     2 0:0 1:0 2:0  truckpaint.tsnmap  vehicle/truck/volvo_fh16_2012/accessory/s_mirror/painted_side_mirror_interior.pmd piece 1
+    11 0:0 1:1 2:0  truckpaint.tsnmap  vehicle/truck/renault_etech_t/accessory/f_bumper/paint.pmd piece 1
+    24 0:0 1:1 2:1  truckpaint.tsnmap  vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd piece 0
+    10 0:0 1:1 2:2  truckpaint.tsnmap  vehicle/truck/daf_xf_euro6/truck.pmd piece 2
+     2 0:0 1:1 2:2  truckpaint.tsnmap.airbrush  vehicle/truck/iveco_hiway/truck.pmd piece 5
+     8 0:0 1:1 2:2  truckpaint.tsnmap.airbrush.altuv  vehicle/truck/upgrade/bottomgrill/daf_xf_euro6/paintable.pmd piece 0
+     1 0:0 1:1 2:2  truckpaint.tsnmap.airbrush.flipflake  vehicle/truck/upgrade/mirror/iveco_hiway/mirror_01.pmd piece 3
+     8 0:0 1:1 2:2  truckpaint.tsnmap.altuv  vehicle/truck/upgrade/frontintake/daf_xf_euro6/paintable_cab.pmd piece 0
+     2 0:0 1:1 2:1  truckpaint.tsnmap.asafew.a  vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd piece 1
+     4 0:0 1:1 2:2  truckpaint.tsnmap.flipflake.altuv  vehicle/truck/upgrade/mirror/iveco_hiway/mirror_01_uk.pmd piece 3
+    61 0:0 1:0 2:0 6:0 truckpaint.tsnmapuv  vehicle/truck/volvo_fh16_2012/accessory/mirror/mirror_01.pmd piece 3
+    62 0:0 1:0 2:0 6:1 truckpaint.tsnmapuv  vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd piece 0
+     2 0:0 1:0 2:1 6:2 truckpaint.tsnmapuv  vehicle/truck/renault_t/accessory/f_intake_chs/paint_gray_p.pmd piece 1
+    26 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2014/4x2_paint.pmd piece 1
+     5 0:0 1:1 2:1 6:1 truckpaint.tsnmapuv  vehicle/truck/renault_etech_t/interior/model/etech.pmd piece 39
+   513 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv  vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd piece 0
+     2 0:0 1:1 2:2 6:0 truckpaint.tsnmapuv  vehicle/truck/upgrade/f_wnd_frame/mercedes_actros_2014/paint.pmd piece 0
+    60 0:0 1:1 2:2 6:3 truckpaint.tsnmapuv  vehicle/truck/renault_t/accessory/cor_def/paint.pmd piece 0
+    11 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.airbrush  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_4x2.pmd piece 3
+    15 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.airbrush  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_6x4.pmd piece 2
+     1 0:0 1:1 2:2 6:0 truckpaint.tsnmapuv.airbrush  vehicle/truck/upgrade/sideskirts/daf_xf_euro6/sideskirt_plate_6xx.pmd piece 0
+    34 0:0 1:1 2:2 6:3 truckpaint.tsnmapuv.airbrush  vehicle/truck/mercedes_actros_2009/cabin_a.pmd piece 1
+    23 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.airbrush.altuv  vehicle/truck/man_tgx_euro6/cab_xl.pmd piece 2
+    22 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.altuv  vehicle/truck/upgrade/cor_def/man_tgx_euro6/paint.pmd piece 0
+     1 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.altuv  vehicle/truck/upgrade/rearbumper/daf_xf/paint_diamond.pmd piece 4
+    30 0:0 1:1 2:2 6:0 truckpaint.tsnmapuv.altuv  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 4
+     2 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.asafew.a  vehicle/truck/volvo_fh_2024/accessory/f_intake_cab/fh16_aero.pmd piece 0
+     6 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.asafew.a  vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_paint_cab.pmd piece 0
+     1 0:0          unlit.vcol.tex  vehicle/truck/mercedes_actros_2014/interior/anim.pmd piece 7
+    22 0:0          unlit.vcol.tex.a.add  vehicle/truck/iveco_hiway/interior/uk/anim.pmd piece 4
+     7 0:0          unlit.vcol.tex.a.over  vehicle/truck/iveco_stralis/interior/anim.pmd piece 0
+    93 0:0          unlit.vcol.tex.add  vehicle/truck/daf_xf/interior/anim.pmd piece 4
+    62 0:0          unlit.vcol.tex.decal.add  vehicle/truck/daf_2021/interior/anim/anim.pmd piece 35
+    91 0:0          unlit.vcol.tex.decal.over  vehicle/truck/daf_xd/interior/anim/anim.pmd piece 44
+    29 0:0          unlit.vcol.tex.flipsheet.add  vehicle/truck/upgrade/beacon/xmas_lights_daf_2020.pmd piece 1
+
+== .mat keys over 4822 materials (0 unreadable)
+per-texture attribute keys (slot.key: materials):
+  texture_base.mip_filter: 84
+  texture_base.sampler: 3011
+  texture_base.u_address: 1749
+  texture_base.v_address: 1727
+  texture_base.w_address: 68
+  texture_flakenoise.sampler: 38
+  texture_mask.aniso: 1
+  texture_mask.mag_filter: 1
+  texture_mask.min_filter: 1
+  texture_mask.sampler: 108
+  texture_mask.u_address: 45
+  texture_mask.v_address: 45
+  texture_mask_1.sampler: 7
+  texture_mask_1.u_address: 17
+  texture_mask_1.v_address: 17
+  texture_mask_2.sampler: 7
+  texture_mask_3.sampler: 7
+  texture_mult.sampler: 20
+  texture_mult.u_address: 7
+  texture_mult.v_address: 7
+  texture_nmap.aniso: 5
+  texture_nmap.mag_filter: 5
+  texture_nmap.min_filter: 5
+  texture_nmap.sampler: 1310
+  texture_nmap.u_address: 535
+  texture_nmap.v_address: 530
+  texture_nmap_detail.sampler: 5
+  texture_oclu.sampler: 106
+  texture_oclu.u_address: 70
+  texture_oclu.v_address: 70
+  texture_over.u_address: 20
+  texture_over.v_address: 20
+  texture_paintjob.u_address: 36
+  texture_paintjob.v_address: 36
+  texture_reflection.aniso: 2645
+  texture_reflection.mag_filter: 8
+  texture_reflection.min_filter: 8
+  texture_reflection.mip_filter: 14
+  texture_reflection.u_address: 2651
+  texture_reflection.v_address: 2651
+  texture_reflection.w_address: 2651
+material attribute keys (key: materials):
+  additional_ambient: 4573
+  animsheet_cfg_fps: 19
+  animsheet_cfg_frames_row: 19
+  animsheet_cfg_frames_total: 19
+  animsheet_cfg_loop_offset_rnd: 10
+  animsheet_frame_height: 19
+  animsheet_frame_width: 19
+  depth_bias: 90
+  diffuse: 4760
+  distortion_strength: 4
+  env_factor: 2524
+  flake_clearcoat_rolloff: 38
+  flake_color: 38
+  flake_density: 38
+  flake_shininess: 38
+  flake_uvscale: 38
+  flake_vratio: 38
+  flip_color: 38
+  flip_strength: 38
+  fresnel: 2411
+  glass_tint_color: 152
+  glass_tint_opacity: 152
+  luminance_night: 376
+  luminance_output: 376
+  paintjob_b_color: 1
+  paintjob_base_color: 71
+  paintjob_g_color: 1
+  paintjob_r_color: 1
+  queue_bias: 460
+  reflection: 4115
+  shadowmap_bias: 16
+  sheet_frame_size_a: 7
+  sheet_frame_size_b: 7
+  sheet_frame_size_g: 7
+  sheet_frame_size_r: 7
+  shininess: 4623
+  specular: 4663
+  substance: 6
+## uv_routing_survey vehicle model model2 prefab prefab2
+roots ["vehicle", "model", "model2", "prefab", "prefab2"]: 60987 models (0 unreadable), 611638 pieces
+
+== stored value by UV set count
+pieces sets value       slot:set  e.g.
+128083    0 0xffffffff  -         model/aircraft/737/737.pmd piece 5
+  1086    1 0xf0fff000  0:0 1:0 2:0 6:0 model2/building/church/church_tower_02_mid_rus.pmd piece 0
+  6563    1 0xf0ffff00  0:0 1:0 6:0 model/building/farm/il_silo_old_01.pmd piece 16
+ 31383    1 0xf0fffff0  0:0 6:0   model/aircraft/737/737.pmd piece 6
+   901    1 0xfffff000  0:0 1:0 2:0 model/event/animated/tow_scene_anim.pmd piece 23
+  6330    1 0xffffff00  0:0 1:0   model/landmark/pl_a4_alvernia-rmf.pmd piece 4
+261442    1 0xfffffff0  0:0       model/activation/border.pmd piece 0
+   335    2 0xf0fff010  0:0 1:1 2:0 6:0 model2/building/administration/admin_big_06_it_lod1.pmd piece 18
+   217    2 0xf0fff100  0:0 1:0 2:1 6:0 model2/building/church/church_main_02_mid_rus.pmd piece 2
+  1816    2 0xf0fff110  0:0 1:1 2:1 6:0 model/sign/traffic/es/tiket_01_es.pmd piece 5
+ 57048    2 0xf0ffff10  0:0 1:1 6:0 model/building/farm/il_silo_old_01.pmd piece 3
+   146    2 0xf1fff000  0:0 1:0 2:0 6:1 model2/landmark/no/kongsvinger_sculptures_01_poc.pmd piece 5
+     4    2 0xf1fff100  0:0 1:0 2:1 6:1 vehicle/car/hoddlen_hatchback_basic_24/ai/hatchback.pmd piece 5
+   241    2 0xf1fff110  0:0 1:1 2:1 6:1 model2/gas_station/gas_station_modern_01_poc.pmd piece 236
+   219    2 0xf1ffff00  0:0 1:0 6:1 model2/bridge/bridge_pillars_01_poc.pmd piece 5
+   541    2 0xf1ffff10  0:0 1:1 6:1 model2/landmark/al/fier_mall_01_adverts_blkw.pmd piece 4
+ 14041    2 0xf1fffff0  0:0 6:1   model/aircraft/a320/a320.pmd piece 2
+   258    2 0xfffff010  0:0 1:1 2:0 model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 5
+    35    2 0xfffff100  0:0 1:0 2:1 model/sign/traffic/es/madrid_red_es_04.pmd piece 0
+  1610    2 0xfffff110  0:0 1:1 2:1 model/mover/flag_countries.pmd piece 2
+ 29037    2 0xffffff10  0:0 1:1   model/aircraft/747/747.pmd piece 1
+ 29025    3 0xf0fff210  0:0 1:1 2:2 6:0 model/props/lumber/planks_stack_packed_pile_01_poc_pile.pmd piece 8
+  1701    3 0xf1fff210  0:0 1:1 2:2 6:1 model2/gas_station/gas_arrow_01_bi.pmd piece 14
+    51    3 0xf2fff010  0:0 1:1 2:0 6:2 vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 3
+    49    3 0xf2fff100  0:0 1:0 2:1 6:2 vehicle/trailer_eu/tirsan_shg/trailer.pmd piece 13
+  2171    3 0xf2fff110  0:0 1:1 2:1 6:2 model2/gas_station/gas_price_totem_small_gr.pmd piece 0
+   458    3 0xf2fff210  0:0 1:1 2:2 6:2 model2/gas_station/gas_arrow_01_bi.pmd piece 22
+ 10445    3 0xf2ffff10  0:0 1:1 6:2 model/aircraft/a320/a320.pmd piece 6
+ 26113    3 0xfffff210  0:0 1:1 2:2 model/aircraft/737/737.pmd piece 3
+   289    4 0xf3fff210  0:0 1:1 2:2 6:3 model/props/lumber/ar_planks_stack_packed_pile.pmd piece 33
+
+== nibble values per slot (slot 0 = least significant nibble)
+slot 0: 0:483555 f:128083
+slot 1: 0:15550 1:161139 f:434949
+slot 2: 0:2777 1:6143 2:57586 f:545132
+slot 3: f:611638
+slot 4: f:611638
+slot 5: f:611638
+slot 6: 0:127473 1:16893 2:13174 3:289 f:453809
+slot 7: f:611638
+
+pieces naming a set >= their UV set count: 0
+pieces whose looks' effects differ in flavour: 1235
+
+== per-piece rules (effects of every look; rules on effects skip pieces with no readable material)
+every stored set is routed to some slot: holds 611638, fails 0
+sets == 1 + highest routed set (0 if none): holds 611638, fails 0
+slot 0 used <=> the piece stores UV sets: holds 611638, fails 0
+slot 1 used <=> a look has oclu, mult, lamp or truckpaint: holds 518498, fails 93140
+    model/building/farm/il_silo_old_01.pmd piece 3: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+    model/building/farm/il_silo_old_01.pmd piece 4: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.shadow.asafew.a"}
+    model/building/farm/il_silo_old_01.pmd piece 7: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+    model/building/farm/il_silo_old_01.pmd piece 10: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+    model/building/farm/il_silo_old_01.pmd piece 11: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.shadow.asafew.a"}
+    model/building/farm/il_silo_old_01.pmd piece 16: 0xf0ffff00, 1 sets, {"dif.spec.amod.dif.spec.tsnmapuv"}
+    model/building/farm/il_silo_old_01.pmd piece 17: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+    model/building/farm/il_silo_old_01_lod1.pmd piece 1: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+    model/building/farm/il_silo_old_01_lod1.pmd piece 8: 0xf0ffff00, 1 sets, {"dif.spec.amod.dif.spec.tsnmapuv"}
+    model/building/farm/il_silo_old_02.pmd piece 3: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+    model/building/farm/il_silo_old_02.pmd piece 4: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.shadow.asafew.a"}
+    model/building/farm/il_silo_old_02.pmd piece 7: 0xf0ffff10, 2 sets, {"dif.spec.amod.dif.spec.tsnmapuv.asafew.a"}
+slot 2 used <=> a look is truckpaint: holds 550118, fails 61520
+    model/aircraft/737/737.pmd piece 3: 0xfffff210, 3 sets, {"dif.spec.mult.dif.iamod.dif.add.env"}
+    model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 5: 0xfffff010, 2 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_anim_lod1.pmd piece 4: 0xfffff010, 2 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 7: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 14: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 15: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base_lod1.pmd piece 4: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base_lod1.pmd piece 10: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base_lod1.pmd piece 11: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base_n.pmd piece 4: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base_n.pmd piece 11: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+    model/construction/static/scrap_magnet/scrap_magnet_base_n.pmd piece 12: 0xfffff210, 3 sets, {"dif.spec.mult.dif.spec.iamod.dif.spec"}
+slot 6 used <=> a look has tsnmapuv or tsnmapuv2: holds 611638, fails 0
+slots 3, 4, 5, 7 unused: holds 611638, fails 0
+
+== truckpaint pieces: specsheet_data::render::paint_uv_set vs slots 1 and 2
+value       sets slot:set              pieces mask=slot1 alt=slot2 (rule mask, rule alt)
+0xf0fff000    1 0:0 1:0 2:0 6:0            64        64        64 (Some(0), Some(0))
+0xf0fff010    2 0:0 1:1 2:0 6:0            13        13         0 (Some(1), Some(1))
+0xf0fff110    2 0:0 1:1 2:1 6:0           261       261       261 (Some(1), Some(1))
+0xf0fff210    3 0:0 1:1 2:2 6:0            52        52        52 (Some(1), Some(2))
+0xf1fff000    2 0:0 1:0 2:0 6:1           144         0         0 (Some(1), Some(1))
+0xf1fff100    2 0:0 1:0 2:1 6:1             4         0         4 (Some(1), Some(1))
+0xf1fff110    2 0:0 1:1 2:1 6:1            37        37        37 (Some(1), Some(1))
+0xf2fff010    3 0:0 1:1 2:0 6:2            51        51         0 (Some(1), Some(2))
+0xf2fff100    3 0:0 1:0 2:1 6:2            49         0         0 (Some(1), Some(2))
+0xf2fff110    3 0:0 1:1 2:1 6:2          2153      2153         0 (Some(1), Some(2))
+0xf2fff210    3 0:0 1:1 2:2 6:2            26        26        26 (Some(1), Some(2))
+0xf3fff210    4 0:0 1:1 2:2 6:3           230       230       230 (Some(1), Some(2))
+0xfffff000    1 0:0 1:0 2:0               875       875       875 (Some(0), Some(0))
+0xfffff010    2 0:0 1:1 2:0               153       153         0 (Some(1), Some(1))
+0xfffff100    2 0:0 1:0 2:1                13         0        13 (Some(1), Some(1))
+0xfffff110    2 0:0 1:1 2:1               538       538       538 (Some(1), Some(1))
+0xfffff210    3 0:0 1:1 2:2               323       323       323 (Some(1), Some(2))
+total 4986: mask agrees 4776, alt agrees 2423
+
+== routed sets other than 0: pieces whose set equals set 0 byte for byte
+slot 1 set 1: 0 of 161139 identical to set 0
+slot 2 set 1: 0 of 6143 identical to set 0
+slot 2 set 2: 0 of 57586 identical to set 0
+slot 6 set 1: 0 of 16893 identical to set 0
+slot 6 set 2: 0 of 13174 identical to set 0
+slot 6 set 3: 0 of 289 identical to set 0
+
+== routing by effect family and flavour tokens (all looks)
+pieces routing  family [flavours]  e.g.
+ 17568 0:0          baked []  model/aircraft/737/737_lod1.pmd piece 0
+  4489 0:0          baked [tsnmap]  model/dock/mine/chimney_brick_01_de_lod1.pmd piece 2
+   207 0:0 1:1      billboard []  model2/distribution/cdu_base_ibe.pmd piece 1
+  7826 0:0          building []  model/airports/building_01.pmd piece 0
+   312 0:0          decalshadow []  model/bridge/dresden_bridge_shadow.pmd piece 0
+102273 0:0          dif []  model/air_motorest/air_motorest.pmd piece 0
+  3250 0:0 1:0      dif []  model/landmark/pl_a4_alvernia-rmf.pmd piece 4
+     2 0:0 1:0 6:0  dif []  model2/building/farm/ar_animal_feed_silo.pmd piece 22
+ 10594 0:0 1:1      dif []  model/sign/navigation/stand/toll_gantry_v04_no.pmd piece 0
+     8 0:0 1:1 2:0 6:0 dif []  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif []  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    53 0:0 1:1 6:0  dif []  model2/building/administration/admin_07_poc.pmd piece 7
+    24 0:0 6:0      dif []  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+    32 0:0 6:1      dif []  vehicle/machine/excavator/cargo/cargo.pmd piece 2
+    14 0:0          dif [decal mult]  model/ui/dark_studio.pmd piece 17
+   668 0:0 1:0      dif [decal mult]  model2/building/parking/village_garage_03_poc.pmd piece 12
+  3934 0:0 1:1      dif [decal mult]  model/building/farm/il_silo_old_01.pmd piece 5
+ 66897 0:0          dif [decal]  model/aircraft/737/737.pmd piece 2
+     4 0:0 1:1      dif [decal]  model2/railing/barrier/barrier_railing_single_01_poc.pmd piece 7
+   867 0:0 1:0      dif [mult]  model/ui/dark_studio.pmd piece 3
+    25 0:0 1:0 2:0  dif [mult]  model2/border_crossing/border_hamzabeyli_enter_04_tr_blke.pmd piece 14
+    19 0:0 1:0 2:1  dif [mult]  model/sign/traffic/es/madrid_red_es_04.pmd piece 0
+     4 0:0 1:0 6:0  dif [mult]  vehicle/props/container_generic/cargo/cargo_20_lod1.pmd piece 0
+  1786 0:0 1:1      dif [mult]  model/aircraft/747/747.pmd piece 1
+   105 0:0 1:1 2:0  dif [mult]  model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 5
+   752 0:0 1:1 2:1  dif [mult]  model/mover/flag_countries.pmd piece 2
+ 19448 0:0 1:1 2:2  dif [mult]  model/aircraft/737/737.pmd piece 3
+     3 0:0 1:1 2:2 6:0 dif [mult]  model2/building/shop/gas_shop_01_blkw.pmd piece 55
+     4 0:0 1:1 6:2  dif [mult]  vehicle/ai/dagger/ai.pmd piece 1
+     5 0:0 1:0      dif [oclu]  prefab2/container_plaza/container_plaza_sc.pmd piece 2
+   632 0:0 1:1      dif [oclu]  model/parked_trailers/static/curtain/trailer_curtain_sider.pmd piece 5
+   236 0:0          dif [tsnmap decal]  model2/barrier/concrete/crash_barrier_concrete_04_de.pmd piece 2
+    76 0:0 1:0      dif [tsnmap mult]  model2/rock/at_rock_limestone_curve_16m.pmd piece 3
+   299 0:0 1:1      dif [tsnmap mult]  model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 6
+    76 0:0 1:1 2:2  dif [tsnmap mult]  model2/building/administration/admin_17_de.pmd piece 3
+   186 0:0 1:1      dif [tsnmap oclu]  vehicle/props/mystery_cyl_oversize/cargo/cargo.pmd piece 4
+ 16194 0:0          dif [tsnmap]  model/animated/forwarder/forwarder_base.pmd piece 5
+   129 0:0 1:0      dif [tsnmap]  model2/building/farm/farm_cowhouse_02_poc.pmd piece 59
+   538 0:0 1:1      dif [tsnmap]  model2/barrier/animated/toll_gate_static_close_de.pmd piece 4
+     8 0:0 1:1 2:0 6:0 dif [tsnmap]  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif [tsnmap]  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    20 0:0 1:1 6:0  dif [tsnmap]  model2/building/industry/chimney_metal_01_poc.pmd piece 0
+    56 0:0 6:0      dif [tsnmap]  model2/building/shop/restaurant_02_blkw.pmd piece 11
+    16 0:0 6:1      dif [tsnmap]  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 17
+   470 0:0 6:0      dif [tsnmapuv decal]  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 6
+   376 0:0 6:1      dif [tsnmapuv decal]  vehicle/ai/train_db_class_143/ai.pmd piece 1
+  1022 0:0 1:0 2:0 6:0 dif [tsnmapuv mult]  model2/building/church/church_tower_02_mid_rus.pmd piece 0
+     2 0:0 1:0 2:0 6:1 dif [tsnmapuv mult]  model2/landmark/no/kongsvinger_sculptures_01_poc.pmd piece 5
+   217 0:0 1:0 2:1 6:0 dif [tsnmapuv mult]  model2/building/church/church_main_02_mid_rus.pmd piece 2
+  1985 0:0 1:0 6:0  dif [tsnmapuv mult]  model2/hill/rock_formation_layered1/rock_formation_layered1.pmd piece 0
+    31 0:0 1:0 6:1  dif [tsnmapuv mult]  model2/rock/road_cliff_01_balt.pmd piece 6
+   322 0:0 1:1 2:0 6:0 dif [tsnmapuv mult]  model2/building/administration/admin_big_06_it_lod1.pmd piece 18
+     6 0:0 1:1 2:0 6:2 dif [tsnmapuv mult]  vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 3
+  1555 0:0 1:1 2:1 6:0 dif [tsnmapuv mult]  model/sign/traffic/es/tiket_01_es.pmd piece 5
+   204 0:0 1:1 2:1 6:1 dif [tsnmapuv mult]  model2/gas_station/gas_station_modern_01_poc.pmd piece 236
+    18 0:0 1:1 2:1 6:2 dif [tsnmapuv mult]  model2/gas_station/gas_price_totem_small_gr.pmd piece 0
+ 28973 0:0 1:1 2:2 6:0 dif [tsnmapuv mult]  model/props/lumber/planks_stack_packed_pile_01_poc_pile.pmd piece 8
+  1701 0:0 1:1 2:2 6:1 dif [tsnmapuv mult]  model2/gas_station/gas_arrow_01_bi.pmd piece 14
+   432 0:0 1:1 2:2 6:2 dif [tsnmapuv mult]  model2/gas_station/gas_arrow_01_bi.pmd piece 22
+    59 0:0 1:1 2:2 6:3 dif [tsnmapuv mult]  model/props/lumber/ar_planks_stack_packed_pile.pmd piece 33
+  1120 0:0 1:1 6:0  dif [tsnmapuv mult]  model/mover/characters/models/special/m_afam_bp_01.pmd piece 1
+   104 0:0 1:1 6:1  dif [tsnmapuv mult]  model2/props/construction/pile_01_rus.pmd piece 0
+  8028 0:0 1:1 6:2  dif [tsnmapuv mult]  model/aircraft/a320/a320.pmd piece 6
+    14 0:0 6:1      dif [tsnmapuv mult]  vehicle/railcar/ice3neo/ai/car1.pmd piece 0
+     3 0:0 1:0 6:0  dif [tsnmapuv oclu]  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 33
+     1 0:0 1:0 6:1  dif [tsnmapuv oclu]  vehicle/truck/volvo_fh16_2009/accessory/doorstep/hss_doorstep_01.pmd piece 0
+    56 0:0 1:1 6:0  dif [tsnmapuv oclu]  vehicle/trailer_eu/schw_slidepost/schw_slidepost_dm.dlc_schwarzmuller.pmd piece 7
+   197 0:0 1:1 6:1  dif [tsnmapuv oclu]  vehicle/props/container_adr/cargo/t14_40.pmd piece 3
+  1046 0:0 1:1 6:2  dif [tsnmapuv oclu]  model/parked_trailers/static/scs_foodtank/foodtank.pmd piece 1
+     1 0:0 6:0      dif [tsnmapuv2 mult]  model2/landmark/fi/helsinki_bus_station_07_bus.pmd piece 4
+    30 0:0 6:0      dif [tsnmapuv2]  vehicle/trailer_eu/feldbinder_eut35/trailer.pmd piece 12
+  1237 0:0 6:1      dif [tsnmapuv2]  vehicle/trailer_eu/blade_hauler/axle_steering_1.pmd piece 3
+  4575 0:0 1:0 6:0  dif [tsnmapuv]  model/building/farm/il_silo_old_01.pmd piece 16
+    72 0:0 1:0 6:1  dif [tsnmapuv]  model2/bridge/bridge_pillars_01_poc.pmd piece 5
+     8 0:0 1:1 2:0 6:0 dif [tsnmapuv]  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:1 6:0 dif [tsnmapuv]  model2/gas_station/gas_shop_02_rus.pmd piece 87
+     2 0:0 1:1 2:2 6:0 dif [tsnmapuv]  model2/gas_station/gas_shop_01_at.pmd piece 68
+     1 0:0 1:1 2:2 6:2 dif [tsnmapuv]  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+ 55865 0:0 1:1 6:0  dif [tsnmapuv]  model/building/farm/il_silo_old_01.pmd piece 3
+   239 0:0 1:1 6:1  dif [tsnmapuv]  model2/landmark/al/fier_mall_01_adverts_blkw.pmd piece 4
+  1156 0:0 1:1 6:2  dif [tsnmapuv]  model2/barrier/concrete/crash_barrier_concrete_03_de.pmd piece 1
+ 30559 0:0 6:0      dif [tsnmapuv]  model/aircraft/737/737.pmd piece 6
+ 12370 0:0 6:1      dif [tsnmapuv]  model/aircraft/a320/a320.pmd piece 2
+   772 -            fakeshadow []  model/event/static/overweight.pmd piece 8
+    41 0:0          fakeshadow []  vehicle/trailer_eu/cement_mixer/cement_mixer.pmd piece 4
+   164 0:0          flare []  model/aircraft/737/737.pmd piece 1
+  8010 0:0          glass []  model/aircraft/cessna_anim.pmd piece 1
+     9 0:0          glass [tsnmap]  vehicle/truck/man_tgx_2020/ai/man_tgx_2020_gn_4x2.pmd piece 8
+    18 0:0          grass []  model/vegetation/grass_building/corn.pmd piece 0
+     1 0:0          interior []  model2/building/logistic/warehouse_16_poc.pmd piece 24
+     3 0:0 1:0 2:1  interior []  prefab2/depot/paper_mill/structure_set_paper_mill_01_poc.pmd piece 64
+     4 0:0 1:1 2:1  interior []  model2/landmark/nl/amsterdam/amsterdam_admin_01_lux.pmd piece 2
+  2113 0:0 1:1 2:2  interior []  model2/border_crossing/border_bogorodica_gate_02_mk_gr.pmd piece 2
+  1155 0:0 1:0      lamp []  model/sign/traffic_light/border_gate_light_gen.pmd piece 0
+  3588 0:0 1:1      lamp []  model/event/static/overweight.pmd piece 5
+    64 0:0 1:0      lamp [tsnmap]  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 5
+    42 0:0 1:1      lamp [tsnmap]  vehicle/ai/truck/iveco_hiway/iveco_hiway_asp_4x2.pmd piece 6
+   115 0:0 1:0 6:1  lamp [tsnmapuv]  vehicle/ai/truck/man_tgx_euro6/man_tgx_euro6_ef3_xlx_6x24.pmd piece 9
+     7 0:0 1:1 6:0  lamp [tsnmapuv]  vehicle/truck/scania_s_2024e/accessory/f_bumper/hgh_p.pmd piece 4
+     1 0:0 1:1 6:1  lamp [tsnmapuv]  vehicle/truck/volvo_fh_2024/accessory/f_light_chs/heavy_duty.pmd piece 1
+   221 0:0 1:1 6:2  lamp [tsnmapuv]  vehicle/ai/truck/renault_t/renault_t_std_hi_4x2.pmd piece 13
+     1 0:0 1:0 2:0  leaves []  model2/building/village_close/village_gr/village_close_37_gr_lod1.pmd piece 16
+   316 0:0 1:1 2:1  leaves []  model/vegetation/grass/sc_grass_moss_3d_big_29sc.pmd piece 0
+  4153 0:0 1:1 2:2  leaves []  model/sign/misc/street_flowerpot.pmd piece 0
+   774 0:0          light []  model2/border_crossing/border_dobrakovo_gate_02_me_blkw.pmd piece 14
+ 10223 0:0          lightmap [lightmap]  model/aircraft/cessna_anim.pmd piece 9
+    68 -            mlaaweight []  model/sign/traffic/cr/speedlimit_110_cr.pmd piece 2
+     8 0:0          mlaaweight []  vehicle/truck/daf_xf/interior/model.pmd piece 13
+ 36806 -            none []  model/aircraft/cessna_anim.pmd piece 0
+   444 0:0          none []  model/terrain_edge/lux_curb_01.pmd piece 5
+     2 0:0 1:0 6:0  none []  model2/barrier/crash_barrier_profile2_01_lu_lux.pmd piece 2
+   161 0:0 1:1      none []  model2/building/administration/admin_27_poc.pmd piece 2
+     8 0:0 1:1 2:2 6:0 none []  prefab2/gas_station/gas_station_modern_01_bi.pmd piece 26
+   122 0:0 1:1 2:2 6:1 none []  prefab2/gas_station/gas_station_modern_01_bi.pmd piece 32
+     4 0:0 1:1 2:2 6:2 none []  prefab2/gas_station/gas_station_modern_01_bi.pmd piece 27
+    68 0:0 1:1 6:0  none []  model2/building/administration/school_01_poc.pmd piece 10
+     7 0:0 6:0      none []  model2/building/administration/admin_03_poc.pmd piece 1
+    15 0:0          particle []  model/particle/autumn_leaf.pmd piece 0
+   417 0:0          reflective []  model/event/animated/tow_scene_anim.pmd piece 67
+ 10726 0:0          retroreflective []  model/sign/city_limits/brussel.pmd piece 0
+   214 0:0          retroreflective [decal]  model/sign/navigation/2hw_crs_200m_fr.pmd piece 3
+   564 0:0          retroreflective [tsnmap decal]  vehicle/ai/trailer/speedboat/ai.pmd piece 5
+   118 0:0          retroreflective [tsnmap]  model/sign/traffic/be/crossroad_barrier_01_be.pmd piece 1
+   217 0:0 6:0      retroreflective [tsnmapuv decal]  vehicle/machine/wood_chipper/ai/ai_gl.pmd piece 3
+    42 0:0 6:1      retroreflective [tsnmapuv decal]  vehicle/machine/disk_harrows/cargo/cargo.pmd piece 7
+   106 0:0 6:0      retroreflective [tsnmapuv]  model/sign/traffic/be/belgium_signs_big_1.pmd piece 0
+    16 0:0 6:1      retroreflective [tsnmapuv]  vehicle/machine/lowbed/cargo/cargo.pmd piece 3
+    18 0:0          shadowmap []  model/vehicle/excavator_hi.pmd piece 4
+ 90401 -            shadowonly []  model/aircraft/737/737.pmd piece 5
+ 10350 0:0          shadowonly []  model/airports/amsterdam_portal.pmd piece 1
+     2 0:0 1:1      showroom_v2 []  model/ui/background_dome.pmd piece 0
+     1 0:0          sign []  model/sign/navigation/cz/hw_left_2_cz.pmd piece 3
+     1 0:0 1:0 2:0  truckpaint [truckpaint altuv]  vehicle/truck/volvo_fh16_2009/accessory/r_chs_cover/r_chs_cover_paint.pmd piece 0
+     2 0:0 1:0 2:1  truckpaint [truckpaint altuv]  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 60
+     4 0:0 1:1 2:0  truckpaint [truckpaint altuv]  vehicle/truck/scania_2016/accessory/r_bumper/rearbumper_mg_03.pmd piece 3
+     8 0:0 1:1 2:0 6:0 truckpaint [truckpaint altuv]  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+   126 0:0 1:1 2:1  truckpaint [truckpaint altuv]  vehicle/trailer_eu/krone/e_coolliner/trailer_lod3.pmd piece 2
+   187 0:0 1:1 2:2  truckpaint [truckpaint altuv]  vehicle/ai/truck/daf_xf_euro6/daf_xf_euro6_sca_4x2.pmd piece 3
+     1 0:0 1:1 2:2 6:2 truckpaint [truckpaint altuv]  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+   867 0:0 1:0 2:0  truckpaint [truckpaint]  model/event/animated/tow_scene_anim.pmd piece 23
+    11 0:0 1:0 2:1  truckpaint [truckpaint]  vehicle/ai/truck/volvo_fh16_2012/volvo_fh16_2012_gtxl_4x2.pmd piece 8
+   138 0:0 1:1 2:0  truckpaint [truckpaint]  vehicle/ai/alfa_romeo_159/ai.pmd piece 0
+   386 0:0 1:1 2:1  truckpaint [truckpaint]  vehicle/ai/majestic_a_2018/ai.pmd piece 0
+   103 0:0 1:1 2:2  truckpaint [truckpaint]  vehicle/trailer_eu/schw_curtain/trailer_lod2.pmd piece 8
+    20 0:0 1:1 2:2  truckpaint [tsnmap truckpaint altuv]  vehicle/truck/upgrade/bottomgrill/daf_xf_euro6/paintable.pmd piece 0
+     7 0:0 1:0 2:0  truckpaint [tsnmap truckpaint]  model/parked_trucks_groups/far/trucks_parked_scania_4x1_01_far_sc.pmd piece 0
+    11 0:0 1:1 2:0  truckpaint [tsnmap truckpaint]  vehicle/truck/renault_etech_t/accessory/f_bumper/paint.pmd piece 1
+    26 0:0 1:1 2:1  truckpaint [tsnmap truckpaint]  vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd piece 0
+    13 0:0 1:1 2:2  truckpaint [tsnmap truckpaint]  vehicle/truck/daf_xf_euro6/truck.pmd piece 2
+    60 0:0 1:1 2:1 6:0 truckpaint [tsnmapuv truckpaint altuv]  vehicle/ai/truck/man_tgx_euro6/man_tgx_euro6_ef3_xlx_6x24.pmd piece 3
+    36 0:0 1:1 2:1 6:2 truckpaint [tsnmapuv truckpaint altuv]  vehicle/trailer_eu/krone/profiliner_bm/trailer_detail.pmd piece 4
+    30 0:0 1:1 2:2 6:0 truckpaint [tsnmapuv truckpaint altuv]  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 4
+     2 0:0 1:1 2:2 6:2 truckpaint [tsnmapuv truckpaint altuv]  vehicle/trailer_eu/scs_box/curtain_sider/ch_15.pmd piece 10
+    61 0:0 1:1 2:2 6:3 truckpaint [tsnmapuv truckpaint altuv]  vehicle/trailer_eu/krone/e_coolliner/trailer_detail.pmd piece 9
+    64 0:0 1:0 2:0 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/trailer_eu/wielton_strongm/ch_3a_lod3.pmd piece 2
+   144 0:0 1:0 2:0 6:1 truckpaint [tsnmapuv truckpaint]  vehicle/ai/truck/scania_2016/scania_r_2016_nrm_4x2.pmd piece 3
+     4 0:0 1:0 2:1 6:1 truckpaint [tsnmapuv truckpaint]  vehicle/car/hoddlen_hatchback_basic_24/ai/hatchback.pmd piece 5
+    49 0:0 1:0 2:1 6:2 truckpaint [tsnmapuv truckpaint]  vehicle/trailer_eu/tirsan_shg/trailer.pmd piece 13
+     5 0:0 1:1 2:0 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/trailer_eu/tirsan_sks/trailer.pmd piece 9
+    51 0:0 1:1 2:0 6:2 truckpaint [tsnmapuv truckpaint]  vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 3
+   201 0:0 1:1 2:1 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/ai/truck/man_tgx_euro6/man_tgx_euro6_ef3_xlx_6x24.pmd piece 18
+    37 0:0 1:1 2:1 6:1 truckpaint [tsnmapuv truckpaint]  vehicle/ai/lowcab/ai.pmd piece 1
+  2117 0:0 1:1 2:1 6:2 truckpaint [tsnmapuv truckpaint]  vehicle/trailer_eu/feldbinder_eut35/trailer.pmd piece 6
+    22 0:0 1:1 2:2 6:0 truckpaint [tsnmapuv truckpaint]  vehicle/trailer_eu/kassbohrer_scs/trailer.pmd piece 12
+    23 0:0 1:1 2:2 6:2 truckpaint [tsnmapuv truckpaint]  vehicle/trailer_eu/car_transporter/trailer.pmd piece 11
+   169 0:0 1:1 2:2 6:3 truckpaint [tsnmapuv truckpaint]  vehicle/ai/truck/renault_t/renault_t_evo_hi_4x2.pmd piece 1
+   675 0:0          unlit []  model/activation/border.pmd piece 0
+  2553 0:0          unlit [decal mult]  model/parked_trailers/static/reefer/trailer_reefer_01_sc.pmd piece 8
+   879 0:0          unlit [decal]  model/parked_cars/static/majestic_a_2018/parked_majestic_a_2018_1.pmd piece 2
+     2 0:0          unlit [mult]  model2/lamp/lamp_t_shape_fr_03_fr.pmd piece 1
+    36 -            water []  model/truck_service_int/garage.pmd piece 6
+    26 0:0 1:1      water []  model/ui/dark_studio.pmd piece 15
+   116 0:0 1:0      window []  model/sign/navigation/ru/toll_m11_led.pmd piece 5
+  7243 0:0 1:1      window []  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 12
+
+== routing by full effect name (all looks)
+  2031 0:0          baked  model/construction/static/sem_260/sem_260_crane_lod4.pmd piece 10
+   296 0:0          baked.day  model2/building/administration/admin_lt/admin_02_lt_balt_lod1.pmd piece 0
+     3 0:0          baked.shadow  model/construction/static/skid_steer_loader/skid_steer_loader_lod2.pmd piece 0
+     7 0:0          baked.shadow.day  model2/props/street/subway_sign_01_de_lod1.pmd piece 0
+  4130 0:0          baked.spec  model/aircraft/737/737_lod1.pmd piece 0
+  1267 0:0          baked.spec.add.env  model/aircraft/a320/a320_lod1.pmd piece 0
+  7694 0:0          baked.spec.add.env.day  model2/border_crossing/border_bogorodica_gate_02_mk_gr_lod1.pmd piece 1
+   325 0:0          baked.spec.add.env.paint  vehicle/ai/500l/ai_lod3.pmd piece 0
+     3 0:0          baked.spec.add.env.paint.day  vehicle/ai/towncity/ai_lod3.pmd piece 0
+    10 0:0          baked.spec.add.env.paint.shadow  vehicle/ai/daily/ai/ai_box_lod3.pmd piece 0
+     5 0:0          baked.spec.add.env.shadow  model/construction/static/roller/roller_lod2.pmd piece 0
+     7 0:0          baked.spec.add.env.shadow.day  prefab2/border_crossing/me/border_bozaj_main_building_01_me_blkw_lod1.pmd piece 0
+   277 0:0          baked.spec.add.env.tsnmap  model/vehicle/train/wagon_opentop_crv_lod3.pmd piece 0
+  2216 0:0          baked.spec.add.env.tsnmap.day  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 1
+     3 0:0          baked.spec.add.env.tsnmap.paint  vehicle/car/mendward_x124_85/ai/ai_lod3.pmd piece 0
+     1 0:0          baked.spec.add.env.tsnmap.paint.day  model2/landmark/fi/vaasa_hospital_01_poc.pmd piece 5
+  1788 0:0          baked.spec.day  model2/border_crossing/border_gate_02_si_blkw_lod1.pmd piece 0
+     2 0:0          baked.spec.shadow  model2/landmark/hr/osijek_memorial_01_blkw_lod1.pmd piece 0
+  1155 0:0          baked.spec.tsnmap  model/dock/mine/chimney_brick_01_de_lod1.pmd piece 2
+   386 0:0          baked.spec.tsnmap.day  model2/building/bus_stops/bus_stop_01_gr_lod1.pmd piece 0
+    18 0:0          baked.spec.tsnmap.shadow.day  model2/building/flats/flats_es/block_of_flats_16_es_ibe_lod2.pmd piece 0
+   368 0:0          baked.tsnmap  model2/barrier/plastic/barrier_plastic_02_single_blkw.pmd piece 1
+    42 0:0          baked.tsnmap.day  model2/building/flats/flats_es/row_house_04_es_ibe_lod2.pmd piece 1
+     7 0:0          baked.tsnmap.shadow  model2/landmark/landmark_es/malaga_racetrack_tires_ibe_lod2.pmd piece 0
+    16 0:0          baked.tsnmap.shadow.day  model2/building/flats/flats_es/block_of_flats_15_es_ibe_lod2.pmd piece 0
+     1 0:0 1:1      billboard  model2/landmark/de/dresden_town_center_01_de.pmd piece 3
+     2 0:0 1:1      billboard.lit.asafew  model2/landmark/de/dortmund_gas_station_01_de.pmd piece 13
+    38 0:0 1:1      billboard.shadow.asafew  model2/distribution/cdu_tower_01_ibe.pmd piece 0
+     1 0:0 1:1      billboard.tsnmapcalc  model2/landmark/lu/luxembourg_philharmonie_01_lux_lod1.pmd piece 1
+    70 0:0 1:1      billboard.tsnmapcalc.asafew  model2/distribution/chimney_white_red_far.pmd piece 0
+    52 0:0 1:1      billboard.tsnmapcalc.night  model2/panorama/gr/greece_billboard_01_gr.pmd piece 0
+     1 0:0 1:1      billboard.tsnmapcalc.shadow  model2/landmark/lu/luxembourg_philharmonie_01_lux.pmd piece 9
+    42 0:0 1:1      billboard.tsnmapcalc.shadow.asafew  model2/distribution/cdu_base_ibe.pmd piece 1
+   484 0:0          building.add.env.day  model/airports/building_01.pmd piece 0
+    29 0:0          building.add.env.lvcol.day  model2/border_crossing/border_dobrakovo_gate_02_me_blkw.pmd piece 10
+     1 0:0          building.add.env.lvcol.night  model2/landmark/fi/rovaniemi_sculpture_02_poc.pmd piece 5
+     8 0:0          building.add.env.night  model/landmark/aria.pmd piece 0
+     7 0:0          building.asafew.a.day  model2/building/shop/gas_shop_02_blkw.pmd piece 75
+    60 0:0          building.asafew.a.lvcol.day  model2/building/bus_stops/bus_stop_01_al_blkw.pmd piece 2
+    30 0:0          building.asafew.a.lvcol.night  model2/building/administration/admin_02_rus.pmd piece 26
+   159 0:0          building.asafew.a.night  model2/building/shop/gas_shop_02_poc.pmd piece 1
+   571 0:0          building.day  model/railing/tunnel/city_tunel_exit.pmd piece 1
+  4703 0:0          building.lvcol.day  model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 5
+  1682 0:0          building.lvcol.night  model/factory/conveyor_lamps.pmd piece 1
+    92 0:0          building.night  model/oil_platform/oil_platform.pmd piece 3
+   312 0:0          decalshadow  model/bridge/dresden_bridge_shadow.pmd piece 0
+   356 0:0          dif  model/building/germany/pref_11s_far.pmd piece 2
+   219 0:0          dif.a  model/bridge/2_railway_bridge_metal.pmd piece 4
+     5 0:0          dif.a.decal  prefab/bus_station/base_01/bus_station_01.pmd piece 16
+     1 0:0          dif.a.decal.attr  model2/landmark/no/trondheim_townhall_01_poc.pmd piece 13
+   588 0:0          dif.a.decal.over  model/bridge/mieszczanski.pmd piece 5
+    63 0:0          dif.a.over  model/airports/liege.pmd piece 0
+    29 0:0          dif.add  model/scs_logo/scs_logo.pmd piece 6
+     5 0:0          dif.anim.fadesheet  model2/water/weir_turbulent_curve_ibe.pmd piece 3
+     3 0:0          dif.anim.fadesheet.a  model/mover/animal/flying_ducks.pmd piece 0
+     1 0:0          dif.anim.fadesheet.a.add  model2/landmark/nl/groningen_museum_statue_01_lux.pmd piece 0
+     1 0:0          dif.anim.fadesheet.a.over  model2/landmark/nl/groningen_museum_statue_01_lux.pmd piece 3
+     1 0:0          dif.anim.fadesheet.add  model/aircraft/airplane_flying_far.pmd piece 0
+    30 0:0          dif.anim.fadesheet.over  model2/distribution/dam_01_blkw.pmd piece 20
+    10 0:0          dif.anim.flipsheet  model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 13
+    26 0:0          dif.anim.flipsheet.a  model/mover/animal/sprite_cow_eating.pmd piece 0
+    12 0:0          dif.anim.flipsheet.a.over  model/ship/speedboat/speedboat_anchored_02_de.pmd piece 13
+   152 0:0          dif.anim.flipsheet.over  model/mover/towing_ship.pmd piece 2
+    36 0:0          dif.anim.over  model/water/foam.pmd piece 0
+     5 0:0          dif.decal  prefab/bus_station/base_03/bus_station_03a1_big.pmd piece 8
+   238 0:0          dif.decal.over  model/bridge/bridge_shadow.pmd piece 0
+    18 0:0          dif.flat  model2/background/forest_mountain_01_it.pmd piece 1
+     7 0:0          dif.flat.a  model2/background/forest_mountain_01_it.pmd piece 0
+     1 0:0          dif.flat.a.over  model/dock/construction/dock.pmd piece 8
+     2 0:0          dif.flat.add  model/truck_service_int/garage.pmd piece 3
+     2 0:0          dif.flat.over  model/panorama/dover/dover_castle.pmd piece 0
+  1433 0:0          dif.lum  model/billboard.pmd piece 0
+    50 0:0          dif.lum.a  model/building/austria/village_church.pmd piece 0
+     1 0:0          dif.lum.a.add  vehicle/truck/upgrade/interior_decors/toystand/x23_tree.pmd piece 4
+     2 0:0          dif.lum.a.decal.add  model2/landmark/al/durres_port_sign_01_blkw.pmd piece 7
+     1 0:0          dif.lum.a.decal.over  prefab/light_factory/light_factory.pmd piece 13
+    30 0:0          dif.lum.a.over  model2/landmark/dk/copenhagen/copenhagen_admin_03_poc.pmd piece 2
+    24 0:0          dif.lum.add  model/et2_china_logo/et2_china_logo.pmd piece 0
+    11 0:0          dif.lum.decal  model/railing/tunnel/cholupice_tunel.pmd piece 0
+    26 0:0          dif.lum.decal.add  vehicle/railcar/train_copenhagen/ai/cart1.pmd piece 7
+   217 0:0          dif.lum.decal.over  model/ui/night_city/desktop_night_city.pmd piece 12
+  1489 0:0          dif.lum.lvcol  model/props/road/de_standalone_traffic_light.pmd piece 4
+    12 0:0          dif.lum.lvcol.a  model2/landmark/de/berlin/berlin_congress_01_de.pmd piece 25
+     2 0:0          dif.lum.lvcol.a.decal.over  vehicle/truck/volvo_fh16_2009/interior/uk/anim.pmd piece 0
+   595 0:0          dif.lum.lvcol.decal.over  prefab2/tollgate/tollgate_big_01_fr.pmd piece 10
+    17 0:0          dif.lum.over  model/ui/night_city/desktop_night_city.pmd piece 7
+     2 0:0          dif.lum.shadow.a  model2/landmark/ee/tartu_mall_01_bus.pmd piece 9
+   298 0:0          dif.lum.spec  model/parked_bus/static/oldbus_static_rusty.pmd piece 1
+     9 0:0          dif.lum.spec.a  model2/background/san_giovanni_horizon_01_it.pmd piece 0
+  1187 0:0          dif.lum.spec.lvcol  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 16
+    23 0:0          dif.lum.spec.lvcol.a  model2/landmark/be/antwerp_tunnel_01_lux.pmd piece 14
+    24 0:0          dif.lum.spec.shadow  vehicle/railcar/train_copenhagen/ai/cart1.pmd piece 3
+     2 0:0          dif.lum.spec.tsnmap.lvcol.a  model2/landmark/de/dresden_train_station_01_de.pmd piece 16
+     6 0:0 6:0      dif.lum.spec.tsnmapuv  model2/landmark/se/storseleby_sculpture_01_poc.pmd piece 4
+     2 0:0 6:1      dif.lum.spec.tsnmapuv.a  vehicle/props/voltison_parts/voltison_stand_02.pmd piece 5
+     2 0:0 6:0      dif.lum.spec.tsnmapuv.lvcol  model2/border_crossing/border_gruskove_gate_02_si_blkw.pmd piece 13
+   126 0:0          dif.over  model/et2_china_logo/et2_china_logo.pmd piece 3
+     3 0:0          dif.paint.a  vehicle/truck/volvo_fh16_2009/accessory/f_grill/frontgrill_paint.pmd piece 2
+    60 0:0          dif.shadow  model/molo/concrete.pmd piece 0
+     1 0:0 1:0      dif.shadow  model/mover/crowd/rabbit.pmd piece 0
+   175 0:0          dif.shadow.a  model/gate/sliding.pmd piece 1
+     6 0:0          dif.shadow.tg0  model/rock/grassy_cover_med.pmd piece 0
+ 51882 0:0          dif.spec  model/aircraft/a320/a320.pmd piece 1
+     1 0:0 1:1      dif.spec  model2/props/street/advert/nl/advert_big_01_nl_lux.pmd piece 2
+  6816 0:0          dif.spec.a  model/aircraft/737/737.pmd piece 0
+    14 0:0          dif.spec.a.add  model/ui/dark_studio.pmd piece 14
+   137 0:0          dif.spec.a.decal  model2/building/bus_stops/bus_stop_01_fi_balt.pmd piece 9
+     8 0:0          dif.spec.a.decal.add  model2/building/village_close/toilet_01_gr.pmd piece 14
+    29 0:0          dif.spec.a.decal.attr  model2/building/industry/concrete_storage_01_blke.pmd piece 8
+     7 0:0          dif.spec.a.decal.mult  model2/sign/company_logos/snl/poster_sign_sln_rus.pmd piece 0
+   987 0:0          dif.spec.a.decal.over  model/dirt/dirt_decal_01.pmd piece 0
+   337 0:0          dif.spec.a.over  model/construction/telehandler/telehandler.pmd piece 2
+    33 0:0          dif.spec.add  model/et2_logo/et2_logo.pmd piece 3
+  6765 0:0          dif.spec.add.env  model/aircraft/helicopter/animated/air_ambulance_anim.pmd piece 0
+     1 0:0 1:0 6:0  dif.spec.add.env  model2/building/farm/ar_animal_feed_silo.pmd piece 22
+    34 0:0 1:1      dif.spec.add.env  vehicle/car/bus_city_2025/ai/ai.pmd piece 1
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+     6 0:0 1:1 6:0  dif.spec.add.env  model2/building/farm/ar_animal_feed_silo.pmd piece 23
+    24 0:0 6:0      dif.spec.add.env  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+    32 0:0 6:1      dif.spec.add.env  vehicle/machine/excavator/cargo/cargo.pmd piece 2
+   139 0:0          dif.spec.add.env.a  model/aircraft/747/747.pmd piece 0
+     4 0:0 1:1 6:0  dif.spec.add.env.a  model2/building/farm/ar_animal_feed_silo.pmd piece 7
+   243 0:0          dif.spec.add.env.a.decal  vehicle/machine/dumper/static/dumper_lod0.pmd piece 3
+     2 0:0          dif.spec.add.env.a.decal.mult  vehicle/railcar/czloko_effishunter_300/static/scene.pmd piece 4
+   159 0:0          dif.spec.add.env.a.decal.over  model2/building/administration/admin_generic_new_02_rus.pmd piece 0
+    41 0:0          dif.spec.add.env.a.over  prefab/amsterdam_port/amsterdam_port.pmd piece 3
+    12 0:0          dif.spec.add.env.add  vehicle/ai/a80/ai.pmd piece 3
+   105 0:0          dif.spec.add.env.decal.over  model/aircraft/pushback/pushback.pmd piece 2
+    80 0:0          dif.spec.add.env.indenv  model2/building/industry/concrete_storage_01_blke.pmd piece 4
+     2 0:0          dif.spec.add.env.indenv.a  model2/building/industry/concrete_storage_01_blke.pmd piece 5
+     2 0:0          dif.spec.add.env.indenv.decal.over  vehicle/truck/scania_rcab_2009/interior/model.pmd piece 72
+    24 0:0          dif.spec.add.env.indenv.tsnmap  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 0
+    22 0:0 6:0      dif.spec.add.env.indenv.tsnmapuv  model2/walls/wall_metal_01_ibe.pmd piece 1
+    19 0:0 6:1      dif.spec.add.env.indenv.tsnmapuv  vehicle/truck/volvo_fh16_2012/interior/hi_roof.pmd piece 13
+  2526 0:0          dif.spec.add.env.nofresnel  model/aircraft/737/737.pmd piece 4
+    41 0:0          dif.spec.add.env.nofresnel.a  model/panorama/brussel/atomium.pmd piece 0
+     2 0:0          dif.spec.add.env.nofresnel.a.over  vehicle/ai/special/scooter_25/ai.pmd piece 3
+     3 0:0          dif.spec.add.env.nofresnel.decal  vehicle/trailer_eu/gooseneck/cargo_cistern.pmd piece 4
+    10 0:0          dif.spec.add.env.nofresnel.decal.over  vehicle/truck/upgrade/badges/man_tgx/badges_18320.pmd piece 0
+     2 0:0          dif.spec.add.env.nofresnel.paint.a.over  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_ch.pmd piece 2
+   147 0:0          dif.spec.add.env.nofresnel.shadow  model/sign/truck_company_logos/renault/entrance_sign.pmd piece 1
+    64 0:0          dif.spec.add.env.nofresnel.tsnmap  vehicle/car/group/truck_trans_volvo/truck_transporter/cargo.pmd piece 4
+    24 0:0          dif.spec.add.env.nofresnel.tsnmap.a  vehicle/railcar/tram_luxembourg/car2.pmd piece 7
+     6 0:0          dif.spec.add.env.nofresnel.tsnmap.paint.a  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_4x2.pmd piece 0
+    71 0:0 6:0      dif.spec.add.env.nofresnel.tsnmapuv  model2/border_crossing/border_hani_gate_02_al_blkw.pmd piece 1
+   940 0:0 6:1      dif.spec.add.env.nofresnel.tsnmapuv  model/ship/police_boat.pmd piece 2
+    34 0:0 6:0      dif.spec.add.env.nofresnel.tsnmapuv.a  vehicle/truck/daf_2021/accessory/s_guard/duty_chrome.pmd piece 0
+     4 0:0 6:1      dif.spec.add.env.nofresnel.tsnmapuv.over  vehicle/truck/volvo_fh_2021/accessory/steering_w/pearl.pmd piece 4
+     5 0:0 6:0      dif.spec.add.env.nofresnel.tsnmapuv.shadow  model2/landmark/ch/geneve_ferris_wheel_ch_mov.pmd piece 183
+     1 0:0          dif.spec.add.env.oinv  vehicle/truck/upgrade/sunshield/mercedes_actros_2014/sunshield_01.pmd piece 2
+    16 0:0          dif.spec.add.env.oinv.a.decal.over  vehicle/truck/scania_2016/accessory/f_fender/hgh_blk_s.pmd piece 8
+    10 0:0          dif.spec.add.env.oinv.add  vehicle/railcar/locomotive_iore/ai/locomotive_01.pmd piece 1
+     8 0:0          dif.spec.add.env.oinv.decal  vehicle/truck/scania_2016/accessory/tank/tank_1000.pmd piece 4
+   200 0:0          dif.spec.add.env.over  model/animated/forwarder/forwarder_base.pmd piece 0
+     1 0:0 1:0 6:0  dif.spec.add.env.over.dif.opac  model2/building/farm/ar_animal_feed_silo.pmd piece 22
+     1 0:0 1:1      dif.spec.add.env.over.dif.opac  model2/landmark/fi/oulu_gas_station_shop_01_poc.pmd piece 11
+     5 0:0 1:1 6:0  dif.spec.add.env.over.dif.opac  model2/building/farm/ar_animal_feed_silo.pmd piece 7
+    10 0:0 1:0      dif.spec.add.env.over.dif.opac.over  model/ship/yachts.pmd piece 1
+   294 0:0          dif.spec.add.env.paint  model/parked_trucks_groups/trucks_parked_volvo_2x1_02_sc.pmd piece 5
+     6 0:0 1:1      dif.spec.add.env.paint  vehicle/car/betrude_premium_24/ai/sedan.pmd piece 0
+    60 0:0          dif.spec.add.env.shadow  model/landmark/a31_metal_sculpture.pmd piece 0
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env.shadow  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env.shadow  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    15 0:0          dif.spec.add.env.shadow.a  model2/building/shop/tx_cardealer1.pmd piece 1
+   650 0:0          dif.spec.add.env.tsnmap  model/farm/farm_tractor_trailer.pmd piece 4
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env.tsnmap  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env.tsnmap  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    24 0:0 6:0      dif.spec.add.env.tsnmap  vehicle/truck/daf_2021/accessory/steering_w/pearl.pmd piece 4
+   159 0:0          dif.spec.add.env.tsnmap.a  vehicle/car/trailer_tank_water/ai/ai.pmd piece 5
+     1 0:0 1:1 6:0  dif.spec.add.env.tsnmap.a  model2/props/country/trash_bin_03_poc.pmd piece 2
+    29 0:0          dif.spec.add.env.tsnmap.a.over  vehicle/ai/truck/man_tgx/man_tgx_xl_6x4.pmd piece 10
+     5 0:0          dif.spec.add.env.tsnmap.over  model/ui/under_bridge/desktop_under_bridge.pmd piece 11
+    87 0:0          dif.spec.add.env.tsnmap.paint  vehicle/ai/truck/iveco_hiway/iveco_hiway_asp_4x2.pmd piece 5
+     2 0:0          dif.spec.add.env.tsnmap.shadow  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 16
+    12 0:0          dif.spec.add.env.tsnmap.shadow.a  vehicle/machine/disk_harrows/cargo/cargo.pmd piece 0
+     3 0:0 1:0 6:0  dif.spec.add.env.tsnmapuv  model2/building/farm/ar_animal_feed_silo.pmd piece 22
+     8 0:0 1:1 2:0 6:0 dif.spec.add.env.tsnmapuv  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+     1 0:0 1:1 2:2 6:2 dif.spec.add.env.tsnmapuv  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+    29 0:0 1:1 6:0  dif.spec.add.env.tsnmapuv  model2/building/farm/ar_animal_feed_silo.pmd piece 23
+     6 0:0 1:1 6:2  dif.spec.add.env.tsnmapuv  vehicle/railcar/wagon_ab7/ai/ai.pmd piece 0
+  1511 0:0 6:0      dif.spec.add.env.tsnmapuv  model/building/orange_panel_house.pmd piece 1
+  2563 0:0 6:1      dif.spec.add.env.tsnmapuv  model/aircraft/pushback/pushback.pmd piece 3
+     9 0:0 1:1 6:0  dif.spec.add.env.tsnmapuv.a  model2/building/administration/admin_07_poc.pmd piece 6
+   425 0:0 6:0      dif.spec.add.env.tsnmapuv.a  model/aircraft/737/737.pmd piece 6
+    68 0:0 6:1      dif.spec.add.env.tsnmapuv.a  model/vehicle/train/wagon_covered_far_crv.pmd piece 0
+     1 0:0 6:0      dif.spec.add.env.tsnmapuv.a.add  model2/landmark/landmark_es/malaga_admin_01_ibe.pmd piece 2
+    24 0:0 6:0      dif.spec.add.env.tsnmapuv.oinv  model/train/wagon_coal_curve.pmd piece 1
+    22 0:0 6:0      dif.spec.add.env.tsnmapuv.over  vehicle/car/outrider_utv/ai/utv1.pmd piece 10
+    11 0:0 6:1      dif.spec.add.env.tsnmapuv.over  vehicle/car/amphibious_bus/static/static.pmd piece 4
+    22 0:0 6:0      dif.spec.add.env.tsnmapuv.paint  vehicle/trailer_owned/upgrade/wheel/nuts/f_nuts_0_01_paint.pmd piece 0
+    70 0:0 6:1      dif.spec.add.env.tsnmapuv.paint  vehicle/trailer_owned/scs_log/body/steel_136.pmd piece 4
+    43 0:0 6:0      dif.spec.add.env.tsnmapuv.shadow  model/building/mid_city_buildings/mid_city_building01.pmd piece 0
+    92 0:0 6:1      dif.spec.add.env.tsnmapuv.shadow  model/mover/machine/excavator_mov_ne.pmd piece 1
+    12 0:0 6:0      dif.spec.add.env.tsnmapuv.shadow.a  model/ship/cruise_boat_01_de.pmd piece 0
+     2 0:0 6:0      dif.spec.add.env.tsnmapuv.shadow.paint.a  vehicle/car/trailer_cotton/static/static.pmd piece 6
+    21 0:0 1:0      dif.spec.amod.dif.spec  model2/building/administration/shelter_03_no_poc.pmd piece 2
+     1 0:0 1:0 6:0  dif.spec.amod.dif.spec  model2/building/flats/flats_poc/flats_close_01_poc.pmd piece 7
+   459 0:0 1:1      dif.spec.amod.dif.spec  model/sign/traffic/be/belgium_signs_big_1.pmd piece 1
+    43 0:0 1:1 6:0  dif.spec.amod.dif.spec  model2/building/administration/admin_07_poc.pmd piece 7
+    48 0:0 1:1      dif.spec.amod.dif.spec.add.env  model2/building/shop/restaurant_01_lux.pmd piece 18
+     4 0:0 1:1 6:0  dif.spec.amod.dif.spec.add.env  model2/building/farm/ar_animal_feed_silo.pmd piece 23
+     1 0:0 1:1      dif.spec.amod.dif.spec.add.env.asafew.a  model2/landmark/se/gothenburg_admin_03_poc.pmd piece 0
+    11 0:0 1:1      dif.spec.amod.dif.spec.add.env.tsnmap  model2/landmark/de/nuremberg/nuremberg_bus_station_01_bus.pmd piece 11
+     1 0:0 1:0      dif.spec.amod.dif.spec.add.env.tsnmap.asafew.a  prefab2/bus_station/type_01/bus_station_01_bus.pmd piece 32
+     2 0:0 1:1      dif.spec.amod.dif.spec.add.env.tsnmap.asafew.a  model2/landmark/be/antwerp_hospital_01_lux.pmd piece 11
+     2 0:0 1:1      dif.spec.amod.dif.spec.add.env.tsnmap.shadow.asafew.a  model2/ship/fishing_trawler_01_poc.pmd piece 0
+    15 0:0 1:0 6:0  dif.spec.amod.dif.spec.add.env.tsnmapuv  model2/building/shop/restaurant_01_lux.pmd piece 14
+    10 0:0 1:0 6:1  dif.spec.amod.dif.spec.add.env.tsnmapuv  model2/landmark/no/bodo_roundabout_01_poc.pmd piece 3
+   195 0:0 1:1 6:0  dif.spec.amod.dif.spec.add.env.tsnmapuv  model2/building/industry/sugar_factory_evaporators_01_lux.pmd piece 1
+     2 0:0 1:1 6:1  dif.spec.amod.dif.spec.add.env.tsnmapuv  model2/vehicle/train/tank_wagon_01_poc.pmd piece 8
+    87 0:0 1:1 6:2  dif.spec.amod.dif.spec.add.env.tsnmapuv  model2/building/shop/restaurant_01_lux.pmd piece 2
+    16 0:0 1:0 6:0  dif.spec.amod.dif.spec.add.env.tsnmapuv.asafew.a  model2/gas_station/gas_pump_01_bi.pmd piece 49
+    18 0:0 1:1 6:0  dif.spec.amod.dif.spec.add.env.tsnmapuv.asafew.a  model2/building/administration/admin_tower_01_lux.pmd piece 1
+     6 0:0 1:1 6:2  dif.spec.amod.dif.spec.add.env.tsnmapuv.asafew.a  vehicle/railcar/wagon_hopper_ore/ai/ai.pmd piece 0
+     1 0:0 1:1 6:0  dif.spec.amod.dif.spec.add.env.tsnmapuv.shadow.asafew.a  model2/landmark/fi/vaasa_stadium_01_poc.pmd piece 3
+    28 0:0 1:0      dif.spec.amod.dif.spec.asafew.a  model2/building/administration/shelter_02_no_poc.pmd piece 13
+   179 0:0 1:1      dif.spec.amod.dif.spec.asafew.a  model2/bridge/bridge_lamp_base_01_de.pmd piece 0
+     3 0:0 1:0      dif.spec.amod.dif.spec.shadow  model2/border_crossing/border_medzitlija_gate_02_mk_gr.pmd piece 1
+    23 0:0 1:1      dif.spec.amod.dif.spec.shadow  model2/border_crossing/border_medzitlija_gate_02_mk_gr.pmd piece 10
+    38 0:0 1:0      dif.spec.amod.dif.spec.shadow.asafew.a  model2/barrier/metal/ks_fence_wire_wooden.pmd piece 0
+    96 0:0 1:1      dif.spec.amod.dif.spec.shadow.asafew.a  model/sign/navigation/stand/toll_gantry_v04_no.pmd piece 0
+     3 0:0 1:0      dif.spec.amod.dif.spec.tsnmap  model2/building/village_mid/village_nl/village_mid_06_nl_lux.pmd piece 1
+   261 0:0 1:1      dif.spec.amod.dif.spec.tsnmap  model2/border_crossing/border_evzoni_gate_02_gr.pmd piece 17
+    17 0:0 1:1 6:0  dif.spec.amod.dif.spec.tsnmap  model2/building/logistic/warehouse_05_poc.pmd piece 15
+    42 0:0 1:0      dif.spec.amod.dif.spec.tsnmap.asafew.a  model2/building/farm/farm_cowhouse_02_poc.pmd piece 59
+   211 0:0 1:1      dif.spec.amod.dif.spec.tsnmap.asafew.a  model2/barrier/animated/toll_gate_static_close_de.pmd piece 4
+     1 0:0 1:1      dif.spec.amod.dif.spec.tsnmap.shadow  model2/landmark/no/nordmannset_sculpture_01_poc.pmd piece 1
+    83 0:0 1:0      dif.spec.amod.dif.spec.tsnmap.shadow.asafew.a  model2/landmark/ch/geneve_ferris_wheel_ch_mov.pmd piece 5
+    50 0:0 1:1      dif.spec.amod.dif.spec.tsnmap.shadow.asafew.a  model2/building/bus_stops/bus_stop_01_be_lux.pmd piece 28
+  3055 0:0 1:0 6:0  dif.spec.amod.dif.spec.tsnmapuv  model/building/farm/il_silo_old_01.pmd piece 16
+    61 0:0 1:0 6:1  dif.spec.amod.dif.spec.tsnmapuv  model2/bridge/bridge_pillars_01_poc.pmd piece 5
+     1 0:0 1:1 2:2 6:0 dif.spec.amod.dif.spec.tsnmapuv  model2/gas_station/gas_shop_01_at.pmd piece 68
+ 37819 0:0 1:1 6:0  dif.spec.amod.dif.spec.tsnmapuv  model/dock/mine/chimney_brick_01_de.pmd piece 6
+   232 0:0 1:1 6:1  dif.spec.amod.dif.spec.tsnmapuv  model2/landmark/al/fier_mall_01_adverts_blkw.pmd piece 4
+   977 0:0 1:1 6:2  dif.spec.amod.dif.spec.tsnmapuv  model2/barrier/concrete/crash_barrier_concrete_03_de.pmd piece 1
+  1190 0:0 1:0 6:0  dif.spec.amod.dif.spec.tsnmapuv.asafew.a  model/sign/navigation/be/stand/portal_gantry_v02_hw2_be.pmd piece 14
+     1 0:0 1:0 6:1  dif.spec.amod.dif.spec.tsnmapuv.asafew.a  model2/bridge/bridge_pillars_01_poc.pmd piece 7
+ 15794 0:0 1:1 6:0  dif.spec.amod.dif.spec.tsnmapuv.asafew.a  model/building/farm/il_silo_old_01.pmd piece 3
+     5 0:0 1:1 6:1  dif.spec.amod.dif.spec.tsnmapuv.asafew.a  model2/landmark/de/dortmund_cinema_01_lux.pmd piece 13
+    74 0:0 1:1 6:2  dif.spec.amod.dif.spec.tsnmapuv.asafew.a  model2/bridge/control_tower_01_lux.pmd piece 1
+    35 0:0 1:0 6:0  dif.spec.amod.dif.spec.tsnmapuv.shadow  model2/landmark/ch/geneve_ferris_wheel_ch_mov.pmd piece 4
+    19 0:0 1:1 6:0  dif.spec.amod.dif.spec.tsnmapuv.shadow  model2/building/administration/admin_11_blkw.pmd piece 17
+   265 0:0 1:0 6:0  dif.spec.amod.dif.spec.tsnmapuv.shadow.asafew.a  model2/building/administration/admin_05_gr.pmd piece 49
+  2065 0:0 1:1 6:0  dif.spec.amod.dif.spec.tsnmapuv.shadow.asafew.a  model/building/farm/il_silo_old_01.pmd piece 4
+     6 0:0 1:1 6:2  dif.spec.amod.dif.spec.tsnmapuv.shadow.asafew.a  model2/landmark/nl/westdorpe_sculpture_01_lux.pmd piece 2
+   658 0:0          dif.spec.asafew.a  model/event/static/a6_burned.pmd piece 2
+    14 0:0          dif.spec.asafew.a.decal  model/parked_trailers/static/gooseneck/parked_gooseneck_single.pmd piece 5
+     1 0:0          dif.spec.asafew.a.decal.add  prefab2/depot/olive_farm/olive_farm_01_gr.pmd piece 35
+   101 0:0          dif.spec.asafew.a.decal.over  model/ship/container_ship_02_loaded.pmd piece 4
+     6 0:0          dif.spec.asafew.a.over  model2/building/village_close/village_es/village_close_12_es_ibe.pmd piece 6
+    93 0:0          dif.spec.asafew.decal.over  model2/building/village_close/village_est/village_close_08_est_balt.pmd piece 12
+     6 0:0          dif.spec.asafew.over  model2/landmark/cernavoda_monument_1_ro_blke.pmd piece 2
+    97 0:0          dif.spec.decal  model/road/patch1.pmd piece 0
+    21 0:0          dif.spec.decal.add  model2/border_crossing/border_kjafasan_gate_02_mk_blkw.pmd piece 11
+     4 0:0 1:1      dif.spec.decal.add  model2/railing/barrier/barrier_railing_single_01_poc.pmd piece 7
+     5 0:0          dif.spec.decal.mult  model/ui/dark_studio.pmd piece 17
+ 61496 0:0          dif.spec.decal.over  model/aircraft/737/737.pmd piece 2
+     9 0:0          dif.spec.fade.dif.spec  model2/rock/shore_stones.pmd piece 0
+    94 0:0          dif.spec.fade.dif.spec.tsnmap  model2/landmark/marble_quarry_tunnel_02_it.pmd piece 0
+     1 0:0 6:0      dif.spec.fade.mult.dif.spec.tsnmapuv2  model2/landmark/fi/helsinki_bus_station_07_bus.pmd piece 4
+     8 0:0 1:0 2:0  dif.spec.mult.dif.iamod.dif.add.env  model2/gas_station/gas_arrow_primel_gr.pmd piece 8
+    27 0:0 1:1 2:1  dif.spec.mult.dif.iamod.dif.add.env  model2/gas_station/gas_arrow_01_gr.pmd piece 4
+    26 0:0 1:1 2:2  dif.spec.mult.dif.iamod.dif.add.env  model/aircraft/737/737.pmd piece 3
+    58 0:0 1:1 2:2  dif.spec.mult.dif.iamod.dif.add.env.tsnmap  model2/props/factory/aluminium_rods_01_blkw_mov.pmd piece 2
+    83 0:0 1:0 2:0 6:0 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/building/church/church_tower_02_mid_rus.pmd piece 0
+     2 0:0 1:0 2:0 6:1 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/landmark/no/kongsvinger_sculptures_01_poc.pmd piece 5
+    36 0:0 1:0 2:1 6:0 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/building/church/church_main_02_mid_rus.pmd piece 2
+    25 0:0 1:1 2:0 6:0 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  prefab2/gas_station/gas_station_modern_01_2s_gr.pmd piece 51
+   259 0:0 1:1 2:1 6:0 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/building/church/church_main_02_mid_rus.pmd piece 13
+   204 0:0 1:1 2:1 6:1 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/gas_station/gas_station_modern_01_poc.pmd piece 236
+    16 0:0 1:1 2:1 6:2 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/gas_station/gas_price_totem_small_gr.pmd piece 0
+   859 0:0 1:1 2:2 6:0 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/border_crossing/border_dobrakovo_gate_02_me_blkw.pmd piece 5
+  1693 0:0 1:1 2:2 6:1 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/gas_station/gas_arrow_01_bi.pmd piece 14
+   424 0:0 1:1 2:2 6:2 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/gas_station/gas_arrow_01_bi.pmd piece 22
+    17 0:0 1:1 2:2 6:3 dif.spec.mult.dif.iamod.dif.add.env.tsnmapuv  model2/building/administration/air_conditioner_01_de.pmd piece 1
+   841 0:0 1:0      dif.spec.mult.dif.spec  model2/landmark/me/podgorica_montenegro_bridge_blkw.pmd piece 4
+   431 0:0 1:1      dif.spec.mult.dif.spec  model/bridge/mieszczanski.pmd piece 0
+    37 0:0 1:1      dif.spec.mult.dif.spec.a  model2/landmark/bridge/bridge_a9_01_lv.pmd piece 0
+     1 0:0 1:1      dif.spec.mult.dif.spec.a.add  prefab2/border_crossing/ba/generic/border_truck_gate_01_ba_blkw.pmd piece 8
+    18 0:0 1:0      dif.spec.mult.dif.spec.a.decal.over  model2/rock/hillside_blke.pmd piece 0
+    23 0:0 1:0      dif.spec.mult.dif.spec.add.env  model/ui/dark_studio.pmd piece 3
+     4 0:0 1:0 6:0  dif.spec.mult.dif.spec.add.env  vehicle/props/container_generic/cargo/cargo_20_lod1.pmd piece 0
+  1117 0:0 1:1      dif.spec.mult.dif.spec.add.env  model/aircraft/747/747.pmd piece 1
+     4 0:0 1:1 6:2  dif.spec.mult.dif.spec.add.env  vehicle/ai/dagger/ai.pmd piece 1
+    31 0:0 1:1      dif.spec.mult.dif.spec.add.env.a  model/parked_bus/static/oldbus_static_rusty.pmd piece 2
+    96 0:0 1:1      dif.spec.mult.dif.spec.add.env.paint  vehicle/ai/ducato/ambulance.pmd piece 3
+    33 0:0 1:1      dif.spec.mult.dif.spec.add.env.tsnmap  model/ui/garage/desktop_garage.pmd piece 26
+     4 0:0 1:0 6:0  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/props/container_generic/cargo/cargo_20_lod1.pmd piece 0
+     2 0:0 1:0 6:1  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/props/container_generic/cargo/cargo_20_lod0.pmd piece 0
+     6 0:0 1:1 2:0 6:2 dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 3
+   819 0:0 1:1 6:0  dif.spec.mult.dif.spec.add.env.tsnmapuv  model/ui/dark_studio.pmd piece 4
+    35 0:0 1:1 6:1  dif.spec.mult.dif.spec.add.env.tsnmapuv  vehicle/ai/tram_duwag/tram_duwag_car2_lod1.pmd piece 25
+  4542 0:0 1:1 6:2  dif.spec.mult.dif.spec.add.env.tsnmapuv  model/aircraft/a320/a320.pmd piece 6
+   559 0:0 1:0      dif.spec.mult.dif.spec.decal.over  model2/rock/at_rock_limestone_curve_16m.pmd piece 5
+     1 0:0 1:1      dif.spec.mult.dif.spec.decal.over  model2/building/farm/farm_garage_01_poc.pmd piece 5
+    17 0:0 1:0 2:0  dif.spec.mult.dif.spec.iamod.dif.spec  model2/border_crossing/border_hamzabeyli_enter_04_tr_blke.pmd piece 14
+    19 0:0 1:0 2:1  dif.spec.mult.dif.spec.iamod.dif.spec  model/sign/traffic/es/madrid_red_es_04.pmd piece 0
+   105 0:0 1:1 2:0  dif.spec.mult.dif.spec.iamod.dif.spec  model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 5
+   725 0:0 1:1 2:1  dif.spec.mult.dif.spec.iamod.dif.spec  model/mover/flag_countries.pmd piece 2
+ 19422 0:0 1:1 2:2  dif.spec.mult.dif.spec.iamod.dif.spec  model/construction/static/scrap_magnet/scrap_magnet_base.pmd piece 7
+     3 0:0 1:1 2:2 6:0 dif.spec.mult.dif.spec.iamod.dif.spec  model2/building/shop/gas_shop_01_blkw.pmd piece 55
+    18 0:0 1:1 2:2  dif.spec.mult.dif.spec.iamod.dif.spec.tsnmap  model2/building/administration/admin_17_de.pmd piece 3
+   939 0:0 1:0 2:0 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/building/shop/car_dealer_01_blkw.pmd piece 33
+   181 0:0 1:0 2:1 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/building/hotel/hotel_05_blkw.pmd piece 5
+   297 0:0 1:1 2:0 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/building/administration/admin_big_06_it_lod1.pmd piece 18
+  1296 0:0 1:1 2:1 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/sign/traffic/es/tiket_01_es.pmd piece 5
+     2 0:0 1:1 2:1 6:2 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  prefab2/border_crossing/hr/border_brgat_truck_gate_01_hr_blkw.pmd piece 7
+ 28114 0:0 1:1 2:2 6:0 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/props/lumber/planks_stack_packed_pile_01_poc_pile.pmd piece 8
+     8 0:0 1:1 2:2 6:1 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/landmark/de/rostock_monument_01_de.pmd piece 9
+     8 0:0 1:1 2:2 6:2 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model2/landmark/hannover/hannover_messe_admin_01_de.pmd piece 10
+    42 0:0 1:1 2:2 6:3 dif.spec.mult.dif.spec.iamod.dif.spec.tsnmapuv  model/props/lumber/ar_planks_stack_packed_pile.pmd piece 33
+    91 0:0 1:0      dif.spec.mult.dif.spec.opasrc01.decal.over  model2/building/parking/village_garage_03_poc.pmd piece 12
+  3933 0:0 1:1      dif.spec.mult.dif.spec.opasrc01.decal.over  model/building/farm/il_silo_old_01.pmd piece 5
+    24 0:0 1:1      dif.spec.mult.dif.spec.opasrc01.over  model2/barrier/stone/stone_wall/barrier_stone_01_lux.pmd piece 5
+     3 0:0 1:0      dif.spec.mult.dif.spec.over  model2/vegetation/decal/tomato_field_bump/tomato_field_bump_narrow_blke.pmd piece 0
+     1 0:0 1:1      dif.spec.mult.dif.spec.over  prefab2/depot/logistic/logistic_01_ibe.pmd piece 14
+    41 0:0 1:1      dif.spec.mult.dif.spec.shadow  model/mover/characters/models/workers/m_old_raking.pmd piece 0
+     1 0:0 1:1      dif.spec.mult.dif.spec.shadow.a  prefab/farm/farm_2.pmd piece 7
+     6 0:0 1:1      dif.spec.mult.dif.spec.tg0  prefab/bridge/sikorskiego.pmd piece 5
+    76 0:0 1:0      dif.spec.mult.dif.spec.tsnmap  model2/rock/at_rock_limestone_curve_16m.pmd piece 3
+     8 0:0 1:1      dif.spec.mult.dif.spec.tsnmap  model/ui/garage/desktop_garage.pmd piece 24
+   258 0:0 1:1      dif.spec.mult.dif.spec.tsnmap.shadow  model/construction/static/scrap_magnet/scrap_magnet_anim.pmd piece 6
+  1566 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv  model2/hill/rock_formation_layered1/rock_formation_layered1.pmd piece 0
+    28 0:0 1:0 6:1  dif.spec.mult.dif.spec.tsnmapuv  model2/rock/road_cliff_01_balt.pmd piece 6
+   235 0:0 1:1 6:0  dif.spec.mult.dif.spec.tsnmapuv  model/ui/garage/desktop_garage.pmd piece 29
+    60 0:0 1:1 6:1  dif.spec.mult.dif.spec.tsnmapuv  model2/rock/balt_roadcliff_3_low.pmd piece 1
+  3486 0:0 1:1 6:2  dif.spec.mult.dif.spec.tsnmapuv  prefab2/depot/quarry/quarry_blke_lod1.pmd piece 17
+    22 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv.a  model2/rock/balt_hillside1.pmd piece 0
+     8 0:0 1:1 6:1  dif.spec.mult.dif.spec.tsnmapuv.a  model2/props/construction/pile_01_rus.pmd piece 0
+   387 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv.shadow  model2/rock/ibe_rock_blocky1_b.pmd piece 1
+     1 0:0 1:0 6:1  dif.spec.mult.dif.spec.tsnmapuv.shadow  model2/rock/rock_cut_1_mult_balt.pmd piece 1
+    66 0:0 1:1 6:0  dif.spec.mult.dif.spec.tsnmapuv.shadow  model/mover/characters/models/special/m_afam_bp_01.pmd piece 1
+     1 0:0 1:1 6:1  dif.spec.mult.dif.spec.tsnmapuv.shadow  model2/rock/rock_grassy_1_balt.pmd piece 4
+     6 0:0 1:0 6:0  dif.spec.mult.dif.spec.tsnmapuv.tg1  model2/rock/ibe_rock_jagged1_c.pmd piece 5
+   123 0:0 1:1      dif.spec.oclu  prefab/garage_scandinavia/garage_poor_sc.pmd piece 14
+     2 0:0 1:1      dif.spec.oclu.a  vehicle/truck/renault_t/interior/model.pmd piece 24
+     2 0:0 1:0      dif.spec.oclu.add.env  vehicle/truck/renault_t/interior/model.pmd piece 72
+   205 0:0 1:1      dif.spec.oclu.add.env  prefab2/depot/an_124/an_124_depot.pmd piece 2
+     2 0:0 1:1      dif.spec.oclu.add.env.a  vehicle/ship/trawler_boat/scene.pmd piece 0
+     2 0:0 1:1      dif.spec.oclu.add.env.paint  vehicle/truck/renault_t/interior/model.pmd piece 9
+   103 0:0 1:1      dif.spec.oclu.add.env.tsnmap  vehicle/truck/renault_t/accessory/set_cuphold/cup_holder_closed.pmd piece 0
+     4 0:0 1:1 6:0  dif.spec.oclu.add.env.tsnmapuv  vehicle/trailer_eu/schw_slidepost/schw_slidepost_dm.dlc_schwarzmuller.pmd piece 7
+    22 0:0 1:1 6:1  dif.spec.oclu.add.env.tsnmapuv  vehicle/props/container_adr/cargo/t14_40.pmd piece 3
+   124 0:0 1:1 6:2  dif.spec.oclu.add.env.tsnmapuv  vehicle/props/air_conditioners/cargo/cargo1.pmd piece 1
+    33 0:0 1:1 6:2  dif.spec.oclu.add.env.tsnmapuv.paint  vehicle/trailer_owned/schw_slidepost/chassis.pmd piece 0
+    12 0:0 1:1 6:2  dif.spec.oclu.add.env.tsnmapuv.shadow  vehicle/props/aircond/cargo/cargo_1.pmd piece 0
+     4 0:0 1:1 6:2  dif.spec.oclu.add.env.tsnmapuv.shadow.paint  vehicle/trailer_eu/scs_gooseneck/trailer_brace.pmd piece 0
+     2 0:0 1:1      dif.spec.oclu.over  vehicle/truck/renault_t/interior/model.pmd piece 16
+     8 0:0 1:1      dif.spec.oclu.shadow  vehicle/props/lumber_beams/cargo/cargo.pmd piece 1
+     1 0:0 1:0      dif.spec.oclu.tg0  prefab2/container_plaza/container_plaza_sc.pmd piece 2
+    83 0:0 1:1      dif.spec.oclu.tsnmap  vehicle/props/mystery_cyl_oversize/cargo/cargo.pmd piece 4
+     2 0:0 1:0 6:0  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 33
+    52 0:0 1:1 6:0  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/accessory/steering_w/pearl.pmd piece 6
+    53 0:0 1:1 6:1  dif.spec.oclu.tsnmapuv  vehicle/truck/man_tgx_euro6/interior/anim.pmd piece 12
+   193 0:0 1:1 6:2  dif.spec.oclu.tsnmapuv  vehicle/props/silo_oversize/cargo/cargo.pmd piece 2
+     2 0:0 1:0      dif.spec.oclu.weight.add.env  vehicle/props/square_tubing/cargo/cargo1_lod2.pmd piece 1
+   288 0:0 1:1      dif.spec.oclu.weight.add.env  model/parked_trailers/static/curtain/trailer_curtain_sider.pmd piece 5
+     1 0:0 1:0 6:0  dif.spec.oclu.weight.add.env.tsnmapuv  vehicle/truck/volvo_fh16_2009/accessory/sideskirt/sideskirt_plate.pmd piece 2
+     1 0:0 1:0 6:1  dif.spec.oclu.weight.add.env.tsnmapuv  vehicle/truck/volvo_fh16_2009/accessory/doorstep/hss_doorstep_01.pmd piece 0
+   122 0:0 1:1 6:1  dif.spec.oclu.weight.add.env.tsnmapuv  vehicle/props/marble_blocks/cargo/cargo.pmd piece 2
+   436 0:0 1:1 6:2  dif.spec.oclu.weight.add.env.tsnmapuv  model/parked_trailers/static/scs_foodtank/foodtank.pmd piece 1
+   244 0:0 1:1 6:2  dif.spec.oclu.weight.add.env.tsnmapuv.paint  vehicle/trailer_eu/scs_brick/trailer.pmd piece 5
+  1103 0:0          dif.spec.over  model/building/administration/cube1.pmd piece 4
+    11 0:0 1:1      dif.spec.over.dif.opac  prefab/garage/garage_poor.pmd piece 10
+     8 0:0 1:0      dif.spec.over.dif.opac.a  model2/props/storage/crate_block_empty_02_blke.pmd piece 11
+    39 0:0 1:1      dif.spec.over.dif.opac.add.env  vehicle/ai/incentro/car1_er.pmd piece 3
+     1 0:0 1:1      dif.spec.over.dif.opac.shadow  vehicle/trailer_eu/schmitz/s_ki_solid/s_ki_solid_brace.pmd piece 0
+    14 0:0 1:0      dif.spec.over.dif.opac.shadow.a  model2/props/storage/crate_block_empty_02_blke.pmd piece 12
+     1 0:0 1:1      dif.spec.over.dif.opac.shadow.a  model2/props/street/advert/gr/advert_vertical_01_gr.pmd piece 79
+    26 0:0          dif.spec.paint  vehicle/truck/scania_2016/accessory/f_mudflap/griffin.pmd piece 1
+     4 0:0          dif.spec.paint.a  vehicle/truck/renault_t/accessory/set_dashbrd/renault_e.pmd piece 0
+     2 0:0          dif.spec.paint.a.over  vehicle/truck/renault_t/accessory/f_mudflap/ren_bl_pa.pmd piece 2
+     4 0:0          dif.spec.paint.asafew.a.over  vehicle/trailer_owned/upgrade/chs_f/krone_coolliner/pallet_box_xl_l.pmd piece 5
+     8 0:0          dif.spec.paint.decal.over  vehicle/trailer_owned/upgrade/wheel/tire/tire_245_70_r17_r.pmd piece 2
+     2 0:0          dif.spec.paint.over  vehicle/props/wrapped_bales/cargo/scs_flatbed/cargo_136.pmd piece 0
+  1959 0:0          dif.spec.shadow  model/air_motorest/air_motorest.pmd piece 0
+  5785 0:0          dif.spec.shadow.a  model/air_motorest/air_motorest.pmd piece 1
+     2 0:0 1:1      dif.spec.shadow.a  model2/building/logistic/warehouse_open_01_gr.pmd piece 9
+   174 0:0          dif.spec.shadow.asafew.a  model2/building/flats/flats_poc/flats_close_01_poc.pmd piece 12
+    88 0:0          dif.spec.tg0  model/plaza/asphalt_ground_uk.pmd piece 0
+     1 0:0          dif.spec.tg0.a  prefab/quarry/quarry_sc_02.pmd piece 27
+  4303 0:0          dif.spec.tsnmap  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 8
+     2 0:0 1:1 6:0  dif.spec.tsnmap  model2/building/industry/chimney_metal_01_poc.pmd piece 0
+     4 0:0 6:0      dif.spec.tsnmap  model2/building/shop/restaurant_02_blkw.pmd piece 11
+   877 0:0          dif.spec.tsnmap.a  model/props/lumber/ar_planks_stack_packed_pile.pmd piece 15
+     3 0:0 1:1      dif.spec.tsnmap.a  model2/building/flats/flats_hr/block_of_flats_02_hr_blkw.pmd piece 50
+     2 0:0          dif.spec.tsnmap.a.decal  vehicle/trailer_owned/feldbinder_eut/chassis/ch_3_52.pmd piece 3
+     1 0:0          dif.spec.tsnmap.a.decal.attr  model2/landmark/se/soderhamn_aircraft_viggen_poc.pmd piece 6
+     1 0:0          dif.spec.tsnmap.a.decal.over  model2/landmark/gr/lamia_church_01_gr.pmd piece 13
+    12 0:0          dif.spec.tsnmap.asafew  vehicle/machine/bobcat_tl3070a_telehandler/cargo/cargo.pmd piece 6
+  4479 0:0          dif.spec.tsnmap.asafew.a  model/traffic_light/city_nld.pmd piece 32
+     8 0:0          dif.spec.tsnmap.asafew.a.decal  vehicle/trailer_eu/krone/profiliner_hd/trailer_detail.pmd piece 5
+    17 0:0          dif.spec.tsnmap.asafew.a.decal.attr  model2/barrier/concrete/crash_barrier_concrete_04_de.pmd piece 2
+   145 0:0          dif.spec.tsnmap.decal.over  model2/props/storage/case_wooden_01_de.pmd piece 5
+    35 0:0          dif.spec.tsnmap.over  model2/landmark/rs/prokuplje_statue_01_blkw.pmd piece 5
+  1324 0:0          dif.spec.tsnmap.shadow  model/animated/forwarder/forwarder_base.pmd piece 5
+   115 0:0          dif.spec.tsnmap.shadow.a  model2/border_crossing/border_kulata_gate_02_bg_gr.pmd piece 26
+    10 0:0          dif.spec.tsnmap.shadow.asafew.a  model2/bridge/control_tower_01_lux.pmd piece 5
+     1 0:0 1:1 2:1 6:0 dif.spec.tsnmapuv  model2/gas_station/gas_shop_02_rus.pmd piece 87
+     1 0:0 1:1 2:2 6:0 dif.spec.tsnmapuv  model2/gas_station/gas_shop_02_rus.pmd piece 67
+    12 0:0 1:1 6:2  dif.spec.tsnmapuv  model2/railing/barrier/barrier_railing_single_01_poc.pmd piece 6
+ 13682 0:0 6:0      dif.spec.tsnmapuv  model/dock/plank_stacks_large_01_de.pmd piece 6
+  1851 0:0 6:1      dif.spec.tsnmapuv  model/props/lumber/ar_planks_stack_packed_pile.pmd piece 18
+     8 0:0 1:1 6:0  dif.spec.tsnmapuv.a  model2/building/village_mid/village_gr/village_close_39_gr.pmd piece 19
+  4245 0:0 6:0      dif.spec.tsnmapuv.a  model/sign/navigation/ch/stand/ch_stand_arm_v01_hw1.pmd piece 2
+    93 0:0 6:1      dif.spec.tsnmapuv.a  model/aircraft/a320/a320.pmd piece 2
+     4 0:0 6:0      dif.spec.tsnmapuv.a.add  vehicle/truck/renault_t/interior/model_24/antracite_sl_24.pmd piece 47
+    10 0:0 6:0      dif.spec.tsnmapuv.a.decal  model2/building/administration/police_station_01_poc.pmd piece 21
+    19 0:0 6:1      dif.spec.tsnmapuv.a.decal  vehicle/trailer_eu/krone/boxliner/cargo/boxliner.pmd piece 9
+    34 0:0 6:0      dif.spec.tsnmapuv.a.decal.attr  model2/building/administration/admin_04_poc.pmd piece 10
+    14 0:0 6:1      dif.spec.tsnmapuv.a.mult  vehicle/railcar/ice3neo/ai/car1.pmd piece 0
+    14 0:0 6:0      dif.spec.tsnmapuv.a.over  model2/landmark/ba/sarajevo/sarajevo_museum_01_blkw.pmd piece 10
+    25 0:0 6:1      dif.spec.tsnmapuv.a.over  vehicle/car/trailer_boat_small_01/ai/ai.pmd piece 4
+  1273 0:0 6:0      dif.spec.tsnmapuv.asafew.a  model/panorama/oasnabruck/osnabruck_admin_02_de_lod1.pmd piece 0
+   224 0:0 6:1      dif.spec.tsnmapuv.asafew.a  vehicle/machine/excavator_crawler/cargo/lod0.pmd piece 8
+   280 0:0 6:1      dif.spec.tsnmapuv.asafew.a.decal  vehicle/machine/lowbed/cargo/cargo.pmd piece 8
+   277 0:0 6:0      dif.spec.tsnmapuv.asafew.a.decal.attr  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 6
+     1 0:0 6:0      dif.spec.tsnmapuv.asafew.a.over  model2/landmark/be/brussels/brussels_building_01_lux.pmd piece 12
+     1 0:0 6:0      dif.spec.tsnmapuv.asafew.decal.over  model2/landmark/ch/zurich_powerplant_01_ch.pmd piece 7
+     6 0:0 6:1      dif.spec.tsnmapuv.decal  vehicle/truck/man_tgx_euro6/interior/cab_xl_2019.pmd piece 8
+   148 0:0 6:0      dif.spec.tsnmapuv.decal.over  model2/building/flats/flats_es/block_of_flats_12_es_ibe.pmd piece 3
+    29 0:0 6:1      dif.spec.tsnmapuv.decal.over  vehicle/ai/train_db_class_143/ai.pmd piece 1
+    14 0:0 6:0      dif.spec.tsnmapuv.over  model2/building/flats/flats_al/block_of_flats_06_al_blkw.pmd piece 31
+    25 0:0 6:1      dif.spec.tsnmapuv.over  vehicle/truck/daf_2021/ai/daf_2021_xf_4x2.pmd piece 1
+    11 0:0 6:1      dif.spec.tsnmapuv.paint  vehicle/trailer_owned/scs_flatbed/accessory/chs_m_l/step.pmd piece 1
+     8 0:0 6:0      dif.spec.tsnmapuv.paint.a  vehicle/trailer_eu/scs_silo/trailer.pmd piece 16
+    42 0:0 6:1      dif.spec.tsnmapuv.paint.decal.over  vehicle/trailer_owned/upgrade/wheel/tire/t_315-70_michelin.pmd piece 1
+  3854 0:0 6:0      dif.spec.tsnmapuv.shadow  model/event/animated/tow_scene_anim.pmd piece 11
+    53 0:0 6:1      dif.spec.tsnmapuv.shadow  vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 0
+  4118 0:0 6:0      dif.spec.tsnmapuv.shadow.a  model/dock/mine/chimney_brick_01_de.pmd piece 1
+     5 0:0 6:1      dif.spec.tsnmapuv.shadow.a  model2/landmark/gr/iarissa_roundabout_03_gr.pmd piece 3
+   464 0:0 6:0      dif.spec.tsnmapuv.shadow.asafew.a  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 11
+     4 0:0 6:0      dif.spec.tsnmapuv.tg0  prefab2/depot/chemical_factory/chemical_factory_01_blkw.pmd piece 54
+     1 0:0 6:1      dif.spec.tsnmapuv.tg0  model2/props/construction/close/gravel_pile_03_it.pmd piece 1
+  4219 0:0          dif.spec.weight  model/bridge/mieszczanski.pmd piece 1
+   122 0:0          dif.spec.weight.a  model/bridge/mieszczanski.pmd piece 2
+    30 0:0          dif.spec.weight.a.decal  model2/props/road/patch_decals.pmd piece 0
+  1410 0:0          dif.spec.weight.a.decal.over  model/terrain_edge/balt_curb.pmd piece 2
+  4785 0:0          dif.spec.weight.add.env  model/aircraft/cessna_anim.pmd piece 2
+   102 0:0          dif.spec.weight.add.env.a  vehicle/truck/iveco_sway/accessory/f_fender_chs/paint.pmd piece 5
+   104 0:0          dif.spec.weight.add.env.a.decal.over  vehicle/trailer_eu/krone/boxliner/trailer_20ft_detail.pmd piece 23
+    48 0:0          dif.spec.weight.add.env.decal.over  vehicle/machine/mulcher_forest/cargo/cargo.pmd piece 4
+   184 0:0          dif.spec.weight.add.env.nofresnel  model/parked_cars/static/santafe/parked_santafe1.pmd piece 1
+     6 0:0          dif.spec.weight.add.env.nofresnel.a  vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_02__dlc_volvo_tuning.pmd piece 1
+    57 0:0          dif.spec.weight.add.env.over  model/ui/northern_lights/desktop_northern_lights.pmd piece 5
+   258 0:0          dif.spec.weight.add.env.paint  vehicle/truck/daf_2021/accessory/b_grill/hss_bottomgrill_01.pmd piece 1
+     2 0:0          dif.spec.weight.add.env.shadow  vehicle/trailer_owned/krone_profiliner/trailer_brace.pmd piece 0
+  2670 0:0          dif.spec.weight.add.env.tsnmap  model/ui/hangar/desktop_hangar.pmd piece 4
+    28 0:0 6:0      dif.spec.weight.add.env.tsnmap  vehicle/truck/man_tgx_2020/accessory/codrv_seat/com.pmd piece 3
+    16 0:0 6:1      dif.spec.weight.add.env.tsnmap  vehicle/truck/daf_2021/accessory/cab_door/std_int.pmd piece 17
+   562 0:0          dif.spec.weight.add.env.tsnmap.a  vehicle/ai/truck/volvo_fh16_2012/volvo_fh16_2012_gtxl_6x2.pmd piece 10
+     7 0:0          dif.spec.weight.add.env.tsnmap.a.over  vehicle/ai/truck/volvo_fh16_2012/volvo_fh16_2012_gtxl_4x2.pmd piece 0
+   357 0:0          dif.spec.weight.add.env.tsnmap.over  model/ui/hangar/desktop_hangar.pmd piece 6
+     6 0:0          dif.spec.weight.add.env.tsnmap.paint  vehicle/trailer_owned/scs_log/body/steel_136.pmd piece 0
+     5 0:0          dif.spec.weight.add.env.tsnmap.paint.a  vehicle/trailer_owned/kassbohrer_stc/accessory/rear_body/catwalk_left_paint_3_30.pmd piece 2
+     2 0:0          dif.spec.weight.add.env.tsnmap.paint.over  vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_paint_cab_2021.pmd piece 1
+   540 0:0 6:0      dif.spec.weight.add.env.tsnmapuv  model2/building/church/mosque_02_blkw.pmd piece 26
+  5319 0:0 6:1      dif.spec.weight.add.env.tsnmapuv  model/parked_trailers/static/scs_foodtank/foodtank.pmd piece 4
+    52 0:0 6:0      dif.spec.weight.add.env.tsnmapuv.a  vehicle/truck/iveco_sway/accessory/tank/alu4x2_1000.pmd piece 6
+    54 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.a  vehicle/ai/truck/scania_2016/scania_s_2016_nrm_4x2.pmd piece 12
+    17 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.a.over  vehicle/truck/man_tgx_2020/ai/man_tgx_2020_gm_4x2.pmd piece 5
+    10 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.over  vehicle/truck/renault_etech_t/accessory/air_tank/basic4x2.pmd piece 2
+    48 0:0 6:0      dif.spec.weight.add.env.tsnmapuv.paint  vehicle/trailer_owned/upgrade/wheel/cover/cover_sring_0_paint.pmd piece 0
+    86 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.paint  vehicle/trailer_owned/upgrade/wheel/disc/disc_0_01_paint.pmd piece 0
+     2 0:0 6:0      dif.spec.weight.add.env.tsnmapuv.paint.a  vehicle/truck/renault_t/accessory/s_guard/renault_paint.pmd piece 0
+     5 0:0 6:1      dif.spec.weight.add.env.tsnmapuv.shadow  vehicle/trailer_owned/krone_boxliner/trailer_brace.pmd piece 2
+    30 0:0 6:0      dif.spec.weight.add.env.tsnmapuv2  vehicle/trailer_eu/feldbinder_eut35/trailer.pmd piece 12
+  1237 0:0 6:1      dif.spec.weight.add.env.tsnmapuv2  vehicle/trailer_eu/blade_hauler/axle_steering_1.pmd piece 3
+   124 0:0          dif.spec.weight.asafew.a  model/event/animated/tow_scene_anim.pmd piece 71
+     6 0:0          dif.spec.weight.asafew.a.decal  vehicle/trailer_eu/krone/load_carrier/trailer_detail.pmd piece 27
+     1 0:0          dif.spec.weight.asafew.a.over  vehicle/props/silo_oversize/cargo/cargo.pmd piece 0
+    91 0:0          dif.spec.weight.decal.over  model/construction/static/roller/roller.pmd piece 4
+    95 0:0          dif.spec.weight.mult2  model2/landmark/bridge/bridge_unfinished_01_balt.pmd piece 4
+     1 0:0 1:0      dif.spec.weight.mult2.weight2  prefab/cross_temp/sc/r1_minim_x_r1_t_minim_tmpl.pmd piece 0
+    31 0:0 1:1      dif.spec.weight.mult2.weight2  prefab/cross_temp/sc/r1_x_r1_minim_tmpl.pmd piece 1
+     4 0:0          dif.spec.weight.over  model/construction/static/skid_steer_loader/skid_steer_loader.pmd piece 4
+     3 0:0          dif.spec.weight.paint  vehicle/truck/daf_xd/accessory/s_guard/cover_paint.pmd piece 0
+     2 0:0          dif.spec.weight.shadow  vehicle/truck/renault_premium/wipers.pmd piece 0
+     4 0:0          dif.spec.weight.shadow.a  model2/landmark/fence_plovdiv_1_bg_blke.pmd piece 0
+  2638 0:0          dif.spec.weight.tg0  model/building/administration/car_dealer.pmd piece 1
+    11 0:0          dif.spec.weight.tsnmap  model2/props/train/rail_end_01_blkw.pmd piece 8
+   261 0:0          dif.spec.weight.tsnmap.a  vehicle/machine/tractor_agro_trailer/ai/tractor_agro_trailer.pmd piece 4
+    62 0:0          dif.spec.weight.tsnmap.a.decal.attr  model2/props/road/un_road_decal.pmd piece 1
+  3165 0:0          dif.spec.weight.tsnmapcalc  model/props/road/umea_bus_station_curb_01_bus.pmd piece 1
+     1 0:0 1:0      dif.spec.weight.tsnmapcalc  prefab2/cross_temp/blkw/blkw_r2_no_offset_x_r1_minim_t_tmpl.pmd piece 7
+     4 0:0 1:1      dif.spec.weight.tsnmapcalc  prefab2/tollgate/tollgate_hw2_3_plus_3_lanes_gr.pmd piece 116
+    21 0:0          dif.spec.weight.tsnmapcalc.heightmap  model/sign/navigation/be/stand/stand_side_v01_be.pmd piece 1
+  2013 0:0          dif.spec.weight.tsnmapcalc.tg0  model/building/administration/green_office.pmd piece 1
+    12 0:0          dif.spec.weight.tsnmapcalc.tg0.heightmap  prefab/garage_scandinavia/garage_sc.pmd piece 12
+    59 0:0 6:0      dif.spec.weight.tsnmapuv  model2/landmark/ch/geneve_monument_01_ch.pmd piece 1
+   817 0:0 6:1      dif.spec.weight.tsnmapuv  vehicle/machine/dumper_840/ai/dumper.pmd piece 3
+     5 0:0 6:1      dif.spec.weight.tsnmapuv.over  vehicle/truck/volvo_fh16_2012/accessory/r_fender/painted_6x.pmd piece 5
+     1 0:0 6:1      dif.spec.weight.tsnmapuv.paint  vehicle/truck/iveco_sway/accessory/s_guard/cover_paint.pmd piece 0
+     1 0:0 6:0      dif.spec.weight.tsnmapuv.tg0  model2/landmark/at/graz_business_centre_at.pmd piece 7
+   476 0:0 1:0      dif.spec.weight.weight.dif.spec.weight  model2/building/administration/admin_11_blkw.pmd piece 13
+  6477 0:0 1:1      dif.spec.weight.weight.dif.spec.weight  model/terrain_edge/balt_shoulder_dirt.pmd piece 8
+     3 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.fmtsnmapcalc.tg0.tg1  prefab2/bus_station/type_01/bus_station_01_bus.pmd piece 33
+    20 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.fmtsnmapcalc.tg0.tg1.heightmap  prefab2/depot/building_mat_store/building_mat_store_local_rus.pmd piece 2
+     8 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.fmtsnmapcalc.tg0.tg1.heightmap  prefab2/depot/generic_warehouse/generic_warehouse_01_at.pmd piece 22
+   597 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tg0  model/landmark/pl_a4_alvernia-rmf.pmd piece 4
+    50 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tg0  model2/gates/gate_ferry_ramp_02_de.pmd piece 23
+   251 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tg0.tg1  model2/electro_distribution_point/electro_distribution_point_01_fr.pmd piece 8
+    93 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tg0.tg1  model2/building/logistic/car_shipping_ramp_02_ibe.pmd piece 3
+    48 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tg1  model2/landmark/dam_gravel_fr.pmd piece 3
+    40 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tg1  prefab/border/de_at_1/de_at_01.pmd piece 9
+     1 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.totsnmapcalc.tg0  prefab2/bus_station/type_01/bus_station_02_bus.pmd piece 38
+    95 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc  model2/ship/ferry_large_mid_01_lux.pmd piece 25
+   999 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc  model/terrain_edge/blkw_shoulder.pmd piece 4
+   111 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.heightmap  prefab2/corners/un/lh_cross_1-1_x_y_1-1_tram_2m_offset_mirrored_sh.pmd piece 4
+  1229 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.heightmap  prefab2/corners/un/lh_corner_spec_0-2_x_0-3_x_0-3_tram_in_0-2_tram_out_sh.pmd piece 3
+     2 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.shadow.a  model2/props/road/safety_net_01_poc.pmd piece 4
+    24 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0  model2/rock/geyser/geyser_pit1.pmd piece 2
+   124 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0  prefab2/bus_station/type_02/bus_station_05_bus.pmd piece 36
+  1127 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0.heightmap  model/terrain_edge/un_shoulder.pmd piece 4
+   271 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0.heightmap  prefab2/corners/un/gen/un_hwlane_gen_1.pmd piece 1
+   264 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0.tg1  model2/building/logistic/warehouse_03b_ibe.pmd piece 2
+   191 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0.tg1  model2/building/logistic/warehouse_04_ibe.pmd piece 64
+    49 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0.tg1.heightmap  prefab/garage_scandinavia/garage_poor_sc.pmd piece 12
+    80 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg0.tg1.heightmap  prefab2/corners/un/lh_cross_1-1_x_y_1-1_tram_2m_offset_mirrored_sh.pmd piece 3
+    51 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg1  model2/building/shop/building_mat_store_01_blkw.pmd piece 9
+    95 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg1  prefab2/bus_station/type_01/bus_station_01_bus.pmd piece 34
+     6 0:0 1:0      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg1.heightmap  prefab2/depot/cement_works/cement_works_01_de.pmd piece 15
+     4 0:0 1:1      dif.spec.weight.weight.dif.spec.weight.tsnmapcalc.tg1.heightmap  prefab2/bus_station/type_01/bus_station_02_bus.pmd piece 32
+     6 0:0          dif.tg0  model/rock/grassy_cover.pmd piece 0
+     4 0:0 1:0      dif.weight.dif  model/rock/grassy_top.pmd piece 1
+     2 0:0 1:1      dif.weight.dif.shadow.paint.a  model2/building/farm/grain_shed_01_poc.pmd piece 4
+     2 0:0 1:0      dif.weight.dif.tg0  prefab/roadwork/roadwork_hw_new.pmd piece 4
+   772 -            fakeshadow  model/event/static/overweight.pmd piece 8
+    41 0:0          fakeshadow  vehicle/trailer_eu/cement_mixer/cement_mixer.pmd piece 4
+   140 0:0          flare  model/aircraft/737/737.pmd piece 1
+    19 0:0          flare.sun.bounce  model2/distribution/solar_tower_01_ibe.pmd piece 1
+     5 0:0          flare.sun.lucent  model2/landmark/al/derven_gas_station_blkw.pmd piece 9
+  8010 0:0          glass  model/aircraft/cessna_anim.pmd piece 1
+     5 0:0          glass.tsnmap  vehicle/truck/man_tgx_2020/ai/man_tgx_2020_gn_4x2.pmd piece 8
+     4 0:0          glass.tsnmap.distort  vehicle/truck/upgrade/light/ds_omnilight_white.pmd piece 6
+    18 0:0          grass  model/vegetation/grass_building/corn.pmd piece 0
+     3 0:0 1:0 2:1  interior.curtain.lit  prefab2/depot/paper_mill/structure_set_paper_mill_01_poc.pmd piece 64
+     4 0:0 1:1 2:1  interior.curtain.lit  model2/landmark/nl/amsterdam/amsterdam_admin_01_lux.pmd piece 2
+  2113 0:0 1:1 2:2  interior.curtain.lit  model2/border_crossing/border_bogorodica_gate_02_mk_gr.pmd piece 2
+     1 0:0          interior.spatial.lit  model2/building/logistic/warehouse_16_poc.pmd piece 24
+   361 0:0 1:0      lamp  model/sign/traffic_light/border_gate_light_gen.pmd piece 0
+   230 0:0 1:1      lamp  prefab/level_crossing/level_left_anim_be.pmd piece 2
+   794 0:0 1:0      lamp.add.env  vehicle/ai/incentro/car2_gr.pmd piece 7
+  3349 0:0 1:1      lamp.add.env  model/event/static/overweight.pmd piece 5
+     9 0:0 1:1      lamp.anim.add.env  vehicle/truck/daf_2021/accessory/r_light/led_pla.pmd piece 2
+     2 0:0 1:1 6:2  lamp.anim.tsnmapuv.add.env  vehicle/truck/scania_2016/accessory/r_light/led.pmd piece 0
+    64 0:0 1:0      lamp.tsnmap.add.env  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 5
+    42 0:0 1:1      lamp.tsnmap.add.env  vehicle/ai/truck/iveco_hiway/iveco_hiway_asp_4x2.pmd piece 6
+     1 0:0 1:1 6:0  lamp.tsnmapuv  vehicle/truck/upgrade/bibendum/bibendum_01.pmd piece 0
+   115 0:0 1:0 6:1  lamp.tsnmapuv.add.env  vehicle/ai/truck/man_tgx_euro6/man_tgx_euro6_ef3_xlx_6x24.pmd piece 9
+     6 0:0 1:1 6:0  lamp.tsnmapuv.add.env  vehicle/truck/scania_s_2024e/accessory/f_bumper/hgh_p.pmd piece 4
+     1 0:0 1:1 6:1  lamp.tsnmapuv.add.env  vehicle/truck/volvo_fh_2024/accessory/f_light_chs/heavy_duty.pmd piece 1
+   219 0:0 1:1 6:2  lamp.tsnmapuv.add.env  vehicle/ai/truck/renault_t/renault_t_std_hi_4x2.pmd piece 13
+     1 0:0 1:0 2:0  leaves  model2/building/village_close/village_gr/village_close_37_gr_lod1.pmd piece 16
+    63 0:0 1:1 2:1  leaves  model/vegetation/grass/sc_grass_moss_3d_big_29sc.pmd piece 0
+  1558 0:0 1:1 2:2  leaves  model/vegetation/grass/branches1_15.pmd piece 0
+   220 0:0 1:1 2:1  leaves.shadow  model/vegetation/tree_west/vineyards.pmd piece 0
+  2543 0:0 1:1 2:2  leaves.shadow  model/sign/misc/street_flowerpot.pmd piece 0
+    13 0:0 1:1 2:1  leaves.tsnmapcalc  model2/vegetation/grass/ground/generic_marble_debris_01_01/stone_marble1.pmd piece 0
+    17 0:0 1:1 2:2  leaves.tsnmapcalc  model/vegetation/poly_vegetation/sc_avenue_bigbushes_far.pmd piece 0
+    20 0:0 1:1 2:1  leaves.tsnmapcalc.shadow  model2/landmark/de/frankfurt_antinoise_wall_01_de.pmd piece 2
+    35 0:0 1:1 2:2  leaves.tsnmapcalc.shadow  model2/hill/seashore_hills1/seashore_hill_1.pmd piece 0
+   689 0:0          light.tex  model2/border_crossing/border_morine_gate_02_al_blkw.pmd piece 12
+     4 0:0          light.tex.lsbounce  model2/distribution/solar_tower_01_ibe.pmd piece 3
+    81 0:0          light.tex.lslucent  model2/border_crossing/border_dobrakovo_gate_02_me_blkw.pmd piece 14
+   128 0:0          lightmap.day  model/railing/tunnel/hw2_tunnel.pmd piece 1
+ 10095 0:0          lightmap.night  model/aircraft/cessna_anim.pmd piece 9
+    68 -            mlaaweight  model/sign/traffic/cr/speedlimit_110_cr.pmd piece 2
+     8 0:0          mlaaweight  vehicle/truck/daf_xf/interior/model.pmd piece 13
+ 36806 -            none  model/aircraft/cessna_anim.pmd piece 0
+   444 0:0          none  model/terrain_edge/lux_curb_01.pmd piece 5
+     2 0:0 1:0 6:0  none  model2/barrier/crash_barrier_profile2_01_lu_lux.pmd piece 2
+   161 0:0 1:1      none  model2/building/administration/admin_27_poc.pmd piece 2
+     8 0:0 1:1 2:2 6:0 none  prefab2/gas_station/gas_station_modern_01_bi.pmd piece 26
+   122 0:0 1:1 2:2 6:1 none  prefab2/gas_station/gas_station_modern_01_bi.pmd piece 32
+     4 0:0 1:1 2:2 6:2 none  prefab2/gas_station/gas_station_modern_01_bi.pmd piece 27
+    68 0:0 1:1 6:0  none  model2/building/administration/school_01_poc.pmd piece 10
+     7 0:0 6:0      none  model2/building/administration/admin_03_poc.pmd piece 1
+     3 0:0          particle.add  model/particle/autumn_leaf.pmd piece 0
+    12 0:0          particle.over  model/particle/fog1.pmd piece 0
+   417 0:0          reflective  model/event/animated/tow_scene_anim.pmd piece 67
+ 10287 0:0          retroreflective  model/sign/city_limits/brussel.pmd piece 0
+   183 0:0          retroreflective.decal.over  model/sign/navigation/2hw_crs_200m_fr.pmd piece 3
+   439 0:0          retroreflective.piko.alldir  model/sign/reflective_post_de.pmd piece 0
+    31 0:0          retroreflective.piko.alldir.decal.over  model2/landmark/se/kiruna_underground_sign_01_poc.pmd piece 0
+     8 0:0          retroreflective.tsnmap  model/sign/traffic/be/crossroad_barrier_01_be.pmd piece 1
+   110 0:0          retroreflective.tsnmap.piko.alldir  vehicle/machine/auger_wagon/cargo/cargo_1.pmd piece 7
+   564 0:0          retroreflective.tsnmap.piko.alldir.decal.over  vehicle/ai/trailer/speedboat/ai.pmd piece 5
+    40 0:0 6:0      retroreflective.tsnmapuv  model/sign/traffic/be/belgium_signs_big_1.pmd piece 0
+    66 0:0 6:0      retroreflective.tsnmapuv.piko.alldir  model2/gates/barrier_generic_long_l_01_ani.pmd piece 3
+    16 0:0 6:1      retroreflective.tsnmapuv.piko.alldir  vehicle/machine/lowbed/cargo/cargo.pmd piece 3
+   217 0:0 6:0      retroreflective.tsnmapuv.piko.alldir.decal.over  vehicle/machine/wood_chipper/ai/ai_gl.pmd piece 3
+    42 0:0 6:1      retroreflective.tsnmapuv.piko.alldir.decal.over  vehicle/machine/disk_harrows/cargo/cargo.pmd piece 7
+    18 0:0          shadowmap  model/vehicle/excavator_hi.pmd piece 4
+ 90337 -            shadowonly  model/aircraft/737/737.pmd piece 5
+  7063 0:0          shadowonly  model/airports/amsterdam_portal.pmd piece 1
+  3182 0:0          shadowonly.a  model2/border_crossing/border_gate_02_si_blkw.pmd piece 4
+   102 0:0          shadowonly.a.nocull  model2/landmark/landmark_es/sagund_roundabout_01_ibe.pmd piece 5
+    64 -            shadowonly.nocull  vehicle/truck/scania_2016/accessory/sideskirt/ss_4x2_bl.pmd piece 0
+     3 0:0          shadowonly.nocull  model/sign/navigation/est/hw2_exit_blue_v01_est.pmd piece 0
+     2 0:0 1:1      showroom_v2  model/ui/background_dome.pmd piece 0
+     1 0:0          sign  model/sign/navigation/cz/hw_left_2_cz.pmd piece 3
+   859 0:0 1:0 2:0  truckpaint  model/event/animated/tow_scene_anim.pmd piece 23
+    11 0:0 1:0 2:1  truckpaint  vehicle/ai/truck/volvo_fh16_2012/volvo_fh16_2012_gtxl_4x2.pmd piece 8
+   138 0:0 1:1 2:0  truckpaint  vehicle/ai/alfa_romeo_159/ai.pmd piece 0
+   370 0:0 1:1 2:1  truckpaint  vehicle/ai/majestic_a_2018/ai.pmd piece 0
+    95 0:0 1:1 2:2  truckpaint  vehicle/trailer_eu/schw_curtain/trailer_lod2.pmd piece 8
+    15 0:0 1:1 2:1  truckpaint.airbrush  vehicle/trailer_eu/chemical_cistern/trailer.pmd piece 4
+     8 0:0 1:1 2:2  truckpaint.airbrush  vehicle/truck/upgrade/doorhandle/daf_xf_euro6/doorhandle_02.pmd piece 0
+     3 0:0 1:1 2:1  truckpaint.airbrush.altuv  vehicle/trailer_eu/krone/e_coolliner/trailer_lod3.pmd piece 2
+    25 0:0 1:1 2:2  truckpaint.airbrush.altuv  vehicle/trailer_eu/krone/e_coolliner/trailer_detail.pmd piece 31
+     2 0:0 1:0 2:1  truckpaint.airbrush.flipflake.altuv  vehicle/truck/daf_xf_euro6/interior/model.pmd piece 60
+     1 0:0 1:1 2:1  truckpaint.airbrush.flipflake.altuv  vehicle/truck/upgrade/sunshield/mercedes_actros_2009/sunshield_02.pmd piece 2
+     2 0:0 1:1 2:2  truckpaint.airbrush.flipflake.altuv  vehicle/truck/upgrade/mirror/scania_rcab_2009/mirror_01.pmd piece 1
+     1 0:0 1:0 2:0  truckpaint.altuv  vehicle/truck/volvo_fh16_2009/accessory/r_chs_cover/r_chs_cover_paint.pmd piece 0
+     3 0:0 1:1 2:0  truckpaint.altuv  vehicle/truck/scania_2016/accessory/r_bumper/rearbumper_mg_03.pmd piece 3
+     8 0:0 1:1 2:0 6:0 truckpaint.altuv  vehicle/truck/iveco_sway/accessory/steering_w/dutch_retro.pmd piece 0
+   122 0:0 1:1 2:1  truckpaint.altuv  vehicle/trailer_eu/krone/profiliner_bm/trailer_lod1.pmd piece 16
+   102 0:0 1:1 2:2  truckpaint.altuv  vehicle/ai/truck/daf_xf_euro6/daf_xf_euro6_sca_4x2.pmd piece 3
+     1 0:0 1:1 2:2 6:2 truckpaint.altuv  vehicle/truck/upgrade/steering_w/dutch/dutch_retro_gr.pmd piece 0
+     1 0:0 1:0 2:0  truckpaint.flipflake  vehicle/truck/upgrade/steering_knob/standard_carbon.pmd piece 0
+     1 0:0 1:1 2:0  truckpaint.flipflake.altuv  vehicle/truck/volvo_fh16_2009/accessory/mirror/mirror_03_interior.pmd piece 5
+    58 0:0 1:1 2:2  truckpaint.flipflake.altuv  vehicle/truck/upgrade/doorhandle/daf_xf/doorhandle_02.pmd piece 0
+     7 0:0 1:0 2:0  truckpaint.shadow  model/parked_trucks_groups/very_far/trucks_parked_scania_4x3_01_very_far_sc.pmd piece 0
+     1 0:0 1:1 2:1  truckpaint.shadow  vehicle/trailer_owned/schwmuller_cisternfood/trailer_brace.pmd piece 1
+     7 0:0 1:0 2:0  truckpaint.tsnmap  model/parked_trucks_groups/far/trucks_parked_scania_4x1_01_far_sc.pmd piece 0
+    11 0:0 1:1 2:0  truckpaint.tsnmap  vehicle/truck/renault_etech_t/accessory/f_bumper/paint.pmd piece 1
+    24 0:0 1:1 2:1  truckpaint.tsnmap  vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd piece 0
+    10 0:0 1:1 2:2  truckpaint.tsnmap  vehicle/truck/daf_xf_euro6/truck.pmd piece 2
+     2 0:0 1:1 2:2  truckpaint.tsnmap.airbrush  vehicle/truck/iveco_hiway/truck.pmd piece 5
+     8 0:0 1:1 2:2  truckpaint.tsnmap.airbrush.altuv  vehicle/truck/upgrade/bottomgrill/daf_xf_euro6/paintable.pmd piece 0
+     1 0:0 1:1 2:2  truckpaint.tsnmap.airbrush.flipflake  vehicle/truck/upgrade/mirror/iveco_hiway/mirror_01.pmd piece 3
+     8 0:0 1:1 2:2  truckpaint.tsnmap.altuv  vehicle/truck/upgrade/frontintake/daf_xf_euro6/paintable_cab.pmd piece 0
+     2 0:0 1:1 2:1  truckpaint.tsnmap.asafew.a  vehicle/truck/iveco_sway/accessory/f_intake_cab/paint.pmd piece 1
+     4 0:0 1:1 2:2  truckpaint.tsnmap.flipflake.altuv  vehicle/truck/upgrade/mirror/iveco_hiway/mirror_01_uk.pmd piece 3
+    64 0:0 1:0 2:0 6:0 truckpaint.tsnmapuv  vehicle/trailer_eu/wielton_strongm/ch_3a_lod3.pmd piece 2
+   143 0:0 1:0 2:0 6:1 truckpaint.tsnmapuv  vehicle/ai/truck/scania_2016/scania_r_2016_nrm_4x2.pmd piece 3
+     4 0:0 1:0 2:1 6:1 truckpaint.tsnmapuv  vehicle/car/hoddlen_hatchback_basic_24/ai/hatchback.pmd piece 5
+    49 0:0 1:0 2:1 6:2 truckpaint.tsnmapuv  vehicle/trailer_eu/tirsan_shg/trailer.pmd piece 13
+     5 0:0 1:1 2:0 6:0 truckpaint.tsnmapuv  vehicle/trailer_eu/tirsan_sks/trailer.pmd piece 9
+    51 0:0 1:1 2:0 6:2 truckpaint.tsnmapuv  vehicle/car/ixcent_pickup_midclass_24/ai/ai.pmd piece 3
+   188 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv  vehicle/ai/truck/man_tgx_euro6/man_tgx_euro6_ef3_xlx_6x24.pmd piece 18
+    37 0:0 1:1 2:1 6:1 truckpaint.tsnmapuv  vehicle/ai/lowcab/ai.pmd piece 1
+  2086 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv  vehicle/trailer_eu/feldbinder_eut35/trailer.pmd piece 6
+    21 0:0 1:1 2:2 6:0 truckpaint.tsnmapuv  vehicle/trailer_eu/kassbohrer_scs/trailer.pmd piece 12
+    23 0:0 1:1 2:2 6:2 truckpaint.tsnmapuv  vehicle/trailer_eu/car_transporter/trailer.pmd piece 11
+   135 0:0 1:1 2:2 6:3 truckpaint.tsnmapuv  vehicle/ai/truck/renault_t/renault_t_evo_hi_4x2.pmd piece 1
+     1 0:0 1:0 2:0 6:1 truckpaint.tsnmapuv.airbrush  vehicle/trailer_owned/krone_dryliner/axle.pmd piece 0
+    11 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.airbrush  vehicle/truck/upgrade/chassis_cover/mercedes_actros_2009/paintable_4x2.pmd piece 3
+    23 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.airbrush  vehicle/trailer_eu/krone/coolliner/trailer_detail.pmd piece 13
+     1 0:0 1:1 2:2 6:0 truckpaint.tsnmapuv.airbrush  vehicle/truck/upgrade/sideskirts/daf_xf_euro6/sideskirt_plate_6xx.pmd piece 0
+    34 0:0 1:1 2:2 6:3 truckpaint.tsnmapuv.airbrush  vehicle/truck/mercedes_actros_2009/cabin_a.pmd piece 1
+    23 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.airbrush.altuv  vehicle/truck/man_tgx_euro6/cab_xl.pmd piece 2
+    23 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.airbrush.altuv  vehicle/trailer_eu/scs_box/dry_van_reefer/ch_2a_cet_ax.pmd piece 7
+     2 0:0 1:1 2:2 6:2 truckpaint.tsnmapuv.airbrush.altuv  vehicle/trailer_eu/scs_box/curtain_sider/ch_15.pmd piece 10
+    21 0:0 1:1 2:2 6:3 truckpaint.tsnmapuv.airbrush.altuv  vehicle/trailer_eu/krone/e_coolliner/trailer_detail.pmd piece 9
+    37 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.altuv  vehicle/ai/truck/man_tgx_euro6/man_tgx_euro6_ef3_xlx_6x24.pmd piece 3
+    13 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.altuv  vehicle/trailer_eu/krone/profiliner_bm/trailer_detail.pmd piece 4
+    30 0:0 1:1 2:2 6:0 truckpaint.tsnmapuv.altuv  vehicle/truck/mercedes_actros_2014/8x4.pmd piece 4
+    40 0:0 1:1 2:2 6:3 truckpaint.tsnmapuv.altuv  vehicle/trailer_eu/scs_box/curtain_sider/ch_2_lod0.pmd piece 7
+     2 0:0 1:1 2:1 6:0 truckpaint.tsnmapuv.asafew.a  vehicle/truck/volvo_fh_2024/accessory/f_intake_cab/fh16_aero.pmd piece 0
+     6 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.asafew.a  vehicle/truck/volvo_fh16_2012/accessory/f_intake_cab/front_grid_paint_cab.pmd piece 0
+     1 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.shadow  vehicle/trailer_eu/schw_cistern_food/schw_cistern_food_brace_dlc_schwarzmuller.pmd piece 1
+     1 0:0 1:1 2:1 6:2 truckpaint.tsnmapuv.shadow.airbrush  vehicle/trailer_owned/krone_coolliner/trailer_brace.pmd piece 1
+    57 0:0          unlit.tex  model/editor/move_gizmo.pmd piece 0
+    16 0:0          unlit.tex.add  model/flare/sign_flare_red_arrow.pmd piece 0
+     4 0:0          unlit.tex.decal.add  model2/gas_station/gas_arrow_01_gr.pmd piece 7
+    28 0:0          unlit.tex.decal.mult  model/parked_trailers/static/reefer/trailer_reefer_01_sc.pmd piece 8
+     6 0:0          unlit.tex.decal.over  model/parked_cars/static/majestic_a_2018/parked_majestic_a_2018_1.pmd piece 2
+     3 0:0          unlit.tex.over  model/ui/xmas.pmd piece 1
+     2 0:0          unlit.tex.paint  model/sign/navigation/ru/toll_hw2_oneway_led.pmd piece 5
+   126 0:0          unlit.tex.paint.add  model/activation/border.pmd piece 0
+    17 0:0          unlit.vcol.tex  model/photocube.pmd piece 0
+   112 0:0          unlit.vcol.tex.a.add  model2/building/shop/be/generic_brands_01_be_lux.pmd piece 8
+   101 0:0          unlit.vcol.tex.a.decal.add  model2/border_crossing/border_ipsala_gate_04_gr.pmd piece 1
+    11 0:0          unlit.vcol.tex.a.decal.over  model2/gas_station/echarger_logo_01_lux.pmd piece 0
+    24 0:0          unlit.vcol.tex.a.over  model2/gas_station/gas_arrow_01_poc.pmd piece 2
+   188 0:0          unlit.vcol.tex.add  model2/border_crossing/border_kulata_gate_02_bg_gr.pmd piece 27
+  2525 0:0          unlit.vcol.tex.awhite.decal.mult  model/truck_service_int/garage.pmd piece 18
+   596 0:0          unlit.vcol.tex.decal.add  model2/building/flats/block_of_flats_02_at.pmd piece 0
+    93 0:0          unlit.vcol.tex.decal.over  model/ui/hangar/desktop_hangar.pmd piece 1
+    51 0:0          unlit.vcol.tex.fadesheet  model2/landmark/be/liege_market_gate_sign_01_lux.pmd piece 3
+     4 0:0          unlit.vcol.tex.fadesheet.a.add  model2/landmark/be/brussels_cooling_tower_01_lux.pmd piece 7
+    26 0:0          unlit.vcol.tex.fadesheet.a.decal.add  model2/landmark/gr/kavala_lunapark_wheel_01_gr.pmd piece 10
+     1 0:0          unlit.vcol.tex.fadesheet.add  model2/sign/props/hotel/hotel_neon_blue.pmd piece 2
+    17 0:0          unlit.vcol.tex.fadesheet.decal.add  model2/landmark/ee/tartu_bridge_01_bus.pmd piece 1
+    10 0:0          unlit.vcol.tex.fadesheet.over  model/props/navigation_arrows_01_aca.pmd piece 0
+     3 0:0          unlit.vcol.tex.flipsheet  model2/landmark/de/cologne_drive_in_theater_01_movie_de.pmd piece 0
+     2 0:0          unlit.vcol.tex.flipsheet.a  model2/landmark/at/wien_uniqa_tower_at.pmd piece 12
+    31 0:0          unlit.vcol.tex.flipsheet.add  model2/sign/props/hotel/hotel_neon_cyan.pmd piece 2
+     2 0:0          unlit.vcol.tex.flipsheet.decal.add  model2/props/street/advert/advert_led_pharmacy_01_blkw.pmd piece 9
+    23 0:0          unlit.vcol.tex.flipsheet.decal.over  model2/props/street/advert/advert_digital_01_blkw.pmd piece 4
+     3 0:0          unlit.vcol.tex.flipsheet.over  model2/sign/props/hotel/hotel_neon_pink.pmd piece 2
+    18 0:0          unlit.vcol.tex.flipsheet.paint  model/sign/navigation/ru/hw_anim_warning_board_ru.pmd piece 1
+     2 0:0          unlit.vcol.tex.mult  model2/lamp/lamp_t_shape_fr_03_fr.pmd piece 1
+     7 0:0          unlit.vcol.tex.over  model/ui/halloween/desktop_halloween.pmd piece 0
+    36 -            water  model/truck_service_int/garage.pmd piece 6
+    26 0:0 1:1      water.stream  model/ui/dark_studio.pmd piece 15
+   116 0:0 1:0      window.day  model/sign/navigation/ru/toll_m11_led.pmd piece 5
+  7227 0:0 1:1      window.day  model/panorama/oasnabruck/osnabruck_admin_02_de.pmd piece 12
+     3 0:0 1:1      window.lit  model2/landmark/se/ostersund_parish_01_poc.pmd piece 4
+    13 0:0 1:1      window.night  model2/building/administration/admin_01_corner_ibe.pmd piece 5
+
+== .mat keys over 59516 materials (0 unreadable)
+per-texture attribute keys (slot.key: materials):
+  texture.sampler: 3
+  texture_base.aniso: 45
+  texture_base.mag_filter: 8
+  texture_base.min_filter: 8
+  texture_base.mip_filter: 264
+  texture_base.sampler: 41623
+  texture_base.u_address: 17411
+  texture_base.v_address: 17576
+  texture_base.w_address: 230
+  texture_base_1.sampler: 18
+  texture_detail.sampler: 17
+  texture_flakenoise.sampler: 38
+  texture_heightmap.sampler: 164
+  texture_heightmap_over.sampler: 152
+  texture_iamod.sampler: 2741
+  texture_iamod.u_address: 54
+  texture_iamod.v_address: 54
+  texture_layer0.sampler: 25
+  texture_layer0.u_address: 108
+  texture_layer0.v_address: 108
+  texture_layer1.aniso: 1
+  texture_layer1.mag_filter: 1
+  texture_layer1.min_filter: 1
+  texture_layer1.sampler: 24
+  texture_layer1.u_address: 108
+  texture_layer1.v_address: 108
+  texture_lightmap.sampler: 409
+  texture_lightmap.u_address: 6038
+  texture_lightmap.v_address: 6098
+  texture_mask.aniso: 4
+  texture_mask.mag_filter: 112
+  texture_mask.min_filter: 112
+  texture_mask.mip_filter: 113
+  texture_mask.sampler: 18302
+  texture_mask.u_address: 6937
+  texture_mask.v_address: 7005
+  texture_mask.w_address: 2
+  texture_mask_1.sampler: 7
+  texture_mask_1.u_address: 297
+  texture_mask_1.v_address: 297
+  texture_mask_2.sampler: 7
+  texture_mask_3.sampler: 7
+  texture_mult.sampler: 4016
+  texture_mult.u_address: 473
+  texture_mult.v_address: 449
+  texture_mult_1.sampler: 15
+  texture_nmap.aniso: 213
+  texture_nmap.mag_filter: 214
+  texture_nmap.min_filter: 214
+  texture_nmap.mip_filter: 1
+  texture_nmap.sampler: 25225
+  texture_nmap.u_address: 3510
+  texture_nmap.v_address: 3580
+  texture_nmap_detail.aniso: 1
+  texture_nmap_detail.mag_filter: 1
+  texture_nmap_detail.min_filter: 1
+  texture_nmap_detail.sampler: 43
+  texture_nmap_detail.u_address: 108
+  texture_nmap_detail.v_address: 108
+  texture_nmap_over.aniso: 89
+  texture_nmap_over.mag_filter: 89
+  texture_nmap_over.min_filter: 89
+  texture_nmap_over.sampler: 564
+  texture_oclu.sampler: 219
+  texture_oclu.u_address: 112
+  texture_oclu.v_address: 112
+  texture_over.aniso: 1
+  texture_over.mag_filter: 1
+  texture_over.min_filter: 1
+  texture_over.sampler: 19243
+  texture_over.u_address: 9299
+  texture_over.v_address: 9415
+  texture_paintjob.sampler: 5
+  texture_paintjob.u_address: 51
+  texture_paintjob.v_address: 51
+  texture_reflection.aniso: 15926
+  texture_reflection.mag_filter: 11
+  texture_reflection.min_filter: 11
+  texture_reflection.mip_filter: 36
+  texture_reflection.u_address: 15956
+  texture_reflection.v_address: 15956
+  texture_reflection.w_address: 15956
+material attribute keys (key: materials):
+  additional_ambient: 46420
+  amod_decal_blending_factors: 16947
+  animation_speed: 10
+  animsheet_cfg_fps: 149
+  animsheet_cfg_frames_row: 149
+  animsheet_cfg_frames_total: 149
+  animsheet_cfg_loop_offset_rnd: 82
+  animsheet_frame_height: 149
+  animsheet_frame_width: 149
+  depth_bias: 695
+  detail_blend_bias: 17
+  detail_fadeout_from: 17
+  detail_fadeout_range: 17
+  detail_uv_scale: 17
+  diffuse: 47798
+  diffuse_secondary: 1620
+  distortion_strength: 4
+  env_factor: 8440
+  far_color: 351
+  far_specular_power: 351
+  flake_clearcoat_rolloff: 38
+  flake_color: 38
+  flake_density: 38
+  flake_shininess: 38
+  flake_uvscale: 38
+  flake_vratio: 38
+  flip_color: 38
+  flip_strength: 38
+  fresnel: 15442
+  glass_tint_color: 541
+  glass_tint_opacity: 541
+  heightmap_feather_size: 168
+  heightmap_feather_size_secondary: 154
+  heightmap_height_range: 168
+  heightmap_height_range_secondary: 154
+  heightmap_transition_shape_type: 168
+  heightmap_transition_shape_type_secondary: 154
+  heightmap_world_to_uv_scale: 26
+  heightmap_world_to_uv_scale_secondary: 62
+  interior_atlas_dimensions: 108
+  interior_glass_color: 108
+  interior_unit_room_dimensions: 108
+  is_dynamic_road: 9
+  is_terrain_material: 501
+  lod_selector: 516
+  lod_switch_distance: 990
+  luminance_night: 2641
+  luminance_output: 2641
+  mult_uvscale: 50
+  mult_uvscale_secondary: 15
+  paintjob_b_color: 1
+  paintjob_base_color: 91
+  paintjob_g_color: 1
+  paintjob_r_color: 1
+  queue_bias: 4402
+  reflection: 43459
+  reflection_secondary: 1693
+  shadow_offset: 516
+  shadowmap_bias: 2192
+  sheet_frame_size_a: 7
+  sheet_frame_size_b: 7
+  sheet_frame_size_g: 7
+  sheet_frame_size_r: 7
+  shininess: 46699
+  shininess_secondary: 1635
+  showroom_r_color: 3
+  showroom_speed: 3
+  specular: 47248
+  specular_secondary: 1635
+  substance: 2535
+  texgen_0_gen: 1480
+  texgen_0_rot: 1480
+  texgen_1_gen: 536
+  texgen_1_rot: 536
+  water_distances: 25
+  water_horizon_color: 25
+  water_layer_0_scale: 25
+  water_layer_0_speed: 25
+  water_layer_0_yaw: 25
+  water_layer_1_scale: 25
+  water_layer_1_speed: 25
+  water_layer_1_yaw: 25
+  water_mirror: 25
+  water_near_color: 25
+## uv_routing_survey /vehicle/truck/mercedes_actros_2014/cabin_a.pmd /vehicle/truck/mercedes_actros_2014/cabin_8x4.pmd /vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd /vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd
+== /vehicle/truck/mercedes_actros_2014/cabin_a.pmd
+piece 0: 0xfffffff0 (0:0) 1 sets {"dif.spec.tsnmap"}
+  set 0: u 0.001..0.041  v 0.575..0.630
+piece 1: 0xfffffff0 (0:0) 1 sets {"dif.spec.tsnmap"}
+  set 0: u 0.001..0.041  v 0.575..0.630
+piece 2: 0xfffffff0 (0:0) 1 sets {"dif.spec.add.env.tsnmap"}
+  set 0: u 0.042..0.964  v 0.000..0.558
+piece 3: 0xfffffff0 (0:0) 1 sets {"dif.spec.tsnmap"}
+  set 0: u 0.000..0.999  v 0.002..1.000
+piece 4: 0xffffffff (-) 0 sets {"shadowonly"}
+piece 5: 0xf0fff210 (0:0 1:1 2:2 6:0) 3 sets {"truckpaint.tsnmapuv.altuv"}
+  set 0: u 0.001..0.742  v 0.002..0.998
+  set 1: u 0.000..0.978  v 0.006..1.000
+  set 2: u 0.000..0.993  v 0.009..1.000
+piece 6: 0xfffffff0 (0:0) 1 sets {"dif.spec.weight.add.env.tsnmap"}
+  set 0: u 0.314..0.655  v 0.007..0.131
+piece 7: 0xffffff00 (0:0 1:0) 1 sets {"lamp.tsnmap.add.env"}
+  set 0: u 0.496..1.992  v 0.008..0.395
+piece 8: 0xfffffff0 (0:0) 1 sets {"glass"}
+  set 0: u 0.019..0.865  v 0.530..0.985
+piece 9: 0xfffffff0 (0:0) 1 sets {"glass"}
+  set 0: u 0.019..0.023  v 0.981..0.985
+== /vehicle/truck/mercedes_actros_2014/cabin_8x4.pmd
+piece 0: 0xfffffff0 (0:0) 1 sets {"dif.spec.tsnmap"}
+  set 0: u 0.001..0.041  v 0.575..0.630
+piece 1: 0xfffffff0 (0:0) 1 sets {"dif.spec.tsnmap"}
+  set 0: u 0.001..0.041  v 0.575..0.630
+piece 2: 0xfffffff0 (0:0) 1 sets {"dif.spec.tsnmap"}
+  set 0: u 0.000..0.999  v 0.002..1.000
+piece 3: 0xf0fff210 (0:0 1:1 2:2 6:0) 3 sets {"truckpaint.tsnmapuv.altuv"}
+  set 0: u 0.001..0.588  v 0.002..0.998
+  set 1: u 0.022..0.978  v 0.006..0.858
+  set 2: u 0.022..0.993  v 0.009..0.833
+piece 4: 0xffffff00 (0:0 1:0) 1 sets {"lamp.tsnmap.add.env"}
+  set 0: u 0.496..1.992  v 0.008..0.395
+piece 5: 0xfffffff0 (0:0) 1 sets {"glass"}
+  set 0: u 0.019..0.865  v 0.530..0.985
+piece 6: 0xfffffff0 (0:0) 1 sets {"dif.spec.weight.add.env.tsnmap"}
+  set 0: u 0.314..0.655  v 0.007..0.131
+piece 7: 0xffffffff (-) 0 sets {"shadowonly"}
+piece 8: 0xfffffff0 (0:0) 1 sets {"dif.spec.add.env.tsnmap"}
+  set 0: u 0.162..0.964  v 0.000..0.348
+piece 9: 0xfffffff0 (0:0) 1 sets {"glass"}
+  set 0: u 0.932..0.937  v 0.582..0.586
+== /vehicle/truck/daf_2021/accessory/cab_door/std_xf.pmd
+piece 0: 0xf1fff000 (0:0 1:0 2:0 6:1) 2 sets {"truckpaint.tsnmapuv"}
+  set 0: u 0.220..0.779  v 0.535..0.792
+  set 1: u 0.009..0.011  v 0.993..0.996
+piece 1: 0xfffffff0 (0:0) 1 sets {"dif.spec.add.env.tsnmap"}
+  set 0: u 0.008..0.984  v 0.009..0.993
+== /vehicle/truck/daf_2021/accessory/cab_door/win_xf_uk.pmd
+piece 0: 0xf2fff110 (0:0 1:1 2:1 6:2) 3 sets {"truckpaint.tsnmapuv"}
+  set 0: u 0.220..0.779  v 0.535..0.792
+  set 1: u 0.220..0.779  v 0.535..0.792
+  set 2: u 0.009..0.011  v 0.993..0.996
+piece 1: 0xfffffff0 (0:0) 1 sets {"glass"}
+  set 0: u 0.252..0.336  v 0.649..0.710
+piece 2: 0xfffffff0 (0:0) 1 sets {"dif.spec.add.env.tsnmap"}
+  set 0: u 0.003..0.993  v 0.009..0.988

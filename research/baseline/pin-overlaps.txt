@@ -1,0 +1,58 @@
+# Baseline of research/evidence/pin-overlaps.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## pin_dump
+daf.2021: 64 exterior pins, 2 overlapping pairs
+  f_bumper and f_grill: 0.040 m
+  r_deflector and r_deflector: 0.000 m
+daf.xd: 69 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+daf.xf: 56 exterior pins, 1 overlapping pairs
+  badge and s_equip: 0.000 m
+daf.xf_electric: 49 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+daf.xf_euro6: 58 exterior pins, 0 overlapping pairs
+iveco.hiway: 38 exterior pins, 0 overlapping pairs
+iveco.stralis: 37 exterior pins, 0 overlapping pairs
+iveco.sway: 64 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+man.tgx: 40 exterior pins, 1 overlapping pairs
+  badge and chs_badges: 0.000 m
+man.tgx_2020: 76 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+man.tgx_euro6: 66 exterior pins, 4 overlapping pairs
+  badge_a and badge_b: 0.000 m
+  badge_a and badge_c: 0.000 m
+  badge_b and badge_c: 0.000 m
+  r_deflector and r_deflector: 0.000 m
+mercedes.actros: 70 exterior pins, 0 overlapping pairs
+mercedes.actros2014: 69 exterior pins, 1 overlapping pairs
+  badge_a and badge_b: 0.000 m
+renault.etech_t: 53 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+renault.magnum: 37 exterior pins, 0 overlapping pairs
+renault.premium: 40 exterior pins, 0 overlapping pairs
+renault.t: 85 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+scania.r: 56 exterior pins, 1 overlapping pairs
+  badge and c_badge: 0.000 m
+scania.r_2016: 86 exterior pins, 1 overlapping pairs
+  f_intake_chs and badge: 0.022 m
+scania.s_2016: 86 exterior pins, 1 overlapping pairs
+  f_intake_chs and badge: 0.022 m
+scania.s_2024e: 53 exterior pins, 1 overlapping pairs
+  f_intake_chs and badge: 0.022 m
+scania.streamline: 58 exterior pins, 1 overlapping pairs
+  badge and c_badge: 0.000 m
+volvo.fh16: 75 exterior pins, 1 overlapping pairs
+  r_deflector and r_deflector: 0.000 m
+volvo.fh16_2012: 78 exterior pins, 2 overlapping pairs
+  f_intake_cab and f_intake_chs: 0.002 m
+  r_deflector and r_deflector: 0.000 m
+volvo.fh_2021: 83 exterior pins, 2 overlapping pairs
+  f_intake_cab and f_intake_chs: 0.002 m
+  r_deflector and r_deflector: 0.000 m
+volvo.fh_2024: 83 exterior pins, 2 overlapping pairs
+  f_intake_cab and f_intake_chs: 0.002 m
+  r_deflector and r_deflector: 0.000 m
+26 trucks, 1629 exterior pins, 27 pairs within 0.05 m
