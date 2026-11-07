@@ -83,6 +83,10 @@ At profile load, for each package, in this order:
   -> The order (base first, dlc_* by name, later wins) stays a Hypothesis. Settling it needs
      an in-game check of one of the shared paths below, or the mount code in the executable
      (mod-pool-priority-static.txt covers mods against each other, not folders in one package).
+  -> Added 2026-11-07: the user reports that a mod's dlc_<name>/ file replaces its base/ file
+     when that DLC is owned. With section 4 (an author stores a dlc_toys/ copy of a base/ file
+     only if it is used), the order is a strong Hypothesis (docs/formats/mods.md). It is a
+     report, not an observation recorded here; no in-game check is planned.
 
 
 4. Does the order matter for these packages
@@ -98,4 +102,4 @@ Relative paths of files (folder stripped) that occur in more than one folder of 
   def/vehicle/truck/volvo.fh_2022/accessory/ (curtains and similar).
   -> For pgrs and promods-eu-dlcsupport, the order between their own folders cannot change
      any lookup (Confirmed). For Sanax it changes 40 files, so the Hypothesis matters there.
-     Those 40 are the cheapest in-game check.
+     Those 40 would be the cheapest in-game check, if one is ever wanted.
