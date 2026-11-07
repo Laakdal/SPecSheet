@@ -62,6 +62,13 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Name:** the app is now called **SpecSheet** (tagline "SpecSheet: ETS2 Save Edit"). The window title, top-bar brand, installer product name and app identifier (`dev.specsheet.app`) are updated. Settings saved under the old identifier are not migrated, so the game directory is detected again on first launch.
 
 ### Added
+- **Mods:** pick one of your ETS2 profiles in the SpecSheet window and the app loads its local mods the way the game does, so modded trucks and parts appear on the tuning screen (for example the Volvo FH2022 by Sanax). Mods that are not loaded are listed with the reason; Steam Workshop mods are not supported yet. Nothing in the game, its home folder or the profile is written.
+- **Mod textures:** loose `.tobj` + `.dds` textures (DX10, legacy DXT and uncompressed DDS, BC7) load, with the colour space and wrapping the `.tobj` sets.
+- **Steam Workshop mods:** a profile's Workshop mods load too, read from the Steam library's Workshop folder, each in the version the game would pick for your game version. On the test profile all 57 active mods load and add four trucks (Scania 5s, G and P 2016, Volvo FH2022).
+- **Mod icons:** accessory icons stored as DXT1/DXT3/DXT5 (BC1 to BC5) show on the game screen.
+- **32-bit float mod textures:** `.dds` files in A32B32G32R32F load (as half floats).
+- **`mod_extract --textures`:** a game archive's packed textures are written as a standalone `.tobj` and a `.dds`, the way a mod holds them, instead of only being listed.
+- **`cargo xtask recipes`:** checks that every evidence file has a recipe; `--compare` reruns them against committed baselines; `cargo xtask rea` batches the saved REA searches.
 - **`mod_extract` reads game archives too:** it extracts and lists HashFS v2 archives, read only, named from the archive's listings and then the game's paths (`extract::v2_names`). Packed textures are left out and listed in `_packed_textures.txt`, and do not count against the size limit. `extract_check` compares an extracted folder with the game, file by file.
 - **`mod_extract --list` and `--only`:** list a package as a tree, named as extraction would name the files, and extract or list only archive paths matching a pattern (`specsheet_data::extract::{list, PathFilter}`); the size limit counts only the files taken.
 - **A log file:** every run writes its log to `%APPDATA%\dev.specsheet.app\specsheet.log` (the run before is kept as `specsheet.prev.log`), so problems in the release app, which has no console, can be looked at afterwards. `SPECSHEET_PERF=1` adds frame time, FPS and load times to it.
@@ -109,6 +116,11 @@ All notable changes to this project are documented here. The format follows [Kee
 - **Game version pin:** `GameInstall::version()` reads the installed version from `version.scs`. The real-install tests fail with instructions on any version other than `TESTED_GAME_VERSION` (1.60.1.7).
 
 ### Fixed
+- **Switching trucks frees video memory:** the previous truck's models, textures and materials are released when another truck (or a mod profile) is opened. Before, every truck shown stayed in GPU memory, so a modded session with 4K textures ran out on a 2 GB GPU at its second truck.
+- **Modded interiors are complete:** parts whose position a mod keeps only in the interior's exterior model (the Volvo FH2022's seat, curtain, bed and stow box) are now placed, as the game does.
+- **Mods with only DLC folders:** a package that holds `dlc_<name>/` folders and no `base/` folder (ProMods' DLC support) now loads its installed DLCs' folders instead of nothing useful.
+- **Extraction with only lists to write:** an extraction whose filter takes only packed textures no longer fails writing `_packed_textures.txt` into a destination that did not exist yet.
+- **`mod_extract` protects a moved home folder:** the folder in `ETS2_HOME` can no longer be chosen as an extraction destination.
 - **Extraction no longer stops on Windows short names:** a file whose name equals another file's 8.3 short alias (`______~1.dds` for `_________.dds`, 24 files in the MAN TG3 add-on) now takes the next free `~N` instead of stopping with "file exists".
 - Debug builds no longer panic on uncompressed game textures with mipmaps (flake noise, UI textures): Bevy's single-mip size check is bypassed for the full chain.
 - Chrome and polished metal no longer render nearly black: materials with an `env_factor` become PBR metal, with roughness from `shininess`.
