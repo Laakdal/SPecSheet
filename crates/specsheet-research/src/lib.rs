@@ -4,5 +4,8 @@
 //! `ETS2_DIR=<game dir> cargo run --release -p specsheet-research --example scs -- ls /def`.
 //! Their output, when cited, is copied to `research/evidence/`.
 //!
-//! The library itself is empty; the crate exists so the tools live in one
-//! place above every library crate (D17).
+//! The library holds only what the tools share: the evidence header and CSV
+//! output ([`evidence`]). The crate exists so the tools live in one place
+//! above every library crate (D17).
+
+pub mod evidence;

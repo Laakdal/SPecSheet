@@ -2,17 +2,28 @@
 //! the game's way and measures how far each pin lands from the bounding box
 //! of the parts placed in its slot. Pins far from their parts point at a
 //! wrong base locator or model order.
-//! Usage: ETS2_DIR=... cargo run --release -p specsheet-research --example pin_survey
+//! With `--csv <file>`, the per-slot table is also written as CSV.
+//! Usage: ETS2_DIR=... cargo run --release -p specsheet-research --example pin_survey [-- --csv <file>]
 
 use std::collections::BTreeMap;
 
 use specsheet_assembly::Drive;
 use specsheet_data::GameInstall;
+use specsheet_research::evidence::{csv_line, Header};
 use specsheet_session::view::{self, HotspotCategory};
 use specsheet_session::GameSession;
 
+const USAGE: &str = "usage: pin_survey [--csv <file>]";
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let csv = csv_path()?;
     let game = GameSession::open(GameInstall::discover()?)?;
+    let header = Header {
+        title: "Pin survey: how far the game-rule pins land from their parts (F5)",
+        exe_sha256: None,
+        clean_room: false,
+    };
+    print!("{}", header.render());
     println!("pin table: {} entries", game.pin_table().len());
     let mut distances: Vec<(f32, String)> = Vec::new();
     let mut per_slot: BTreeMap<String, (usize, f32)> = BTreeMap::new();
@@ -85,10 +96,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{d:7.3}  {what}");
     }
     println!("--- per slot: pins, worst distance");
+    let mut table = csv_line(&["slot", "pins", "worst_m"]);
     for (slot, (count, worst)) in per_slot {
         println!("{slot:14} {count:5} {worst:7.3}");
+        table.push_str(&csv_line(&[
+            &slot,
+            &count.to_string(),
+            &format!("{worst:.3}"),
+        ]));
+    }
+    if let Some(path) = csv {
+        std::fs::write(path, table)?;
     }
     Ok(())
+}
+
+/// The file named by `--csv <file>`, if any.
+fn csv_path() -> Result<Option<std::path::PathBuf>, String> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.as_slice() {
+        [] => Ok(None),
+        [flag, file] if flag == "--csv" => Ok(Some(file.into())),
+        _ => Err(USAGE.to_owned()),
+    }
 }
 
 /// Rotates `v` by the unit quaternion `(x, y, z, w)`.

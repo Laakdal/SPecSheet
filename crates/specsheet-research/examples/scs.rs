@@ -5,10 +5,12 @@
 //!   cargo run --release -p specsheet-research --example scs -- cat <file>
 //!   cargo run --release -p specsheet-research --example scs -- find <dir> <substring>
 //!   cargo run --release -p specsheet-research --example scs -- tex <file.tobj>   (image and sample records)
+//!   cargo run --release -p specsheet-research --example scs -- version   (the installed game version)
 
 use std::io::Write;
 
 use specsheet_archive::{Archive, Vfs};
+use specsheet_data::GameInstall;
 
 const BASE_ORDER: &[&str] = &[
     "effect.scs",
@@ -55,6 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         ["cat", path] => std::io::stdout().write_all(&vfs.read(path)?)?,
+        ["version"] => println!("{}", GameInstall::discover()?.version()?),
         ["find", root, needle] => find(&vfs, root, needle)?,
         ["tex", path] => {
             let texture = vfs.read_texture(path)?;
