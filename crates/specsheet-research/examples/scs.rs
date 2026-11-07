@@ -1,4 +1,5 @@
-//! Research tool over a whole installation (all archives layered).
+//! Research tool over a whole installation: every archive, layered in the
+//! game's lookup order (`GameInstall::mount`).
 //!
 //! Usage (ETS2_DIR must point at the game directory):
 //!   cargo run --release -p specsheet-research --example scs -- ls <dir>
@@ -9,35 +10,15 @@
 
 use std::io::Write;
 
-use specsheet_archive::{Archive, Vfs};
+use specsheet_archive::Vfs;
 use specsheet_data::GameInstall;
 
-const BASE_ORDER: &[&str] = &[
-    "effect.scs",
-    "base.scs",
-    "base_map.scs",
-    "base_vehicle.scs",
-    "base_share.scs",
-    "def.scs",
-    "core.scs",
-    "locale.scs",
-    "base_cfg.scs",
-];
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = std::env::var("ETS2_DIR")?;
-    let mut vfs = Vfs::new();
-    for name in BASE_ORDER {
-        vfs.mount(Archive::open(format!("{dir}/{name}"))?);
-    }
-    let mut dlcs: Vec<_> = std::fs::read_dir(&dir)?
-        .filter_map(|e| e.ok())
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| n.starts_with("dlc_") && n.ends_with(".scs"))
-        .collect();
-    dlcs.sort();
-    for name in dlcs {
-        vfs.mount(Archive::open(format!("{dir}/{name}"))?);
+    // The game's lookup order (F2/F14): DLCs by their manifest's
+    // relative_priority, the core pool on top (`GameInstall::mount`).
+    let (vfs, failures) = GameInstall::discover()?.mount()?;
+    for (path, error) in &failures {
+        eprintln!("not mounted: {}: {error}", path.display());
     }
 
     let args: Vec<String> = std::env::args().skip(1).collect();
