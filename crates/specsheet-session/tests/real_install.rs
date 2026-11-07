@@ -52,7 +52,6 @@ fn archives_mount_in_the_games_lookup_order() {
     assert!(failures.is_empty(), "{failures:?}");
     let names: Vec<String> = vfs
         .archives()
-        .iter()
         .map(|a| a.path().file_name().unwrap().to_string_lossy().into_owned())
         .collect();
     let at = |name: &str| names.iter().position(|n| n == name).expect(name);
@@ -66,6 +65,80 @@ fn archives_mount_in_the_games_lookup_order() {
     // The oldest DLC (Going East, relative_priority 1) ranks lowest of all
     // DLCs, though it is not first by name.
     assert_eq!(names[dlcs[0]], "dlc_east.scs", "{names:?}");
+}
+
+#[test]
+fn a_profiles_mods_mount_and_the_trucks_they_add_load_with_their_textures() {
+    // D20, opt-in: needs ETS2_HOME (the ETS2 home folder) and ETS2_PROFILE
+    // (a profile folder under profiles/) besides ETS2_DIR. Every local
+    // active mod must mount or be gated for a stated reason, and every truck
+    // the mods add must start, with every model and base texture readable
+    // (loose .tobj + .dds included, research/evidence/tobj-loose.txt).
+    use specsheet_data::mods::{Home, ModStatus};
+    use specsheet_data::render::{build_mesh, load_texture};
+    use specsheet_session::GameSession;
+    let (Some(home), Some(profile)) = (
+        std::env::var_os("ETS2_HOME"),
+        std::env::var_os("ETS2_PROFILE"),
+    ) else {
+        return;
+    };
+    if std::env::var_os("ETS2_DIR").is_none() {
+        return;
+    }
+    let home = Home::at(home).expect("ETS2_HOME is a home folder");
+    let base = GameSession::open(GameInstall::discover().expect("install")).expect("open");
+    let game = GameSession::open_with_profile(
+        GameInstall::discover().expect("install"),
+        &home,
+        &profile.to_string_lossy(),
+    )
+    .expect("open with mods");
+    assert!(game.mount_failures.is_empty(), "{:?}", game.mount_failures);
+    for entry in game.mods() {
+        assert!(
+            !matches!(entry.status, ModStatus::Unreadable { .. }),
+            "{}: {:?}",
+            entry.active.package,
+            entry.status
+        );
+    }
+    let added: Vec<_> = game
+        .trucks()
+        .iter()
+        .filter(|t| !base.trucks().iter().any(|b| b.id == t.id))
+        .map(|t| t.id.clone())
+        .collect();
+    for truck in added {
+        let session = game.start_truck(&truck).expect("a modded truck starts");
+        assert!(
+            session.load_warnings().is_empty(),
+            "{truck}: {:?}",
+            session.load_warnings()
+        );
+        let assembly = session.assembly();
+        for placement in assembly.placements.iter().chain(&assembly.interior_parts) {
+            let model = game
+                .models()
+                .load(game.fs(), &placement.model)
+                .unwrap_or_else(|e| panic!("{truck} {}: {e}", placement.model));
+            let (mesh, warnings) = build_mesh(
+                game.fs(),
+                &model,
+                placement.look.as_deref(),
+                placement.variant.as_deref(),
+                &[],
+            );
+            assert!(warnings.is_empty(), "{truck}: {warnings:?}");
+            for texture in mesh
+                .materials
+                .iter()
+                .filter_map(|m| m.base_texture.as_ref())
+            {
+                load_texture(game.fs(), texture).unwrap_or_else(|e| panic!("{texture}: {e}"));
+            }
+        }
+    }
 }
 
 #[test]

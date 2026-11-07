@@ -15,6 +15,7 @@ use specsheet_truck::{
 use crate::{GameSession, SlotOption, TruckSession};
 use specsheet_assembly::pins;
 use specsheet_assembly::Drive;
+use specsheet_data::mods::{Home, ModStatus};
 
 /// A tab of the game's truck configuration screen (finding F5). The tab
 /// row's `value_list` names them; [`Tab::from_token`] reads those names.
@@ -286,6 +287,80 @@ pub struct TruckEntry {
     pub id: TruckId,
     /// Its display name.
     pub name: String,
+}
+
+/// A player profile the mod picker offers (D20).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProfileEntry {
+    /// The folder under `profiles/`, which identifies it.
+    pub folder: String,
+    /// The profile's name.
+    pub name: String,
+    /// How many mods it has active (local and Workshop).
+    pub active_mods: usize,
+}
+
+/// The ETS2 home folder at its default place, if there is one.
+pub fn default_home() -> Option<std::path::PathBuf> {
+    Home::discover().map(|home| home.root().to_path_buf())
+}
+
+/// The profiles of the ETS2 home folder `home`, or why it is not one.
+pub fn profiles(home: &std::path::Path) -> Result<Vec<ProfileEntry>, String> {
+    let home = Home::at(home).map_err(|e| e.to_string())?;
+    Ok(home
+        .profiles()
+        .into_iter()
+        .map(|p| ProfileEntry {
+            folder: p.folder,
+            name: p.name,
+            active_mods: p.active_mods.len(),
+        })
+        .collect())
+}
+
+/// One active mod as the app lists it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ModLine {
+    /// The mod's display name.
+    pub name: String,
+    /// What became of it, in plain words.
+    pub status: String,
+    /// It is mounted.
+    pub mounted: bool,
+}
+
+/// The mods of the open profile, in `active_mods[]` order; empty without
+/// one.
+pub fn mods(game: &GameSession) -> Vec<ModLine> {
+    game.mods()
+        .iter()
+        .map(|entry| {
+            let status = mod_status(&entry.status);
+            ModLine {
+                name: entry.active.display_name.clone(),
+                mounted: matches!(entry.status, ModStatus::Mounted { .. }),
+                status,
+            }
+        })
+        .collect()
+}
+
+fn mod_status(status: &ModStatus) -> String {
+    match status {
+        ModStatus::Mounted { folders } if folders.len() > 1 => {
+            format!("loaded ({} folders)", folders.len())
+        }
+        ModStatus::Mounted { .. } => "loaded".to_owned(),
+        ModStatus::WorkshopMissing => {
+            "not loaded: not in the Steam Workshop folder (not downloaded yet?)".to_owned()
+        }
+        ModStatus::Missing => "not loaded: no such file in the mod folder".to_owned(),
+        ModStatus::Incompatible { versions } => {
+            format!("not loaded: made for game version {}", versions.join(", "))
+        }
+        ModStatus::Unreadable { reason } => format!("not loaded: {reason}"),
+    }
 }
 
 /// Every truck of the installation with its display name.
@@ -625,6 +700,29 @@ fn describe(game: &GameSession, reason: &Incompatibility) -> String {
 mod tests {
     use super::*;
     use specsheet_truck::{Flake, Flip, ModelRef, PaintJob};
+
+    #[test]
+    fn mod_outcomes_read_as_plain_words() {
+        assert_eq!(
+            mod_status(&ModStatus::Mounted {
+                folders: vec![String::new()]
+            }),
+            "loaded"
+        );
+        assert_eq!(
+            mod_status(&ModStatus::Mounted {
+                folders: vec!["base".into(), "dlc_toys".into()]
+            }),
+            "loaded (2 folders)"
+        );
+        assert!(mod_status(&ModStatus::WorkshopMissing).contains("Workshop folder"));
+        assert_eq!(
+            mod_status(&ModStatus::Incompatible {
+                versions: vec!["1.49.*".into()]
+            }),
+            "not loaded: made for game version 1.49.*"
+        );
+    }
 
     fn paint_job(icon: Option<&str>, paint: PaintJob) -> Accessory {
         Accessory {

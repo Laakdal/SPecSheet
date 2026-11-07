@@ -20,11 +20,12 @@ use specsheet_data::camera::{interior_camera_name, interior_cameras, InteriorCam
 use specsheet_data::flare::{vehicle_lights, VehicleLight};
 use specsheet_data::localization::Localization;
 use specsheet_data::model::ModelCache;
+use specsheet_data::mods::{open_active_mods, Home, ModEntry, Profile};
 use specsheet_data::scene::{list_scenes, truck_pin_table, tuning_scene, PinSpec, Scene};
 use specsheet_data::GameFs;
-use specsheet_data::GameInstall;
 use specsheet_data::Result;
 use specsheet_data::{list_trucks, load_catalog, load_preset, LoadWarning, TruckSummary};
+use specsheet_data::{GameInstall, Mounted};
 
 pub mod view;
 
@@ -50,12 +51,39 @@ pub struct GameSession {
     interior_cameras: BTreeMap<String, InteriorCamera>,
     /// Archives that failed to open (reported, not fatal).
     pub mount_failures: Vec<String>,
+    /// The profile whose mods are mounted (D20), if any.
+    profile: Option<Profile>,
+    /// What became of each of its active mods, in `active_mods[]` order.
+    mods: Vec<ModEntry>,
 }
 
 impl GameSession {
     /// Mounts `install` and reads the truck list and English strings.
     pub fn open(install: GameInstall) -> Result<Self> {
-        let (vfs, failures) = install.mount()?;
+        let mounted = install.mount()?;
+        Self::open_mounted(install, mounted, None, Vec::new())
+    }
+
+    /// As [`GameSession::open`], with the local mods of the profile in
+    /// folder `profile` of `home` mounted the game's way (D20). Each active
+    /// mod's outcome is in [`GameSession::mods`].
+    pub fn open_with_profile(install: GameInstall, home: &Home, profile: &str) -> Result<Self> {
+        let profile = home.profile(profile)?;
+        let version = install.version()?;
+        let dlcs = install.installed_dlcs()?;
+        let workshop = install.workshop_dir();
+        let (devices, report) =
+            open_active_mods(home, &profile, &version, &dlcs, workshop.as_deref());
+        let mounted = install.mount_with_mods(devices)?;
+        Self::open_mounted(install, mounted, Some(profile), report)
+    }
+
+    fn open_mounted(
+        install: GameInstall,
+        (vfs, failures): Mounted,
+        profile: Option<Profile>,
+        mods: Vec<ModEntry>,
+    ) -> Result<Self> {
         let fs = GameFs::new(vfs);
         let localization = Localization::load(&fs, LANGUAGE).unwrap_or_default();
         let trucks = list_trucks(&fs)?;
@@ -79,7 +107,20 @@ impl GameSession {
                 .into_iter()
                 .map(|(path, error)| format!("{}: {error}", path.display()))
                 .collect(),
+            profile,
+            mods,
         })
+    }
+
+    /// The profile whose mods are mounted, if any (D20).
+    pub fn profile(&self) -> Option<&Profile> {
+        self.profile.as_ref()
+    }
+
+    /// What became of each of the profile's active mods, in
+    /// `active_mods[]` order; empty without a profile.
+    pub fn mods(&self) -> &[ModEntry] {
+        &self.mods
     }
 
     /// The game installation.
