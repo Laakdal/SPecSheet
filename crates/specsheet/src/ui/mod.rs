@@ -19,10 +19,10 @@ use bevy_egui::{
 use egui::{Align2, Color32, Id, Order, Pos2, RichText, Sense, Stroke};
 use specsheet_assembly::Drive;
 use specsheet_gameui::{load_screen, load_templates};
-use specsheet_session::view::{Hotspot, HotspotCategory, Tab, TruckOverview};
+use specsheet_session::view::{self, Hotspot, HotspotCategory, ProfileEntry, Tab, TruckOverview};
 
 use crate::hotspots::{opacity, open_after_click, shown};
-use crate::studio::{Action, Actions, Studio};
+use crate::studio::{Action, Actions, ModChoice, Studio};
 use crate::viewer::{ModelCache, TruckRoot, ViewportInput};
 
 use self::screen::{Click, Mapping, Prices, ScreenAssets, ScreenState};
@@ -57,6 +57,12 @@ const SCREEN: &str = "truck.config";
 #[derive(Resource, Default)]
 pub struct UiState {
     game_dir: String,
+    /// The ETS2 home folder typed or found for the mod picker (D20).
+    mods_home: Option<String>,
+    /// The profiles found in it, or why none were.
+    profiles: Option<Result<Vec<ProfileEntry>, String>>,
+    /// The dev script asked to expand the SpecSheet window.
+    pub open_specsheet: bool,
     /// The open pin (index into the overview's hotspots): a wheel's disc
     /// pin, whose hub, cover and nut pins show while it is open.
     open_pin: Option<usize>,
@@ -326,7 +332,17 @@ fn specsheet_window(
     state: &mut UiState,
     loading: bool,
 ) {
+    let window_id = Id::new("specsheet_window");
+    if std::mem::take(&mut state.open_specsheet) {
+        // egui keeps a window's collapsed state under its id + "collapsing".
+        let id = window_id.with("collapsing");
+        let mut collapsing =
+            egui::collapsing_header::CollapsingState::load_with_default_open(ctx, id, false);
+        collapsing.set_open(true);
+        collapsing.store(ctx);
+    }
     egui::Window::new("SpecSheet")
+        .id(window_id)
         .anchor(Align2::CENTER_BOTTOM, egui::vec2(0.0, -8.0))
         .collapsible(true)
         .resizable(false)
@@ -380,6 +396,7 @@ fn specsheet_window(
                         .small(),
                 );
             }
+            mods_section(ui, studio, actions, state);
             if let Some(error) = &studio.error {
                 ui.label(RichText::new(error).color(DANGER));
             }
@@ -394,6 +411,102 @@ fn specsheet_window(
                 ui.label(RichText::new(warning).color(MUTED).small());
             }
         });
+}
+
+/// The mod picker (D20): the ETS2 home folder, its profiles, and what
+/// became of the chosen profile's mods.
+fn mods_section(ui: &mut egui::Ui, studio: &Studio, actions: &mut Actions, state: &mut UiState) {
+    ui.separator();
+    let home = state.mods_home.get_or_insert_with(|| {
+        studio
+            .mods
+            .as_ref()
+            .map(|c| c.home.clone())
+            .or_else(view::default_home)
+            .map(|h| h.display().to_string())
+            .unwrap_or_default()
+    });
+    let mut find = state.profiles.is_none() && studio.mods.is_some();
+    ui.horizontal(|ui| {
+        ui.label("Mods");
+        ui.add(
+            egui::TextEdit::singleline(home)
+                .hint_text(r"Documents\Euro Truck Simulator 2")
+                .desired_width(260.0),
+        );
+        find |= ui.button("Find profiles").clicked();
+    });
+    let home = home.trim().to_owned();
+    if find {
+        state.profiles = Some(view::profiles(std::path::Path::new(&home)));
+    }
+    let enabled = !studio.busy();
+    match &state.profiles {
+        Some(Ok(profiles)) => {
+            let current = studio.mods.as_ref().map(|c| c.profile.as_str());
+            let selected = current
+                .and_then(|folder| profiles.iter().find(|p| p.folder == folder))
+                .map_or_else(|| "No mods".to_owned(), |p| p.name.clone());
+            ui.add_enabled_ui(enabled, |ui| {
+                egui::ComboBox::from_id_salt("mods")
+                    .selected_text(selected)
+                    .width(260.0)
+                    .show_ui(ui, |ui| {
+                        if ui.selectable_label(current.is_none(), "No mods").clicked()
+                            && current.is_some()
+                        {
+                            actions.0.push(Action::SetMods {
+                                choice: None,
+                                remember: true,
+                            });
+                        }
+                        for profile in profiles {
+                            let is_current = current == Some(profile.folder.as_str());
+                            let label = format!("{} ({} mods)", profile.name, profile.active_mods);
+                            if ui.selectable_label(is_current, label).clicked() && !is_current {
+                                actions.0.push(Action::SetMods {
+                                    choice: Some(ModChoice {
+                                        home: std::path::PathBuf::from(&home),
+                                        profile: profile.folder.clone(),
+                                    }),
+                                    remember: true,
+                                });
+                            }
+                        }
+                    });
+            });
+        }
+        Some(Err(error)) => {
+            ui.label(RichText::new(error).color(DANGER).small());
+        }
+        None => {}
+    }
+    let lines = studio.game.as_deref().map(view::mods).unwrap_or_default();
+    if !lines.is_empty() {
+        let loaded = lines.iter().filter(|l| l.mounted).count();
+        ui.label(
+            RichText::new(format!("{loaded} of {} mods loaded", lines.len()))
+                .color(MUTED)
+                .small(),
+        );
+        if loaded < lines.len() {
+            egui::CollapsingHeader::new("Not loaded")
+                .id_salt("mods_not_loaded")
+                .show(ui, |ui| {
+                    egui::ScrollArea::vertical()
+                        .max_height(120.0)
+                        .show(ui, |ui| {
+                            for line in lines.iter().filter(|l| !l.mounted) {
+                                ui.label(
+                                    RichText::new(format!("{}: {}", line.name, line.status))
+                                        .color(MUTED)
+                                        .small(),
+                                );
+                            }
+                        });
+                });
+        }
+    }
 }
 
 /// The paint job slot, whose list gets the colour picker.

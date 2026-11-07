@@ -26,7 +26,7 @@ use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_session::view::Tab;
 use specsheet_truck::PaintChannel;
 
-use crate::studio::{Action, Actions, FrameSet, Studio};
+use crate::studio::{Action, Actions, FrameSet, ModChoice, Studio};
 use crate::ui::UiState;
 use crate::viewer::{ExposureSettings, ModelCache, Orbit, ViewportInput};
 
@@ -86,6 +86,8 @@ pub enum Step {
     Wait,
     /// Sets the tonemap's fixed exposure scale E.
     Exposure(f32),
+    /// Expands the collapsed SpecSheet window, to show it in a screenshot.
+    OpenSpecSheet,
     Sleep(u32),
     Echo(String),
     Screenshot(PathBuf),
@@ -139,7 +141,21 @@ pub(crate) fn parse(source: &str) -> Result<Vec<Step>, String> {
                 _ => return Err(error()),
             })),
             "scene" => Step::Act(Action::SetScene(one()?.parse().map_err(|_| error())?)),
+            // `mods off`, or `mods <profile folder> <home folder>`: the home
+            // folder comes last, as it may hold spaces. Never remembered.
+            "mods" => Step::Act(Action::SetMods {
+                choice: match args.as_slice() {
+                    ["off"] => None,
+                    [profile, home @ ..] if !home.is_empty() => Some(ModChoice {
+                        home: PathBuf::from(home.join(" ")),
+                        profile: (*profile).to_owned(),
+                    }),
+                    _ => return Err(error()),
+                },
+                remember: false,
+            }),
             "tab" => Step::Tab(Tab::from_token(one()?).ok_or_else(error)?),
+            "specsheet" if one()? == "open" => Step::OpenSpecSheet,
             "paint" => {
                 let [channel, r, g, b] = args[..] else {
                     return Err(error());
@@ -249,6 +265,7 @@ fn run(
             }
         }
         Step::Exposure(e) => exposure.exposure = e,
+        Step::OpenSpecSheet => ui.open_specsheet = true,
         Step::Look(head) => viewport.head = head,
         Step::Sleep(frames) => script.cooldown = frames,
         Step::Echo(text) => info!("script: {text}"),
@@ -309,6 +326,29 @@ echo ready now"
             .expect("valid"),
             vec![Step::Sleep(30), Step::Echo("ready now".to_owned())]
         );
+        assert_eq!(
+            parse("mods 426c D:/SCS/Euro Truck Simulator 2").expect("valid"),
+            vec![Step::Act(Action::SetMods {
+                choice: Some(ModChoice {
+                    home: PathBuf::from("D:/SCS/Euro Truck Simulator 2"),
+                    profile: "426c".to_owned(),
+                }),
+                remember: false,
+            })]
+        );
+        assert_eq!(
+            parse("mods off").expect("valid"),
+            vec![Step::Act(Action::SetMods {
+                choice: None,
+                remember: false,
+            })]
+        );
+        assert!(parse("mods 426c").is_err());
+        assert_eq!(
+            parse("specsheet open").expect("valid"),
+            vec![Step::OpenSpecSheet]
+        );
+        assert!(parse("specsheet close").is_err());
         assert_eq!(
             parse("exposure 5.555").expect("valid"),
             vec![Step::Exposure(5.555)]

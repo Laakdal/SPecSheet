@@ -11,6 +11,7 @@ publish.workspace = true
 specsheet-core = { path = "../specsheet-core" }
 specsheet-assembly = { path = "../specsheet-assembly" }
 specsheet-data = { path = "../specsheet-data" }
+specsheet-formats = { path = "../specsheet-formats" }
 specsheet-gameui = { path = "../specsheet-gameui" }
 specsheet-render = { path = "../specsheet-render" }
 specsheet-session = { path = "../specsheet-session" }

@@ -11,6 +11,7 @@ use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use specsheet_assembly::{Drive, Placement};
 use specsheet_core::{AccessoryId, SlotId, TruckId};
 use specsheet_data::camera::InteriorCamera;
+use specsheet_data::mods::Home;
 use specsheet_data::paint::{piece_paint, PiecePaint};
 use specsheet_data::scene::{tuning_scene, OrbitSpec, Scene};
 use specsheet_data::GameInstall;
@@ -55,11 +56,26 @@ pub enum FrameSet {
     View,
 }
 
+/// A profile whose local mods are loaded with the game (D20).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ModChoice {
+    /// The ETS2 home folder.
+    pub home: std::path::PathBuf,
+    /// The profile's folder under `profiles/`.
+    pub profile: String,
+}
+
 /// Something the user (or the dev script) asked for.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action {
     /// Opens an installation; `None` tries the remembered one, then discovery.
     OpenGame(Option<String>),
+    /// Reopens the game with a profile's mods, or without mods (`None`).
+    /// `remember` keeps the choice in the settings (the dev script does not).
+    SetMods {
+        choice: Option<ModChoice>,
+        remember: bool,
+    },
     LoadTruck(TruckId),
     /// Shows a slot's options in the sidebar; `None` returns to the list.
     ShowSlot(Option<SlotId>),
@@ -134,13 +150,21 @@ pub struct Studio {
     pub error: Option<String>,
     /// True until the first attempt to open a game has finished.
     pub discovering: bool,
+    /// The profile whose mods are loaded, if any.
+    pub mods: Option<ModChoice>,
 }
 
 impl Studio {
     /// The state at start-up, before the first attempt to open a game.
     pub fn starting() -> Self {
+        let saved = settings::load();
+        let mods = saved
+            .mods_home
+            .zip(saved.mods_profile)
+            .map(|(home, profile)| ModChoice { home, profile });
         Self {
             discovering: true,
+            mods,
             ..default()
         }
     }
@@ -197,8 +221,28 @@ fn apply(studio: &mut Studio, action: Action) {
     match action {
         Action::OpenGame(dir) => {
             let saved = settings::load().game_dir;
+            let mods = studio.mods.clone();
             studio.spawn("open game", move || {
-                JobOutput::Opened(open_game(dir, saved))
+                JobOutput::Opened(open_game(dir, saved, mods))
+            });
+        }
+        Action::SetMods { choice, remember } => {
+            if remember {
+                let mut remembered = settings::load();
+                remembered.mods_home = choice.as_ref().map(|c| c.home.clone());
+                remembered.mods_profile = choice.as_ref().map(|c| c.profile.clone());
+                if let Err(error) = settings::save(&remembered) {
+                    warn!("settings: {error}");
+                }
+            }
+            studio.mods = choice.clone();
+            let dir = studio
+                .game
+                .as_ref()
+                .map(|g| g.install().root().display().to_string());
+            let saved = settings::load().game_dir;
+            studio.spawn("open game", move || {
+                JobOutput::Opened(open_game(dir, saved, choice))
             });
         }
         Action::LoadTruck(truck) => {
@@ -269,7 +313,11 @@ fn apply(studio: &mut Studio, action: Action) {
     }
 }
 
-fn open_game(dir: Option<String>, saved: Option<std::path::PathBuf>) -> Result<Opened, String> {
+fn open_game(
+    dir: Option<String>,
+    saved: Option<std::path::PathBuf>,
+    mods: Option<ModChoice>,
+) -> Result<Opened, String> {
     let install = match dir.filter(|d| !d.trim().is_empty()) {
         Some(dir) => GameInstall::at(dir.trim()),
         None => match saved.and_then(|d| GameInstall::at(d).ok()) {
@@ -278,7 +326,14 @@ fn open_game(dir: Option<String>, saved: Option<std::path::PathBuf>) -> Result<O
         },
     }
     .map_err(|e| e.to_string())?;
-    let game = Arc::new(GameSession::open(install).map_err(|e| e.to_string())?);
+    let game = match mods {
+        Some(choice) => {
+            let home = Home::at(&choice.home).map_err(|e| e.to_string())?;
+            GameSession::open_with_profile(install, &home, &choice.profile)
+        }
+        None => GameSession::open(install),
+    };
+    let game = Arc::new(game.map_err(|e| e.to_string())?);
     // The truck configuration screen's own scene first, then the hub scenes.
     let tuning = tuning_scene(game.fs())
         .map_err(|e| warn!("truck configuration scene: {e}"))
@@ -397,6 +452,7 @@ mod tests {
         let remembered = |truck: Option<&str>| Settings {
             game_dir: None,
             truck: truck.map(str::to_owned),
+            ..Settings::default()
         };
         assert_eq!(
             initial_truck(&remembered(Some("b.two")), &trucks),

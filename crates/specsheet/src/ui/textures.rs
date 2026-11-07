@@ -6,7 +6,9 @@
 use std::collections::HashMap;
 
 use bevy_egui::egui;
-use specsheet_data::render::{load_texture, TextureData, TextureFormat};
+use specsheet_core::colour::linear_to_srgb;
+use specsheet_data::render::{load_texture, MipLevel, TextureData, TextureFormat};
+use specsheet_formats::bc::{decode_rgba8, BcFormat};
 use specsheet_gameui::load_ui_material;
 use specsheet_session::GameSession;
 
@@ -84,8 +86,9 @@ const MAX_SIDE: u32 = 16384;
 /// Edge softness of distance fields, in distance units around 0.5.
 const DISTANCE_SOFTNESS: f32 = 0.08;
 
-/// The first mip as an egui image. Only uncompressed formats are handled;
-/// UI textures in 1.60 are B8G8R8A8/X8 (docs/formats/ui.md).
+/// The first mip as an egui image. The game's UI textures in 1.60 are
+/// B8G8R8A8/X8 (docs/formats/ui.md); mod icons are often BC1 to BC5, which
+/// are decoded here.
 pub fn color_image(data: &TextureData, field: Field) -> Result<egui::ColorImage, String> {
     let mip = data.mips.first().ok_or("texture has no surfaces")?;
     if mip.width == 0 || mip.height == 0 || mip.width > MAX_SIDE || mip.height > MAX_SIDE {
@@ -98,6 +101,11 @@ pub fn color_image(data: &TextureData, field: Field) -> Result<egui::ColorImage,
         TextureFormat::R8 if mip.data.len() == pixels => {
             mip.data.iter().flat_map(|&v| [v, v, v, 255]).collect()
         }
+        TextureFormat::Bc1
+        | TextureFormat::Bc2
+        | TextureFormat::Bc3
+        | TextureFormat::Bc4
+        | TextureFormat::Bc5 => decode_blocks(data, mip, field)?,
         other => return Err(format!("unsupported UI texture format {other:?}")),
     };
     if field == Field::None {
@@ -121,10 +129,45 @@ pub fn color_image(data: &TextureData, field: Field) -> Result<egui::ColorImage,
     Ok(egui::ColorImage::from_rgba_unmultiplied([w, h], &shape))
 }
 
+/// A block-compressed mip as RGBA8 for egui, which takes sRGB bytes. A
+/// colour image stored linear (not `_SRGB`) is encoded; distance fields stay
+/// as stored. BC4 shows grey, as R8 does; BC5 (two data channels) as stored.
+fn decode_blocks(data: &TextureData, mip: &MipLevel, field: Field) -> Result<Vec<u8>, String> {
+    let format = match data.format {
+        TextureFormat::Bc1 => BcFormat::Bc1,
+        TextureFormat::Bc2 => BcFormat::Bc2,
+        TextureFormat::Bc3 => BcFormat::Bc3,
+        TextureFormat::Bc4 => BcFormat::Bc4,
+        TextureFormat::Bc5 => BcFormat::Bc5,
+        other => return Err(format!("unsupported UI texture format {other:?}")),
+    };
+    let mut rgba =
+        decode_rgba8(format, mip.width, mip.height, &mip.data).map_err(|e| e.to_string())?;
+    match format {
+        BcFormat::Bc4 => {
+            for pixel in rgba.chunks_exact_mut(4) {
+                pixel[1] = pixel[0];
+                pixel[2] = pixel[0];
+            }
+        }
+        BcFormat::Bc5 => {}
+        _ if !data.srgb && field == Field::None => {
+            let encode: [u8; 256] =
+                std::array::from_fn(|v| (linear_to_srgb(v as f32 / 255.0) * 255.0).round() as u8);
+            for pixel in rgba.chunks_exact_mut(4) {
+                for channel in &mut pixel[..3] {
+                    *channel = encode[usize::from(*channel)];
+                }
+            }
+        }
+        _ => {}
+    }
+    Ok(rgba)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use specsheet_data::render::MipLevel;
 
     fn rgba(pixels: &[[u8; 4]], width: u32) -> TextureData {
         TextureData {
@@ -169,11 +212,44 @@ mod tests {
     }
 
     #[test]
-    fn rejects_mismatched_or_compressed_data() {
+    fn rejects_mismatched_data() {
         let mut data = rgba(&[[1, 2, 3, 4]], 1);
         data.mips[0].data.pop();
         assert!(color_image(&data, Field::None).is_err());
+        // Three bytes are not a BC1 block.
         data.format = TextureFormat::Bc1;
         assert!(color_image(&data, Field::None).is_err());
+    }
+
+    /// A 1x1 texture of one BC block whose texels all use index 0.
+    fn block(format: TextureFormat, srgb: bool, block: Vec<u8>) -> TextureData {
+        TextureData {
+            format,
+            srgb,
+            mips: vec![MipLevel {
+                width: 1,
+                height: 1,
+                data: block,
+            }],
+            repeat_u: false,
+            repeat_v: false,
+        }
+    }
+
+    #[test]
+    fn block_compressed_icons_decode_to_srgb_bytes() {
+        // BC1, both endpoints r = 16 of 31 (132 of 255), indices 0.
+        let bc1 = [0x00, 0x80, 0x00, 0x80, 0, 0, 0, 0].to_vec();
+        let srgb =
+            color_image(&block(TextureFormat::Bc1, true, bc1.clone()), Field::None).expect("srgb");
+        assert_eq!(srgb.pixels[0], egui::Color32::from_rgb(132, 0, 0));
+        // Stored linear: 132 / 255 encodes to 190.
+        let linear =
+            color_image(&block(TextureFormat::Bc1, false, bc1), Field::None).expect("linear");
+        assert_eq!(linear.pixels[0], egui::Color32::from_rgb(190, 0, 0));
+        // BC4 shows grey, as R8 does.
+        let bc4 = [90, 10, 0, 0, 0, 0, 0, 0].to_vec();
+        let grey = color_image(&block(TextureFormat::Bc4, false, bc4), Field::None).expect("bc4");
+        assert_eq!(grey.pixels[0], egui::Color32::from_rgb(90, 90, 90));
     }
 }

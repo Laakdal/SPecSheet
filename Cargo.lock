@@ -4851,6 +4851,7 @@ dependencies = [
  "specsheet-assembly",
  "specsheet-core",
  "specsheet-data",
+ "specsheet-formats",
  "specsheet-gameui",
  "specsheet-render",
  "specsheet-session",

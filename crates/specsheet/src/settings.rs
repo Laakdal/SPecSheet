@@ -15,6 +15,10 @@ pub struct Settings {
     pub game_dir: Option<PathBuf>,
     /// The truck tuned last (`TruckId`).
     pub truck: Option<String>,
+    /// The ETS2 home folder whose profile's mods are loaded (D20).
+    pub mods_home: Option<PathBuf>,
+    /// That profile's folder under `profiles/`; `None` means no mods.
+    pub mods_profile: Option<String>,
 }
 
 /// The app's config directory, which also holds its log file.
