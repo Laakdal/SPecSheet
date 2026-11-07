@@ -1,0 +1,101 @@
+Multi-folder mod packages: which folders mount, in what order, and whether the order matters
+(finding F14, docs/formats/mods.md "Multi-folder"; D20), ETS2 1.60.1.7
+==========================================================================================
+
+Date: 2026-11-07. Sources, all read-only:
+  - The user's mod folder, <home>/mod (58 files). The ZIP packages were read with Python's
+    zipfile (stdlib); mod_extract --list shows the same top-level folders.
+  - The game's own log, <home>/game.log.txt: one session of 1.60.1.7 ("init ver.1.60.1.7s"),
+    started with -homedir, so its paths name another drive letter for the same folders.
+    The entry counts it logs equal the packages' entry counts today (4077, 1373, 21).
+  - The installed DLC archives that the log lists ("[hashfs] dlc_<name>.scs: Created and
+    validated"), and <game>/dlc_*.scs.
+Mod contents are third-party data and are not reproduced. Only package and folder names,
+counts, and log lines with their paths replaced are quoted. Profile names are left out.
+
+
+1. Which packages are multi-folder
+----------------------------------
+A ZIP package with base/ or dlc_<name>/ at its root, next to manifest.sii:
+
+  package                           base/   dlc_* folders                         entries
+  Sanax_volvo_fh_2022_p_DEF.scs     3360    17 (farm_machinery, feldbinder,        4077
+                                            goodyear, jcb, kassbohrer, kogel,
+                                            krone, krone_agriculture, phys_flags,
+                                            raven, schmitz, schoch, toys,
+                                            volvo_tuning_pack, wielton, winter,
+                                            xmas)
+  pgrs_1.60_fix.scs                  972    2 (hs_schoch 290, mighty_griffin 108)  1373
+  promods-eu-dlcsupport-v283.zip      -     3 (feldbinder 7, krone 7, oversize 4)    21
+
+  Counts are ZIP entries, directory records included, as the log counts them. In files +
+  directory records: pgrs base 821 + 151, dlc_hs_schoch 267 + 23, dlc_mighty_griffin
+  88 + 20; Sanax has no directory records. In promods-eu-dlcsupport, dlc_oversize holds
+  2 files + 2 directory records, while dlc_feldbinder and dlc_krone hold 7 directory
+  records each and no file.
+
+  -> A package may have dlc_* folders and no base/ at all (promods-eu-dlcsupport), Confirmed.
+  -> A folder holding only directory records is still requested and mounted as a device
+     (promods-eu-dlcsupport dlc_feldbinder and dlc_krone, section 2), Confirmed.
+     The 24 HashFS packages were not checked; their names are hashed (mod_names recovers
+     most of them).
+
+
+2. What the log shows when they mount
+-------------------------------------
+At profile load, for each package, in this order:
+  [zipfs] <package>: Created, <n> entries
+  [zipfs] <package>: Created, requested subdirectory: <folder>, <n> entries (<m> entries in requested subdirectory)
+      ... one line per folder taken ...
+  [fs] device <home>/mod/<package> mounted to mod pool.
+      ... the same line once per folder taken, identical each time ...
+  [mod_package_manager] Mod "<display name>" has been mounted. (package_name: <stem>, ...)
+
+  package                           folders requested         "mounted to mod pool" lines
+  Sanax_volvo_fh_2022_p_DEF.scs     base + 15 dlc_*           16
+  pgrs_1.60_fix.scs                 base + 2 dlc_*             3
+  promods-eu-dlcsupport-v283.zip    3 dlc_*                    3
+
+  - Folders requested: base first, then the dlc_* folders in byte order of their names, in
+    both the start-up scan and the profile load (Confirmed, all three packages).
+  - Sanax: the two folders left out are dlc_schoch and dlc_xmas. They are the only two that
+    match no installed archive (the install has dlc_hs_schoch and dlc_christmas). Each of the
+    other 20 folders, across the three packages, names an installed dlc_<name>.scs. This
+    repeats mod-loader-survey.txt section 6 for two more packages (Confirmed).
+  - The start-up scan requests every folder, dlc_schoch and dlc_xmas included; only profile
+    load filters by the installed DLCs (Confirmed, Sanax).
+  - The log records how many devices a package gets: one per folder taken (Confirmed).
+
+
+3. What the log cannot settle
+-----------------------------
+  - Lookup order between a package's folders, when the same path is in two of them: Unknown
+    from the log. The device lines are identical and name neither the folder nor a priority.
+    Their creation order (base, then dlc_* by name) is known, but nothing in the log ties
+    creation order to lookup order.
+  - Whether the game sorts the folders or takes them in the archive's order: not separable
+    here. All three packages store their folders in sorted order in the ZIP central
+    directory, base first, so both readings give the order seen.
+  - That base/x is looked up as /x (the folder is stripped): still a Hypothesis. The log
+    only shows the folder requested as a subdirectory, which is consistent with it. The
+    paths in section 4 also fit it: a mod author would only store the same relative path in
+    base/ and dlc_toys/ if both land on one game path.
+  -> The order (base first, dlc_* by name, later wins) stays a Hypothesis. Settling it needs
+     an in-game check of one of the shared paths below, or the mount code in the executable
+     (mod-pool-priority-static.txt covers mods against each other, not folders in one package).
+
+
+4. Does the order matter for these packages
+-------------------------------------------
+Relative paths of files (folder stripped) that occur in more than one folder of a package:
+
+  package                           paths   in 2+ folders   with different bytes   folder pairs
+  Sanax_volvo_fh_2022_p_DEF.scs     4000    73              40                     base+dlc_toys 72, base+dlc_goodyear 1
+  pgrs_1.60_fix.scs                 1176     0               0                     -
+  promods-eu-dlcsupport-v283.zip       2     0               0                     -
+
+  The Sanax base/dlc_toys pairs are accessory definitions named *.dlc_toys.sii under
+  def/vehicle/truck/volvo.fh_2022/accessory/ (curtains and similar).
+  -> For pgrs and promods-eu-dlcsupport, the order between their own folders cannot change
+     any lookup (Confirmed). For Sanax it changes 40 files, so the Hypothesis matters there.
+     Those 40 are the cheapest in-game check.

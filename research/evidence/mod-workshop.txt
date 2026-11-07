@@ -1,0 +1,69 @@
+Steam Workshop items: what the game mounts (D20)
+================================================
+
+Subject: the 77 Workshop items subscribed on the test machine
+(<library>/steamapps/workshop/content/227300/<id>, the Steam library of the
+install) and the game log <home>/game.log.txt of ETS2 1.60.1.7. Both only
+read; output is counts and Workshop item ids (public numbers), no file
+contents and no profile names.
+
+Commands (2026-11-07):
+  python -I tools/research/workshop_versions.py "<game>/../../workshop/content/227300" "<home>/game.log.txt" 1.60.1.7
+  mod_mount "<home>" <profile folder>        (the app's loader on the test profile)
+
+
+1. Where an item lives and what it holds
+----------------------------------------
+- An active_mods[] entry `mod_workshop_package.<id in hex>` names the
+  folder `<workshop>/<id in decimal>` (0xAEDD308C = 2933731468), whose
+  log lines say "device <workshop>/<id>/<entry> mounted to mod pool".
+- Every one of the 77 items has a versions.sii: package_version_info
+  units with package_name and optional compatible_versions[] (53 items
+  with one unit, 24 with several; those 24 all have versioned units).
+- The entry the game mounts is a folder of the item (38) or a package
+  file in it whose stem is the package_name (39: .zip or .scs).
+- 36 items mount as more than one device: a multi-folder package (the
+  folders of multi-folder packages, mod-multi-folder.txt), or a folder
+  that holds packages: item 695738881 mounts its folder `tpart16_9`, then
+  `tpart16_9/base.zip`, then nine `tpart16_9/dlc_<name>.zip`, in name
+  order.
+- One versions.sii (item 3294653064) starts with a UTF-8 byte-order mark;
+  the game mounts that item.
+
+
+2. Which unit the game picks
+----------------------------
+  game version 1.60.1.7
+  items the log mounts: 77, of them compared 77
+  r1 (the first unit whose compatible_versions match, else the first unit
+      without any): 77 agree, 0 differ
+  r2 (the first unit in file order that has none or matches): 69 agree,
+      8 differ (1787041596, 1820303287, 2807862850, 2980138055,
+      3099825983, 3294653064, 3355663140, 3477866795: each lists a
+      versionless unit before a matching one, and the game takes the
+      matching one)
+
+
+3. The app's loader (specsheet-data::mods, D20)
+-----------------------------------------------
+mod_mount on the test profile (57 active mods, 23 of them Workshop items):
+  active mods: 57 {"mounted": 57}
+  mount failures: 0
+  trucks: 26 without mods, 30 with; added scania.5s, scania.g_2016,
+    scania.p_2016 (Workshop items) and volvo.fh_2022 (local)
+  opened with mods in about 1.4 s (release)
+
+
+Reading
+-------
+- Confirmed (data, 77 of 77): the game mounts the entry of the first
+  package_version_info whose compatible_versions[] match the game
+  version, else of the first without compatible_versions[]; package_name
+  names a folder of the item or a package file by its stem.
+- Confirmed (log): a folder entry holding base.* and dlc_<name>.* packages
+  mounts the folder, then base, then the DLC packages by name (one item);
+  which DLC packages are taken when a DLC is not installed is not seen
+  (all nine were installed): Hypothesis, as for multi-folder packages.
+- Hypothesis: a Workshop item takes its place in the mod pool by its
+  active_mods[] index like a local package (the log interleaves them so).
+- Not checked: Workshop items the user has not downloaded (none here).

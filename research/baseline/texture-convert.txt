@@ -1,0 +1,14 @@
+# Baseline of research/evidence/texture-convert.txt, ETS2 1.60.1.7: the output of its
+# game and digest recipes in research/recipes.txt. Made by `cargo xtask recipes --save`;
+# `cargo xtask recipes --compare` runs them again and compares.
+## mod_extract --textures "<game>/dlc_daf_xd.scs" "<scratch>/daf-tex"
+<game>/dlc_daf_xd.scs: 2548 entries, 2180 named by listings, 0 by game paths, 0 unnamed, 0 not indexed
+wrote 2717 files (824.4 MB), 0 under _unnamed/, 0 renamed, 0 skipped, 0 unreadable, 0 packed textures left out
+## extract_check --textures "<game>/dlc_daf_xd.scs" "<scratch>/daf-tex"
+<game>/dlc_daf_xd.scs
+  listed files 1643, files on disk 2717 (0 of them lists), packed textures left out 537, not indexed 0
+  top archive for the path, vs Vfs::read: 1607 equal, 0 differ
+  overridden by a higher archive, vs this archive's read: 36 equal, 0 differ (36 also equal the game's bytes)
+  unnamed, vs the entry of their hash: 0 equal, 0 differ
+  converted textures, read back vs the packed record: 537 equal, 0 differ, 0 not on disk
+  missing or unreadable: 0

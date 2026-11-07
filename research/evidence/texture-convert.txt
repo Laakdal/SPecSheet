@@ -1,0 +1,65 @@
+Packed game textures written as a standalone .tobj and a .dds (D19, D20)
+=======================================================================
+
+Subject: `mod_extract --textures` on game (HashFS v2) archives of ETS2
+1.60.1.7. Each named packed texture is written the way a mod package holds
+it (`specsheet_data::extract::loose_files`): `<stem>.tobj`, a standalone
+header naming `/<stem>.dds`, and that `.dds` with a DX10 header naming the
+packed DXGI format exactly, every face and mip tightly packed. The install
+is only read; output goes to a scratch folder and is deleted afterwards.
+Output below is counts only.
+
+Commands (2026-11-07):
+  mod_extract --textures "<game>/dlc_daf_xd.scs" "<scratch>/daf-tex"
+  extract_check --textures "<game>/dlc_daf_xd.scs" "<scratch>/daf-tex"
+  mod_extract --textures --only "material/environment/*" "<game>/base.scs" "<scratch>/env-base"
+  extract_check --textures "<game>/base.scs" "<scratch>/env-base"
+  mod_extract --textures --only "material/environment/*" "<game>/base_share.scs" "<scratch>/env-base_share"
+  extract_check --textures "<game>/base_share.scs" "<scratch>/env-base_share"
+
+`extract_check --textures` reads each written .tobj and .dds back with our
+parsers (`specsheet_formats::{tobj, dds}`) and compares them with the
+archive's texture record and unpacked surfaces: the path the .tobj names,
+type (2D or cube), mipmaps and colour space; the .dds size, mips, faces,
+DXGI format and every pixel byte.
+
+
+1. dlc_daf_xd.scs (2D textures only)
+------------------------------------
+  wrote 2717 files (824.4 MB), 0 packed textures left out
+  files other than textures, as before (extract-v2.txt): 1607 equal to
+    Vfs::read, 36 overridden and equal to this archive's bytes
+  converted textures, read back vs the packed record: 537 equal, 0 differ
+
+
+2. material/environment/ of base.scs and base_share.scs (cube maps)
+-------------------------------------------------------------------
+  base.scs:       50 files written, 22 converted textures equal, 0 differ
+  base_share.scs: 194 files written, 72 converted textures equal, 0 differ
+  Of the 94 .dds written, 37 are cube maps (DX10 misc flag 4, six faces).
+  ("not on disk" in extract_check's output counts the textures that
+  --only left out.)
+
+
+3. Loading them back as a mod texture
+-------------------------------------
+specsheet-data's test `packed_textures_convert_to_loose_files_that_load_the_same`
+writes a 2D and a cube texture with `loose_files`, mounts the files as a
+ZIP package and loads them with the mod texture loader
+(`render::load_texture`, `load_cube_texture`): the result equals what the
+packed record gives (format, sRGB, address modes, every mip of every face).
+
+
+Reading
+-------
+- Confirmed (our own round trip): the written files hold the packed
+  texture's image exactly, and our loader reads them back as the same
+  texture.
+- Hypothesis (strong, from tobj-loose.txt): the .tobj bytes we set (type,
+  mipmaps, address u/v, colour space) mean what the game reads them as.
+- Ours: address w is clamp to edge on a cube and repeat otherwise (what mod
+  files hold); the Unknown bytes 0x14, 0x1a/0x1b and 0x25 take their most
+  common value in mods (1, 3/3, 1). A cube is one DX10 .dds of six faces,
+  where the one cube in the mods names six files; both read in our loader.
+- Unknown: whether the game itself loads these files as a mod (needs a run
+  of the game).

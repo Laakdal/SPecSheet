@@ -42,6 +42,9 @@ research/evidence/extract-v2.txt game mod_extract "<game>/dlc_daf_xd.scs" "<scra
 research/evidence/extract-v2.txt game extract_check "<game>/dlc_daf_xd.scs" "<scratch>/dlc_daf_xd"
 research/evidence/extract-v2.txt game mod_extract "<game>/def.scs" "<scratch>/def"
 research/evidence/extract-v2.txt game extract_check "<game>/def.scs" "<scratch>/def"
+research/evidence/texture-convert.txt game mod_extract --textures "<game>/dlc_daf_xd.scs" "<scratch>/daf-tex"
+research/evidence/texture-convert.txt game extract_check --textures "<game>/dlc_daf_xd.scs" "<scratch>/daf-tex"
+research/evidence/texture-convert.txt hand the cube-map runs of section 2 (their --only pattern holds a *, which recipes expand as a file name); rerun them by hand
 research/evidence/rea-inspect-core-scs.json rea -
 
 # --- definitions, saves and the UI
@@ -186,7 +189,14 @@ research/evidence/mod-priority-static.txt rea -
 research/evidence/mod-pool-priority-static.txt rea -
 research/evidence/rea-search-mod-loader.txt rea search-mod-loader.txt
 research/evidence/mod-name-recovery.txt user mod_names --list --others "<home>/mod" "<home>/mod/*.scs"
+research/evidence/mod-multi-folder.txt user mod_extract --list "<home>/mod/Sanax_volvo_fh_2022_p_DEF.scs"
+research/evidence/mod-multi-folder.txt user mod_extract --list "<home>/mod/pgrs_1.60_fix.scs"
+research/evidence/mod-multi-folder.txt user mod_extract --list "<home>/mod/promods-eu-dlcsupport-v283.zip"
+research/evidence/mod-multi-folder.txt hand the game's own log (<home>/game.log.txt) still requests and mounts the folders described below, and the shared-path counts (section 4) still hold
 research/evidence/mod-writer-checks.txt user mod_probe "<home>/mod"
 research/evidence/mod-writer-checks.txt user mod_write "<scratch>/mod-write"
 research/evidence/extract-streaming.txt user mod_extract --list "<home>/mod/*.scs"
 research/evidence/extract-streaming.txt hand the streamed extraction still equals the whole-entry read (method below; extract_check covers game archives)
+research/evidence/tobj-loose.txt user tobj_survey "<home>/mod"
+research/evidence/mod-workshop.txt user python tools/research/workshop_versions.py "<game>/../../workshop/content/227300" "<home>/game.log.txt" 1.60.1.7
+research/evidence/mod-workshop.txt hand mod_mount "<home>" with a profile folder of yours: every active mod mounts, Workshop items too (section 3)
