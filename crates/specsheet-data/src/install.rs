@@ -2,10 +2,13 @@
 
 use std::path::{Path, PathBuf};
 
-use specsheet_archive::{Archive, Vfs};
+use std::collections::BTreeSet;
+
+use specsheet_archive::{Archive, Device, Vfs};
 use specsheet_formats::sii;
 
 use crate::error::{GameDataError, Result};
+use crate::mods::ModDevice;
 
 /// The game version that the research, docs and real-install tests were
 /// checked against. Game updates can change formats and definitions, so the
@@ -30,14 +33,24 @@ pub const BASE_MOUNT_ORDER: &[&str] = &[
     "base_cfg.scs",
 ];
 
-/// The pool an archive mounts into. Lookups ask the core pool before the
-/// scs pool (F2, Confirmed static, `research/evidence/mod-pool-priority-static.txt`);
-/// the variants are in rising lookup rank.
+/// The pool an archive mounts into. Lookups ask the core pool, then the mod
+/// pool, then the scs pool (F2, F14, Confirmed static,
+/// `research/evidence/mod-pool-priority-static.txt`); the variants are in
+/// rising lookup rank.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Pool {
     Scs,
+    Mod,
     Core,
 }
+
+/// The first mod's priority; each later active mod's device ranks higher
+/// (F14, `research/evidence/mod-priority-static.txt`).
+const FIRST_MOD_PRIORITY: i64 = 1001;
+
+/// A mounted file system and the archives that failed to open (reported,
+/// not fatal).
+pub type Mounted = (Vfs, Vec<(PathBuf, specsheet_archive::ArchiveError)>);
 
 /// Where an archive ranks in lookups: by pool, then by mount priority
 /// (higher wins). Archives of equal rank keep their mount order.
@@ -110,6 +123,15 @@ impl GameInstall {
         &self.root
     }
 
+    /// The Steam Workshop folder of the Steam library holding the game,
+    /// `<library>/steamapps/workshop/content/227300`, if it exists. Only
+    /// read (D20).
+    pub fn workshop_dir(&self) -> Option<PathBuf> {
+        let steamapps = self.root.parent()?.parent()?;
+        let dir = steamapps.join("workshop").join("content").join(ETS2_APP_ID);
+        dir.is_dir().then_some(dir)
+    }
+
     /// The installed game version, e.g. `"1.60.1.7"`, read from the
     /// `fs_pack_set` unit in `version.scs/version.sii`.
     pub fn version(&self) -> Result<String> {
@@ -128,7 +150,7 @@ impl GameInstall {
 
     /// The archives to mount: the base archives in the game's log order, then
     /// every `dlc_*.scs` sorted by name. [`GameInstall::mount`] puts them in
-    /// lookup order. Mods are not mounted.
+    /// lookup order.
     pub fn archive_paths(&self) -> Result<Vec<PathBuf>> {
         let mut paths: Vec<PathBuf> = BASE_MOUNT_ORDER
             .iter()
@@ -157,7 +179,25 @@ impl GameInstall {
     /// `relative_priority` in its own `/<name>.manifest.sii` (F2). Archives
     /// that fail to open are reported in the returned list instead of
     /// aborting the whole mount.
-    pub fn mount(&self) -> Result<(Vfs, Vec<(PathBuf, specsheet_archive::ArchiveError)>)> {
+    pub fn mount(&self) -> Result<Mounted> {
+        self.mount_with_mods(Vec::new())
+    }
+
+    /// The installed DLCs, by archive stem (`dlc_toys`).
+    pub fn installed_dlcs(&self) -> Result<BTreeSet<String>> {
+        Ok(self
+            .archive_paths()?
+            .iter()
+            .filter_map(|p| p.file_stem()?.to_str().map(str::to_owned))
+            .filter(|stem| stem.starts_with("dlc_"))
+            .collect())
+    }
+
+    /// As [`GameInstall::mount`], with `mods` (in `active_mods[]` order,
+    /// [`crate::mods::open_active_mods`]) in the mod pool: above every base,
+    /// def and DLC archive, below the core pool, the later device winning
+    /// (D20, F14).
+    pub fn mount_with_mods(&self, mods: Vec<ModDevice>) -> Result<Mounted> {
         let mut opened = Vec::new();
         let mut failures = Vec::new();
         for path in self.archive_paths()? {
@@ -172,18 +212,29 @@ impl GameInstall {
                         .filter(|stem| stem.starts_with("dlc_"))
                         .and_then(|stem| archive.read(&format!("/{stem}.manifest.sii")).ok())
                         .and_then(|bytes| relative_priority(&bytes));
-                    opened.push((mount_rank(&name, priority), archive));
+                    opened.push((
+                        mount_rank(&name, priority),
+                        Device::V2(archive),
+                        String::new(),
+                    ));
                 }
                 Err(error) => failures.push((path, error)),
             }
         }
-        // A stable sort: archives of equal rank keep the order above.
-        opened.sort_by_key(|(rank, _)| *rank);
-        let mut vfs = Vfs::new();
-        for (_, archive) in opened {
-            vfs.mount(archive);
+        for (index, m) in mods.into_iter().enumerate() {
+            let rank = MountRank {
+                pool: Pool::Mod,
+                priority: FIRST_MOD_PRIORITY.saturating_add(index as i64),
+            };
+            opened.push((rank, m.device, m.root));
         }
-        if vfs.archives().is_empty() {
+        // A stable sort: archives of equal rank keep the order above.
+        opened.sort_by_key(|(rank, _, _)| *rank);
+        let mut vfs = Vfs::new();
+        for (_, device, root) in opened {
+            vfs.mount_device(device, &root);
+        }
+        if vfs.is_empty() {
             return Err(GameDataError::NotAnInstall {
                 path: self.root.clone(),
                 reason: "no archive could be opened".to_owned(),
@@ -338,6 +389,23 @@ mod tests {
                 priority: 100_000
             }
         );
+    }
+
+    /// F14: mods rank above every scs-pool archive, below the core pool,
+    /// and the later active mod wins.
+    #[test]
+    fn the_mod_pool_sits_between_the_scs_and_core_pools() {
+        let first_mod = MountRank {
+            pool: Pool::Mod,
+            priority: FIRST_MOD_PRIORITY,
+        };
+        let later_mod = MountRank {
+            pool: Pool::Mod,
+            priority: FIRST_MOD_PRIORITY + 1,
+        };
+        assert!(mount_rank("dlc_x.scs", Some(400)) < first_mod);
+        assert!(first_mod < later_mod);
+        assert!(later_mod < mount_rank("effect.scs", None));
     }
 
     #[test]

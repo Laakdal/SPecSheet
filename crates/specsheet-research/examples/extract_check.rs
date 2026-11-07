@@ -4,18 +4,22 @@
 //! (`Vfs::read`) where this archive is the one the game reads the path
 //! from, and with the archive's own bytes where a higher archive overrides
 //! it. Unnamed files are compared with the archive entry their hash names.
+//! With `--textures` (a folder `mod_extract --textures` wrote), each named
+//! packed texture's `.tobj` and `.dds` are read back with our parsers and
+//! compared with the archive's texture record and unpacked surfaces.
 //! Nothing is written.
 //!
 //! Usage (ETS2_DIR set, or the install is discovered):
-//!   cargo run --release -p specsheet-research --example extract_check -- <archive.scs> <extracted folder>
+//!   cargo run --release -p specsheet-research --example extract_check -- [--textures] <archive.scs> <extracted folder>
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use specsheet_archive::Archive as GameArchive;
+use specsheet_archive::{Archive as GameArchive, PackedTexture};
 use specsheet_data::extract::{list, v2_names, Archive, PathFilter};
 use specsheet_data::mod_names::game_paths;
 use specsheet_data::GameInstall;
+use specsheet_formats::{dds, tobj};
 
 /// How the files compared.
 #[derive(Default)]
@@ -33,12 +37,25 @@ struct Tally {
     unnamed_differs: usize,
     /// Listed but not on disk, or not readable from the archive.
     missing: Vec<String>,
+    /// `--textures`: converted textures that read back as the archive's.
+    textures_same: usize,
+    /// Converted textures that differ, with the first difference.
+    textures_differ: Vec<String>,
+    /// Packed textures with no `.tobj` or `.dds` on disk.
+    textures_missing: usize,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut args: Vec<String> = std::env::args().skip(1).collect();
+    let textures = match args.iter().position(|a| a == "--textures") {
+        Some(at) => {
+            args.remove(at);
+            true
+        }
+        None => false,
+    };
     let [archive_path, folder] = <[String; 2]>::try_from(args)
-        .map_err(|_| "usage: extract_check <archive.scs> <extracted folder>")?;
+        .map_err(|_| "usage: extract_check [--textures] <archive.scs> <extracted folder>")?;
     let folder = PathBuf::from(folder);
     let install = GameInstall::discover()?;
     let (vfs, _) = install.mount()?;
@@ -49,6 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &Archive::V2 {
             archive: &archive,
             names: &names,
+            textures: false,
         },
         &PathFilter::default(),
     );
@@ -94,6 +112,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+    if textures {
+        for path in &listing.packed_textures {
+            // Unnamed packed textures (a bare hash) are never converted.
+            let Some(stem) = path.strip_suffix(".tobj") else {
+                continue;
+            };
+            let header = fs::read(folder.join(path)).ok();
+            let image = fs::read(folder.join(format!("{stem}.dds"))).ok();
+            let (Some(header), Some(image)) = (header, image) else {
+                tally.textures_missing += 1;
+                continue;
+            };
+            let packed = match archive.read_texture(path) {
+                Ok(packed) => packed,
+                Err(_) => {
+                    tally.missing.push(path.clone());
+                    continue;
+                }
+            };
+            match texture_difference(stem, &packed, &header, &image) {
+                None => tally.textures_same += 1,
+                Some(why) => tally.textures_differ.push(format!("{path}: {why}")),
+            }
+        }
+    }
     let on_disk = count_files(&folder);
     let lists = ["_renamed.txt", "_unreadable.txt", "_packed_textures.txt"]
         .iter()
@@ -121,11 +164,72 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "  unnamed, vs the entry of their hash: {} equal, {} differ",
         tally.unnamed_same, tally.unnamed_differs
     );
+    if textures {
+        println!(
+            "  converted textures, read back vs the packed record: {} equal, {} differ, {} not on disk",
+            tally.textures_same,
+            tally.textures_differ.len(),
+            tally.textures_missing
+        );
+        for line in tally.textures_differ.iter().take(10) {
+            println!("    {line}");
+        }
+    }
     println!("  missing or unreadable: {}", tally.missing.len());
     for path in tally.missing.iter().take(10) {
         println!("    {path}");
     }
     Ok(())
+}
+
+/// How a converted texture read back with our parsers differs from the
+/// archive's packed texture at `<stem>.tobj`, or `None` when it does not.
+fn texture_difference(
+    stem: &str,
+    packed: &PackedTexture,
+    header: &[u8],
+    image: &[u8],
+) -> Option<String> {
+    let Some(header) = tobj::parse(header) else {
+        return Some("the .tobj does not parse".to_owned());
+    };
+    let image = match dds::parse(image) {
+        Ok(image) => image,
+        Err(e) => return Some(format!("the .dds does not parse: {e}")),
+    };
+    let meta = &packed.image;
+    let expected_path = format!("/{}.dds", stem.trim_start_matches('/'));
+    if header.paths != [expected_path] {
+        return Some(format!("the .tobj names {:?}", header.paths));
+    }
+    if header.cube != (meta.face_count == 6) || header.mipmaps != (meta.mip_count > 1) {
+        return Some("the .tobj type or mipmap byte".to_owned());
+    }
+    if header.linear == dds::is_srgb(meta.dxgi_format) {
+        return Some("the .tobj colour space".to_owned());
+    }
+    let same_image = (
+        image.width,
+        image.height,
+        image.mip_count,
+        image.face_count,
+        image.dxgi_format,
+    ) == (
+        meta.width,
+        meta.height,
+        meta.mip_count,
+        meta.face_count,
+        meta.dxgi_format,
+    );
+    if !same_image {
+        return Some("the .dds size, mips, faces or format".to_owned());
+    }
+    let surfaces = match packed.unpack() {
+        Ok(surfaces) => surfaces,
+        Err(e) => return Some(format!("the packed texture does not unpack: {e}")),
+    };
+    let pixels: Vec<u8> = surfaces.into_iter().flat_map(|s| s.data).collect();
+    (pixels != image.data).then(|| "the .dds pixels".to_owned())
 }
 
 /// The bytes of the unnamed file `_unnamed/<hash>.bin` as written, whatever

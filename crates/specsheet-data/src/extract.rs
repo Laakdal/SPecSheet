@@ -12,8 +12,12 @@
 //!
 //! Game (HashFS v2) archives give their names through their listings
 //! ([`v2_names`]). Their packed textures (a `.tobj` whose image lives in
-//! the archive's texture records) are not written: they are listed in
-//! `_packed_textures.txt`, and their size does not count against the limit.
+//! the archive's texture records) are listed in `_packed_textures.txt`,
+//! and their size does not count against the limit. With
+//! `Archive::V2 { textures: true, .. }` a named one is instead written as a
+//! mod package holds it ([`loose_files`]): a standalone `.tobj` and a DX10
+//! `.dds` beside it; one that is unnamed, or whose `.dds` name the archive
+//! already uses, is still listed.
 //!
 //! Named entries are streamed to disk in 64 KiB pieces, so an entry of any
 //! size passes without being held in memory; one that fails halfway leaves
@@ -30,7 +34,8 @@ use specsheet_archive::{
     city_hash_64, hash_path, Archive as V2Archive, Content, DirListing, EntryKind, HashFsV1Archive,
     ZipArchive,
 };
-use specsheet_formats::sniff;
+use specsheet_archive::{AddressMode, PackedTexture};
+use specsheet_formats::{dds, sniff, tobj};
 
 use crate::mod_names::RecoveredNames;
 
@@ -103,6 +108,9 @@ pub enum Archive<'a> {
         archive: &'a V2Archive,
         /// Its file names.
         names: &'a V2Names,
+        /// Write named packed textures as a `.tobj` and a `.dds`
+        /// ([`loose_files`]) instead of only listing them.
+        textures: bool,
     },
 }
 
@@ -145,6 +153,57 @@ pub struct Extracted {
     pub unreadable: Vec<String>,
     /// Packed textures left out (paths, or hashes when unnamed).
     pub packed_textures: Vec<String>,
+}
+
+/// A packed texture as a mod package would hold it: a standalone `.tobj`
+/// naming `/<stem>.dds`, and that `.dds` with a DX10 header naming the
+/// packed DXGI format exactly, every face and mip tightly packed. The
+/// `.tobj` takes the texture's type, mipmaps, address modes and colour
+/// space (`research/evidence/tobj-loose.txt`, Hypothesis, strong); its
+/// Unknown bytes take their most common value, and address w is clamp to
+/// edge on a cube, repeat otherwise (what mods hold; ours). `None` when
+/// `path` is not a `.tobj`, the texture does not unpack or a path is too
+/// long.
+pub fn loose_files(path: &str, packed: &PackedTexture) -> Option<(Vec<u8>, Vec<u8>)> {
+    let stem = path.strip_suffix(".tobj")?;
+    let image = &packed.image;
+    let surfaces = packed.unpack().ok()?;
+    let data: Vec<u8> = surfaces.into_iter().flat_map(|s| s.data).collect();
+    let cube = image.is_cube && image.face_count == 6;
+    let header = tobj::Tobj {
+        cube,
+        address: [
+            address_code(packed.sample.address_u),
+            address_code(packed.sample.address_v),
+            if cube { 2 } else { 0 },
+        ],
+        mipmaps: image.mip_count > 1,
+        linear: !dds::is_srgb(image.dxgi_format),
+        paths: vec![format!("/{}.dds", stem.trim_start_matches('/'))],
+    };
+    let image_file = dds::write_dx10(
+        image.width,
+        image.height,
+        image.mip_count,
+        image.face_count,
+        image.dxgi_format,
+        &data,
+    );
+    Some((tobj::write(&header)?, image_file))
+}
+
+/// The 3-bit address code of a mode (docs/formats/textures.md, "Sample
+/// record"), the inverse of [`AddressMode::from_bits`].
+fn address_code(mode: AddressMode) -> u8 {
+    match mode {
+        AddressMode::Repeat => 0,
+        AddressMode::Clamp => 1,
+        AddressMode::ClampToEdge => 2,
+        AddressMode::ClampToBorder => 3,
+        AddressMode::Mirror => 4,
+        AddressMode::MirrorClamp => 5,
+        AddressMode::MirrorClampToEdge => 6,
+    }
 }
 
 /// Which entries to take, by archive path. In a pattern, `*` matches any
@@ -252,8 +311,16 @@ pub fn extract(
             protected,
             options,
         ),
-        Archive::V2 { archive, names } => {
-            let source = V2Source { archive, names };
+        Archive::V2 {
+            archive,
+            names,
+            textures,
+        } => {
+            let source = V2Source {
+                archive,
+                names,
+                textures: *textures,
+            };
             run(&Filtered::new(&source, filter), dest, protected, options)
         }
     }
@@ -269,8 +336,16 @@ pub fn list(archive: &Archive<'_>, filter: &PathFilter) -> Listing {
             plan(&Filtered::new(&source, filter))
         }
         Archive::Zip(zip) => plan(&Filtered::new(&ZipSource(zip), filter)),
-        Archive::V2 { archive, names } => {
-            let source = V2Source { archive, names };
+        Archive::V2 {
+            archive,
+            names,
+            textures,
+        } => {
+            let source = V2Source {
+                archive,
+                names,
+                textures: *textures,
+            };
             plan(&Filtered::new(&source, filter))
         }
     }
@@ -362,6 +437,10 @@ enum ItemKind {
     File,
     /// A packed texture, left out.
     PackedTexture,
+    /// The standalone `.tobj` of a converted packed texture.
+    TextureHeader,
+    /// The `.dds` of a converted packed texture.
+    TextureImage,
     /// An entry the archive could not index, listed as unreadable.
     Unindexed,
 }
@@ -466,6 +545,32 @@ impl Source for ZipSource<'_> {
 struct V2Source<'a> {
     archive: &'a V2Archive,
     names: &'a V2Names,
+    /// Convert named packed textures ([`loose_files`]).
+    textures: bool,
+}
+
+impl V2Source<'_> {
+    /// The `.dds` path a packed texture at `path` converts to, when it is
+    /// a `.tobj` and the archive holds no entry at that path.
+    fn converted_image(&self, path: &str) -> Option<String> {
+        let image = format!("{}.dds", path.strip_suffix(".tobj")?);
+        self.archive
+            .entry_by_hash(hash_path(&image))
+            .is_none()
+            .then_some(image)
+    }
+
+    /// The bytes of a converted packed texture's `.tobj` or `.dds`.
+    fn converted(&self, item: &Item) -> Option<Vec<u8>> {
+        let path = self.names.names.get(&item.key)?;
+        let packed = self.archive.read_texture(path).ok()?;
+        let (header, image) = loose_files(path, &packed)?;
+        Some(if item.kind == ItemKind::TextureHeader {
+            header
+        } else {
+            image
+        })
+    }
 }
 
 impl Source for V2Source<'_> {
@@ -474,16 +579,37 @@ impl Source for V2Source<'_> {
             .archive
             .entries()
             .filter(|e| e.kind == EntryKind::File)
-            .map(|e| {
-                let (size, kind) = match &e.content {
-                    Content::Stored(blob) => (blob.size, ItemKind::File),
-                    Content::Texture { blob, .. } => (blob.size, ItemKind::PackedTexture),
-                };
-                Item {
-                    path: self.names.names.get(&e.hash).cloned(),
+            .flat_map(|e| {
+                let path = self.names.names.get(&e.hash).cloned();
+                let item = |path, size: u64, kind| Item {
+                    path,
                     key: e.hash,
-                    size: u64::from(size),
+                    size,
                     kind,
+                };
+                match &e.content {
+                    Content::Stored(blob) => {
+                        vec![item(path, u64::from(blob.size), ItemKind::File)]
+                    }
+                    Content::Texture { blob, .. } => {
+                        let image = path
+                            .as_deref()
+                            .filter(|_| self.textures)
+                            .and_then(|p| self.converted_image(p));
+                        match image {
+                            // The header is about 60 bytes, the image at
+                            // most the padded surfaces plus 148.
+                            Some(image) => vec![
+                                item(path, 64, ItemKind::TextureHeader),
+                                item(
+                                    Some(image),
+                                    u64::from(blob.size) + 148,
+                                    ItemKind::TextureImage,
+                                ),
+                            ],
+                            None => vec![item(path, u64::from(blob.size), ItemKind::PackedTexture)],
+                        }
+                    }
                 }
             });
         let unindexed = self.archive.skipped_entries().iter().map(|s| Item {
@@ -496,6 +622,9 @@ impl Source for V2Source<'_> {
     }
 
     fn read(&self, item: &Item) -> Option<Vec<u8>> {
+        if matches!(item.kind, ItemKind::TextureHeader | ItemKind::TextureImage) {
+            return self.converted(item);
+        }
         let entry = self.archive.entry_by_hash(item.key)?;
         self.archive.read_entry(entry).ok()
     }
@@ -550,7 +679,7 @@ fn partition(source: &impl Source) -> (Vec<Item>, Vec<String>, Vec<String>) {
     let (mut files, mut packed, mut unindexed) = (Vec::new(), Vec::new(), Vec::new());
     for item in sorted_items(source) {
         match item.kind {
-            ItemKind::File => files.push(item),
+            ItemKind::File | ItemKind::TextureHeader | ItemKind::TextureImage => files.push(item),
             ItemKind::PackedTexture => packed.push(item.label()),
             ItemKind::Unindexed => unindexed.push(item.label()),
         }
@@ -713,6 +842,8 @@ fn run(
             if lines.is_empty() {
                 continue;
             }
+            // No file may have created it (everything left out).
+            fs::create_dir_all(&root).map_err(io(&root))?;
             let path = root.join(name);
             let mut file = OpenOptions::new()
                 .write(true)
@@ -1590,6 +1721,114 @@ mod tests {
         // No root (locale.scs, base_cfg.scs): candidates only.
         let names = walk_v2_names(&|_| None, &kinds, &candidates);
         assert_eq!((names.from_listings, names.from_candidates), (0, 2));
+    }
+
+    /// A packed texture of `faces` faces, 8x4 BC1 with two mips, padded
+    /// the way an archive pads (rows on 16 bytes).
+    fn packed_bc1(faces: u32, dxgi: u32) -> specsheet_archive::PackedTexture {
+        use specsheet_archive::{AddressMode, ImageMeta, PackedTexture, SampleMeta};
+        // Mip 0: 2x1 blocks = one 16-byte row; mip 1 (4x2): 1 block, padded.
+        let face = |f: u8| {
+            let mut bytes = vec![f; 16];
+            bytes.extend([f + 100; 8]);
+            bytes.extend([0; 8]);
+            bytes
+        };
+        PackedTexture {
+            image: ImageMeta {
+                width: 8,
+                height: 4,
+                mip_count: 2,
+                dxgi_format: dxgi,
+                is_cube: faces == 6,
+                face_count: faces,
+                pitch_alignment: 16,
+                image_alignment: 16,
+            },
+            sample: SampleMeta {
+                mag_linear: true,
+                min_linear: true,
+                address_u: AddressMode::ClampToEdge,
+                address_v: AddressMode::Repeat,
+            },
+            surfaces: (0..faces as u8).flat_map(face).collect(),
+        }
+    }
+
+    /// A packed texture written as a `.tobj` and a DX10 `.dds` loads, as a
+    /// mod's loose texture, into the same texture the archive gives.
+    #[test]
+    fn packed_textures_convert_to_loose_files_that_load_the_same() {
+        use crate::render::{load_cube_texture, load_texture};
+        use specsheet_archive::{Device, Vfs, ZipArchive, ZipWriter};
+        let flat = packed_bc1(1, 72);
+        let (tobj, dds) = loose_files("model/t.tobj", &flat).expect("2D");
+        let cube = packed_bc1(6, 71);
+        let (cube_tobj, cube_dds) = loose_files("env/c.tobj", &cube).expect("cube");
+        assert!(loose_files("model/t.pmd", &flat).is_none());
+
+        let mut writer = ZipWriter::new();
+        for (path, bytes) in [
+            ("model/t.tobj", &tobj),
+            ("model/t.dds", &dds),
+            ("env/c.tobj", &cube_tobj),
+            ("env/c.dds", &cube_dds),
+        ] {
+            writer.add(path, bytes).unwrap();
+        }
+        let dir = TempDir::new("loose");
+        let zip = dir.0.join("loose.zip");
+        fs::write(&zip, writer.finish().unwrap()).unwrap();
+        let mut vfs = Vfs::new();
+        vfs.mount_device(Device::Zip(ZipArchive::open(&zip).unwrap()), "");
+        let loose = crate::GameFs::new(vfs);
+
+        let from_loose = load_texture(&loose, "/model/t.tobj").expect("loose 2D");
+        let expected = crate::render::convert_texture("/model/t.tobj", &flat).expect("packed");
+        assert_eq!(from_loose, expected);
+        let cube_loose = load_cube_texture(&loose, "/env/c.tobj").expect("loose cube");
+        let cube_expected = crate::render::convert_cube("/env/c.tobj", &cube).expect("cube");
+        assert_eq!(cube_loose, cube_expected);
+    }
+
+    /// With texture conversion on, the two files of a packed texture are
+    /// written like any other file.
+    #[test]
+    fn converted_textures_are_written_as_files() {
+        let dir = TempDir::new("converted");
+        let dest = dir.0.join("out");
+        let entry = |path, bytes, kind| FakeFile {
+            path: Some(path),
+            bytes: Some(bytes),
+            fails_midway: false,
+            declared: None,
+            kind,
+        };
+        let source = Fake(vec![
+            entry("model/t.tobj", b"tobj", ItemKind::TextureHeader),
+            entry("model/t.dds", b"dds!", ItemKind::TextureImage),
+        ]);
+        let done = run(&source, &dest, &[], ExtractOptions::default()).unwrap();
+        assert_eq!((done.written, done.packed_textures.len()), (2, 0));
+        assert_eq!(files_under(&dest), ["model/t.dds", "model/t.tobj"]);
+    }
+
+    /// With nothing to write but a list (a filter that takes only a packed
+    /// texture), the destination is still created for the list.
+    #[test]
+    fn a_list_alone_creates_the_destination() {
+        let dir = TempDir::new("list-only");
+        let dest = dir.0.join("out");
+        let source = Fake(vec![FakeFile {
+            path: Some("material/x.tobj"),
+            bytes: Some(b"tex"),
+            fails_midway: false,
+            declared: None,
+            kind: ItemKind::PackedTexture,
+        }]);
+        let done = run(&source, &dest, &[], ExtractOptions::default()).expect("runs");
+        assert_eq!((done.written, done.packed_textures.len()), (0, 1));
+        assert_eq!(files_under(&dest), ["_packed_textures.txt"]);
     }
 
     #[test]

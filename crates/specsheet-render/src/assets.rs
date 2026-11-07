@@ -593,6 +593,7 @@ fn is_block(format: TextureFormat) -> bool {
             | TextureFormat::Bc3
             | TextureFormat::Bc4
             | TextureFormat::Bc5
+            | TextureFormat::Bc7
     )
 }
 
@@ -660,10 +661,13 @@ fn gpu_format(format: TextureFormat, srgb: bool) -> GpuFormat {
         (TextureFormat::Bc3, true) => GpuFormat::Bc3RgbaUnormSrgb,
         (TextureFormat::Bc4, _) => GpuFormat::Bc4RUnorm,
         (TextureFormat::Bc5, _) => GpuFormat::Bc5RgUnorm,
+        (TextureFormat::Bc7, false) => GpuFormat::Bc7RgbaUnorm,
+        (TextureFormat::Bc7, true) => GpuFormat::Bc7RgbaUnormSrgb,
         (TextureFormat::Rgba8, false) => GpuFormat::Rgba8Unorm,
         (TextureFormat::Rgba8, true) => GpuFormat::Rgba8UnormSrgb,
         (TextureFormat::R8, _) => GpuFormat::R8Unorm,
         (TextureFormat::Rgb9e5, _) => GpuFormat::Rgb9e5Ufloat,
+        (TextureFormat::Rgba16Float, _) => GpuFormat::Rgba16Float,
     }
 }
 
@@ -767,6 +771,33 @@ mod tests {
         };
         let image = cube_image(cube, true).expect("valid cube");
         assert_eq!(image.data.as_ref().map(Vec::len), Some(480));
+    }
+
+    /// A mod's float texture (D20) uploads as filterable half floats,
+    /// 8 bytes per pixel, and needs no BC support.
+    #[test]
+    fn half_float_textures_upload_as_rgba16_float() {
+        let half = TextureData {
+            format: TextureFormat::Rgba16Float,
+            srgb: false,
+            mips: vec![MipLevel {
+                width: 2,
+                height: 2,
+                data: vec![0; 32],
+            }],
+            ..bc1(4, 4, 1)
+        };
+        let image = texture_image(half.clone(), false).expect("valid texture");
+        assert_eq!(image.texture_descriptor.format, GpuFormat::Rgba16Float);
+        assert_eq!(image.data.as_ref().map(Vec::len), Some(32));
+        let short = TextureData {
+            mips: vec![MipLevel {
+                data: vec![0; 16],
+                ..half.mips[0].clone()
+            }],
+            ..half
+        };
+        assert!(texture_image(short, false).is_err());
     }
 
     #[test]

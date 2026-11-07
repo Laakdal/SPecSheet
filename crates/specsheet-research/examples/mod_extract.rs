@@ -2,7 +2,9 @@
 //! to a folder, or lists it as a tree (D19, `specsheet_data::extract`); the
 //! container is told by its header. A game archive's names come from its
 //! listings, then from every path of the mounted game (`v2_names`); its
-//! packed textures are left out and listed. File names of a v1 package are
+//! packed textures are left out and listed, or with `--textures` written as
+//! a standalone `.tobj` and a DX10 `.dds` each (`extract::loose_files`).
+//! File names of a v1 package are
 //! recovered first (`mod_names`), with every path of the mounted game as
 //! candidates and, with `--others <dir>`, the paths that the other packages
 //! in `<dir>` mention, cached per package in
@@ -16,13 +18,13 @@
 //! match as `_unnamed/<hash>`, e.g. `--only "_unnamed/*"`.
 //!
 //! The destination must be absolute and may not overlap the game install,
-//! the ETS2 home folder, the folder holding the package, or this
-//! repository. Nothing is overwritten, and an extraction that would write
+//! the ETS2 home folder (`ETS2_HOME`, and `Documents\Euro Truck Simulator
+//! 2`), the folder holding the package, or this repository. Nothing is overwritten, and an extraction that would write
 //! more than `--max-gb` (default 64 GiB) of the files taken is refused.
 //!
 //! Usage (ETS2_DIR set, or the install is discovered):
 //!   cargo run --release -p specsheet-research --example mod_extract -- --list [--only <pattern>]... [--others <dir>] [--no-cache] <package>
-//!   cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--only <pattern>]... [--others <dir>] [--no-cache] <package> <destination>
+//!   cargo run --release -p specsheet-research --example mod_extract -- [--dry-run] [--skip-existing] [--max-gb <n>] [--textures] [--only <pattern>]... [--others <dir>] [--no-cache] <package> <destination>
 
 use std::path::{Path, PathBuf};
 
@@ -34,7 +36,7 @@ use specsheet_data::mod_names::{game_paths, learn_word_swaps, recover_v1_names, 
 use specsheet_data::mod_scan::folder_candidates;
 use specsheet_data::GameInstall;
 
-const USAGE: &str = "usage: mod_extract --list [--only <pattern>]... [--others <dir>] [--no-cache] <package>\n   or: mod_extract [--dry-run] [--skip-existing] [--max-gb <n>] [--only <pattern>]... [--others <dir>] [--no-cache] <package> <destination>";
+const USAGE: &str = "usage: mod_extract --list [--only <pattern>]... [--others <dir>] [--no-cache] <package>\n   or: mod_extract [--dry-run] [--skip-existing] [--max-gb <n>] [--textures] [--only <pattern>]... [--others <dir>] [--no-cache] <package> <destination>";
 
 /// Prints the usage and exits.
 fn usage() -> ! {
@@ -81,6 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(args.remove(at))
     };
     let listing = flag("--list", false).is_some();
+    let textures = flag("--textures", false).is_some();
     let mut options = ExtractOptions {
         dry_run: flag("--dry-run", false).is_some(),
         skip_existing: flag("--skip-existing", false).is_some(),
@@ -116,6 +119,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(folder) = package.parent() {
         protected.push(folder.to_path_buf());
     }
+    if let Some(home) = std::env::var_os("ETS2_HOME") {
+        protected.push(PathBuf::from(home));
+    }
     if let Some(home) = std::env::var_os("USERPROFILE") {
         protected.push(
             Path::new(&home)
@@ -150,6 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Archive::V2 {
                 archive: &v2,
                 names: &game_names,
+                textures,
             }
         }
         Some(_) => {

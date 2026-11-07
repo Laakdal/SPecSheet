@@ -17,6 +17,7 @@ pub mod localization;
 pub mod mod_names;
 pub mod mod_scan;
 pub mod model;
+pub mod mods;
 pub mod paint;
 pub mod render;
 pub mod scene;
@@ -26,4 +27,6 @@ pub use catalog::{
 };
 pub use error::{GameDataError, Result};
 pub use fs::GameFs;
-pub use install::{parse_library_folders, GameInstall, BASE_MOUNT_ORDER, TESTED_GAME_VERSION};
+pub use install::{
+    parse_library_folders, GameInstall, Mounted, BASE_MOUNT_ORDER, TESTED_GAME_VERSION,
+};

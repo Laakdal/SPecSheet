@@ -7,10 +7,13 @@
 //! * Only parts visible in the requested variant are emitted.
 //! * Texture surfaces are unpacked; BGRA is swizzled to RGBA.
 
-use specsheet_archive::{pixel_layout, PackedTexture, PixelLayout};
+use specsheet_archive::{
+    pixel_layout, AddressMode, ArchiveError, ImageMeta, PackedTexture, PixelLayout, SampleMeta,
+};
 use specsheet_formats::mat::{MatValue, Material};
 use specsheet_formats::pmg::Locator;
 use specsheet_formats::sii::resolve_relative;
+use specsheet_formats::{dds, tobj};
 
 use crate::error::{GameDataError, Result};
 use crate::fs::GameFs;
@@ -429,6 +432,8 @@ pub enum TextureFormat {
     Bc4,
     /// BC5, two channels (normal maps).
     Bc5,
+    /// BC7 (mod textures only).
+    Bc7,
     /// Uncompressed RGBA, 8 bits per channel.
     Rgba8,
     /// Uncompressed, one 8-bit channel.
@@ -436,6 +441,9 @@ pub enum TextureFormat {
     /// R9G9B9E5_SHAREDEXP: linear HDR, three 9-bit mantissas sharing a
     /// 5-bit exponent (skyboxes, HDR UI images).
     Rgb9e5,
+    /// Linear RGBA half floats, from a mod's 32-bit float texture (wgpu
+    /// filters 32-bit floats only with an optional feature).
+    Rgba16Float,
 }
 
 /// One mip level.
@@ -480,18 +488,111 @@ pub struct CubeTextureData {
 
 /// Loads `.tobj` texture `path` and converts it for upload.
 pub fn load_texture(fs: &GameFs, path: &str) -> Result<TextureData> {
-    let packed = fs.vfs().read_texture(path.trim_start_matches('/'))?;
-    convert_texture(path, &packed)
+    convert_texture(path, &read_texture(fs, path)?)
 }
 
 /// Loads the six-face cube texture `path` (e.g. a material's
 /// `texture_reflection`) and converts it for upload.
 pub fn load_cube_texture(fs: &GameFs, path: &str) -> Result<CubeTextureData> {
-    let packed = fs.vfs().read_texture(path.trim_start_matches('/'))?;
-    convert_cube(path, &packed)
+    convert_cube(path, &read_texture(fs, path)?)
 }
 
-fn convert_cube(path: &str, packed: &PackedTexture) -> Result<CubeTextureData> {
+/// The texture `path` as the game packs it, or, when the winning `.tobj` is
+/// a loose file of a mod package (D20), built from that `.tobj` and the
+/// `.dds` it names, read through the file system so mod ranking applies.
+fn read_texture(fs: &GameFs, path: &str) -> Result<PackedTexture> {
+    match fs.vfs().read_texture(path.trim_start_matches('/')) {
+        Err(ArchiveError::NotPackedTexture(_)) => loose_texture(fs, path),
+        other => Ok(other?),
+    }
+}
+
+/// A loose `.tobj` and its `.dds` (`research/evidence/tobj-loose.txt`):
+/// the header gives the address modes, whether mips are used and, for a
+/// `.dds` that names no colour space, whether the data is linear; a cube
+/// names six `.dds`, one per face.
+fn loose_texture(fs: &GameFs, path: &str) -> Result<PackedTexture> {
+    let invalid = |message: String| GameDataError::Definition {
+        path: path.to_owned(),
+        message,
+    };
+    let header = tobj::parse(&fs.read(path)?)
+        .ok_or_else(|| invalid("not a texture object (.tobj)".to_owned()))?;
+    let mut faces = Vec::with_capacity(header.paths.len());
+    for texture in &header.paths {
+        let texture = resolve_relative(path, texture);
+        let bytes = fs.read(&texture)?;
+        faces.push(dds::parse(&bytes).map_err(|e| invalid(format!("{texture}: {e}")))?);
+    }
+    let first = faces
+        .first()
+        .ok_or_else(|| invalid("names no texture".to_owned()))?;
+    let (width, height, format, mips) = (
+        first.width,
+        first.height,
+        first.dxgi_format,
+        first.mip_count,
+    );
+    if faces
+        .iter()
+        .any(|f| (f.width, f.height, f.dxgi_format, f.mip_count) != (width, height, format, mips))
+    {
+        return Err(invalid("cube faces differ in size or format".to_owned()));
+    }
+    let dxgi_format = if first.colour_space_known || header.linear {
+        format
+    } else {
+        dds::srgb_variant(format)
+    };
+    let face_count: u32 = faces.iter().map(|f| f.face_count).sum();
+    let image = ImageMeta {
+        width,
+        height,
+        mip_count: mips,
+        dxgi_format,
+        is_cube: face_count == 6,
+        face_count,
+        pitch_alignment: 1,
+        image_alignment: 1,
+    };
+    let address = |code: u8| AddressMode::from_bits(u32::from(code));
+    let sample = SampleMeta {
+        mag_linear: true,
+        min_linear: true,
+        address_u: address(header.address[0]),
+        address_v: address(header.address[1]),
+    };
+    let mut texture = PackedTexture {
+        image,
+        sample,
+        surfaces: faces.into_iter().flat_map(|f| f.data).collect(),
+    };
+    if !header.mipmaps && mips > 1 {
+        // The game uses mip 0 only; keep it and drop the rest per face.
+        texture = mip_zero(texture).map_err(invalid)?;
+    }
+    Ok(texture)
+}
+
+/// `texture` with only its largest mip on each face.
+fn mip_zero(texture: PackedTexture) -> std::result::Result<PackedTexture, String> {
+    let surfaces: Vec<u8> = texture
+        .unpack()?
+        .into_iter()
+        .filter(|s| s.mip == 0)
+        .flat_map(|s| s.data)
+        .collect();
+    Ok(PackedTexture {
+        image: ImageMeta {
+            mip_count: 1,
+            ..texture.image
+        },
+        surfaces,
+        ..texture
+    })
+}
+
+pub(crate) fn convert_cube(path: &str, packed: &PackedTexture) -> Result<CubeTextureData> {
     if !packed.image.is_cube || packed.image.face_count != 6 {
         return Err(GameDataError::Definition {
             path: path.to_owned(),
@@ -506,7 +607,7 @@ fn convert_cube(path: &str, packed: &PackedTexture) -> Result<CubeTextureData> {
     })
 }
 
-fn convert_texture(path: &str, packed: &PackedTexture) -> Result<TextureData> {
+pub(crate) fn convert_texture(path: &str, packed: &PackedTexture) -> Result<TextureData> {
     let (format, srgb, faces) = convert_faces(path, packed)?;
     let repeat = |mode: specsheet_archive::AddressMode| {
         matches!(mode, specsheet_archive::AddressMode::Repeat)
@@ -539,14 +640,19 @@ fn convert_faces(
         78 => (TextureFormat::Bc3, true, false),
         79..=81 => (TextureFormat::Bc4, false, false),
         82..=84 => (TextureFormat::Bc5, false, false),
+        97 | 98 => (TextureFormat::Bc7, false, false),
+        99 => (TextureFormat::Bc7, true, false),
         27 | 28 => (TextureFormat::Rgba8, false, false),
         29 => (TextureFormat::Rgba8, true, false),
         87 | 88 => (TextureFormat::Rgba8, false, true),
         90..=93 => (TextureFormat::Rgba8, dxgi == 91 || dxgi == 93, true),
         60..=64 => (TextureFormat::R8, false, false),
         67 => (TextureFormat::Rgb9e5, false, false),
+        // R32G32B32A32 typeless and float; the integer variants are not.
+        1 | 2 => (TextureFormat::Rgba16Float, false, false),
         other => return Err(format_error(format!("unsupported DXGI format {other}"))),
     };
+    let to_half = format == TextureFormat::Rgba16Float;
     let x_channel_is_opaque = matches!(dxgi, 88 | 92 | 93);
     if pixel_layout(dxgi).is_none() {
         return Err(format_error(format!("no layout for DXGI format {dxgi}")));
@@ -554,6 +660,14 @@ fn convert_faces(
     let mut faces = vec![Vec::new(); packed.image.face_count as usize];
     for surface in packed.unpack().map_err(format_error)? {
         let mut data = surface.data;
+        if to_half {
+            data = data
+                .chunks_exact(4)
+                .flat_map(|v| {
+                    f32_to_f16(f32::from_le_bytes([v[0], v[1], v[2], v[3]])).to_le_bytes()
+                })
+                .collect();
+        }
         if swizzle_bgra {
             for pixel in data.chunks_exact_mut(4) {
                 pixel.swap(0, 2);
@@ -574,18 +688,59 @@ fn convert_faces(
     Ok((format, srgb, faces))
 }
 
+/// The IEEE half float nearest to `value` (ties to even); NaN stays NaN,
+/// and values past the largest half become infinite.
+fn f32_to_f16(value: f32) -> u16 {
+    let bits = value.to_bits();
+    let sign = ((bits >> 16) & 0x8000) as u16;
+    let exponent = ((bits >> 23) & 0xff) as i32;
+    let mantissa = bits & 0x7f_ffff;
+    if exponent == 0xff {
+        let nan = if mantissa != 0 { 0x0200 } else { 0 };
+        return sign | 0x7c00 | nan;
+    }
+    // The exponent rebiased from 127 to 15.
+    let half_exponent = exponent - 112;
+    if half_exponent >= 0x1f {
+        return sign | 0x7c00;
+    }
+    // Rounds `m >> shift` to the nearest integer, ties to even.
+    let round = |m: u32, shift: u32| {
+        let kept = m >> shift;
+        let rest = m & ((1 << shift) - 1);
+        let half = 1 << (shift - 1);
+        if rest > half || (rest == half && kept & 1 == 1) {
+            kept + 1
+        } else {
+            kept
+        }
+    };
+    if half_exponent <= 0 {
+        // Subnormal half: the value in units of 2^-24.
+        if half_exponent < -10 {
+            return sign;
+        }
+        let shift = (14 - half_exponent) as u32;
+        return sign | round(mantissa | 0x80_0000, shift) as u16;
+    }
+    // A carry out of the mantissa raises the exponent, up to infinity.
+    let normal = (half_exponent as u32) << 23 | mantissa;
+    sign | round(normal, 13) as u16
+}
+
 /// Bytes per block or pixel of an upload format, for consumers that
 /// validate sizes.
 pub fn texture_block_bytes(format: TextureFormat) -> (u32, PixelLayout) {
     match format {
         TextureFormat::Bc1 | TextureFormat::Bc4 => (8, PixelLayout::Block { bytes: 8 }),
-        TextureFormat::Bc2 | TextureFormat::Bc3 | TextureFormat::Bc5 => {
+        TextureFormat::Bc2 | TextureFormat::Bc3 | TextureFormat::Bc5 | TextureFormat::Bc7 => {
             (16, PixelLayout::Block { bytes: 16 })
         }
         TextureFormat::Rgba8 | TextureFormat::Rgb9e5 => {
             (4, PixelLayout::Linear { bytes_per_pixel: 4 })
         }
         TextureFormat::R8 => (1, PixelLayout::Linear { bytes_per_pixel: 1 }),
+        TextureFormat::Rgba16Float => (8, PixelLayout::Linear { bytes_per_pixel: 8 }),
     }
 }
 
@@ -709,6 +864,136 @@ mod tests {
             },
             surfaces: (0..faces as u8).flat_map(|f| [f; 16]).collect(),
         }
+    }
+
+    /// A loose `.tobj` (header bytes from `tobj-loose.txt`) naming `dds`.
+    fn loose_tobj(clamp: bool, linear: bool, dds: &str) -> Vec<u8> {
+        let mut bytes = vec![0u8; 0x28];
+        bytes[..4].copy_from_slice(&tobj::MAGIC);
+        bytes[0x18] = 2;
+        bytes[0x1c] = 3;
+        if clamp {
+            bytes[0x1e] = 2;
+            bytes[0x1f] = 2;
+        }
+        bytes[0x26] = u8::from(linear);
+        bytes.extend((dds.len() as u64).to_le_bytes());
+        bytes.extend(dds.as_bytes());
+        bytes
+    }
+
+    /// A legacy DXT5 `.dds` of 4x4 pixels, one mip.
+    fn dxt5() -> Vec<u8> {
+        let mut b = vec![0u8; 128];
+        b[..4].copy_from_slice(b"DDS ");
+        b[4..8].copy_from_slice(&124u32.to_le_bytes());
+        b[12..16].copy_from_slice(&4u32.to_le_bytes());
+        b[16..20].copy_from_slice(&4u32.to_le_bytes());
+        b[80..84].copy_from_slice(&4u32.to_le_bytes()); // FourCC flag
+        b[84..88].copy_from_slice(b"DXT5");
+        b.extend([0x55u8; 16]);
+        b
+    }
+
+    /// D20: a mod's loose texture loads through the file system; a `.dds`
+    /// without a colour space is sRGB unless the `.tobj` marks it linear.
+    #[test]
+    fn loads_a_mods_loose_tobj_and_dds() {
+        use specsheet_archive::{Device, Vfs, ZipArchive, ZipWriter};
+        let mut writer = ZipWriter::new();
+        writer
+            .add(
+                "vehicle/a.tobj",
+                &loose_tobj(false, false, "/vehicle/a.dds"),
+            )
+            .unwrap();
+        writer
+            .add("vehicle/b.tobj", &loose_tobj(true, true, "b.dds"))
+            .unwrap();
+        writer.add("vehicle/a.dds", &dxt5()).unwrap();
+        writer.add("vehicle/b.dds", &dxt5()).unwrap();
+        let file = std::env::temp_dir().join(format!("specsheet-loose-{}.zip", std::process::id()));
+        std::fs::write(&file, writer.finish().unwrap()).unwrap();
+        let mut vfs = Vfs::new();
+        vfs.mount_device(Device::Zip(ZipArchive::open(&file).unwrap()), "");
+        let fs = GameFs::new(vfs);
+
+        let colour = load_texture(&fs, "/vehicle/a.tobj").expect("a");
+        assert_eq!(colour.format, TextureFormat::Bc3);
+        assert!(colour.srgb && colour.repeat_u && colour.repeat_v);
+        assert_eq!(colour.mips.len(), 1);
+        assert_eq!(colour.mips[0].data, [0x55; 16]);
+        // A relative path, clamped and linear.
+        let data = load_texture(&fs, "/vehicle/b.tobj").expect("b");
+        assert!(!data.srgb && !data.repeat_u && !data.repeat_v);
+        drop(fs);
+        let _ = std::fs::remove_file(file);
+    }
+
+    /// A legacy 32-bit float `.dds` (FourCC 0x74) of one pixel.
+    fn float_dds(pixel: [f32; 4]) -> Vec<u8> {
+        let mut b = dxt5();
+        b.truncate(128);
+        b[84..88].copy_from_slice(&[0x74, 0, 0, 0]);
+        b.extend(pixel.iter().flat_map(|v| v.to_le_bytes()));
+        for (at, v) in [(12, 1u32), (16, 1)] {
+            b[at..at + 4].copy_from_slice(&v.to_le_bytes());
+        }
+        b
+    }
+
+    /// D20: a mod's 32-bit float texture uploads as half floats, which
+    /// every GPU can filter; float data is linear whatever the `.tobj` says.
+    #[test]
+    fn loads_a_float_dds_as_half_floats() {
+        use specsheet_archive::{Device, Vfs, ZipArchive, ZipWriter};
+        let mut writer = ZipWriter::new();
+        writer
+            .add("sky/f.tobj", &loose_tobj(false, false, "f.dds"))
+            .unwrap();
+        writer
+            .add("sky/f.dds", &float_dds([1.0, 0.5, -2.0, 65504.0]))
+            .unwrap();
+        let file = std::env::temp_dir().join(format!("specsheet-float-{}.zip", std::process::id()));
+        std::fs::write(&file, writer.finish().unwrap()).unwrap();
+        let mut vfs = Vfs::new();
+        vfs.mount_device(Device::Zip(ZipArchive::open(&file).unwrap()), "");
+        let fs = GameFs::new(vfs);
+        let texture = load_texture(&fs, "/sky/f.tobj").expect("float");
+        assert_eq!(
+            (texture.format, texture.srgb),
+            (TextureFormat::Rgba16Float, false)
+        );
+        let halves: Vec<u8> = [0x3c00u16, 0x3800, 0xc000, 0x7bff]
+            .iter()
+            .flat_map(|h| h.to_le_bytes())
+            .collect();
+        assert_eq!(texture.mips[0].data, halves);
+        drop(fs);
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn rounds_floats_to_the_nearest_half() {
+        let cases: [(f32, u16); 12] = [
+            (0.0, 0x0000),
+            (-0.0, 0x8000),
+            (1.0, 0x3c00),
+            (1.0 + 1.0 / 2048.0, 0x3c00), // halfway, ties to even
+            (1.0 + 3.0 / 2048.0, 0x3c02), // halfway, ties to even (up)
+            (65504.0, 0x7bff),
+            (65520.0, 0x7c00), // rounds past the largest half
+            (1.0e9, 0x7c00),
+            (f32::NEG_INFINITY, 0xfc00),
+            (2.0f32.powi(-24), 0x0001), // smallest subnormal
+            (2.0f32.powi(-14), 0x0400), // smallest normal
+            (2.0f32.powi(-26), 0x0000), // underflows to zero
+        ];
+        for (value, half) in cases {
+            assert_eq!(f32_to_f16(value), half, "{value}");
+        }
+        assert_eq!(f32_to_f16(f32::NAN) & 0x7c00, 0x7c00);
+        assert_ne!(f32_to_f16(f32::NAN) & 0x03ff, 0);
     }
 
     #[test]
