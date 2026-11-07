@@ -336,6 +336,30 @@ Every `.json` and `.csv` file gets a `.txt` sibling with the same stem and the h
 - [ ] **Step 2: Verify.** `cargo xtask research` passes (it checks doc links to evidence), `python .agents/tools/hub validate` reports 0 errors and 0 warnings, and `grep -rn "research-lab.md\|version-ports.md" --include=*.md --include=*.rs .` prints nothing outside `CHANGELOG.md`.
 - [ ] **Step 3: Commit** "Name the project-wide docs in capitals and write down the naming rules".
 
+## Part D: the app's log
+
+### Task 13: A session log like the game's
+
+Runs after 31's mod-mounting commit, since it touches `studio.rs`, which 31 was editing. Read `studio.rs` for the two points where a game session finishes opening and where a truck finishes loading, and log there.
+
+**Files:**
+- Create: `crates/specsheet/src/session_log.rs` (pure line formatting)
+- Modify: `crates/specsheet/src/{main.rs (mod), studio.rs (calls), diagnostics.rs (rotation), script.rs (check)}`, `docs/DEVELOPMENT.md` (log file, prefixes, the script check)
+
+**Interfaces:**
+- Produces: `pub struct StartupFacts { pub app_version: String, pub game_dir: String, pub game_version: Option<String>, pub tested_version: String, pub profile: Option<String>, pub mods: Vec<(String, String)>, pub mount_failures: Vec<String> }`; `pub fn startup_lines(facts: &StartupFacts) -> Vec<String>`; `pub fn truck_lines(truck: &str, warnings: &[String]) -> Vec<String>`; `pub fn texture_lines(warnings: &[String]) -> Vec<String>`; in diagnostics, `fn rotated_paths(dir: &Path) -> Vec<PathBuf>`; in script, `Step::Warnings(usize)`.
+- Consumes: `GameSession::install()`, `mods()`, `mount_failures`; the assembly warnings the UI shows today (`ui/mod.rs`, the `warnings` chain); `TESTED_GAME_VERSION`.
+
+- [ ] **Step 1: Write the failing tests** in `session_log.rs`:
+  - `the_startup_header_names_the_app_game_and_mods`: the lines are `"[game] SPecSheet 0.1.0, game D:/x, version 1.60.1.7 (tested 1.60.1.7)"`, `"[mods] profile Max: 2 active"`, `"[mods] a: mounted"`, `"[mods] b: skipped (version)"` and `"[mount] failed: dlc_x.scs"`.
+  - `an_untested_game_version_says_so`: a version that differs from the tested one ends in `(tested 1.60.1.7: untested)`.
+  - `every_truck_warning_gets_its_own_line`: `truck_lines("daf.2021", &[3 warnings])` gives 4 lines, `"[assembly] daf.2021: 3 warnings"` followed by one `"[assembly] daf.2021: <warning>"` per warning. With no warnings it gives the single line `"[assembly] daf.2021: 0 warnings"`.
+- [ ] **Step 2: Write the failing tests** for `rotated_paths` (`keeps_the_last_five_runs`: `specsheet.log`, then `specsheet.1.log` to `specsheet.4.log`, replacing `specsheet.prev.log`) and for the script (`parses_a_warnings_expectation`: `warnings 0` becomes `Step::Warnings(0)`).
+- [ ] **Step 3: Run** `cargo test -p specsheet session_log diagnostics script`. Expected: these fail.
+- [ ] **Step 4: Implement.** `studio.rs` logs `startup_lines` with `info!` once the session opens, and `truck_lines` and `texture_lines` with `warn!` (`info!` when there are 0 warnings) each time a truck finishes loading. All warnings are logged; the UI keeps showing 3. `Step::Warnings(n)` ends a script run with exit code 1 when the current truck has more than `n` warnings.
+- [ ] **Step 5: Verify.** The tests pass. In the final full run, a `SPECSHEET_SCRIPT` that loads one preset and ends in `warnings 0` writes a log whose `[game]`, `[mods]` and `[assembly]` lines you have read.
+- [ ] **Step 6: Commit** the app code ("Log the game, mods and every assembly warning like the game's log"), then the docs.
+
 ## Not in this plan
 
 - **Splitting `crates/specsheet/src/viewer.rs` (1,417 lines) and `crates/specsheet-render/src/assets.rs` (1,157 lines):** read them first, and split only if they hold separate responsibilities.
