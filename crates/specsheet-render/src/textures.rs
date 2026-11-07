@@ -94,6 +94,16 @@ pub struct GameTextures {
 }
 
 impl GameTextures {
+    /// Forgets every loaded texture and every material waiting for or
+    /// sampling one, keeping only which cube fills the vehicle slot. The
+    /// images are freed once no material holds them (another truck is
+    /// shown); later requests load them again.
+    pub fn clear(&mut self) {
+        self.textures.clear();
+        self.waiting.clear();
+        self.slot_users.clear();
+    }
+
     /// Fills the vehicle slot with `cube` (`None`: the slot's own file) and
     /// rebinds every material that samples it.
     pub fn set_vehicle_slot(&mut self, game: Option<&Arc<GameSession>>, cube: Option<String>) {
@@ -256,5 +266,19 @@ mod tests {
 
         t.set_vehicle_slot(None, None);
         assert_eq!(waiting(&t), [GREY, VEHICLE_SLOT, VEHICLE_SLOT]);
+    }
+
+    #[test]
+    fn clearing_forgets_textures_and_materials_but_keeps_the_slot_cube() {
+        let mut t = textures(&[VEHICLE_SLOT, GREY]);
+        t.set_vehicle_slot(None, Some(GREY.to_owned()));
+        t.request(None, VEHICLE_SLOT, Target::DifSpec(Handle::default()));
+        t.clear();
+        assert!(t.textures.is_empty() && t.waiting.is_empty() && t.slot_users.is_empty());
+        // A slot user after the clear still takes the scene's cube.
+        t.textures
+            .insert((GREY.to_owned(), true), TextureState::Failed);
+        t.request(None, VEHICLE_SLOT, Target::DifSpec(Handle::default()));
+        assert_eq!(waiting(&t), [GREY]);
     }
 }

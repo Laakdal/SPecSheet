@@ -296,6 +296,12 @@ pub struct PaintMaterials {
 }
 
 impl PaintMaterials {
+    /// Forgets every material, so their textures are freed once no entity
+    /// draws them (another truck is shown).
+    pub fn clear(&mut self) {
+        self.materials.clear();
+    }
+
     /// The material for `base` (the `.mat`'s stand-in) under `paint`.
     pub fn get(
         &mut self,

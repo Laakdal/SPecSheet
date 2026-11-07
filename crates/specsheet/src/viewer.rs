@@ -19,9 +19,11 @@ use bevy::render::storage::ShaderBuffer;
 use bevy::tasks::{futures::check_ready, AsyncComputeTaskPool, Task};
 use bevy::window::PrimaryWindow;
 use specsheet_assembly::Placement;
+use specsheet_core::TruckId;
 use specsheet_data::camera::InteriorCamera;
 use specsheet_data::render::{load_cube_texture, CubeTextureData};
 use specsheet_data::scene::{OrbitSpec, Scene};
+use specsheet_session::GameSession;
 
 use crate::diagnostics::PerfSwitches;
 use crate::studio::{FrameSet, Studio};
@@ -561,6 +563,14 @@ impl ModelCache {
         }
     }
 
+    /// Forgets every model and converted texture. Bevy frees an asset when
+    /// its last handle is dropped, so they leave the GPU once no entity draws
+    /// them; a model requested again loads again.
+    fn clear(&mut self) {
+        self.models.clear();
+        self.textures.clear();
+    }
+
     fn failed(&self, key: &ModelKey) -> bool {
         matches!(self.models.get(key), Some(ModelState::Failed))
     }
@@ -591,6 +601,7 @@ fn finish_models(
             }
         }
     }
+    let any_finished = !finished.is_empty();
     for (key, result) in finished {
         let state = match result {
             Ok(payload) => {
@@ -612,6 +623,15 @@ fn finish_models(
         };
         cache.models.insert(key, state);
         cache.generation += 1;
+    }
+    if any_finished && !cache.loading() {
+        // A truck switch should bring these back to one truck's worth.
+        info!(
+            "assets with every model loaded: {} images, {} standard materials, {} meshes",
+            images.len(),
+            materials.len(),
+            meshes.len()
+        );
     }
 }
 
@@ -653,6 +673,10 @@ pub struct TruckInstances {
     pub interior_camera: Option<InteriorCamera>,
     /// (truck generation, model-cache generation) last synced.
     synced: (u64, u64),
+    /// The truck and the game the caches were filled for; when either
+    /// changes, the caches are cleared (TASKS 13.3).
+    truck: Option<TruckId>,
+    game: Option<Arc<GameSession>>,
     /// Truck-space bounds of the placed models.
     pub bounds: Option<(Vec3, Vec3)>,
 }
@@ -744,6 +768,22 @@ fn sync_truck(
         }
         keep
     });
+    // Another truck, or another game (opening a mod profile reopens it, and
+    // a path may then name another mod's file): forget the old truck's
+    // models, textures and materials. With its entities despawned above, the
+    // GPU frees them before the new truck's models upload.
+    let truck = studio.overview.as_ref().map(|o| o.truck.clone());
+    let same_game = match (&instances.game, &studio.game) {
+        (Some(old), Some(new)) => Arc::ptr_eq(old, new),
+        (None, None) => true,
+        _ => false,
+    };
+    if truck != instances.truck || !same_game {
+        cache.clear();
+        paints.clear();
+        instances.truck = truck;
+        instances.game = studio.game.clone();
+    }
     let mut bounds: Option<(Vec3, Vec3)> = None;
     for (key, (placement, part)) in &wanted {
         let model_key = placement_key(placement);
@@ -794,9 +834,19 @@ struct PieceMaterials<'w> {
     lighting: ResMut<'w, GameLighting>,
     buffers: ResMut<'w, Assets<ShaderBuffer>>,
     shadow_only: Res<'w, ShadowOnly>,
+    flares: ResMut<'w, crate::flares::FlareMaterials>,
 }
 
 impl PieceMaterials<'_> {
+    /// Forgets every cached paint, dif.spec and flare material and every
+    /// game texture (another truck is shown).
+    fn clear(&mut self) {
+        self.paints.clear();
+        self.dif_specs.clear();
+        self.textures.clear();
+        self.flares.clear();
+    }
+
     /// Lights every game material with `scene`'s light, or the defaults.
     fn set_light(&mut self, scene: Option<&Scene>) {
         self.lighting.set(&mut self.buffers, game_light(scene));

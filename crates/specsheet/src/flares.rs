@@ -76,7 +76,7 @@ pub fn spawn_flares(commands: &mut Commands, studio: &Studio, parent: Entity, mo
 /// The flare materials: each glow model's stand-in, scaled by the scene's
 /// luminosity.
 #[derive(Resource, Default)]
-struct FlareMaterials {
+pub(crate) struct FlareMaterials {
     /// (stand-in, scaled copy).
     materials: Vec<(Handle<StandardMaterial>, Handle<StandardMaterial>)>,
     /// The luminosity the copies carry.
@@ -84,6 +84,11 @@ struct FlareMaterials {
 }
 
 impl FlareMaterials {
+    /// Forgets every copy (another truck is shown); the luminosity stays.
+    pub(crate) fn clear(&mut self) {
+        self.materials.clear();
+    }
+
     fn scaled(
         &mut self,
         assets: &mut Assets<StandardMaterial>,
