@@ -8,5 +8,5 @@ pub mod colour;
 mod ids;
 pub mod math;
 
-pub use ids::{AccessoryId, SlotId, TruckId};
+pub use ids::{glob_match, AccessoryId, SlotId, TruckId};
 pub use math::{Aabb, Transform};

@@ -64,7 +64,10 @@ impl AccessoryId {
     }
 }
 
-fn glob_match(pattern: &str, text: &str) -> bool {
+/// Whether `text` matches `pattern`, in which `*` matches any run of
+/// characters and everything else matches itself (`1.60.*`,
+/// `*.renault.etech_t.chassis`).
+pub fn glob_match(pattern: &str, text: &str) -> bool {
     let Some((first, rest)) = pattern.split_once('*') else {
         return pattern == text;
     };
