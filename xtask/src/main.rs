@@ -8,9 +8,19 @@
 //! * `real`: the real-install tests (needs `ETS2_DIR`).
 //! * `parity`: renders the parity cases and compares them with the
 //!   reference screenshots (`specsheet --parity`, docs/DEVELOPMENT.md).
+//! * `recipes`: checks `research/recipes.txt` against `research/evidence/`
+//!   and `research/baseline/` without the game; with `--save` or
+//!   `--compare` (needs `ETS2_DIR`; `--user` adds the recipes that need
+//!   `ETS2_HOME`), runs the recipes and writes or compares the baselines.
+//! * `rea`: prints one batched REA run of every search and trace seed in
+//!   `research/rea/`, then the old addresses to re-locate.
 //! * `version-port`: after an ETS2 update, the checks of
 //!   docs/version-ports.md that can run unattended: the version test, the
-//!   real-install tests and the archive survey of `def.scs` and `effect.scs`.
+//!   real-install tests and every recipe compared with its baseline
+//!   (`recipes --compare`), ending with the checks left to do by hand.
+
+mod rea;
+mod recipes;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -52,9 +62,19 @@ fn main() -> ExitCode {
             "cargo",
             &["run", "--release", "-p", "specsheet", "--", "--parity"],
         ),
+        Some("recipes") => {
+            let has = |flag: &str| args.iter().any(|a| a == flag);
+            let with_user = has("--user");
+            match (has("--save"), has("--compare")) {
+                (false, false) => recipes::check(&root),
+                (true, true) => Err("recipes: --save or --compare, not both".to_owned()),
+                (save, _) => recipes::run(&root, save, with_user),
+            }
+        }
+        Some("rea") => rea::print(&root),
         Some("version-port") => version_port(&root),
         _ => Err(
-            "usage: cargo xtask <check [--real] | layers | guard | real | parity | version-port>"
+            "usage: cargo xtask <check [--real] | layers | guard | real | parity | recipes [--save | --compare] [--user] | rea | version-port>"
                 .to_owned(),
         ),
     };
@@ -107,6 +127,7 @@ fn check(root: &Path, with_real: bool) -> Result<(), String> {
     )?;
     run(root, "cargo", &["test", "--workspace"])?;
     layers(root)?;
+    recipes::check(root)?;
     if with_real {
         real(root)?;
     }
@@ -141,33 +162,39 @@ fn real(root: &Path) -> Result<(), String> {
     )
 }
 
-/// The unattended part of docs/version-ports.md; the rest (surveys against
-/// research/evidence, executable addresses, parity) needs a person.
+/// The unattended part of docs/version-ports.md; the rest (differences
+/// found, the checks by hand, executable addresses, parity) needs a person.
+/// Every step runs even when an earlier one fails, so one run reports all.
 fn version_port(root: &Path) -> Result<(), String> {
-    let game = game_dir()?;
-    let version_test = run(
-        root,
-        "cargo",
-        &["test", "-p", "specsheet-data", "--test", "game_version"],
-    );
-    real(root)?;
-    let archives = ["def.scs", "effect.scs"].map(|a| game.join(a).display().to_string());
-    let mut args = vec![
-        "run",
-        "--release",
-        "-p",
-        "specsheet-research",
-        "--example",
-        "survey",
-        "--",
+    game_dir()?;
+    let steps = [
+        (
+            "version test",
+            run(
+                root,
+                "cargo",
+                &["test", "-p", "specsheet-data", "--test", "game_version"],
+            ),
+        ),
+        ("real-install tests", real(root)),
+        ("recipes", recipes::run(root, false, false)),
     ];
-    args.extend(archives.iter().map(String::as_str));
-    run(root, "cargo", &args)?;
     println!("xtask: next by hand, docs/version-ports.md sections 3-4:");
-    println!("  rerun the surveys and compare them with research/evidence/,");
-    println!("  re-locate executable addresses, rerun parity, then raise TESTED_GAME_VERSION");
-    // A version mismatch is expected during a port; report it last.
-    version_test
+    println!("  look into every difference and the checks by hand listed above,");
+    println!("  re-locate executable addresses, rerun parity, save the new baselines");
+    println!("  (`cargo xtask recipes --save`), then raise TESTED_GAME_VERSION");
+    let failed: Vec<String> = steps
+        .into_iter()
+        .filter_map(|(name, result)| result.err().map(|e| format!("{name}: {e}")))
+        .collect();
+    if failed.is_empty() {
+        Ok(())
+    } else {
+        Err(failed.join(
+            "
+",
+        ))
+    }
 }
 
 /// The crate that holds `tests/real_install.rs`.
