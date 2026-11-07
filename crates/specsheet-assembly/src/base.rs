@@ -113,10 +113,22 @@ pub fn slot_availability(
     drive: Drive,
 ) -> SlotAvailability {
     let base = base_layout(fs, cache, catalog, config, drive);
+    let slots = addon_slots(catalog);
+    // As in `assemble`: the interior's exterior model offers slots too.
+    let selected: Vec<_> = config
+        .selections()
+        .values()
+        .filter_map(|id| catalog.accessory(id))
+        .collect();
+    let interior =
+        super::interior::interior_placements(&selected, &base.locators, drive, &mut Vec::new());
+    let (_, ext_locators) = super::placed_exterior_model(fs, cache, &interior);
+    let mut available: BTreeSet<SlotId> = locators_by_slot(&slots, base.locators.iter())
+        .into_keys()
+        .collect();
+    available.extend(locators_by_slot(&slots, ext_locators.iter()).into_keys());
     SlotAvailability {
-        available: locators_by_slot(&addon_slots(catalog), base.locators.iter())
-            .into_keys()
-            .collect(),
+        available: available.into_iter().collect(),
     }
 }
 

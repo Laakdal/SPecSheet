@@ -3,7 +3,10 @@
 //! * Chassis and cabin models share one coordinate space and are placed at
 //!   the origin (finding F4).
 //! * Addons with an exterior model are placed at every visible base-model
-//!   locator of their slot ([`crate::slots`]).
+//!   locator of their slot ([`crate::slots`]). A slot no base model offers
+//!   takes the selected interior's exterior model's locators, composed with
+//!   that model's placement (`research/evidence/rea-pin-model-order.txt`
+//!   section 4; Hypothesis, strong).
 //! * Wheel parts are placed at the chassis `wheel_f*` / `wheel_r*` locators;
 //!   their models have `left`/`right` variants, chosen by the locator side.
 //!   Tyres are offset by the rim's `tire_shift` (finding F9).
@@ -125,37 +128,17 @@ pub fn assemble(
 
     let addon_slots = addon_slots(catalog);
     let by_slot = locators_by_slot(&addon_slots, base_locators.iter());
-    assembly.availability = SlotAvailability {
-        available: by_slot.keys().cloned().collect(),
+    let interior = interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
+    let (ext_parent, ext_locators) = placed_exterior_model(fs, cache, &interior);
+    let ext = ExteriorModelSlots {
+        parent: ext_parent,
+        by_slot: locators_by_slot(&addon_slots, ext_locators.iter()),
     };
-
-    for accessory in selected.iter().filter(|a| a.needs_exterior_locator()) {
-        let model = match drive {
-            Drive::Right => accessory
-                .model
-                .exterior_uk
-                .as_ref()
-                .or(accessory.model.exterior.as_ref()),
-            Drive::Left => accessory.model.exterior.as_ref(),
-        };
-        let (Some(model), Some(locators)) = (model, by_slot.get(&accessory.slot)) else {
-            assembly.warnings.push(format!(
-                "{}: no locator for slot {}",
-                accessory.id, accessory.slot
-            ));
-            continue;
-        };
-        for locator in locators {
-            assembly.placements.push(Placement {
-                slot: accessory.slot.clone(),
-                accessory: accessory.id.clone(),
-                model: model.clone(),
-                look: accessory.model.look.clone(),
-                variant: accessory.model.variant.clone(),
-                transform: transform::from_locator(locator),
-            });
-        }
-    }
+    assembly.availability = SlotAvailability {
+        available: by_slot.keys().chain(ext.slots()).cloned().collect(),
+    };
+    let addons = addon_placements(&selected, &by_slot, &ext, drive, &mut assembly.warnings);
+    assembly.placements.extend(addons);
 
     // Wheels.
     let wheel_locators = |prefix: &str| -> Vec<&Locator> {
@@ -168,7 +151,6 @@ pub fn assemble(
     let rear = wheel_locators(REAR_WHEELS);
     let wheels = wheel_placements(&selected, &front, &rear, &mut assembly.warnings);
     assembly.placements.extend(wheels);
-    let interior = interior_placements(&selected, &base_locators, drive, &mut assembly.warnings);
     // The game searches the interior's exterior model first, then the cabin,
     // then the chassis, for pins and for the driver's eye point (F5).
     let mut pin_locators = exterior_model_locators(fs, cache, &interior);
@@ -213,6 +195,88 @@ pub fn assemble(
     pin_slots.extend(cockpit_by_slot.into_keys());
     assembly.pin_bases = pins::bases(&pin_slots, &pin_locators, &cockpit_locs, &front, &rear);
     assembly
+}
+
+/// The addon slots the selected interior's exterior model offers: its
+/// locators by slot, and that model's placement (the cabin's
+/// `ext_interior` locator), which a locator there is composed with.
+pub(crate) struct ExteriorModelSlots<'a> {
+    pub(crate) parent: Transform,
+    pub(crate) by_slot: BTreeMap<SlotId, Vec<&'a Locator>>,
+}
+
+impl ExteriorModelSlots<'_> {
+    /// The slots it offers.
+    pub(crate) fn slots(&self) -> impl Iterator<Item = &SlotId> {
+        self.by_slot.keys()
+    }
+}
+
+/// The selected interior's exterior model: its placement and its visible
+/// locators (none when no interior is placed).
+pub(crate) fn placed_exterior_model(
+    fs: &GameFs,
+    cache: &ModelCache,
+    interior: &[Placement],
+) -> (Transform, Vec<Locator>) {
+    match interior.first() {
+        Some(placement) => (
+            placement.transform,
+            exterior_model_locators(fs, cache, std::slice::from_ref(placement)),
+        ),
+        None => (Transform::IDENTITY, Vec::new()),
+    }
+}
+
+/// Places each selected addon with an exterior model at every base-model
+/// locator of its slot (`by_slot`); a slot no base model offers takes the
+/// interior's exterior model's locators instead, composed with that
+/// model's placement. The game's attach walk searches the chassis, that
+/// model, then the cabin (rea-pin-model-order.txt section 4); which one
+/// wins where two offer a slot is not applied (Hypothesis): base models do.
+fn addon_placements(
+    selected: &[&specsheet_truck::Accessory],
+    by_slot: &BTreeMap<SlotId, Vec<&Locator>>,
+    ext: &ExteriorModelSlots<'_>,
+    drive: Drive,
+    warnings: &mut Vec<String>,
+) -> Vec<Placement> {
+    let mut placements = Vec::new();
+    for accessory in selected.iter().filter(|a| a.needs_exterior_locator()) {
+        let model = match drive {
+            Drive::Right => accessory
+                .model
+                .exterior_uk
+                .as_ref()
+                .or(accessory.model.exterior.as_ref()),
+            Drive::Left => accessory.model.exterior.as_ref(),
+        };
+        let found = match by_slot.get(&accessory.slot) {
+            Some(locators) => Some((Transform::IDENTITY, locators)),
+            None => ext
+                .by_slot
+                .get(&accessory.slot)
+                .map(|locators| (ext.parent, locators)),
+        };
+        let (Some(model), Some((parent, locators))) = (model, found) else {
+            warnings.push(format!(
+                "{}: no locator for slot {}",
+                accessory.id, accessory.slot
+            ));
+            continue;
+        };
+        for locator in locators {
+            placements.push(Placement {
+                slot: accessory.slot.clone(),
+                accessory: accessory.id.clone(),
+                model: model.clone(),
+                look: accessory.model.look.clone(),
+                variant: accessory.model.variant.clone(),
+                transform: parent.compose(&transform::from_locator(locator)),
+            });
+        }
+    }
+    placements
 }
 
 #[cfg(test)]
@@ -350,6 +414,60 @@ mod tests {
         assert!(
             tyre_x.is_some_and(|x| (x - 0.94).abs() < 1e-6),
             "{tyre_x:?}"
+        );
+    }
+
+    /// rea-pin-model-order.txt section 4: the attach walk also searches the
+    /// interior's exterior model, and a hit there takes that model's
+    /// placement. The Sanax Volvo FH2022 keeps its seat, curtain and
+    /// stow-box locators only there; a base-model locator still wins.
+    #[test]
+    fn an_addon_slot_no_base_model_offers_uses_the_interior_exterior_model() {
+        let mut seat = wheel_part("fh16.t.seat", "seat", WheelPart::Tire);
+        seat.kind = AccessoryKind::Addon;
+        seat.wheel = None;
+        let mut mirror = wheel_part("big.t.mirror", "mirror", WheelPart::Tire);
+        mirror.kind = AccessoryKind::Addon;
+        mirror.wheel = None;
+        let mut lamp = wheel_part("x.t.lamp", "lamp", WheelPart::Tire);
+        lamp.kind = AccessoryKind::Addon;
+        lamp.wheel = None;
+        let slots: std::collections::BTreeSet<SlotId> =
+            ["seat", "mirror", "lamp"].map(SlotId::from).into();
+        let cabin = [locator("mirror", [1.0, 2.0, 0.0])];
+        let ext_model = [
+            locator("seat", [0.5, 0.0, 0.0]),
+            locator("mirror", [9.0, 9.0, 9.0]),
+        ];
+        let by_slot = locators_by_slot(&slots, cabin.iter());
+        let parent = Transform {
+            translation: [0.0, 1.0, -2.0],
+            ..Transform::IDENTITY
+        };
+        let ext = ExteriorModelSlots {
+            parent,
+            by_slot: locators_by_slot(&slots, ext_model.iter()),
+        };
+        let mut warnings = Vec::new();
+        let placed = addon_placements(
+            &[&seat, &mirror, &lamp],
+            &by_slot,
+            &ext,
+            Drive::Left,
+            &mut warnings,
+        );
+        let at: Vec<(&str, [f32; 3])> = placed
+            .iter()
+            .map(|p| (p.slot.as_str(), p.transform.translation))
+            .collect();
+        assert_eq!(
+            at,
+            [("seat", [0.5, 1.0, -2.0]), ("mirror", [1.0, 2.0, 0.0])]
+        );
+        assert_eq!(warnings, ["x.t.lamp: no locator for slot lamp"]);
+        assert_eq!(
+            ext.slots().collect::<Vec<_>>(),
+            [&SlotId::from("mirror"), &SlotId::from("seat")]
         );
     }
 
