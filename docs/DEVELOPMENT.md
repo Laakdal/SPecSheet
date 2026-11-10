@@ -239,7 +239,7 @@ Three workflows in `.github/workflows/`, plus `.github/dependabot.yml`.
 1. *Guard, format, layers and recipes* (a minute or two): the public-tree guard (`--all`), `cargo fmt --all --check`, `cargo xtask layers` (D17) and `cargo xtask recipes` (every evidence file has a recipe and a baseline).
 2. *Lint and test*, only if the first job passes: `cargo clippy --workspace --all-targets --locked -- -D warnings` and `cargo test --workspace --locked`.
 
-**`audit.yml`** runs `cargo audit` on `Cargo.lock` every Monday and whenever the lock file changes. A failure means a locked dependency has a published security advisory.
+**`audit.yml`** runs `cargo audit` on `Cargo.lock` every Monday and whenever the lock file changes. A failure means a locked dependency has a published vulnerability; unmaintained and yanked crates are reported without failing. Accepted advisories are listed, each with its reason, in `.cargo/audit.toml`: today only `ruzstd` 0.8.3 (RUSTSEC-2026-0344), which Bevy 0.19 pulls in and only a Bevy upgrade removes.
 
 **`release.yml`** builds the Windows package and opens a draft release (see "Releasing" below).
 
