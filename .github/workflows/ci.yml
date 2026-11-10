@@ -1,29 +1,46 @@
 # Checks every push to main and every pull request. Real-install tests need
 # the game files, which CI doesn't have, so they skip themselves here and are
 # run locally with ETS2_DIR set (docs/DEVELOPMENT.md).
+#
+# Actions are pinned to a commit, with the release in a comment; Dependabot
+# (.github/dependabot.yml) keeps the pins current.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
+# Nothing here writes to the repository.
 permissions:
   contents: read
 
+# A newer push to the same branch or pull request replaces the run in
+# progress. Runs on main are never cancelled, so every commit there gets a
+# result the release workflow can look up.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   CARGO_TERM_COLOR: always
+  # CI builds from scratch or from the cache; incremental data only grows it.
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+  RUST_BACKTRACE: 1
 
 jobs:
-  check:
-    name: Guard, format, lint and test (Windows)
+  # Cheap checks first: they fail in a minute or two, before Bevy is built.
+  quick:
+    name: Guard, format, layers and recipes
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Refuse game files
         run: python tools/check_public_tree.py --all
@@ -31,16 +48,44 @@ jobs:
       - name: Install the pinned toolchain (rust-toolchain.toml)
         run: rustup toolchain install --no-self-update
 
-      - uses: Swatinem/rust-cache@v2
-
       - name: Format
         run: cargo fmt --all --check
 
-      - name: Lint
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Test
-        run: cargo test --workspace
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: quick
+          # Only main fills the cache; pull requests read it.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Crate layers (D17)
         run: cargo xtask layers
+
+      - name: Research recipes and baselines are complete
+        run: cargo xtask recipes
+
+  check:
+    name: Lint and test (Windows)
+    needs: quick
+    runs-on: windows-latest
+    # A cold Bevy build takes 15 to 25 minutes; a hung run stops here.
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned toolchain (rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: check
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # --locked: the build uses exactly the versions in Cargo.lock, and
+      # fails if the lock file is out of date.
+      - name: Lint
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace --locked

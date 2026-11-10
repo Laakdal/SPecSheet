@@ -1,0 +1,25 @@
+# Dependabot keeps the pinned action commits current and reports Rust
+# dependencies with security advisories.
+version: 2
+updates:
+  # The workflows pin every action to a commit; this proposes the next one.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "Update actions:"
+
+  # Rust dependencies change deliberately (Bevy and Rust are pinned
+  # together), so no routine version bumps: a limit of 0 leaves only
+  # security updates, which Dependabot opens regardless of the limit.
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 0

@@ -1,0 +1,39 @@
+name: Game update
+description: ETS2 has a new version and SpecSheet needs porting to it
+title: "Port to ETS2 <version>"
+labels: ["game update"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The steps are in `docs/version-ports.md`. `cargo xtask version-port` runs the first three.
+  - type: input
+    id: version
+    attributes:
+      label: New game version
+      description: The line `init ver.` in game.log.txt.
+    validations:
+      required: true
+  - type: input
+    id: tested
+    attributes:
+      label: Version SpecSheet is checked against
+      description: "`TESTED_GAME_VERSION` in `crates/specsheet-data/src/install.rs`."
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: What the checks show
+      description: The real-install test results and the summary of `cargo xtask recipes --compare`.
+      render: text
+  - type: checkboxes
+    id: steps
+    attributes:
+      label: Port
+      options:
+        - label: Real-install tests pass, or each failure is explained
+        - label: Every recipe difference is read and sorted (new content, or a change the code depends on)
+        - label: Executable findings re-located (`cargo xtask rea`)
+        - label: Shader specs whose shaders changed are re-read (D13)
+        - label: Baselines saved, `TESTED_GAME_VERSION` raised, changelog updated

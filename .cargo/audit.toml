@@ -1,0 +1,13 @@
+# Advisories cargo audit (.github/workflows/audit.yml) accepts, each with its
+# reason. Remove an entry as soon as its fix is reachable.
+[advisories]
+ignore = [
+    # ruzstd 0.8.3, decompression bomb (high). Bevy 0.19's bevy_image enables
+    # it through its default features, which bevy_anti_alias turns on whatever
+    # our own feature list says, so only a Bevy upgrade removes it (Bevy 0.20
+    # needs Rust 1.97.1; TASKS.md). Exposure: ruzstd decodes only
+    # zstd-compressed KTX2 images. SpecSheet never hands game or user files to
+    # Bevy's KTX2 loader; it decodes .tobj textures itself
+    # (specsheet-formats), so only Bevy's own embedded assets reach ruzstd.
+    "RUSTSEC-2026-0344",
+]

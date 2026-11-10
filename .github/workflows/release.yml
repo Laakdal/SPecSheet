@@ -1,0 +1,214 @@
+# Builds the Windows release and opens a DRAFT GitHub Release for it. A
+# person reviews the draft and publishes it; nothing is published from here.
+#
+# Start it by pushing a tag `v<version>` (docs/DEVELOPMENT.md, "Releasing").
+# The run refuses to release unless:
+#   - the tag equals the app's version in crates/specsheet/Cargo.toml,
+#   - the tagged commit is on main,
+#   - CI passed on that commit,
+#   - CHANGELOG.md has a section for the version.
+# "Run workflow" on a branch builds the same package as a dry run: the
+# archive is kept as a workflow artifact and no release is created.
+#
+# The archive holds the app only. It contains no game files: SpecSheet reads
+# them from the user's own install at run time.
+name: Release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+  workflow_dispatch:
+
+# Each job asks for what it needs.
+permissions: {}
+
+# One release run per tag; a second push of the same tag waits.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  verify:
+    name: Check the tag, CI and the changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history, to check that the tag is on main.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read the app's version
+        id: version
+        run: |
+          version="$(sed -n '/^\[package\]/,/^\[/s/^version *= *"\(.*\)"/\1/p' crates/specsheet/Cargo.toml | head -n 1)"
+          if [ -z "$version" ]; then
+            echo "::error::no version found in crates/specsheet/Cargo.toml"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "App version: $version"
+
+      - name: The tag matches the version
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::tag $TAG does not match the app version v$VERSION (crates/specsheet/Cargo.toml)"
+            exit 1
+          fi
+
+      - name: The tagged commit is on main
+        if: github.ref_type == 'tag'
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::the tagged commit $GITHUB_SHA is not on main"
+            exit 1
+          fi
+
+      - name: CI passed on this commit
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs" --paginate \
+            --jq '[.check_runs[] | select(.name == "Lint and test (Windows)" and .conclusion == "success")] | length')"
+          if [ "${passed:-0}" -lt 1 ]; then
+            echo "::error::no successful 'Lint and test (Windows)' run for $GITHUB_SHA; wait for CI on main, then re-run this workflow"
+            exit 1
+          fi
+
+      - name: The changelog has this version
+        if: github.ref_type == 'tag'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$VERSION]' section; move the Unreleased entries under it first"
+            exit 1
+          fi
+
+  build:
+    name: Build and package (Windows x64)
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      # For the build provenance attestation.
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Refuse game files
+        run: python tools/check_public_tree.py --all
+
+      - name: Install the pinned toolchain (rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
+
+      # No build cache: a release is built from the sources and Cargo.lock
+      # alone.
+      - name: Build the release binary
+        run: cargo build --release --locked -p specsheet
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $name = "SpecSheet-$env:VERSION-windows-x64"
+          $stage = Join-Path $env:RUNNER_TEMP $name
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item target/release/specsheet.exe (Join-Path $stage "SpecSheet.exe")
+          Copy-Item LICENSE, README.md, CHANGELOG.md $stage
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $zip = "dist/$name.zip"
+          Compress-Archive -Path $stage -DestinationPath $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          # The format `sha256sum -c` reads.
+          "$hash  $name.zip" | Out-File -Encoding ascii -NoNewline "dist/$name.zip.sha256"
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+          "$name.zip  sha256 $hash" >> $env:GITHUB_STEP_SUMMARY
+
+      # Lets anyone check that the archive was built by this workflow from
+      # this commit: `gh attestation verify <zip> --repo <owner>/<repo>`.
+      - name: Attest the build provenance
+        if: github.ref_type == 'tag'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.package.outputs.zip }}
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: SpecSheet-${{ env.VERSION }}-windows-x64
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    name: Open the draft release
+    needs: [verify, build]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # To create the release. No other job can write to the repository.
+      contents: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: SpecSheet-${{ env.VERSION }}-windows-x64
+          path: dist
+
+      - name: Take the release notes from the changelog
+        run: |
+          # The lines of the version's section, without its heading.
+          awk -v heading="## [$VERSION]" '
+            substr($0, 1, 4) == "## [" { printing = (index($0, heading) == 1); next }
+            printing { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::error::the changelog section for $VERSION is empty"
+            exit 1
+          fi
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::error::a release for $TAG already exists; delete the draft or bump the version"
+            exit 1
+          fi
+          gh release create "$TAG" dist/* \
+            --draft \
+            --verify-tag \
+            --title "SpecSheet $VERSION" \
+            --notes-file notes.md
+          echo "Draft release for $TAG created. Review it on the Releases page and publish it there." >> "$GITHUB_STEP_SUMMARY"
