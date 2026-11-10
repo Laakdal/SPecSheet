@@ -85,9 +85,12 @@ A change is done when all of these hold:
 4. UI and rendering changes are seen working in the running app, not just compiled: a `SPECSHEET_SCRIPT` run that ends in a screenshot you have looked at (see `docs/DEVELOPMENT.md`).
 5. `TASKS.md` is updated, plus `CHANGELOG.md` (Unreleased) for user-visible or format-level changes.
 
-## Commits
+## Commits and pull requests
 
-- Commit only when the user asks. Push only with the user's explicit approval.
+- Every change reaches `main` through a pull request: code, docs, research evidence, `TASKS.md`. Never commit or push to `main` directly. The steps are in `docs/DEVELOPMENT.md` ("Pull requests").
+- Work on a branch named `<area>/<short-name>` (e.g. `render/glass-material`), one piece of work per branch. When another session is active in the repo, use your own `git worktree` for the branch.
+- Commit only when the user asks. Push a branch and open a pull request only with the user's explicit approval. The user merges; never merge a pull request yourself unless told to.
+- A pull request merges with a merge commit (`gh pr merge --merge`), never by squash or rebase: both rewrite the commits on GitHub and drop their signatures. Nothing reaches `main` by a push from a local clone, a fast-forward included.
 - Split work into one commit per group:
   - code per crate, with its tests;
   - docs;
@@ -101,8 +104,7 @@ A change is done when all of these hold:
 ## Where the hub rules differ
 
 The hub block at the top sets general rules. Where they differ, the rules in this file win:
-- **Branches:** commit straight to `main` (see Commits); hub's "work on a branch" rule does not apply.
-- **Tasks:** `TASKS.md` is the backlog. `.agents/state/tasks.md` is only for a short-lived multi-agent board.
+- **Tasks:** `TASKS.md` is the backlog, not GitHub issues. Issues are for bugs, things waiting on a person, and automated alerts; a task found in an issue becomes a line in `TASKS.md`. `.agents/state/tasks.md` is only for a short-lived multi-agent board.
 - **Decisions:** a new D*n* entry in `docs/DECISIONS.md`, never a separate ADR file.
 - **Checks:** "Done means" decides which crates to test; the hub block lists the full commands.
 - **Shaders:** port game materials with the `clean-room-shader` skill (D13).

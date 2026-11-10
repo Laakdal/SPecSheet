@@ -214,17 +214,55 @@ The repository must never contain game files. A pre-commit hook enforces this:
 - **Whole tree:** run `python tools/check_public_tree.py --all`.
 - **Consequence for tests:** build fixtures in code (as the parser tests do), never as checked-in `.sii`/`.pmd` files.
 
+## Pull requests
+
+Every change reaches `main` through a pull request, so CI runs before it lands and `main` stays releasable.
+
+1. Branch from an up-to-date `main`: `git switch -c <area>/<short-name>` (e.g. `render/glass-material`, `docs/version-port`). One piece of work per branch. If another session is working in the repo, give the branch its own worktree (`git worktree add ../specsheet-<name> -b <area>/<short-name>`) and its own `CARGO_TARGET_DIR`.
+2. Commit as usual: one commit per group (AGENTS.md, "Commits and pull requests"), signed, with the pre-commit guard.
+3. Run `cargo xtask check`, and the real-install tests when a library crate changed. CI cannot run those: it has no game files.
+4. Push the branch and open the pull request (`gh pr create`). The template asks what changed, how it was checked (with the real results and, for UI or rendering, a screenshot), which new facts about the game it relies on, and which docs were updated.
+5. CI must pass: "Guard, format, layers and recipes" and "Lint and test (Windows)".
+6. Merge with a merge commit (`gh pr merge --merge`). Never "Squash and merge" or "Rebase and merge": both rewrite the commits and drop their signatures. Nothing reaches `main` by a push from a local clone, a fast-forward included. The branch is deleted on merge.
+
+Dependabot's pull requests (action pins, security fixes) go through the same checks.
+
+**Issues** are for bugs, things waiting on a person (a reference screenshot, an in-game check) and alerts such as a game update. They have templates under `.github/ISSUE_TEMPLATE/`. The plan stays in `TASKS.md`: a task that turns up in an issue becomes a line there, and the pull request that finishes it says `Closes #<n>`.
+
+**Repository settings this relies on** (set once on GitHub, not in the repo): a branch protection rule on `main` that requires a pull request and the two CI checks above, with squash and rebase merging switched off; and the labels `bug` and `game update` for the issue templates.
+
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request, on Windows:
-1. The public-tree guard (`--all`).
-2. `cargo fmt --all --check`.
-3. `cargo clippy --workspace --all-targets -- -D warnings`.
-4. `cargo test --workspace`.
-5. `cargo xtask layers` (crate layers, D17).
+Three workflows in `.github/workflows/`, plus `.github/dependabot.yml`.
+
+**`ci.yml`** runs on every push to `main` and every pull request, on Windows, in two jobs:
+1. *Guard, format, layers and recipes* (a minute or two): the public-tree guard (`--all`), `cargo fmt --all --check`, `cargo xtask layers` (D17) and `cargo xtask recipes` (every evidence file has a recipe and a baseline).
+2. *Lint and test*, only if the first job passes: `cargo clippy --workspace --all-targets --locked -- -D warnings` and `cargo test --workspace --locked`.
+
+**`audit.yml`** runs `cargo audit` on `Cargo.lock` every Monday and whenever the lock file changes. A failure means a locked dependency has a published security advisory.
+
+**`release.yml`** builds the Windows package and opens a draft release (see "Releasing" below).
 
 Notes:
-- **Real-install tests skip in CI,** because CI has no game files. Run them locally with `ETS2_DIR` set before pushing parser, catalog or assembly changes.
-- **The first run builds Bevy cold** (about 15–25 minutes). Later runs reuse the build cache.
-- **A newer push to the same branch cancels the run in progress,** so a cancelled run is not a failure.
+- **Real-install tests skip in CI,** because CI has no game files. Run them locally with `ETS2_DIR` set before pushing parser, catalog or assembly changes. For the same reason CI cannot notice a game update ([version-ports.md](version-ports.md)).
+- **`--locked`:** CI builds exactly the versions in `Cargo.lock` and fails if the lock file is out of date. Commit `Cargo.lock` with any dependency change.
+- **The first run builds Bevy cold** (about 15–25 minutes). Later runs reuse the build cache. Only runs on `main` write the cache; pull requests read it.
+- **A newer push to the same pull request cancels the run in progress,** so a cancelled run is not a failure. Runs on `main` are never cancelled: the release workflow looks up their result.
+- **Actions are pinned to a commit,** with the release in a comment. Dependabot proposes the next pin each week. For Rust dependencies it opens only security updates: Bevy and Rust change deliberately.
+- **Permissions:** every workflow starts read-only. Only the release workflow's last job may write, and only to create the draft release.
 - **Upgrading Rust:** change `rust-toolchain.toml`. CI and every machine follow it.
+
+## Releasing
+
+A release is a tag `v<version>` on `main`. The workflow builds `SpecSheet-<version>-windows-x64.zip` (the app, the licence, the readme and the changelog; no game files), a `.sha256` file and a build provenance attestation, and opens a **draft** GitHub Release with the changelog section as its notes. Nothing is public until a person publishes the draft.
+
+1. Set the version in `crates/specsheet/Cargo.toml`, and move the `[Unreleased]` entries of `CHANGELOG.md` under a new `## [<version>]` heading. Commit and push to `main`.
+2. Wait for CI to pass on that commit.
+3. Tag it and push the tag: `git tag v<version>`, `git push origin v<version>`.
+4. Review the draft on the Releases page, then publish it.
+
+The workflow stops with a message if the tag differs from the app's version, the commit is not on `main`, CI has not passed on it, or the changelog has no section for the version. After fixing the cause, re-run the workflow from the Actions page.
+
+- **Dry run:** "Run workflow" on any branch builds the same package and keeps it as a workflow artifact for 14 days, without creating a release.
+- **Checking a download:** `gh attestation verify SpecSheet-<version>-windows-x64.zip --repo Laakdal/SPecSheet` confirms the archive was built by this workflow from the tagged commit.
+- Not there yet: an installer, the exe icon and code signing (TASKS, Packaging). Windows SmartScreen warns about an unsigned exe.
