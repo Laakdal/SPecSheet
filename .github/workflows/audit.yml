@@ -1,0 +1,51 @@
+# Checks the locked dependencies against the RustSec advisory database:
+# every Monday, and whenever the lock file changes. A failure here means a
+# dependency in Cargo.lock has a published security advisory.
+name: Dependency audit
+
+on:
+  schedule:
+    # Mondays 05:17 UTC (off the hour, when GitHub's schedulers are quieter).
+    - cron: "17 5 * * 1"
+  push:
+    branches: [main]
+    paths: ["Cargo.lock", ".github/workflows/audit.yml"]
+  pull_request:
+    paths: ["Cargo.lock", ".github/workflows/audit.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The tool is built from crates.io at a pinned version, so a new
+      # release of it cannot change this job unreviewed.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: audit
+          cache-targets: false
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --version 0.23.0 --locked
+
+      # Reads Cargo.lock only; nothing of the workspace is built.
+      - name: Audit
+        run: cargo audit --deny warnings

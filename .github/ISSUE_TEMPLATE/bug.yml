@@ -1,0 +1,50 @@
+name: Bug
+description: Something in SpecSheet is wrong or differs from the game
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not attach game files (`.scs`, models, textures, definitions). Screenshots of the app or of the game are fine.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The truck, the tab or slot, the accessory, the scene. A `SPECSHEET_SCRIPT` file is ideal.
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game version
+      description: The line `init ver.` in game.log.txt, e.g. 1.62.1.0.
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: SpecSheet version or commit
+    validations:
+      required: true
+  - type: dropdown
+    id: mods
+    attributes:
+      label: Mods
+      options:
+        - No mods loaded
+        - A mod profile was loaded
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: The relevant lines of `%APPDATA%\dev.specsheet.app\specsheet.log`. Remove personal paths if you wish.
+      render: text

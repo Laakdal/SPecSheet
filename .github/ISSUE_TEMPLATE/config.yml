@@ -1,0 +1,7 @@
+# Issues are for bugs, things waiting on a person, and automated alerts.
+# The plan itself is TASKS.md.
+blank_issues_enabled: true
+contact_links:
+  - name: The plan and open tasks
+    url: https://github.com/Laakdal/SPecSheet/blob/main/TASKS.md
+    about: What is done, in progress and next. Tasks are tracked there, not as issues.
